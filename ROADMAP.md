@@ -6,6 +6,8 @@
 - **Microsoft Store:** Knightwise **0.4.1** (MSIX, `Abhra71.Knightwise`, Store ID `9NKLGS6K72J2`) submitted for
   certification on 11 Oct 2026 as a **private beta** (group "Knightwise beta", free). Install link once it passes:
   https://apps.microsoft.com/detail/restricted/9NKLGS6K72J2. Store page text: `installer/msix/STORE_LISTING.md`.
+  **Passed certification on 11 Oct 2026 (about 30 minutes) and is live as a private beta ("In Microsoft Store").**
+  Updates: Partner Center → Knightwise → Start update (upload a new MSIX with a higher version).
 - **After it passes:** install from the link, uninstall the old "Chess Coach" (Settings → Apps), remove the old Chrome
   extension and load `Documents\Knightwise\extension`. Old backups in `%LOCALAPPDATA%\Programs\ChessCoach`
   (`_internal-0.3.0-backup`, `ChessCoach-0.3.0-backup.exe`) can then be deleted.
@@ -57,6 +59,8 @@ The "body" on chess.com (character, voice there, navigation, instant review) doe
 Each change ships as a Store update (new MSIX, version bump); update `STORE_LISTING.md` when what players see changes.
 
 ## Welcome screen redesign (requested 11 Oct 2026)
+- Started (not yet committed or tested when this was written): `coach/ui/backdrop.js` camera "film" (high above → glide
+  down beside the pieces → follow each move → slow orbit) and higher piece hops. Test it in the browser before shipping.
 - **Layout:** the welcome card sits on the **right 30–40%** of the screen as a solid, crisp black panel
   (no blurred glass), with a short professional line and the set-up steps. The **left 60–70%** is the 3D scene.
 - **Typed lines** over the scene: short phrases typed letter by letter, held, then erased, for example
