@@ -5,13 +5,12 @@ Run:  python -m coach.patterns
 import collections
 import json
 import sys
-from pathlib import Path
 
 import chess
 
 from coach.analyze import material
+from coach.paths import DATA
 
-ROOT = Path(__file__).resolve().parent.parent
 BLUNDER = 25  # lost at least this many points of winning chance (0..100) in one move
 
 
@@ -46,7 +45,7 @@ def classify(r):
 
 
 def main():
-    rows = [json.loads(l) for l in open(ROOT / "data" / "moves.jsonl")]
+    rows = [json.loads(l) for l in open(DATA / "moves.jsonl")]
     hits = collections.defaultdict(list)
     for r in rows:
         p = classify(r)
@@ -59,7 +58,7 @@ def main():
         low = sum(1 for r in rs if r["clock"] is not None and r["clock"] < 30)
         print(f"{len(rs):4} x {p:28} in {g:3} games  (under 30s on clock: {low})")
     if "--json" in sys.argv:
-        json.dump({p: rs for p, rs in hits.items()}, open(ROOT / "data" / "patterns.json", "w"))
+        json.dump({p: rs for p, rs in hits.items()}, open(DATA / "patterns.json", "w"))
 
 
 if __name__ == "__main__":

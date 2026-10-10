@@ -11,19 +11,18 @@ import json
 import random
 from itertools import zip_longest
 from datetime import date
-from pathlib import Path
 
 import chess
 import chess.engine
 
 from coach import memory
-from coach.analyze import ENGINE, score_cp, win_chance
+from coach.analyze import open_engine, score_cp, win_chance
+from coach.paths import DATA, TEMPLATES
 from coach.patterns import classify
 from coach.puzzles import OUT as PUZZLES, THEMES
 from coach.review import ABOUT, EXAMPLES, NAME, move_number, pick_examples
 
-ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "data" / "drills.html"
+OUT = DATA / "drills.html"
 PER_PATTERN = 4
 PUZZLES_PER_PATTERN = 4
 DEPTH = 12
@@ -160,7 +159,7 @@ def pick_puzzles(by_pattern, top, seed):
 
 
 def build():
-    rows = [json.loads(line) for line in open(ROOT / "data" / "moves.jsonl")]
+    rows = [json.loads(line) for line in open(DATA / "moves.jsonl")]
     by_pattern = {}
     for r in rows:
         p = classify(r)
@@ -172,12 +171,12 @@ def build():
         # every example of the pattern except the ones on the review page, clearest first
         candidates = {drill_id(r): r for r in pick_examples(by_pattern[p], len(by_pattern[p]))[EXAMPLES:]}
         chosen += [(p, candidates[i]) for i in memory.choose(list(candidates), PER_PATTERN)]
-    with chess.engine.SimpleEngine.popen_uci(str(ENGINE)) as eng:
+    with open_engine() as eng:
         eng.configure({"Threads": 4, "Hash": 128})
         drills = [drill(eng, p, r) for p, r in chosen]
     puzzles = pick_puzzles(by_pattern, top, seed=date.today().isoformat())
     drills = [d for pair in zip_longest(drills, puzzles) for d in pair if d]  # own position, puzzle, own, ...
-    page = (Path(__file__).parent / "drills_template.html").read_text(encoding="utf-8")
+    page = (TEMPLATES / "drills_template.html").read_text(encoding="utf-8")
     OUT.write_text(page.replace("/*DRILLS*/[]", json.dumps(drills)), encoding="utf-8")
     return OUT, len(drills)
 

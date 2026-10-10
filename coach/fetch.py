@@ -6,10 +6,8 @@ Output: data/games-YYYY-MM.json, data/player.txt
 import json
 import sys
 import urllib.request
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data"
+from coach.paths import DATA
 HEADERS = {"User-Agent": "ChessCoach (open-source chess coach; github.com/Abhra71/ChessCoach)"}
 
 

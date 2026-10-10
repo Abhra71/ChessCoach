@@ -22,9 +22,23 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
 | "Is this you?" answer on the review page, saved in your logbook | works |
 | Voice (talk to the coach) | planned |
-| Windows installer and public beta | planned |
+| Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
 
-## Try it now (Windows, Python 3.12)
+## For players: install
+
+1. Download **ChessCoach-Setup.exe** from the [Releases](https://github.com/Abhra71/ChessCoach/releases) page
+   (first beta coming soon). No Python or anything else needed; no admin rights needed.
+2. Run it: Next, Next, Finish. Windows may say "Windows protected your PC" because the beta isn't signed yet:
+   click **More info**, then **Run anyway**.
+3. A welcome page opens: type your chess.com username. The coach checks your games (about 2 minutes the first
+   time) and shows your review. From then on it lives as a green pawn icon by the clock and checks each new game
+   by itself.
+4. Optional, 1 minute: **Arrows on chess.com** (in the icon's menu) walks you through adding the browser
+   extension and turns green when it works.
+
+Your data stays on your computer in `%LOCALAPPDATA%\ChessCoach`. Uninstall from Windows Settings like any app.
+
+## For developers: run from source (Windows, Python 3.12)
 
 ```
 pip install -r requirements.txt
@@ -114,7 +128,22 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/autorun.py` | start the helper with Windows (Startup folder shortcut) or remove it |
 | `coach/memory.py` | practice answers and spacing (which positions come back when), your "is this you?" answers |
 | `extension/` | the Chrome/Edge extension (arrows and key-moments panel on chess.com) |
+| `coach/app.py` | ChessCoach.exe: tray icon + the background coach |
+| `coach/paths.py` | where files live (project folder, or %LOCALAPPDATA%\ChessCoach when installed) |
+| `coach/welcome.html`, `coach/setup_arrows.html` | first-start page and the guided extension set-up |
+| `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |
 | `tests/` | `python -m pytest -q tests` |
+
+### Build the installer
+
+```
+pip install pyinstaller pystray
+python -m coach.get_engine
+python -m PyInstaller installer/ChessCoach.spec --noconfirm
+"%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\ChessCoach.iss     # Inno Setup 6, free
+```
+
+Result: `dist\ChessCoach-Setup-<version>.exe` (about 85 MB, mostly Stockfish).
 
 Your games, results and logbooks stay on your computer in `data/` and `logbook/`. They are never uploaded
 and never committed.

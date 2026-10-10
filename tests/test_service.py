@@ -32,3 +32,17 @@ def test_only_one_copy_can_run():
             Server(("127.0.0.1", first.server_address[1]), Handler)
     finally:
         first.server_close()
+
+
+def test_bad_usernames_are_refused_without_asking_chess_com():
+    from coach.service import set_player
+    for name in ("", "has space", "semi;colon", "x" * 31):
+        ok, message = set_player(name)
+        assert not ok and "doesn't look like" in message
+
+
+def test_status_has_what_the_welcome_page_needs():
+    from coach.service import status
+    s = status()
+    for key in ("player", "phase", "done", "total", "review_ready", "extension_seen", "extension_path", "browsers"):
+        assert key in s

@@ -7,9 +7,9 @@ import io
 import json
 import urllib.request
 import zipfile
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from coach.paths import PROJECT
+
 ASSET = "stockfish-windows-x86-64-universal.zip"
 
 
@@ -20,8 +20,8 @@ def main():
     url = next(a["browser_download_url"] for a in release["assets"] if a["name"] == ASSET)
     print(f"downloading Stockfish {release['tag_name']} ...")
     data = urllib.request.urlopen(url, timeout=300).read()
-    zipfile.ZipFile(io.BytesIO(data)).extractall(ROOT / "engine")
-    print(f"installed in {ROOT / 'engine'}")
+    zipfile.ZipFile(io.BytesIO(data)).extractall(PROJECT / "engine")
+    print(f"installed in {PROJECT / 'engine'}")
 
 
 if __name__ == "__main__":

@@ -5,11 +5,11 @@ back grows (1, 3, 7, 21, 60 days); a wrong answer sends it back to the start, to
 """
 import json
 from datetime import date, timedelta
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-PRACTICE = ROOT / "data" / "practice.jsonl"
-VERDICTS = ROOT / "data" / "verdicts.jsonl"
+from coach.paths import DATA
+
+PRACTICE = DATA / "practice.jsonl"
+VERDICTS = DATA / "verdicts.jsonl"
 GAPS = [1, 3, 7, 21, 60]  # days before a position comes back, by box
 MASTERED = len(GAPS) + 1  # right this many times in a row: never comes back
 LEARNED = 3  # right 3 times in a row, days apart: counted as learned on the page

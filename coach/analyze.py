@@ -9,18 +9,18 @@ import io
 import json
 import math
 import os
+import subprocess
 import sys
 from concurrent.futures import ProcessPoolExecutor
-from pathlib import Path
 
 import chess
 import chess.engine
 import chess.pgn
 
-ROOT = Path(__file__).resolve().parent.parent
-ENGINE = ROOT / "engine" / "stockfish" / "stockfish-windows-x86-64-universal.exe"
-MOVES = ROOT / "data" / "moves.jsonl"
-CHECKED = ROOT / "data" / "checked.txt"
+from coach.paths import DATA, ENGINE
+
+MOVES = DATA / "moves.jsonl"
+CHECKED = DATA / "checked.txt"
 DEPTH = 14
 VALUE = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
 
@@ -38,11 +38,17 @@ def material(board, color):
     return sum(VALUE[p.piece_type] for p in board.piece_map().values() if p.color == color)
 
 
+def open_engine():
+    """Start Stockfish without a console window popping up."""
+    quiet = {"creationflags": subprocess.CREATE_NO_WINDOW} if sys.platform == "win32" else {}
+    return chess.engine.SimpleEngine.popen_uci(str(ENGINE), **quiet)
+
+
 def analyse_game(game_json, player):
     game = chess.pgn.read_game(io.StringIO(game_json["pgn"]))
     me = chess.WHITE if game_json["white"]["username"].lower() == player else chess.BLACK
     out = []
-    with chess.engine.SimpleEngine.popen_uci(str(ENGINE)) as eng:
+    with open_engine() as eng:
         eng.configure({"Threads": 1, "Hash": 64})
         board = game.board()
         node = game
@@ -92,13 +98,14 @@ def checked_games():
     return set()
 
 
-def main(argv=None):
-    """Check games not checked yet. Returns how many games were checked."""
+def main(argv=None, progress=None):
+    """Check games not checked yet. Returns how many games were checked.
+    progress(done, total) is called after each game (for the welcome page)."""
     argv = sys.argv[1:] if argv is None else argv
-    player = (ROOT / "data" / "player.txt").read_text().strip().lower()
+    player = (DATA / "player.txt").read_text().strip().lower()
     redo = "--all" in argv
     done_urls = set() if redo else checked_games()
-    games = [g for f in sorted(glob.glob(str(ROOT / "data" / "games-*.json")))
+    games = [g for f in sorted(glob.glob(str(DATA / "games-*.json")))
              for g in json.load(open(f))["games"]
              if g.get("rules") == "chess" and g["url"] not in done_urls]
     if not games:
@@ -112,6 +119,8 @@ def main(argv=None):
                 fh.write(json.dumps(r) + "\n")
             done_urls.add(game["url"])
             print(f"\r{done}/{len(games)} games", end="", file=sys.stderr, flush=True)
+            if progress:
+                progress(done, len(games))
     CHECKED.write_text("\n".join(sorted(done_urls)) + "\n")
     print(f"\nchecked {len(games)} new games -> {MOVES}", file=sys.stderr)
     return len(games)

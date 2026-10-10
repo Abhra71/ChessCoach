@@ -3,15 +3,14 @@
 Run:  python -m coach.update [chess.com username]   (username only needed the first time)
 """
 import sys
-from pathlib import Path
 
 from coach import analyze, drills, fetch, review
+from coach.paths import DATA
 
-ROOT = Path(__file__).resolve().parent.parent
 
 
 def main():
-    player_file = ROOT / "data" / "player.txt"
+    player_file = DATA / "player.txt"
     if len(sys.argv) > 1:
         user = sys.argv[1].lower()
     elif player_file.exists():

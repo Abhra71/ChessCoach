@@ -4,3 +4,5 @@ logbook/
 engine/
 __pycache__/
 *.pyc
+dist/
+build/

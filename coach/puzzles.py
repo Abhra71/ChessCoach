@@ -9,12 +9,12 @@ import io
 import json
 import sys
 import urllib.request
-from pathlib import Path
 
 import zstandard
 
-ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "data" / "puzzles.json"
+from coach.paths import DATA
+
+OUT = DATA / "puzzles.json"
 URL = "https://database.lichess.org/lichess_db_puzzle.csv.zst"
 
 # Lichess puzzle theme for each mistake pattern

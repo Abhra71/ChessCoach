@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arrows on chess.com</title>
+<style>
+:root { --bg:#faf8f4; --card:#fff; --ink:#1f1d1a; --muted:#6b665e; --line:#e6e1d8; --accent:#2e7d57; --wait:#b7791f; }
+@media (prefers-color-scheme: dark) { :root { --bg:#171614; --card:#211f1c; --ink:#ece8e1; --muted:#a39d93;
+  --line:#34312c; --accent:#6cc497; --wait:#e3b34f; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width:640px; margin:0 auto; padding:40px 16px 64px; }
+h1 { font-size:26px; margin:0 0 6px; } .muted { color:var(--muted); font-size:14px; }
+.nav { font-size:14px; color:var(--muted); margin-bottom:8px; } a { color:var(--accent); }
+.tabs { display:flex; gap:8px; margin:18px 0 4px; }
+.tabs button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:999px;
+  padding:6px 16px; cursor:pointer; } .tabs button.on { background:var(--accent); color:var(--bg); border-color:transparent; }
+ol { padding:0; list-style:none; counter-reset:s; }
+li { counter-increment:s; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px 16px 58px;
+  margin:12px 0; position:relative; }
+li::before { content:counter(s); position:absolute; left:16px; top:15px; width:28px; height:28px; border-radius:50%;
+  background:var(--accent); color:var(--bg); display:grid; place-items:center; font-weight:700; }
+button.main { font:inherit; border:0; border-radius:10px; padding:8px 16px; cursor:pointer; background:var(--accent);
+  color:var(--bg); font-weight:600; margin-top:8px; }
+.path { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+.path code { flex:1; min-width:200px; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+  font-size:13px; overflow-wrap:anywhere; }
+.status { border-radius:14px; padding:14px 18px; font-weight:600; margin-top:18px; border:2px dashed var(--wait); color:var(--wait); }
+.status.ok { border:2px solid var(--accent); color:var(--accent); }
+.fair { border-left:3px solid var(--accent); padding-left:12px; }
+</style></head>
+<body><main>
+  <nav class="nav"><a href="/">Review</a> · <a href="/practice">Practice</a> · <b>Arrows on chess.com</b></nav>
+  <h1>Arrows on chess.com</h1>
+  <p>Open one of your finished games on chess.com and the coach shows its key moments with arrows on the board.
+    This needs a small browser extension. It takes about a minute, once.</p>
+  <p class="muted fair">Fair play: the extension only shows something on games that are already finished. During a
+    live game it shows nothing at all, and it never moves pieces.</p>
+
+  <div class="tabs" id="tabs"></div>
+  <ol>
+    <li><b>Open the extensions page</b><br>
+      <button class="main" id="open">Open it for me</button>
+      <span class="muted" id="openmsg"></span></li>
+    <li><b>Switch on "Developer mode"</b><br><span class="muted">The switch is at the top right of that page.</span></li>
+    <li><b>Click "Load unpacked"</b> and choose this folder<span class="muted"> (paste it into the address bar at the
+      top of the window that opens, then click "Select Folder")</span>:
+      <div class="path"><code id="path">…</code><button class="main" id="copy">Copy</button></div></li>
+  </ol>
+  <div class="status" id="status">Waiting for the extension… (this turns green by itself)</div>
+  <p class="muted" id="after"></p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const NAMES = { chrome: "Chrome", edge: "Edge" };
+let browser = null;
+function pick(b) {
+  browser = b;
+  [...$("tabs").children].forEach(x => x.classList.toggle("on", x.dataset.b === b));
+  $("open").textContent = `Open ${NAMES[b]}'s extensions page`;
+}
+$("open").onclick = async () => {
+  const r = await fetch("/api/open-extensions", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ browser }) }).then(r => r.json()).catch(() => ({}));
+  $("openmsg").textContent = r.opened ? " Opened. It may be behind this window."
+    : ` Couldn't open it. Type ${browser === "edge" ? "edge" : "chrome"}://extensions in the address bar.`;
+};
+$("copy").onclick = () => {
+  navigator.clipboard.writeText($("path").textContent).then(() => $("copy").textContent = "Copied ✓");
+};
+async function poll(first) {
+  try {
+    const s = await (await fetch("/api/status")).json();
+    if (first) {
+      $("path").textContent = s.extension_path;
+      const list = s.browsers.length ? s.browsers : ["chrome"];
+      $("tabs").innerHTML = list.map(b => `<button data-b="${b}">${NAMES[b] || b}</button>`).join("");
+      [...$("tabs").children].forEach(x => x.onclick = () => pick(x.dataset.b));
+      pick(list.includes("chrome") ? "chrome" : list[0]);
+      if (list.length < 2) $("tabs").style.display = "none";
+    }
+    if (s.extension_seen) {
+      $("status").className = "status ok";
+      $("status").textContent = "✓ Connected. The extension is working.";
+      $("after").innerHTML = 'Now open one of your finished games on chess.com, for example from ' +
+        `<a href="https://www.chess.com/games/archive/${encodeURIComponent(s.player || "")}" target="_blank" rel="noopener">your game archive</a>.`;
+      return;
+    }
+  } catch (e) {}
+  setTimeout(() => poll(false), 1500);
+}
+poll(true);
+</script></body></html>

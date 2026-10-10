@@ -7,15 +7,14 @@ import collections
 import html
 import json
 from datetime import date
-from pathlib import Path
 
 import chess
 import chess.svg
 
+from coach.paths import DATA
 from coach.patterns import classify
 
-ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "data" / "review.html"
+OUT = DATA / "review.html"
 EXAMPLES = 3
 TOP = 3
 LOSING_MATERIAL = ("left a piece hanging", "walked into a fork or trick")
@@ -71,7 +70,6 @@ def pick_examples(rows, n=EXAMPLES):
 def explain(pattern, r):
     """One or two plain sentences about this exact position (facts from the board, not guesses)."""
     board = chess.Board(r["fen"])
-    me = board.turn
     best = board.parse_san(r["best"])
     best_piece = NAME[board.piece_at(best.from_square).piece_type]
     best_capture = board.piece_at(best.to_square)
@@ -170,12 +168,12 @@ def pieces_lost(rows, end_time, last=20):
 
 
 def build():
-    rows = [json.loads(line) for line in open(ROOT / "data" / "moves.jsonl")]
-    games_by_url = {g["url"]: g for f in (ROOT / "data").glob("games-*.json")
+    rows = [json.loads(line) for line in open(DATA / "moves.jsonl")]
+    games_by_url = {g["url"]: g for f in DATA.glob("games-*.json")
                     for g in json.loads(f.read_text())["games"]}
     end_time = {u: g["end_time"] for u, g in games_by_url.items()}
     overall, recent, n_recent = pieces_lost(rows, end_time)
-    player = (ROOT / "data" / "player.txt").read_text().strip()
+    player = (DATA / "player.txt").read_text().strip()
     hits = collections.defaultdict(list)
     for r in rows:
         p = classify(r)
@@ -239,7 +237,7 @@ a {{ color:var(--accent); }}
   padding:8px 14px; cursor:pointer; }} .answers button:first-child {{ background:var(--accent); color:var(--bg); border:0; }}
 .nav {{ font-size:14px; color:var(--muted); margin-bottom:8px; }}
 </style></head><body><main>
-<nav class="nav"><b>Review</b> · <a href="drills.html">Practice</a></nav>
+<nav class="nav"><b>Review</b> · <a href="drills.html">Practice</a> · <a href="/setup-arrows">Arrows on chess.com</a></nav>
 <h1>Your chess review</h1>
 <p class="sub">{html.escape(player)} · {games} games checked by Stockfish · {date.today():%d %b %Y}</p>
 <p>These are the habits that lost you the most games, with real positions from your own games.
