@@ -18,7 +18,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Only new games are downloaded and checked (so it can later run by itself) | works |
 | Runs by itself in the background after each game | planned |
 | After-game review with arrows on the chess.com board (browser extension) | planned |
-| Drills built from your own mistakes, matched puzzles | planned |
+| Practice that repeats over days until it sticks, plus matched Lichess puzzles | planned |
 | Voice (talk to the coach) | planned |
 | Windows installer and public beta | planned |
 
