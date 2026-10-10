@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chess Coach",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Shows the key moments of your finished chess.com games with arrows on the board. Never active during a live game.",
   "icons": {
     "128": "icon128.png"

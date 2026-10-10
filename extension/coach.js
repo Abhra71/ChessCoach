@@ -4,7 +4,8 @@
 // For any other game (including one being played right now) it answers "unknown" and this script shows nothing.
 (() => {
   const FILES = "abcdefgh";
-  const COLORS = { mine: "#d64545", reply: "#e8a33d", best: "#2e9e5b" };
+  const COLORS = { mine: "#e5484d", reply: "#f0a43a", best: "#2fb56f" };
+  const LABELS = { mine: "You played", reply: "Reply", best: "Better" };
   let moments = [], overlay = null, panel = null, timer = null, gameId = null;
   let small = false;
   try { small = localStorage.getItem("chess-coach-small") === "1"; } catch (e) {}
@@ -47,14 +48,19 @@
     return [(flipped ? 7 - f : f) * 100 + 50, (flipped ? r : 7 - r) * 100 + 50];
   }
 
-  function arrow(uci, color, flipped, faint) {
+  // kind: "best" | "mine" | "reply"; every arrow carries its meaning written on it
+  function arrow(uci, kind, flipped, faint) {
+    const color = COLORS[kind], label = LABELS[kind];
     const [x1, y1] = center(uci.slice(0, 2), flipped), [x2, y2] = center(uci.slice(2, 4), flipped);
     const len = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / len, uy = (y2 - y1) / len;
     const hx = x2 - ux * 36, hy = y2 - uy * 36; // where the head starts
     const px = -uy * 22, py = ux * 22;
-    return `<g opacity="${faint ? 0.55 : 0.85}">
+    const tx = (x1 + hx) / 2, ty = (y1 + hy) / 2, w = label.length * 12 + 18;
+    return `<g opacity="${faint ? 0.7 : 0.92}">
       <line x1="${x1}" y1="${y1}" x2="${hx}" y2="${hy}" stroke="${color}" stroke-width="${faint ? 11 : 16}" stroke-linecap="round"/>
-      <polygon points="${x2},${y2} ${hx + px},${hy + py} ${hx - px},${hy - py}" fill="${color}"/></g>`;
+      <polygon points="${x2},${y2} ${hx + px},${hy + py} ${hx - px},${hy - py}" fill="${color}"/>
+      <rect x="${tx - w / 2}" y="${ty - 17}" width="${w}" height="34" rx="9" fill="${color}"/>
+      <text x="${tx}" y="${ty + 7}" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="20" font-weight="700" fill="#fff">${label}</text></g>`;
   }
 
   function clearArrows() { if (overlay) overlay.innerHTML = ""; }
@@ -73,13 +79,13 @@
     let active = null;
     for (const m of moments) {
       if (now === m.placement) {          // just before your move: the better move, and your move (fainter)
-        overlay.innerHTML = arrow(m.move_uci, COLORS.mine, flipped, true) + arrow(m.best_uci, COLORS.best, flipped);
+        overlay.innerHTML = arrow(m.move_uci, "mine", flipped, true) + arrow(m.best_uci, "best", flipped);
         active = { m, when: "before" };
         break;
       }
       if (now === m.after_placement) {    // just after your move: your move and their answer
-        overlay.innerHTML = arrow(m.move_uci, COLORS.mine, flipped) +
-          (m.reply_uci ? arrow(m.reply_uci, COLORS.reply, flipped) : "");
+        overlay.innerHTML = arrow(m.move_uci, "mine", flipped) +
+          (m.reply_uci ? arrow(m.reply_uci, "reply", flipped) : "");
         active = { m, when: "after" };
         break;
       }

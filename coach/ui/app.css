@@ -55,7 +55,7 @@ a { color: inherit; }
 .dot.ok { background: var(--better); } .dot.busy { background: var(--reply); }
 main { overflow: auto; }
 .page { max-width: 1080px; margin: 0 auto; padding: 32px 36px 64px; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
 h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin: 0; }
 h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; }
 h3 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
@@ -79,7 +79,7 @@ h3 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
 .stack > * + * { margin-top: 10px; }
 
 /* buttons and fields */
-.btn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: var(--radius); padding: 8px 14px;
+.btn { white-space: nowrap; border: 1px solid var(--line-strong); background: var(--surface); border-radius: var(--radius); padding: 8px 14px;
   font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
 .btn:hover { background: var(--raised); }
 .btn.primary { background: var(--invert); color: var(--on-invert); border-color: var(--invert); }
@@ -171,3 +171,27 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 /* the coach's own words (AI) */
 .coach-says { border-left: 2px solid var(--text); padding: 6px 0 6px 12px; line-height: 1.6; }
 .btn.mic.rec { border-color: var(--red); color: var(--red); }
+
+/* extension guide */
+.ext-status { font-weight: 600; border: 1px dashed var(--line-strong); color: var(--muted); }
+.ext-status.ok { border: 1px solid var(--better); color: var(--better); }
+.guide { display: grid; gap: 14px; }
+.gstep { display: grid; grid-template-columns: 34px minmax(0, 1fr) minmax(0, 360px); gap: 16px; align-items: start;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+@media (max-width: 1000px) { .gstep { grid-template-columns: 34px 1fr; } .gstep .shot { grid-column: 2; } }
+.gnum { width: 28px; height: 28px; border-radius: 50%; background: var(--invert); color: var(--on-invert); display: grid; place-items: center; font-weight: 700; }
+.gtext h3 { margin-bottom: 4px; } .gtext p { margin: 0 0 10px; }
+.addr { font: 12px/1.4 ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--raised); border: 1px solid var(--line);
+  border-radius: 4px; padding: 6px 8px; white-space: nowrap; }
+.addr.long { white-space: normal; overflow-wrap: anywhere; flex: 1; min-width: 0; }
+.shot { width: 100%; height: auto; display: block; }
+.shot .s-win { fill: var(--bg); stroke: var(--line-strong); } .shot .s-bar { fill: var(--raised); }
+.shot .s-dot { fill: var(--line-strong); } .shot .s-url { fill: var(--surface); stroke: var(--line); }
+.shot .s-urltext { font: 10px ui-monospace, Consolas, monospace; fill: var(--muted); }
+.shot .s-h { font: 700 16px "Segoe UI", sans-serif; fill: var(--text); } .shot .s-title { font: 600 11px "Segoe UI", sans-serif; fill: var(--text); }
+.shot .s-sub { font: 10px "Segoe UI", sans-serif; fill: var(--muted); }
+.shot .s-card { fill: var(--surface); stroke: var(--line); } .shot .s-icon { fill: var(--line-strong); }
+.shot .s-btn { fill: var(--invert); } .shot .s-btntext { font: 600 10px "Segoe UI", sans-serif; fill: var(--on-invert); }
+.shot .s-btn2 { fill: var(--surface); stroke: var(--line); }
+.shot .s-on { fill: var(--invert); } .shot .s-off { fill: var(--line-strong); } .shot .s-knob { fill: var(--surface); }
+.shot .s-ring { fill: none; stroke: var(--red); stroke-width: 2.5; }

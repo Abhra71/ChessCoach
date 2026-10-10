@@ -17,7 +17,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Practice page: positions from your own games, click your move, it says right or why not | works |
 | Only new games are downloaded and checked (so it can later run by itself) | works |
 | Runs by itself in the background: checks new games every 10 minutes, Windows notification | works |
-| Browser extension: key moments of your finished games with arrows on the chess.com board | works (beta) |
+| Browser extension: key moments of your finished games with labelled arrows (Better / You played / Reply) on the chess.com board; guided set-up with pictures and copy buttons | works (beta) |
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
 | "Is this you?" answer on the review page, saved in your logbook | works |
@@ -150,7 +150,6 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/live_engine.py` | one Stockfish kept open for live questions and games |
 | `coach/play.py` | Play the Coach: the weakened opponent, live warnings, blunder check, hints |
 | `coach/settings.py` | theme, voice and the two AI key slots (keys in Windows Credential Manager, never in files) |
-| `coach/setup_arrows.html` | the guided extension set-up |
 | `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |
 | `tests/` | `python -m pytest -q tests` |
 

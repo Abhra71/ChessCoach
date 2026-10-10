@@ -477,6 +477,58 @@ async function playView() {
   if (g && !g.message) react(g); else { g = null; draw(); }
 }
 
+// ---------- arrows on chess.com: the extension, step by step ----------
+async function extensionView() {
+  shell("settings", `<p class="muted">Loading…</p>`);
+  const st = await api("/api/status");
+  const browsers = st.browsers.length ? st.browsers : ["chrome"];
+  let browser = browsers.includes("chrome") ? "chrome" : browsers[0];
+  const NAME = { chrome: "Chrome", edge: "Edge" };
+  const copyBtn = (id, text) => `<button class="btn" data-copy="${esc(text)}" id="${id}">Copy</button>`;
+  function render() {
+    const page = `${browser}://extensions`;
+    $("#page").innerHTML = `
+      <div class="page-head"><div><a href="#/settings" class="small muted" style="text-decoration:none">← Settings</a>
+        <h1 style="margin-top:6px">Arrows on chess.com</h1>
+        <p class="sub">A small browser extension shows the key moments of your finished games right on chess.com's board. One minute, once.</p></div>
+        ${browsers.length > 1 ? `<div class="seg" id="browser">${browsers.map(b => `<button data-b="${b}" class="${b === browser ? "on" : ""}">${NAME[b] || b}</button>`).join("")}</div>` : ""}</div>
+      <div class="box ext-status ${st.extension_seen ? "ok" : ""}" id="extstatus">${st.extension_seen ? "Connected. The extension is working." : "Waiting for the extension… this turns green by itself."}</div>
+      <p class="note" style="margin:10px 0 18px">Fair play: it only shows something on games that are already finished. During a live game it shows nothing, and it never moves pieces.</p>
+      <div class="guide">
+        <div class="gstep"><div class="gnum">1</div><div class="gtext"><h3>Open ${NAME[browser]}'s extensions page</h3>
+          <p class="muted">Click the button, or copy the address and paste it into ${NAME[browser]}'s address bar.</p>
+          <div class="row"><button class="btn primary" id="openext">Open it for me</button><code class="addr">${page}</code>${copyBtn("c1", page)}</div>
+          <p class="small muted" id="openmsg"></p></div>${Guide.steps.open}</div>
+        <div class="gstep"><div class="gnum">2</div><div class="gtext"><h3>Switch on "Developer mode"</h3>
+          <p class="muted">The switch at the top right of that page.</p></div>${Guide.steps.dev}</div>
+        <div class="gstep"><div class="gnum">3</div><div class="gtext"><h3>Click "Load unpacked"</h3>
+          <p class="muted">It appears at the top left once Developer mode is on.</p></div>${Guide.steps.load}</div>
+        <div class="gstep"><div class="gnum">4</div><div class="gtext"><h3>Choose the Chess Coach folder</h3>
+          <p class="muted">In the window that opens, click its address bar, paste this path (Ctrl+V), press Enter, then click <b>Select Folder</b>.</p>
+          <div class="row"><code class="addr long">${esc(st.extension_path)}</code>${copyBtn("c2", st.extension_path)}</div>
+          <p class="small muted" style="margin-top:8px">Easier: <button class="btn" id="showfolder" style="padding:4px 10px">Show the folder</button> and drag the <b>extension</b> folder onto the extensions page.</p></div>${Guide.steps.pick}</div>
+        <div class="gstep"><div class="gnum">5</div><div class="gtext"><h3>Done</h3>
+          <p class="muted">"Chess Coach" appears in the list, and the box at the top turns green. Then open any finished game of yours on chess.com.</p>
+          <a class="btn" href="https://www.chess.com/games/archive/${encodeURIComponent(st.player || "")}" target="_blank" rel="noopener">Your games on chess.com ↗</a></div>${Guide.steps.done}</div>
+      </div>`;
+    document.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => navigator.clipboard.writeText(b.dataset.copy).then(() => { b.textContent = "Copied"; }));
+    if ($("#browser")) $("#browser").querySelectorAll("button").forEach(b => b.onclick = () => { browser = b.dataset.b; render(); });
+    $("#openext").onclick = async () => {
+      const r = await api("/api/open-extensions", { browser }).catch(() => ({}));
+      $("#openmsg").textContent = r.opened ? `Opened in ${NAME[browser]}. It may be behind this window.` : `Couldn't open it: copy the address and paste it into ${NAME[browser]}.`;
+    };
+    $("#showfolder").onclick = () => api("/api/show-extension-folder", {}).catch(() => {});
+  }
+  render();
+  (async function watch() {
+    while (location.hash.startsWith("#/extension")) {
+      const s2 = await api("/api/status").catch(() => ({}));
+      if (s2.extension_seen) { const box = $("#extstatus"); if (box) { box.classList.add("ok"); box.textContent = "Connected. The extension is working."; } return; }
+      await wait(1500);
+    }
+  })();
+}
+
 // ---------- settings ----------
 async function settingsView() {
   shell("settings", `<p class="muted">Loading…</p>`);
@@ -514,7 +566,7 @@ async function settingsView() {
         <div class="grid">${slot("slot1", 1)}${slot("slot2", 2)}<p class="note">Key 2 is used when key 1 fails or runs out.</p></div></div>
       <div class="settings-row"><div><h3>Arrows on chess.com</h3><p class="note">The browser extension.</p></div>
         <div class="row"><span class="${st.extension_seen ? "ok-text" : "faint"}">${st.extension_seen ? "Connected" : "Not connected yet"}</span>
-          <a class="btn" href="/setup-arrows">Set up</a></div></div>
+          <a class="btn" href="#/extension">Set up</a></div></div>
       <div class="settings-row"><div><h3>Your data</h3><p class="note">Games, checks, practice and your logbook.</p></div>
         <div class="row"><button class="btn" id="folder">Open data folder</button></div></div>
       <div class="settings-row"><div><h3>About</h3></div>
@@ -627,6 +679,7 @@ async function route() {
     if (name === "games") return await games();
     if (name === "practice") return await practice();
     if (name === "play") return await playView();
+    if (name === "extension") return await extensionView();
     if (name === "settings") return await settingsView();
     return await home();
   } catch (e) {

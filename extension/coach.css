@@ -1,23 +1,21 @@
 .chess-coach-arrows { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
 .chess-coach-panel {
-  position: fixed; right: 16px; bottom: 16px; z-index: 99999; width: 300px; max-height: 70vh; overflow: auto;
-  background: #211f1c; color: #ece8e1; border: 1px solid #3a3631; border-radius: 12px; padding: 12px 14px;
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; box-shadow: 0 8px 28px #0007;
+  position: fixed; right: 16px; bottom: 16px; z-index: 99999; width: 320px; max-height: 70vh; overflow: auto;
+  background: #0a0a0a; color: #f2f2f2; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px 16px;
+  font: 13px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; box-shadow: 0 12px 32px rgba(0,0,0,.45);
 }
-.chess-coach-panel .head { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
-.chess-coach-panel .x, .chess-coach-panel .min { background: none; border: 0; color: #a39d93; font-size: 20px;
-  cursor: pointer; padding: 0 6px; }
+.chess-coach-panel .head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; }
+.chess-coach-panel .x, .chess-coach-panel .min { background: none; border: 0; color: #8c8c8c; font-size: 18px; cursor: pointer; padding: 0 6px; }
 .chess-coach-panel.small { width: auto; padding: 0; border-radius: 999px; overflow: visible; }
-.chess-coach-panel .pill { background: #2e7d57; color: #fff; border: 0; border-radius: 999px; padding: 8px 14px;
-  font: inherit; font-weight: 600; cursor: pointer; }
+.chess-coach-panel .pill { background: #f2f2f2; color: #0a0a0a; border: 0; border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer; }
 @media (max-width: 700px) { .chess-coach-panel:not(.small) { left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 38vh; } }
-.chess-coach-panel p { margin: 4px 0 8px; color: #a39d93; font-size: 13px; }
+.chess-coach-panel p { margin: 4px 0 10px; color: #8c8c8c; font-size: 12px; }
 .chess-coach-panel ol { margin: 0; padding: 0; list-style: none; }
-.chess-coach-panel li { border-top: 1px solid #3a3631; padding: 8px 4px; cursor: pointer; border-radius: 6px; }
-.chess-coach-panel li:hover { background: #2a2824; }
-.chess-coach-panel li.on { background: #1d2a22; }
-.chess-coach-panel .say { margin-top: 2px; }
-.chess-coach-panel .key { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; color: #a39d93; font-size: 13px; }
-.chess-coach-panel .key span { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.chess-coach-panel button[data-go] { margin-top: 8px; background: #2e7d57; color: #fff; border: 0; border-radius: 8px;
-  padding: 5px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+.chess-coach-panel li { border: 1px solid #232323; padding: 10px 12px; cursor: pointer; border-radius: 6px; margin-top: 8px; }
+.chess-coach-panel li:hover { border-color: #3a3a3a; }
+.chess-coach-panel li.on { border-color: #f2f2f2; border-left: 3px solid #e5484d; }
+.chess-coach-panel .say { margin-top: 3px; color: #d6d6d6; }
+.chess-coach-panel .key { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; color: #a0a0a0; font-size: 12px; }
+.chess-coach-panel .key span { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
+.chess-coach-panel button[data-go] { margin-top: 10px; background: #f2f2f2; color: #0a0a0a; border: 0; border-radius: 6px;
+  padding: 6px 12px; cursor: pointer; font: inherit; font-weight: 600; }

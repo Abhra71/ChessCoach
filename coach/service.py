@@ -140,9 +140,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.static(path[len("/ui/"):])
         if path == "/practice":
             return self.redirect("/#/practice")
-        templates = {"/setup-arrows": "setup_arrows.html"}
-        if path in templates:
-            return self.send(200, (TEMPLATES / templates[path]).read_bytes(), "text/html; charset=utf-8")
+        if path == "/setup-arrows":
+            return self.redirect("/#/extension")
         pages = {"/review": "review.html", "/review.html": "review.html", "/drills.html": "drills.html"}
         if path in pages and (DATA / pages[path]).exists():
             return self.send(200, (DATA / pages[path]).read_bytes(), "text/html; charset=utf-8")
@@ -215,6 +214,10 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError as e:
                 return self.send(400, json.dumps({"message": str(e)}), "application/json")
             return self.send(200, json.dumps(settings.public()), "application/json")
+        if path == "/api/show-extension-folder":  # Explorer with the extension folder selected, ready to drag
+            if os.name == "nt":
+                subprocess.Popen(["explorer", "/select,", str(EXTENSION)])
+            return self.send(200, "{}", "application/json")
         if path == "/api/open-folder":
             if os.name == "nt":
                 os.startfile(DATA.parent)
