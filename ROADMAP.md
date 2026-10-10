@@ -56,6 +56,11 @@ The "body" on chess.com (character, voice there, navigation, instant review) doe
 6. **Navigation guide** (highlight, then check).
 7. **Suggestions and progress**; **AI key walkthrough**; **voice commands through the AI**.
 8. Optional: **Builder mode** in Settings (replay welcome, start fresh as a new player in a separate profile).
+9. **Store trailer video** (builder asked, 11 Oct 2026): about 45–60 s, 1920×1080 MP4, made by recording the app
+   itself (3D welcome film, a game review with arrows, practice, the coach on chess.com once built), titles typed on
+   screen, the coach's Kokoro voice as narrator and quiet piano underneath. Needs ffmpeg (ask before downloading)
+   and a 16:9 "Super hero art" image (the 3D board, no title text) for the trailer to show at the top of the Store page.
+   Also: put the 3D welcome screenshot first in the Store listing.
 Each change ships as a Store update (new MSIX, version bump); update `STORE_LISTING.md` when what players see changes.
 
 ## Welcome screen redesign (requested 11 Oct 2026)
