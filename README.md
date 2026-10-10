@@ -18,7 +18,8 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Only new games are downloaded and checked (so it can later run by itself) | works |
 | Runs by itself in the background: checks new games every 10 minutes, Windows notification | works |
 | Browser extension: key moments of your finished games with arrows on the chess.com board | works (beta) |
-| Practice that repeats over days until it sticks, plus matched Lichess puzzles | planned |
+| Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
+| Practice that repeats your own positions over days until they stick | planned |
 | Voice (talk to the coach) | planned |
 | Windows installer and public beta | planned |
 
@@ -27,6 +28,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 ```
 pip install -r requirements.txt
 python -m coach.get_engine                       # downloads Stockfish (~80 MB) into engine/
+python -m coach.puzzles                          # optional: Lichess puzzles (reads ~300 MB, keeps ~2.5 MB)
 python -m coach.update <your chess.com username>
 ```
 
@@ -40,9 +42,12 @@ last 20), then shows your top 3 mistake patterns, how often each happened, the h
 3 real positions from your games for each: your move (red), what they could do next (orange), the better
 move (green), with a link to the game on chess.com.
 
-The practice page gives 12 other positions from your games, the move before a big mistake. Click a piece,
-then a square. A safe move gets a yes; a bad one gets the reason ("then their bishop takes your queen on g7").
-Every legal move was scored by Stockfish when the page was built, so the page needs no internet or engine.
+The practice page gives 12 other positions from your games, the move before a big mistake, mixed with 12
+Lichess puzzles on the same habits (hanging pieces, forks, mate in 1 and 2; rated 400-1200; a new set every day).
+Click a piece, then a square. In your own positions a safe move gets a yes and a bad one gets the reason
+("then their bishop takes your queen on g7"); every legal move was scored by Stockfish when the page was built,
+so the page needs no internet or engine. In puzzles you see their last move (orange), then find yours; longer
+puzzles answer and wait for your next move.
 
 ### Let it run by itself
 
@@ -94,7 +99,8 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/analyze.py` | checks every move of games not checked yet, writes `data/moves.jsonl` |
 | `coach/patterns.py` | sorts big mistakes into patterns |
 | `coach/review.py` | builds `data/review.html` (top patterns on real boards) |
-| `coach/drills.py`, `coach/drills_template.html` | builds `data/drills.html` (practice on your own positions) |
+| `coach/drills.py`, `coach/drills_template.html` | builds `data/drills.html` (your positions + matched puzzles) |
+| `coach/puzzles.py` | downloads the Lichess puzzle database (CC0) and keeps the themes the coach uses |
 | `coach/update.py` | one step: new games -> check -> review and practice pages |
 | `coach/service.py` | background helper: update every 10 min, notification, local server for pages and the extension |
 | `coach/autorun.py` | start the helper with Windows (Startup folder shortcut) or remove it |
@@ -112,4 +118,5 @@ a small tray window with your logbook, and a local SQLite memory.
 
 ## Licence
 
-GPL-3.0 (see `LICENSE`). Stockfish and python-chess are also GPL-3.0.
+GPL-3.0 (see `LICENSE`). Stockfish and python-chess are also GPL-3.0. The Lichess puzzle database is
+public domain (CC0), from database.lichess.org.

@@ -17,7 +17,7 @@ h1 { font-size:24px; margin:0 0 4px; grid-column:1 / -1; }
   overflow:hidden; user-select:none; touch-action:manipulation; }
 .sq { position:relative; display:grid; min-height:0; min-width:0; place-items:center; cursor:pointer; font-size:min(9vw, 46px); line-height:1; }
 .sq.l { background:var(--light); } .sq.d { background:var(--dark); }
-.sq.pick { background:var(--pick); }
+.sq.pick { background:var(--pick); } .sq.last { box-shadow:inset 0 0 0 4px #e8a33d; }
 .sq.to::after { content:""; width:28%; height:28%; border-radius:50%; background:#0000002e; position:absolute; }
 .sq.ok { box-shadow:inset 0 0 0 4px var(--good); } .sq.no { box-shadow:inset 0 0 0 4px var(--bad); }
 .p.w { color:#fff; text-shadow:0 0 2px #000, 0 0 1px #000, 0 1px 2px #0008; }
@@ -33,8 +33,8 @@ button { font:inherit; border:1px solid var(--line); background:var(--bg); color
   padding:8px 16px; cursor:pointer; margin-right:8px; } button.main { background:var(--accent); color:var(--bg); border:0; }
 .meta { color:var(--muted); font-size:14px; } a { color:var(--accent); }
 </style></head><body><main>
-<div style="grid-column:1/-1"><h1>Practice: your own positions</h1>
-<p class="sub">Each position is from one of your games, the move before a big mistake. Find a move that keeps everything safe.</p></div>
+<div style="grid-column:1/-1"><h1>Practice</h1>
+<p class="sub">Positions from your own games (the move before a big mistake) and Lichess puzzles on the same habits. Click a piece, then a square.</p></div>
 <div><div class="board" id="board"></div><p class="meta" id="where"></p></div>
 <div class="panel">
   <div class="meta" id="count"></div>
@@ -48,9 +48,10 @@ button { font:inherit; border:1px solid var(--line); background:var(--bg); color
 const DRILLS = /*DRILLS*/[];
 const GLYPH = { k:"♚", q:"♛", r:"♜", b:"♝", n:"♞", p:"♟" };
 const files = "abcdefgh";
-let i = 0, picked = null, done = false, firstTry = 0, tried = 0;
+let i = 0, k = 0, board = {}, picked = null, done = false, firstTry = 0, missed = false, last = {};
 try { const s = JSON.parse(localStorage.getItem("drills") || "{}"); i = (s.i || 0) % Math.max(DRILLS.length, 1); } catch (e) {}
 const $ = id => document.getElementById(id);
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
 function squares(d) {  // board squares in display order
   const out = [];
@@ -62,82 +63,96 @@ function squares(d) {  // board squares in display order
 }
 function myColor(d) { return d.flip ? "b" : "w"; }
 function pieceColor(sym) { return sym === sym.toUpperCase() ? "w" : "b"; }
-function targets(d, from) {
-  return Object.keys(d.moves).filter(u => u.startsWith(from)).map(u => u.slice(2, 4));
+function step() { return DRILLS[i].steps[k]; }
+function targets(from) {
+  return Object.keys(step().moves).filter(u => u.startsWith(from)).map(u => u.slice(2, 4));
 }
-function after(d, uci) {  // the board once a move is made (castling moves the rook too, pawns become queens)
-  const b = { ...d.board }, from = uci.slice(0, 2), to = uci.slice(2, 4), sym = b[from];
-  delete b[from];
-  b[to] = uci.length > 4 ? (sym === "P" ? "Q" : "q") : sym;
-  if (sym.toLowerCase() === "k" && Math.abs(files.indexOf(to[0]) - files.indexOf(from[0])) === 2) {
-    const kingside = to[0] === "g", rank = to[1];
-    b[(kingside ? "f" : "d") + rank] = b[(kingside ? "h" : "a") + rank];
-    delete b[(kingside ? "h" : "a") + rank];
-  }
-  return b;
-}
-function draw(marks = {}, board = null) {
-  const d = DRILLS[i], el = $("board"), pieces = board || d.board;
+function mark(squaresList, cls) { const m = {}; squaresList.forEach(sq => m[sq] = cls); return m; }
+function draw(marks = {}) {
+  const d = DRILLS[i], el = $("board");
   el.innerHTML = "";
-  squares(d).forEach((sq, k) => {
+  squares(d).forEach((sq, n) => {
     const div = document.createElement("div");
     const light = (files.indexOf(sq[0]) + Number(sq[1])) % 2 === 1;
-    div.className = "sq " + (light ? "l" : "d") + (marks[sq] ? " " + marks[sq] : "");
-    const sym = pieces[sq];
+    const cls = marks[sq] || last[sq] || "";
+    div.className = "sq " + (light ? "l" : "d") + (cls ? " " + cls : "");
+    const sym = board[sq];
     if (sym) div.innerHTML = `<span class="p ${pieceColor(sym)}">${GLYPH[sym.toLowerCase()]}</span>`;
-    if (k % 8 === 0) div.innerHTML += `<span class="coord">${sq[1]}</span>`;
+    if (n % 8 === 0) div.innerHTML += `<span class="coord">${sq[1]}</span>`;
     div.onclick = () => click(sq);
     el.appendChild(div);
   });
 }
-function show() {
-  const d = DRILLS[i];
-  picked = null; done = false; tried = 0;
+function counter() {
   $("count").textContent = `Position ${i + 1} of ${DRILLS.length} · right first time: ${firstTry}`;
-  $("task").textContent = `You are ${d.flip ? "Black" : "White"}. Your move.`;
+}
+async function show() {
+  const d = DRILLS[i];
+  k = 0; picked = null; done = false; missed = false; last = {};
+  counter();
+  $("task").textContent = d.intro;
   $("hint").innerHTML = `<b>Remember:</b> ${d.hint}`;
   $("result").className = "result"; $("result").innerHTML = "";
-  $("where").innerHTML = `${d.where} · <a href="${d.url}" target="_blank" rel="noopener">open game on chess.com</a>`;
-  draw();
+  $("where").innerHTML = `${d.where} · <a href="${d.url}" target="_blank" rel="noopener">${d.link}</a>`;
   try { localStorage.setItem("drills", JSON.stringify({ i })); } catch (e) {}
+  board = d.start; draw();
+  if (d.last) {  // puzzles: show the opponent's move first
+    done = true; await wait(700);
+    if (DRILLS[i] !== d) return;
+    board = d.steps[0].board; last = mark(d.last, "last"); draw(); done = false;
+  }
+}
+async function right(uci, m, shown) {
+  const d = DRILLS[i], s = step();
+  board = m.after; last = {}; draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "ok"));
+  if (s.reply) {  // puzzle goes on: their answer, then your next move
+    done = true;
+    $("result").className = "result good";
+    $("result").innerHTML = `${m.san}: yes! <small>Now they play ${s.reply.san}. Keep going.</small>`;
+    await wait(800);
+    if (DRILLS[i] !== d) return;
+    board = s.reply.board; last = mark([s.reply.uci.slice(0, 2), s.reply.uci.slice(2, 4)], "last");
+    k++; done = false; draw();
+    if (shown) showAnswer();
+    return;
+  }
+  done = true;
+  if (!missed) firstTry++;
+  counter();
+  $("result").className = "result good";
+  const note = d.kind === "game"
+    ? `In the game you played ${d.played}.${m.san === d.best ? "" : " The engine's top move was " + d.best + "."}`
+    : "Puzzle solved.";
+  $("result").innerHTML = `${m.san}: ${shown ? "that's the answer." : d.kind === "game" ? "yes, that keeps you safe." : "yes!"}` +
+    `<small>${note}</small>`;
 }
 function click(sq) {
   const d = DRILLS[i];
   if (done) return;
-  const sym = d.board[sq];
+  const sym = board[sq];
   if (sym && pieceColor(sym) === myColor(d)) {
     picked = sq;
     const marks = { [sq]: "pick" };
-    targets(d, sq).forEach(t => marks[t] = "to");
+    targets(sq).forEach(t => marks[t] = "to");
     return draw(marks);
   }
   if (!picked) return;
-  const uci = picked + sq, m = d.moves[uci] || d.moves[uci + "q"];
+  const s = step(), uci = s.moves[picked + sq] ? picked + sq : picked + sq + "q", m = s.moves[uci];
   if (!m) return;
-  tried++;
-  if (m.good) {
-    if (tried === 1) firstTry++;
-    done = true;
-    $("result").className = "result good";
-    $("result").innerHTML = `${m.san}: yes, that keeps you safe.` +
-      `<small>In the game you played ${d.played}.${m.san === d.best ? "" : " The engine's top move was " + d.best + "."}</small>`;
-    $("count").textContent = `Position ${i + 1} of ${DRILLS.length} · right first time: ${firstTry}`;
-    draw({ [picked]: "ok", [sq]: "ok" }, after(d, d.moves[uci] ? uci : uci + "q"));
-  } else {
-    $("result").className = "result bad";
-    $("result").innerHTML = `${m.san}: not quite. ${m.say}<small>Try again.</small>`;
-    draw({ [picked]: "no", [sq]: "no" });
-  }
   picked = null;
+  if (m.good) return right(uci, m, false);
+  missed = true;
+  $("result").className = "result bad";
+  $("result").innerHTML = `${m.san}: not quite. ${m.say}<small>Try again.</small>`;
+  draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "no"));
 }
-$("show").onclick = () => {
-  const d = DRILLS[i];
-  const [uci] = Object.entries(d.moves).find(([u, m]) => m.san === d.best);
-  done = true;
-  $("result").className = "result good";
-  $("result").innerHTML = `Answer: ${d.best}<small>In the game you played ${d.played}.</small>`;
-  draw({ [uci.slice(0, 2)]: "ok", [uci.slice(2, 4)]: "ok" }, after(d, uci));
-};
+function showAnswer() {
+  const d = DRILLS[i], entries = Object.entries(step().moves).filter(([, m]) => m.good);
+  const pick = (d.kind === "game" && entries.find(([, m]) => m.san === d.best)) || entries[0];
+  missed = true;
+  right(pick[0], pick[1], true);
+}
+$("show").onclick = () => { if (!done) showAnswer(); };
 $("next").onclick = () => { i = (i + 1) % DRILLS.length; show(); };
 if (DRILLS.length) show(); else $("task").textContent = "No positions yet: run python -m coach.update first.";
 </script></body></html>

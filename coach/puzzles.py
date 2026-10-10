@@ -1,0 +1,62 @@
+"""Download the Lichess puzzle database (free, public domain / CC0) and keep only the puzzles the coach uses.
+
+Run:  python -m coach.puzzles
+Source: https://database.lichess.org/lichess_db_puzzle.csv.zst (~300 MB). It is unpacked while it downloads,
+so only the kept puzzles are saved: data/puzzles.json (a few MB).
+"""
+import csv
+import io
+import json
+import sys
+import urllib.request
+from pathlib import Path
+
+import zstandard
+
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "data" / "puzzles.json"
+URL = "https://database.lichess.org/lichess_db_puzzle.csv.zst"
+
+# Lichess puzzle theme for each mistake pattern
+THEMES = {
+    "left a piece hanging": "hangingPiece",
+    "missed a free capture": "hangingPiece",
+    "walked into a fork or trick": "fork",
+    "walked into checkmate": "mateIn1",
+    "missed a checkmate": "mateIn2",
+}
+KEEP_THEMES = {"hangingPiece", "fork", "mateIn1", "mateIn2"}
+MIN_RATING, MAX_RATING = 400, 1200
+PER_THEME = 3000
+
+
+def wanted(row):
+    """Clear, well-tested puzzles in the rating range."""
+    return (MIN_RATING <= int(row["Rating"]) <= MAX_RATING and int(row["RatingDeviation"]) <= 90
+            and int(row["Popularity"]) >= 80 and int(row["NbPlays"]) >= 300)
+
+
+def main():
+    req = urllib.request.Request(URL, headers={"User-Agent": "ChessCoach (github.com/Abhra71/ChessCoach)"})
+    kept = {t: [] for t in KEEP_THEMES}
+    seen = 0
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        text = io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(resp), encoding="utf-8")
+        for row in csv.DictReader(text):
+            seen += 1
+            if seen % 200_000 == 0:
+                print(f"\r{seen:,} puzzles read", end="", file=sys.stderr, flush=True)
+            themes = set(row["Themes"].split())
+            hit = [t for t in themes & KEEP_THEMES if len(kept[t]) < PER_THEME]
+            if not hit or not wanted(row):
+                continue
+            kept[hit[0]].append({"id": row["PuzzleId"], "fen": row["FEN"], "moves": row["Moves"].split(),
+                                 "rating": int(row["Rating"]), "themes": sorted(themes)})
+            if all(len(v) >= PER_THEME for v in kept.values()):
+                break
+    OUT.write_text(json.dumps(kept))
+    print(f"\nread {seen:,} puzzles, kept " + ", ".join(f"{t}: {len(v)}" for t, v in kept.items()), file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
