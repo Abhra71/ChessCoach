@@ -92,9 +92,11 @@ def checked_games():
     return set()
 
 
-def main():
+def main(argv=None):
+    """Check games not checked yet. Returns how many games were checked."""
+    argv = sys.argv[1:] if argv is None else argv
     player = (ROOT / "data" / "player.txt").read_text().strip().lower()
-    redo = "--all" in sys.argv
+    redo = "--all" in argv
     done_urls = set() if redo else checked_games()
     games = [g for f in sorted(glob.glob(str(ROOT / "data" / "games-*.json")))
              for g in json.load(open(f))["games"]

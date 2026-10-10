@@ -19,8 +19,7 @@ def main():
     else:
         sys.exit("first time: python -m coach.update <chess.com username>")
     print(f"{fetch.fetch(user)} new games from chess.com for {user}")
-    sys.argv = sys.argv[:1]
-    analyze.main()
+    analyze.main(argv=[])
     print(f"review page: {review.build()}")
     page, n = drills.build()
     print(f"practice page ({n} positions): {page}")

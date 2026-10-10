@@ -16,7 +16,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Review page: your top 3 patterns on real boards from your own games, in plain words | works |
 | Practice page: positions from your own games, click your move, it says right or why not | works |
 | Only new games are downloaded and checked (so it can later run by itself) | works |
-| Runs by itself in the background after each game | planned |
+| Runs by itself in the background: checks new games every 10 minutes, Windows notification | works |
 | After-game review with arrows on the chess.com board (browser extension) | planned |
 | Practice that repeats over days until it sticks, plus matched Lichess puzzles | planned |
 | Voice (talk to the coach) | planned |
@@ -44,6 +44,19 @@ The practice page gives 12 other positions from your games, the move before a bi
 then a square. A safe move gets a yes; a bad one gets the reason ("then their bishop takes your queen on g7").
 Every legal move was scored by Stockfish when the page was built, so the page needs no internet or engine.
 
+### Let it run by itself
+
+```
+python -m coach.autorun install      # starts with Windows, and starts now
+python -m coach.autorun status
+python -m coach.autorun remove       # stops it and removes it from Windows startup
+```
+
+It runs quietly in the background (no window). Every 10 minutes it looks for new finished games on chess.com,
+checks them, rebuilds both pages and shows a Windows notification. Your pages are then at
+**http://127.0.0.1:8765/** (review) and **http://127.0.0.1:8765/practice** (this computer only).
+Its own log is `logbook/service.log`.
+
 `python -m coach.patterns` prints the full count in the terminal, for example (a ~300-rated player, 140 games):
 
 ```
@@ -70,6 +83,8 @@ Every legal move was scored by Stockfish when the page was built, so the page ne
 | `coach/review.py` | builds `data/review.html` (top patterns on real boards) |
 | `coach/drills.py`, `coach/drills_template.html` | builds `data/drills.html` (practice on your own positions) |
 | `coach/update.py` | one step: new games -> check -> review and practice pages |
+| `coach/service.py` | background helper: update every 10 min, notification, local server for pages and the extension |
+| `coach/autorun.py` | start the helper with Windows (Startup folder shortcut) or remove it |
 | `tests/` | `python -m pytest -q tests` |
 
 Your games, results and logbooks stay on your computer in `data/` and `logbook/`. They are never uploaded
