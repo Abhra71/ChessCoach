@@ -187,6 +187,12 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError as e:
                 return self.send(400, json.dumps({"message": str(e)}), "application/json")
             return self.send(200, json.dumps(settings.public()), "application/json")
+        if path == "/api/keys/test":
+            from coach import ai
+            ok, message = ai.test_key(str(body.get("slot")))
+            return self.send(200, json.dumps({"ok": ok, "message": message}), "application/json")
+        if path in ("/api/explain", "/api/ask"):
+            return self.coach_ai(path, body)
         if path == "/api/keys/remove":
             try:
                 settings.remove_key(str(body.get("slot")))
@@ -202,6 +208,35 @@ class Handler(BaseHTTPRequestHandler):
                 SHOW(str(body.get("route", "home"))[:100])
             return self.send(200, "{}", "application/json")
         self.send(404, "not found", "text/plain")
+
+    def coach_ai(self, path, body):
+        """AI explanation of a key moment, or an answer to the player's question (needs a key in Settings)."""
+        from coach import ai, insights, live_engine
+        from coach.facts import moment_facts, position_facts
+        rating = insights.home().get("rating")
+        rows = MOMENT_CACHE.get(str(body.get("game", ""))) or []
+        r = next((x for x in rows if x["ply"] == body.get("ply")), None)
+        try:
+            if path == "/api/explain":
+                if not r:
+                    return self.send(404, json.dumps({"message": "Unknown moment."}), "application/json")
+                answer = ai.explain(moment_facts(r, classify(r)), rating)
+            else:
+                fen = str(body.get("fen", ""))
+                chess.Board(fen)  # refuse anything that isn't a position
+                with live_engine.LOCK:
+                    context = {"position": position_facts(fen, live_engine.get())}
+                if r:
+                    context["key_moment"] = moment_facts(r, classify(r))
+                answer = ai.ask(str(body.get("question", "")), context, rating)
+        except ai.NoKey as e:
+            return self.send(400, json.dumps({"message": str(e), "no_key": True}), "application/json")
+        except ValueError:
+            return self.send(400, json.dumps({"message": "That isn't a chess position."}), "application/json")
+        except Exception as e:
+            log.warning("AI failed: %s", e)
+            return self.send(502, json.dumps({"message": f"The AI didn't answer: {str(e)[:200]}"}), "application/json")
+        return self.send(200, json.dumps(answer), "application/json")
 
     def static(self, name):
         """Files of the desktop app (coach/ui), nothing outside it."""

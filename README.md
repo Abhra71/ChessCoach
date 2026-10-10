@@ -24,7 +24,8 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Desktop app window: Home (your focus, score, trend, last game), Games, Practice, Settings; dark and light | works (beta) |
 | Settings: chess.com account, theme, voice, two optional AI key slots kept in Windows Credential Manager | works (AI use: next) |
 | The coach speaks (Kokoro, on this computer): briefing, key moments, practice feedback; 4 voices | works |
-| Ask the coach by voice (listening) and AI explanations with your own key | next |
+| AI explanations and "Ask the coach" with your own key (Gemini, Groq, Claude or OpenAI), grounded in engine facts | works (beta) |
+| Ask the coach by voice (listening) | next |
 | Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
 
 ## For players: install
@@ -137,6 +138,9 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Settings, Welcome) |
 | `coach/insights.py` | the numbers and lists the app shows (dashboard, games, one game in detail) |
 | `coach/voice.py`, `coach/get_voice.py` | the coach's voice (Kokoro) and its download |
+| `coach/ai.py` | optional AI explanations and answers through the player's own keys (key 1, then key 2) |
+| `coach/facts.py` | hard facts about a position or moment (loose pieces, what a move does, engine lines) the AI must stick to |
+| `coach/live_engine.py` | one Stockfish kept open for live questions |
 | `coach/settings.py` | theme, voice and the two AI key slots (keys in Windows Credential Manager, never in files) |
 | `coach/setup_arrows.html` | the guided extension set-up |
 | `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |

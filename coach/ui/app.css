@@ -163,3 +163,6 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .steps-dots { display: flex; gap: 6px; margin-bottom: 20px; } .steps-dots i { width: 22px; height: 3px; background: rgba(255,255,255,.18); border-radius: 2px; }
 .steps-dots i.on { background: #f2f2f2; }
 .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
+
+/* the coach's own words (AI) */
+.coach-says { border-left: 2px solid var(--text); padding: 6px 0 6px 12px; line-height: 1.6; }

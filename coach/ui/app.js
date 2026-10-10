@@ -173,7 +173,9 @@ async function games() {
 
 async function gameView(id) {
   shell("games", `<p class="muted">Loading…</p>`);
-  const g = await api(`/api/games/${id}`);
+  const [g, cfg] = await Promise.all([api(`/api/games/${id}`), api("/api/settings")]);
+  const aiReady = Object.values(cfg.slots).some(x => x.set);
+  const explained = {};
   const flip = g.color === "black", keyPly = new Set(g.key_moments.map(m => m.ply));
   let ply = g.key_moments.length ? g.key_moments[0].ply - 1 : g.positions.length - 1, view = "before";
   $("#page").innerHTML = `
@@ -189,6 +191,10 @@ async function gameView(id) {
       <div class="stack">
         <h2>${g.key_moments.length ? `${g.key_moments.length} key moments` : "No big mistakes in this game"}</h2>
         <div class="stack" id="moments"></div>
+        <div class="box stack" style="padding:14px"><h2 style="margin:0">Ask the coach</h2>
+          <div class="row"><input class="field" id="question" placeholder="${aiReady ? "e.g. Why is my bishop in danger here?" : "Add an AI key in Settings to ask questions"}" ${aiReady ? "" : "disabled"}>
+            <button class="btn primary" id="askbtn" ${aiReady ? "" : "disabled"}>Ask</button></div>
+          <div id="answer" class="small"></div></div>
         <div class="box" style="padding:12px"><h2>Moves</h2><div class="movelist" id="moves"></div></div>
       </div>
     </div>`;
@@ -205,8 +211,18 @@ async function gameView(id) {
       <div style="margin-top:4px">${esc(k.say)}</div>
       ${k === m ? `<div class="small muted" style="margin-top:6px">${view === "before" ? `Better: <b>${esc(k.best)}</b> · you played <b>${esc(k.move)}</b>` : `You played <b>${esc(k.move)}</b>, and their reply wins material.`}</div>
         ${k.habit ? `<div class="small" style="margin-top:6px"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
+        ${explained[k.ply] ? `<div class="coach-says" style="margin-top:10px">${esc(explained[k.ply])}</div>` : ""}
+        ${aiReady && !explained[k.ply] ? `<button class="btn" style="margin-top:10px;margin-right:6px" data-explain="${k.ply}">Explain like a coach</button>` : ""}
         <button class="btn" style="margin-top:10px" data-view="${view === "before" ? "after" : "before"}">${view === "before" ? "What happened next" : "Show the better move"}</button>` : ""}
     </div>`).join("");
+    $("#moments").querySelectorAll("[data-explain]").forEach(b => b.onclick = async e => {
+      e.stopPropagation();
+      b.disabled = true; b.textContent = "Thinking…";
+      try {
+        const r = await api("/api/explain", { game: g.id, ply: Number(b.dataset.explain) });
+        explained[Number(b.dataset.explain)] = r.text; draw(); Voice.speak(r.text);
+      } catch (err) { b.textContent = err.message.slice(0, 80); }
+    });
     $("#moments").querySelectorAll(".moment").forEach(el => el.onclick = e => {
       const k = g.key_moments[Number(el.dataset.i)];
       view = e.target.dataset.view || "before";
@@ -224,6 +240,18 @@ async function gameView(id) {
     $("#moves").innerHTML = html;
     $("#moves").querySelectorAll("span[data-p]").forEach(s => s.onclick = () => { ply = Number(s.dataset.p); view = "after"; draw(); });
   }
+  async function ask() {
+    const q = $("#question").value.trim();
+    if (!q) return;
+    const m = momentAt(ply);
+    $("#answer").innerHTML = `<span class="muted">Looking at the position…</span>`;
+    try {
+      const r = await api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: m ? m.ply : null });
+      $("#answer").innerHTML = `<div class="coach-says">${esc(r.text)}</div>`;
+      Voice.speak(r.text);
+    } catch (err) { $("#answer").innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+  }
+  if (aiReady) { $("#askbtn").onclick = ask; $("#question").onkeydown = e => { if (e.key === "Enter") ask(); }; }
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go; view = "before";
     ply = v === "0" ? 0 : v === "end" ? g.positions.length - 1 : Math.max(0, Math.min(g.positions.length - 1, ply + Number(v)));
@@ -322,7 +350,7 @@ async function settingsView() {
       <select class="field" data-provider>${Object.entries(s.providers).map(([k, p]) =>
         `<option value="${k}" ${k === x.provider ? "selected" : ""}>${esc(p.name)}${p.free ? " (has a free tier)" : ""}</option>`).join("")}</select>
       <input class="field" type="password" autocomplete="off" spellcheck="false" placeholder="${x.set ? "Paste a new key to replace it" : "Paste your API key"}" data-key>
-      <div class="row"><button class="btn primary" data-save>Save key</button>${x.set ? `<button class="btn danger" data-remove>Remove</button>` : ""}
+      <div class="row"><button class="btn primary" data-save>Save key</button>${x.set ? `<button class="btn" data-test>Test key</button><button class="btn danger" data-remove>Remove</button>` : ""}
         <a class="small muted" data-get href="${esc(prov.get_key)}" target="_blank" rel="noopener">Get a ${esc(prov.name)} key ↗</a></div>
       <div class="err" data-msg></div></div>`;
   };
@@ -376,6 +404,12 @@ async function settingsView() {
       msg.textContent = "";
       try { await api("/api/keys", { slot: id, provider: $("[data-provider]", box).value, key: $("[data-key]", box).value }); settingsView(); }
       catch (e) { msg.textContent = e.message; }
+    };
+    const test = $("[data-test]", box);
+    if (test) test.onclick = async () => {
+      msg.className = "err"; msg.textContent = "Testing…";
+      const r = await api("/api/keys/test", { slot: id }).catch(e => ({ ok: false, message: e.message }));
+      msg.className = r.ok ? "ok-text" : "err"; msg.textContent = r.message;
     };
     const rm = $("[data-remove]", box);
     if (rm) rm.onclick = async () => { if (confirm("Remove this key?")) { await api("/api/keys/remove", { slot: id }); settingsView(); } };

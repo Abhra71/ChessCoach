@@ -4,4 +4,5 @@ pystray
 pywebview
 keyring
 kokoro-onnx
+anthropic
 pytest
