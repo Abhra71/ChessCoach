@@ -14,6 +14,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Check every move with Stockfish and find the big mistakes | works |
 | Sort mistakes into patterns (hanging pieces, missed captures, forks, missed mates, stalemated wins) | works |
 | Review page: your top 3 patterns on real boards from your own games, in plain words | works |
+| Practice page: positions from your own games, click your move, it says right or why not | works |
 | Only new games are downloaded and checked (so it can later run by itself) | works |
 | Runs by itself in the background after each game | planned |
 | After-game review with arrows on the chess.com board (browser extension) | planned |
@@ -29,14 +30,19 @@ python -m coach.get_engine                       # downloads Stockfish (~80 MB) 
 python -m coach.update <your chess.com username>
 ```
 
-`update` downloads your games, checks every move you made with Stockfish (about 10 minutes for 150 games on
-8 cores, the first time) and writes **`data/review.html`**: open it in your browser. Run `python -m coach.update`
+`update` downloads your games, checks every move you made with Stockfish (about 2 minutes for 150 games on
+8 cores, the first time) and writes two pages to open in your browser: **`data/review.html`** and
+**`data/drills.html`**. Run `python -m coach.update`
 again after you play: it only downloads and checks the new games.
 
 The review page starts with your score to bring down, **pieces given away per game** (all games, and your
 last 20), then shows your top 3 mistake patterns, how often each happened, the habit that fixes it, and
 3 real positions from your games for each: your move (red), what they could do next (orange), the better
 move (green), with a link to the game on chess.com.
+
+The practice page gives 12 other positions from your games, the move before a big mistake. Click a piece,
+then a square. A safe move gets a yes; a bad one gets the reason ("then their bishop takes your queen on g7").
+Every legal move was scored by Stockfish when the page was built, so the page needs no internet or engine.
 
 `python -m coach.patterns` prints the full count in the terminal, for example (a ~300-rated player, 140 games):
 
@@ -62,7 +68,8 @@ move (green), with a link to the game on chess.com.
 | `coach/analyze.py` | checks every move of games not checked yet, writes `data/moves.jsonl` |
 | `coach/patterns.py` | sorts big mistakes into patterns |
 | `coach/review.py` | builds `data/review.html` (top patterns on real boards) |
-| `coach/update.py` | one step: new games -> check -> review page |
+| `coach/drills.py`, `coach/drills_template.html` | builds `data/drills.html` (practice on your own positions) |
+| `coach/update.py` | one step: new games -> check -> review and practice pages |
 | `tests/` | `python -m pytest -q tests` |
 
 Your games, results and logbooks stay on your computer in `data/` and `logbook/`. They are never uploaded

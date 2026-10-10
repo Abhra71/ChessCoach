@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Practice</title>
+<style>
+:root { --bg:#faf8f4; --card:#fff; --ink:#1f1d1a; --muted:#6b665e; --line:#e6e1d8; --accent:#2e7d57;
+  --light:#f0d9b5; --dark:#b58863; --pick:#f6f669aa; --good:#2e9e5b; --bad:#d64545; --habit:#eef6f0; }
+@media (prefers-color-scheme: dark) { :root { --bg:#171614; --card:#211f1c; --ink:#ece8e1; --muted:#a39d93;
+  --line:#34312c; --accent:#6cc497; --habit:#1d2a22; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width:960px; margin:0 auto; padding:28px 16px 60px; display:grid; gap:24px;
+  grid-template-columns:minmax(0, 480px) minmax(0, 1fr); }
+@media (max-width:760px) { main { grid-template-columns:1fr; } }
+h1 { font-size:24px; margin:0 0 4px; grid-column:1 / -1; }
+.sub { color:var(--muted); font-size:14px; margin:0; }
+.board { display:grid; grid-template-columns:repeat(8, 1fr); grid-template-rows:repeat(8, 1fr); width:100%; aspect-ratio:1; border-radius:6px;
+  overflow:hidden; user-select:none; touch-action:manipulation; }
+.sq { position:relative; display:grid; min-height:0; min-width:0; place-items:center; cursor:pointer; font-size:min(9vw, 46px); line-height:1; }
+.sq.l { background:var(--light); } .sq.d { background:var(--dark); }
+.sq.pick { background:var(--pick); }
+.sq.to::after { content:""; width:28%; height:28%; border-radius:50%; background:#0000002e; position:absolute; }
+.sq.ok { box-shadow:inset 0 0 0 4px var(--good); } .sq.no { box-shadow:inset 0 0 0 4px var(--bad); }
+.p.w { color:#fff; text-shadow:0 0 2px #000, 0 0 1px #000, 0 1px 2px #0008; }
+.p.b { color:#111; text-shadow:0 0 1px #fff8; }
+.coord { position:absolute; font-size:10px; color:#0008; left:3px; top:2px; font-family:system-ui; }
+.panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; align-self:start; }
+.task { font-weight:600; font-size:18px; margin:6px 0 10px; }
+.habit { background:var(--habit); border-radius:10px; padding:10px 14px; font-size:15px; }
+.result { min-height:52px; margin:14px 0; font-weight:600; }
+.result.good { color:var(--good); } .result.bad { color:var(--bad); }
+.result small { display:block; font-weight:400; color:var(--muted); }
+button { font:inherit; border:1px solid var(--line); background:var(--bg); color:var(--ink); border-radius:10px;
+  padding:8px 16px; cursor:pointer; margin-right:8px; } button.main { background:var(--accent); color:var(--bg); border:0; }
+.meta { color:var(--muted); font-size:14px; } a { color:var(--accent); }
+</style></head><body><main>
+<div style="grid-column:1/-1"><h1>Practice: your own positions</h1>
+<p class="sub">Each position is from one of your games, the move before a big mistake. Find a move that keeps everything safe.</p></div>
+<div><div class="board" id="board"></div><p class="meta" id="where"></p></div>
+<div class="panel">
+  <div class="meta" id="count"></div>
+  <div class="task" id="task"></div>
+  <div class="habit" id="hint"></div>
+  <div class="result" id="result"></div>
+  <button id="show">Show answer</button><button class="main" id="next">Next position</button>
+</div>
+</main>
+<script>
+const DRILLS = /*DRILLS*/[];
+const GLYPH = { k:"♚", q:"♛", r:"♜", b:"♝", n:"♞", p:"♟" };
+const files = "abcdefgh";
+let i = 0, picked = null, done = false, firstTry = 0, tried = 0;
+try { const s = JSON.parse(localStorage.getItem("drills") || "{}"); i = (s.i || 0) % Math.max(DRILLS.length, 1); } catch (e) {}
+const $ = id => document.getElementById(id);
+
+function squares(d) {  // board squares in display order
+  const out = [];
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const f = d.flip ? 7 - col : col, r = d.flip ? row : 7 - row;
+    out.push(files[f] + (r + 1));
+  }
+  return out;
+}
+function myColor(d) { return d.flip ? "b" : "w"; }
+function pieceColor(sym) { return sym === sym.toUpperCase() ? "w" : "b"; }
+function targets(d, from) {
+  return Object.keys(d.moves).filter(u => u.startsWith(from)).map(u => u.slice(2, 4));
+}
+function after(d, uci) {  // the board once a move is made (castling moves the rook too, pawns become queens)
+  const b = { ...d.board }, from = uci.slice(0, 2), to = uci.slice(2, 4), sym = b[from];
+  delete b[from];
+  b[to] = uci.length > 4 ? (sym === "P" ? "Q" : "q") : sym;
+  if (sym.toLowerCase() === "k" && Math.abs(files.indexOf(to[0]) - files.indexOf(from[0])) === 2) {
+    const kingside = to[0] === "g", rank = to[1];
+    b[(kingside ? "f" : "d") + rank] = b[(kingside ? "h" : "a") + rank];
+    delete b[(kingside ? "h" : "a") + rank];
+  }
+  return b;
+}
+function draw(marks = {}, board = null) {
+  const d = DRILLS[i], el = $("board"), pieces = board || d.board;
+  el.innerHTML = "";
+  squares(d).forEach((sq, k) => {
+    const div = document.createElement("div");
+    const light = (files.indexOf(sq[0]) + Number(sq[1])) % 2 === 1;
+    div.className = "sq " + (light ? "l" : "d") + (marks[sq] ? " " + marks[sq] : "");
+    const sym = pieces[sq];
+    if (sym) div.innerHTML = `<span class="p ${pieceColor(sym)}">${GLYPH[sym.toLowerCase()]}</span>`;
+    if (k % 8 === 0) div.innerHTML += `<span class="coord">${sq[1]}</span>`;
+    div.onclick = () => click(sq);
+    el.appendChild(div);
+  });
+}
+function show() {
+  const d = DRILLS[i];
+  picked = null; done = false; tried = 0;
+  $("count").textContent = `Position ${i + 1} of ${DRILLS.length} · right first time: ${firstTry}`;
+  $("task").textContent = `You are ${d.flip ? "Black" : "White"}. Your move.`;
+  $("hint").innerHTML = `<b>Remember:</b> ${d.hint}`;
+  $("result").className = "result"; $("result").innerHTML = "";
+  $("where").innerHTML = `${d.where} · <a href="${d.url}" target="_blank" rel="noopener">open game on chess.com</a>`;
+  draw();
+  try { localStorage.setItem("drills", JSON.stringify({ i })); } catch (e) {}
+}
+function click(sq) {
+  const d = DRILLS[i];
+  if (done) return;
+  const sym = d.board[sq];
+  if (sym && pieceColor(sym) === myColor(d)) {
+    picked = sq;
+    const marks = { [sq]: "pick" };
+    targets(d, sq).forEach(t => marks[t] = "to");
+    return draw(marks);
+  }
+  if (!picked) return;
+  const uci = picked + sq, m = d.moves[uci] || d.moves[uci + "q"];
+  if (!m) return;
+  tried++;
+  if (m.good) {
+    if (tried === 1) firstTry++;
+    done = true;
+    $("result").className = "result good";
+    $("result").innerHTML = `${m.san}: yes, that keeps you safe.` +
+      `<small>In the game you played ${d.played}.${m.san === d.best ? "" : " The engine's top move was " + d.best + "."}</small>`;
+    $("count").textContent = `Position ${i + 1} of ${DRILLS.length} · right first time: ${firstTry}`;
+    draw({ [picked]: "ok", [sq]: "ok" }, after(d, d.moves[uci] ? uci : uci + "q"));
+  } else {
+    $("result").className = "result bad";
+    $("result").innerHTML = `${m.san}: not quite. ${m.say}<small>Try again.</small>`;
+    draw({ [picked]: "no", [sq]: "no" });
+  }
+  picked = null;
+}
+$("show").onclick = () => {
+  const d = DRILLS[i];
+  const [uci] = Object.entries(d.moves).find(([u, m]) => m.san === d.best);
+  done = true;
+  $("result").className = "result good";
+  $("result").innerHTML = `Answer: ${d.best}<small>In the game you played ${d.played}.</small>`;
+  draw({ [uci.slice(0, 2)]: "ok", [uci.slice(2, 4)]: "ok" }, after(d, uci));
+};
+$("next").onclick = () => { i = (i + 1) % DRILLS.length; show(); };
+if (DRILLS.length) show(); else $("task").textContent = "No positions yet: run python -m coach.update first.";
+</script></body></html>

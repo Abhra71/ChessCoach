@@ -1,11 +1,11 @@
-"""One step: download new games, check them with Stockfish, rebuild the review page.
+"""One step: download new games, check them with Stockfish, rebuild the review and practice pages.
 
 Run:  python -m coach.update [chess.com username]   (username only needed the first time)
 """
 import sys
 from pathlib import Path
 
-from coach import analyze, fetch, review
+from coach import analyze, drills, fetch, review
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -22,6 +22,8 @@ def main():
     sys.argv = sys.argv[:1]
     analyze.main()
     print(f"review page: {review.build()}")
+    page, n = drills.build()
+    print(f"practice page ({n} positions): {page}")
 
 
 if __name__ == "__main__":

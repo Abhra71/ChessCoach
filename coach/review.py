@@ -54,7 +54,7 @@ def turning_point(r):
     return r["cp_before"] >= -100 and r["cp_after"] <= -300
 
 
-def pick_examples(rows):
+def pick_examples(rows, n=EXAMPLES):
     """Clearest examples: game-turning first, slower games before bullet, then biggest loss; one per game."""
     best = sorted(rows, key=lambda r: (not turning_point(r), r["time_class"] == "bullet", -r["loss"]))
     seen, out = set(), []
@@ -62,7 +62,7 @@ def pick_examples(rows):
         if r["url"] not in seen:
             seen.add(r["url"])
             out.append(r)
-        if len(out) == EXAMPLES:
+        if len(out) == n:
             break
     return out
 
