@@ -17,7 +17,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Practice page: positions from your own games, click your move, it says right or why not | works |
 | Only new games are downloaded and checked (so it can later run by itself) | works |
 | Runs by itself in the background: checks new games every 10 minutes, Windows notification | works |
-| After-game review with arrows on the chess.com board (browser extension) | planned |
+| Browser extension: key moments of your finished games with arrows on the chess.com board | works (beta) |
 | Practice that repeats over days until it sticks, plus matched Lichess puzzles | planned |
 | Voice (talk to the coach) | planned |
 | Windows installer and public beta | planned |
@@ -57,6 +57,19 @@ checks them, rebuilds both pages and shows a Windows notification. Your pages ar
 **http://127.0.0.1:8765/** (review) and **http://127.0.0.1:8765/practice** (this computer only).
 Its own log is `logbook/service.log`.
 
+### Arrows on chess.com (browser extension, beta)
+
+1. Keep the coach running (`python -m coach.autorun install`, or `python -m coach.service` in a terminal).
+2. In Chrome go to `chrome://extensions` (Edge: `edge://extensions`), switch on **Developer mode**, click
+   **Load unpacked** and choose the `extension` folder of this project.
+3. Open one of your finished games on chess.com (`chess.com/game/live/...`). A small **Chess Coach** panel
+   lists the key moments. Click one: the board jumps there and shows the better move (green) and your move
+   (red). "What happened next" shows your move and their answer (orange). The – button shrinks the panel.
+
+**Fair play:** the extension only shows something for games the coach already knows, and the coach only knows
+games that chess.com has archived as finished. During a live game it shows nothing at all. It never moves pieces
+and never sends anything to chess.com; it only talks to the coach on your own computer.
+
 `python -m coach.patterns` prints the full count in the terminal, for example (a ~300-rated player, 140 games):
 
 ```
@@ -85,6 +98,7 @@ Its own log is `logbook/service.log`.
 | `coach/update.py` | one step: new games -> check -> review and practice pages |
 | `coach/service.py` | background helper: update every 10 min, notification, local server for pages and the extension |
 | `coach/autorun.py` | start the helper with Windows (Startup folder shortcut) or remove it |
+| `extension/` | the Chrome/Edge extension (arrows and key-moments panel on chess.com) |
 | `tests/` | `python -m pytest -q tests` |
 
 Your games, results and logbooks stay on your computer in `data/` and `logbook/`. They are never uploaded
