@@ -32,10 +32,11 @@ h1 { font-size:24px; margin:0 0 4px; grid-column:1 / -1; }
 button { font:inherit; border:1px solid var(--line); background:var(--bg); color:var(--ink); border-radius:10px;
   padding:8px 16px; cursor:pointer; margin-right:8px; } button.main { background:var(--accent); color:var(--bg); border:0; }
 .meta { color:var(--muted); font-size:14px; } a { color:var(--accent); }
+.nav { font-size:14px; color:var(--muted); margin-bottom:8px; }
 </style></head><body><main>
-<div style="grid-column:1/-1"><h1>Practice</h1>
+<div style="grid-column:1/-1"><nav class="nav"><a href="review.html">Review</a> · <b>Practice</b></nav><h1>Practice</h1>
 <p class="sub">Positions from your own games (the move before a big mistake) and Lichess puzzles on the same habits. Click a piece, then a square.</p></div>
-<div><div class="board" id="board"></div><p class="meta" id="where"></p></div>
+<div><div class="board" id="board"></div><p class="meta" id="where"></p><p class="meta" id="stats"></p></div>
 <div class="panel">
   <div class="meta" id="count"></div>
   <div class="task" id="task"></div>
@@ -119,6 +120,7 @@ async function right(uci, m, shown) {
   done = true;
   if (!missed) firstTry++;
   counter();
+  save(d, !missed);
   $("result").className = "result good";
   const note = d.kind === "game"
     ? `In the game you played ${d.played}.${m.san === d.best ? "" : " The engine's top move was " + d.best + "."}`
@@ -152,6 +154,20 @@ function showAnswer() {
   missed = true;
   right(pick[0], pick[1], true);
 }
+const served = location.protocol.startsWith("http");  // opened through the coach, which keeps your progress
+function save(d, right) {
+  if (!served || !d.id) return;
+  fetch("/api/practice", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: d.id, kind: d.kind, right }) })
+    .then(r => r.json()).then(stats).catch(() => {});
+}
+function stats(s) {
+  if (!s || !s.answers) return;
+  $("stats").textContent = `So far: ${s.right} of ${s.answers} right first time · ${s.learned} position` +
+    `${s.learned === 1 ? "" : "s"} learned (right 3 times, days apart)`;
+}
+if (served) fetch("/api/stats").then(r => r.json()).then(stats).catch(() => {});
+else $("stats").textContent = "To keep your progress, open this page through the coach: http://127.0.0.1:8765/practice";
 $("show").onclick = () => { if (!done) showAnswer(); };
 $("next").onclick = () => { i = (i + 1) % DRILLS.length; show(); };
 if (DRILLS.length) show(); else $("task").textContent = "No positions yet: run python -m coach.update first.";

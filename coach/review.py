@@ -201,7 +201,12 @@ a {{ color:var(--accent); }}
 .score p {{ flex-basis:100%; margin:0; color:var(--muted); font-size:14px; }}
 .big {{ font-size:30px; font-weight:700; color:var(--accent); margin-right:6px; }}
 .ask {{ border:2px dashed var(--accent); border-radius:14px; padding:18px 22px; }}
+.answers {{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }}
+.answers button {{ font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:10px;
+  padding:8px 14px; cursor:pointer; }} .answers button:first-child {{ background:var(--accent); color:var(--bg); border:0; }}
+.nav {{ font-size:14px; color:var(--muted); margin-bottom:8px; }}
 </style></head><body><main>
+<nav class="nav"><b>Review</b> · <a href="drills.html">Practice</a></nav>
 <h1>Your chess review</h1>
 <p class="sub">{html.escape(player)} · {games} games checked by Stockfish · {date.today():%d %b %Y}</p>
 <p>These are the habits that lost you the most games, with real positions from your own games.
@@ -211,7 +216,17 @@ Red arrow: your move. Orange: what they could do next. Green: the better move.</
 <p>This is the number to bring down. When it falls, your rating rises.</p></div>
 {''.join(sections)}
 <div class="ask"><b>Is this you?</b> Look at the boards. Do you remember moves like these?
-Tell the coach: <i>yes</i>, <i>no</i>, or <i>some of them</i>.</div>
+<div class="answers"><button data-a="yes">Yes, that's me</button><button data-a="some">Some of them</button>
+<button data-a="no">No, not me</button></div><p id="thanks"></p></div>
+<script>
+document.querySelectorAll(".answers button").forEach(b => b.onclick = () => {{
+  const say = t => document.getElementById("thanks").textContent = t;
+  if (!location.protocol.startsWith("http")) return say("Open this page through the coach (http://127.0.0.1:8765/) to save your answer, or just tell the coach.");
+  fetch("/api/verdict", {{ method: "POST", headers: {{ "Content-Type": "application/json" }}, body: JSON.stringify({{ answer: b.dataset.a }}) }})
+    .then(r => say(r.ok ? "Thanks, saved in your logbook." : "Couldn't save it."))
+    .catch(() => say("Couldn't reach the coach. Is it running?"));
+}});
+</script>
 </main></body></html>""", encoding="utf-8")
     return OUT
 

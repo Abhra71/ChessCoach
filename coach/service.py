@@ -19,7 +19,7 @@ from pathlib import Path
 
 import chess
 
-from coach import analyze, drills, fetch, review
+from coach import analyze, drills, fetch, memory, review
 from coach.patterns import classify
 from coach.review import explain, move_number
 
@@ -106,9 +106,31 @@ class Handler(BaseHTTPRequestHandler):
             player = (DATA / "player.txt").read_text().strip() if (DATA / "player.txt").exists() else None
             return self.send(200, json.dumps({"player": player, "last_update": STATE.get("last_update")}),
                              "application/json")
-        pages = {"": "review.html", "/review": "review.html", "/practice": "drills.html"}
+        if path == "/api/stats":
+            return self.send(200, json.dumps(memory.practice_stats()), "application/json")
+        pages = {"": "review.html", "/review": "review.html", "/review.html": "review.html",
+                 "/practice": "drills.html", "/drills.html": "drills.html"}
         if path in pages and (DATA / pages[path]).exists():
             return self.send(200, (DATA / pages[path]).read_bytes(), "text/html; charset=utf-8")
+        self.send(404, "not found", "text/plain")
+
+    def do_POST(self):
+        """Answers from our own pages only: JSON from http://127.0.0.1:8765 (other sites can't send JSON here)."""
+        origin = self.headers.get("Origin")
+        if origin not in (None, f"http://127.0.0.1:{PORT}") or self.headers.get("Content-Type") != "application/json":
+            return self.send(403, "forbidden", "text/plain")
+        try:
+            body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), 10_000)))
+        except ValueError:
+            return self.send(400, "bad json", "text/plain")
+        path = self.path.split("?")[0].rstrip("/")
+        if path == "/api/practice" and body.get("kind") in ("game", "puzzle"):
+            memory.record_practice(str(body.get("id"))[:200], body["kind"], bool(body.get("right")))
+            return self.send(200, json.dumps(memory.practice_stats()), "application/json")
+        if path == "/api/verdict" and body.get("answer") in ("yes", "some", "no"):
+            memory.record_verdict(body["answer"])
+            note_in_logbook(f"Your verdict on the review (\"is this me?\"): {body['answer']}")
+            return self.send(200, "{}", "application/json")
         self.send(404, "not found", "text/plain")
 
     def send(self, code, body, ctype):
@@ -126,6 +148,25 @@ class Handler(BaseHTTPRequestHandler):
 
 
 STATE = {}
+
+
+class Server(ThreadingHTTPServer):
+    """Only one copy may run: no sharing the port (on Windows the default lets a second copy bind it too)."""
+    allow_reuse_address = False
+
+    def server_bind(self):
+        import socket
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
+def note_in_logbook(line):
+    """One line in the player's chess logbook (logbook/chess.md)."""
+    book = ROOT / "logbook" / "chess.md"
+    book.parent.mkdir(exist_ok=True)
+    with open(book, "a", encoding="utf-8") as fh:
+        fh.write(f"- {time.strftime('%d %b %Y')}: {line}\n")
 
 
 def notify(title, text, url):
@@ -152,9 +193,12 @@ def update_once():
     user = (DATA / "player.txt").read_text().strip()
     fetch.fetch(user)
     checked = analyze.main(argv=[])
+    today = time.strftime("%Y-%m-%d")
     if checked:
         review.build()
+    if checked or STATE.get("practice_day") != today:  # new practice every day: new puzzles, due positions
         drills.build()
+        STATE["practice_day"] = today
     STATE["last_update"] = time.strftime("%Y-%m-%d %H:%M")
     return checked
 
@@ -188,7 +232,7 @@ def main():
     log.addHandler(handler)
     log.setLevel(logging.INFO)
     try:
-        server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+        server = Server(("127.0.0.1", PORT), Handler)
     except OSError:
         log.info("already running (port %d in use), exiting", PORT)
         return

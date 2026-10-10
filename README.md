@@ -19,7 +19,8 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Runs by itself in the background: checks new games every 10 minutes, Windows notification | works |
 | Browser extension: key moments of your finished games with arrows on the chess.com board | works (beta) |
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
-| Practice that repeats your own positions over days until they stick | planned |
+| Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
+| "Is this you?" answer on the review page, saved in your logbook | works |
 | Voice (talk to the coach) | planned |
 | Windows installer and public beta | planned |
 
@@ -46,7 +47,9 @@ The practice page gives 12 other positions from your games, the move before a bi
 Lichess puzzles on the same habits (hanging pieces, forks, mate in 1 and 2; rated 400-1200; a new set every day).
 Click a piece, then a square. In your own positions a safe move gets a yes and a bad one gets the reason
 ("then their bishop takes your queen on g7"); every legal move was scored by Stockfish when the page was built,
-so the page needs no internet or engine. In puzzles you see their last move (orange), then find yours; longer
+so the page needs no internet or engine. Opened through the coach (http://127.0.0.1:8765/practice) it keeps
+your answers: a position you miss comes back the next day, one you get right comes back after longer and longer
+gaps (1, 3, 7, 21, 60 days) until it sticks. In puzzles you see their last move (orange), then find yours; longer
 puzzles answer and wait for your next move.
 
 ### Let it run by itself
@@ -104,6 +107,7 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/update.py` | one step: new games -> check -> review and practice pages |
 | `coach/service.py` | background helper: update every 10 min, notification, local server for pages and the extension |
 | `coach/autorun.py` | start the helper with Windows (Startup folder shortcut) or remove it |
+| `coach/memory.py` | practice answers and spacing (which positions come back when), your "is this you?" answers |
 | `extension/` | the Chrome/Edge extension (arrows and key-moments panel on chess.com) |
 | `tests/` | `python -m pytest -q tests` |
 

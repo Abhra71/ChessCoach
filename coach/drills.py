@@ -1,6 +1,7 @@
 """Practice page: positions from the player's own big mistakes. Click a move; the page says if it was good and why not.
 
-Positions are different from the 3 examples per pattern on the review page. If the Lichess puzzles are
+Positions are different from the 3 examples per pattern on the review page; which ones come up is decided by
+coach.memory (missed ones come back the next day, right ones after longer and longer gaps). If the Lichess puzzles are
 downloaded (python -m coach.puzzles), matching puzzles are added, a different set every day.
 Run:  python -m coach.drills
 Output: data/drills.html  (user data, never committed) - open it in any browser.
@@ -15,6 +16,7 @@ from pathlib import Path
 import chess
 import chess.engine
 
+from coach import memory
 from coach.analyze import ENGINE, score_cp, win_chance
 from coach.patterns import classify
 from coach.puzzles import OUT as PUZZLES, THEMES
@@ -85,6 +87,10 @@ def step(board, good, say, reply=None):
     return out
 
 
+def drill_id(r):
+    return f"{r['url']}#{r['ply']}"
+
+
 def drill(eng, pattern, r):
     """A position from the player's own game: every legal move scored by the engine."""
     board = chess.Board(r["fen"])
@@ -93,7 +99,7 @@ def drill(eng, pattern, r):
     good = {m for m, (w, _) in scores.items() if top - w < GOOD}
     best = max(scores, key=lambda m: scores[m][0])
     color = "Black" if board.turn == chess.BLACK else "White"
-    return {"kind": "game", "flip": board.turn == chess.BLACK, "pattern": pattern, "hint": ABOUT[pattern][1],
+    return {"id": drill_id(r), "kind": "game", "flip": board.turn == chess.BLACK, "pattern": pattern, "hint": ABOUT[pattern][1],
             "intro": f"You are {color}. Your move.", "played": r["move"], "best": board.san(best),
             "where": f"From your game: move {move_number(r)}, you are {color}", "url": r["url"],
             "link": "open game on chess.com", "start": squares(board), "last": None,
@@ -133,7 +139,7 @@ def puzzle(p, pattern):
         board.push(right)
         if reply:
             board.push(reply)
-    return {"kind": "puzzle", "flip": color == "Black", "pattern": pattern, "hint": hint,
+    return {"id": p["id"], "kind": "puzzle", "flip": color == "Black", "pattern": pattern, "hint": hint,
             "intro": f"They just played {their_first}. You are {color}: find the best move.",
             "where": f"Lichess puzzle, rated {p['rating']}", "url": f"https://lichess.org/training/{p['id']}",
             "link": "open on lichess.org", "start": start, "last": [first.uci()[:2], first.uci()[2:4]],
@@ -161,9 +167,14 @@ def build():
         if p in ABOUT and p != "stalemated a won game":
             by_pattern.setdefault(p, []).append(r)
     top = sorted(by_pattern, key=lambda p: -len(by_pattern[p]))[:3]
+    chosen = []
+    for p in top:
+        # every example of the pattern except the ones on the review page, clearest first
+        candidates = {drill_id(r): r for r in pick_examples(by_pattern[p], len(by_pattern[p]))[EXAMPLES:]}
+        chosen += [(p, candidates[i]) for i in memory.choose(list(candidates), PER_PATTERN)]
     with chess.engine.SimpleEngine.popen_uci(str(ENGINE)) as eng:
         eng.configure({"Threads": 4, "Hash": 128})
-        drills = [drill(eng, p, r) for p in top for r in pick_examples(by_pattern[p], EXAMPLES + PER_PATTERN)[EXAMPLES:]]
+        drills = [drill(eng, p, r) for p, r in chosen]
     puzzles = pick_puzzles(by_pattern, top, seed=date.today().isoformat())
     drills = [d for pair in zip_longest(drills, puzzles) for d in pair if d]  # own position, puzzle, own, ...
     page = (Path(__file__).parent / "drills_template.html").read_text(encoding="utf-8")

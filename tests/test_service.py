@@ -21,3 +21,14 @@ def test_key_moment_has_arrows_and_words():
 def test_at_most_three_moments_in_game_order():
     rows = [dict(HANG, ply=p, loss=30 + p) for p in (11, 21, 31, 41)]
     assert [m["ply"] for m in key_moments(rows)] == [21, 31, 41]
+
+
+def test_only_one_copy_can_run():
+    import pytest
+    from coach.service import Handler, Server
+    first = Server(("127.0.0.1", 0), Handler)
+    try:
+        with pytest.raises(OSError):
+            Server(("127.0.0.1", first.server_address[1]), Handler)
+    finally:
+        first.server_close()
