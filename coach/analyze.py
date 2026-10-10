@@ -1,6 +1,6 @@
 """Check every move the player made with Stockfish and save one record per move.
 
-Run:  python -m coach.analyze            (all games in data/)
+Run:  python -m coach.analyze   (all games in data/, for the player in data/player.txt)
 Output: data/moves.jsonl  (user data, never committed)
 """
 import glob
@@ -17,7 +17,6 @@ import chess.pgn
 
 ROOT = Path(__file__).resolve().parent.parent
 ENGINE = ROOT / "engine" / "stockfish" / "stockfish-windows-x86-64-universal.exe"
-PLAYER = "gushynanda"
 DEPTH = 14
 VALUE = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
 
@@ -35,9 +34,9 @@ def material(board, color):
     return sum(VALUE[p.piece_type] for p in board.piece_map().values() if p.color == color)
 
 
-def analyse_game(game_json):
+def analyse_game(game_json, player):
     game = chess.pgn.read_game(io.StringIO(game_json["pgn"]))
-    me = chess.WHITE if game_json["white"]["username"].lower() == PLAYER else chess.BLACK
+    me = chess.WHITE if game_json["white"]["username"].lower() == player else chess.BLACK
     out = []
     with chess.engine.SimpleEngine.popen_uci(str(ENGINE)) as eng:
         eng.configure({"Threads": 1, "Hash": 64})
@@ -83,10 +82,11 @@ def analyse_game(game_json):
 def main():
     games = [g for f in sorted(glob.glob(str(ROOT / "data" / "games-*.json")))
              for g in json.load(open(f))["games"] if g.get("rules") == "chess"]
+    player = (ROOT / "data" / "player.txt").read_text().strip().lower()
     dest = ROOT / "data" / "moves.jsonl"
     done = 0
     with ProcessPoolExecutor(max_workers=8) as pool, open(dest, "w") as fh:
-        for rows in pool.map(analyse_game, games):
+        for rows in pool.map(analyse_game, games, [player] * len(games)):
             for r in rows:
                 fh.write(json.dumps(r) + "\n")
             done += 1
