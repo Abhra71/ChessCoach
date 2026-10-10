@@ -19,6 +19,7 @@ OUT = ROOT / "data" / "review.html"
 EXAMPLES = 3
 TOP = 3
 LOSING_MATERIAL = ("left a piece hanging", "walked into a fork or trick")
+DRAWS = ("agreed", "repetition", "stalemate", "insufficient", "50move", "timevsinsufficient")
 
 # what each pattern means and the habit that fixes it, in plain words
 ABOUT = {
@@ -129,6 +130,37 @@ def example_html(pattern, r):
     </article>"""
 
 
+def biggest(rows, n=3):
+    """The n mistakes that cost the most in one game, in game order."""
+    big = sorted((r for r in rows if classify(r)), key=lambda r: -r["loss"])[:n]
+    return sorted(big, key=lambda r: r["ply"])
+
+
+def last_game_html(rows, games_by_url, player):
+    """Section about the most recent checked game: result, pieces given away, key moments on boards."""
+    if not rows:
+        return ""
+    url = max({r["url"] for r in rows}, key=lambda u: games_by_url.get(u, {}).get("end_time", 0))
+    g = games_by_url.get(url)
+    mine = [r for r in rows if r["url"] == url]
+    if not g:
+        return ""
+    color = "white" if g["white"]["username"].lower() == player.lower() else "black"
+    them = g["black" if color == "white" else "white"]
+    result = {"win": "you won"}.get(g[color]["result"], "draw" if g[color]["result"] in DRAWS else "you lost")
+    when = date.fromtimestamp(g["end_time"]).strftime("%d %b %Y")
+    lost = sum(1 for r in mine if classify(r) in LOSING_MATERIAL)
+    moments = biggest(mine)
+    body = "".join(example_html(classify(r), r) for r in moments) if moments else         "<p>No big mistakes in this game. Well played.</p>"
+    return f"""
+    <section class="last">
+      <h2>Your last game</h2>
+      <p class="stat">vs {html.escape(them['username'])} ({them['rating']}) · {result} · {when} ·
+        pieces given away: <b>{lost}</b> · <a href="{html.escape(url)}" target="_blank" rel="noopener">open on chess.com</a></p>
+      {body}
+    </section>"""
+
+
 def pieces_lost(rows, end_time, last=20):
     """Pieces given away per game (hanging + forks/tricks): over all games and over the last `last` games."""
     lost = collections.Counter(r["url"] for r in rows if classify(r) in LOSING_MATERIAL)
@@ -139,8 +171,9 @@ def pieces_lost(rows, end_time, last=20):
 
 def build():
     rows = [json.loads(line) for line in open(ROOT / "data" / "moves.jsonl")]
-    end_time = {g["url"]: g["end_time"] for f in (ROOT / "data").glob("games-*.json")
-                for g in json.loads(f.read_text())["games"]}
+    games_by_url = {g["url"]: g for f in (ROOT / "data").glob("games-*.json")
+                    for g in json.loads(f.read_text())["games"]}
+    end_time = {u: g["end_time"] for u, g in games_by_url.items()}
     overall, recent, n_recent = pieces_lost(rows, end_time)
     player = (ROOT / "data" / "player.txt").read_text().strip()
     hits = collections.defaultdict(list)
@@ -211,6 +244,7 @@ a {{ color:var(--accent); }}
 <p class="sub">{html.escape(player)} · {games} games checked by Stockfish · {date.today():%d %b %Y}</p>
 <p>These are the habits that lost you the most games, with real positions from your own games.
 Red arrow: your move. Orange: what they could do next. Green: the better move.</p>
+{last_game_html(rows, games_by_url, player)}
 <div class="score"><div><span class="big">{overall:.1f}</span> pieces given away per game (all {games} games)</div>
 <div><span class="big">{recent:.1f}</span> in your last {n_recent} games</div>
 <p>This is the number to bring down. When it falls, your rating rises.</p></div>

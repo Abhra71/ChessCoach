@@ -86,9 +86,7 @@ def _after(fen, move):
 
 def key_moments(rows):
     """The few moves that cost the most in one game, in game order."""
-    big = [r for r in rows if classify(r)]
-    big = sorted(big, key=lambda r: -r["loss"])[:MOMENTS]
-    return [moment(r) for r in sorted(big, key=lambda r: r["ply"])]
+    return [moment(r) for r in review.biggest(rows, MOMENTS)]
 
 
 MOMENT_CACHE = Moments()
