@@ -1,6 +1,6 @@
 """Download all finished games of a chess.com player (public API, no login needed).
 
-Run:  python -m coach.fetch <chess.com username>
+Run:  python -m coach.fetch <chess.com username>   (add --all to download every month again)
 Output: data/games-YYYY-MM.json, data/player.txt
 """
 import json
@@ -18,21 +18,30 @@ def get_json(url):
         return json.load(resp)
 
 
-def main():
-    if len(sys.argv) != 2:
-        sys.exit("usage: python -m coach.fetch <chess.com username>")
-    user = sys.argv[1].lower()
+def fetch(user, refresh_all=False):
+    """Save the player's monthly game files. Only months not saved yet, plus the latest month, are downloaded.
+    Returns the number of games that were not saved before."""
     DATA.mkdir(exist_ok=True)
     archives = get_json(f"https://api.chess.com/pub/player/{user}/games/archives")["archives"]
-    total = 0
-    for url in archives:
+    new = 0
+    for i, url in enumerate(archives):
         year, month = url.rstrip("/").split("/")[-2:]
+        path = DATA / f"games-{year}-{month}.json"
+        latest = i == len(archives) - 1
+        if path.exists() and not latest and not refresh_all:
+            continue
+        before = len(json.loads(path.read_text())["games"]) if path.exists() else 0
         games = get_json(url)
-        (DATA / f"games-{year}-{month}.json").write_text(json.dumps(games))
-        total += len(games["games"])
-        print(f"{year}-{month}: {len(games['games'])} games")
+        path.write_text(json.dumps(games))
+        new += len(games["games"]) - before
     (DATA / "player.txt").write_text(user)
-    print(f"{total} games saved in {DATA}")
+    return new
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit("usage: python -m coach.fetch <chess.com username> [--all]")
+    print(f"{fetch(sys.argv[1].lower(), '--all' in sys.argv)} new games saved in {DATA}")
 
 
 if __name__ == "__main__":

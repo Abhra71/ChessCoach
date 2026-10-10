@@ -1,12 +1,14 @@
 """Check every move the player made with Stockfish and save one record per move.
 
-Run:  python -m coach.analyze   (all games in data/, for the player in data/player.txt)
+Run:  python -m coach.analyze   (games in data/ not checked yet, for the player in data/player.txt)
+      python -m coach.analyze --all   (check every game again)
 Output: data/moves.jsonl  (user data, never committed)
 """
 import glob
 import io
 import json
 import math
+import os
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -17,6 +19,8 @@ import chess.pgn
 
 ROOT = Path(__file__).resolve().parent.parent
 ENGINE = ROOT / "engine" / "stockfish" / "stockfish-windows-x86-64-universal.exe"
+MOVES = ROOT / "data" / "moves.jsonl"
+CHECKED = ROOT / "data" / "checked.txt"
 DEPTH = 14
 VALUE = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
 
@@ -79,19 +83,36 @@ def analyse_game(game_json, player):
     return out
 
 
+def checked_games():
+    """URLs of games already checked (kept in data/checked.txt, so games with no moves of ours are skipped too)."""
+    if CHECKED.exists():
+        return set(CHECKED.read_text().split())
+    if MOVES.exists():  # older data from before checked.txt existed
+        return {json.loads(line)["url"] for line in open(MOVES)}
+    return set()
+
+
 def main():
-    games = [g for f in sorted(glob.glob(str(ROOT / "data" / "games-*.json")))
-             for g in json.load(open(f))["games"] if g.get("rules") == "chess"]
     player = (ROOT / "data" / "player.txt").read_text().strip().lower()
-    dest = ROOT / "data" / "moves.jsonl"
-    done = 0
-    with ProcessPoolExecutor(max_workers=8) as pool, open(dest, "w") as fh:
-        for rows in pool.map(analyse_game, games, [player] * len(games)):
+    redo = "--all" in sys.argv
+    done_urls = set() if redo else checked_games()
+    games = [g for f in sorted(glob.glob(str(ROOT / "data" / "games-*.json")))
+             for g in json.load(open(f))["games"]
+             if g.get("rules") == "chess" and g["url"] not in done_urls]
+    if not games:
+        print("no new games to check", file=sys.stderr)
+        CHECKED.write_text("\n".join(sorted(done_urls)) + "\n")
+        return 0
+    mode = "w" if redo else "a"
+    with ProcessPoolExecutor(max_workers=min(8, os.cpu_count() or 1)) as pool, open(MOVES, mode) as fh:
+        for done, (game, rows) in enumerate(zip(games, pool.map(analyse_game, games, [player] * len(games))), 1):
             for r in rows:
                 fh.write(json.dumps(r) + "\n")
-            done += 1
+            done_urls.add(game["url"])
             print(f"\r{done}/{len(games)} games", end="", file=sys.stderr, flush=True)
-    print(f"\nwrote {dest}", file=sys.stderr)
+    CHECKED.write_text("\n".join(sorted(done_urls)) + "\n")
+    print(f"\nchecked {len(games)} new games -> {MOVES}", file=sys.stderr)
+    return len(games)
 
 
 if __name__ == "__main__":

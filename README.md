@@ -13,6 +13,9 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Download a player's games from chess.com | works |
 | Check every move with Stockfish and find the big mistakes | works |
 | Sort mistakes into patterns (hanging pieces, missed captures, forks, missed mates, stalemated wins) | works |
+| Review page: your top 3 patterns on real boards from your own games, in plain words | works |
+| Only new games are downloaded and checked (so it can later run by itself) | works |
+| Runs by itself in the background after each game | planned |
 | After-game review with arrows on the chess.com board (browser extension) | planned |
 | Drills built from your own mistakes, matched puzzles | planned |
 | Voice (talk to the coach) | planned |
@@ -22,13 +25,19 @@ games, and trains you out of them, one or two things at a time, at your level.
 
 ```
 pip install -r requirements.txt
-python -m coach.get_engine                # downloads Stockfish (~80 MB) into engine/
-python -m coach.fetch <your chess.com username>
-python -m coach.analyze                   # checks every move you made; ~10 min for 150 games on 8 cores
-python -m coach.patterns                  # prints your mistake patterns
+python -m coach.get_engine                       # downloads Stockfish (~80 MB) into engine/
+python -m coach.update <your chess.com username>
 ```
 
-Example output (a ~300-rated player, 140 games):
+`update` downloads your games, checks every move you made with Stockfish (about 10 minutes for 150 games on
+8 cores, the first time) and writes **`data/review.html`**: open it in your browser. Run `python -m coach.update`
+again after you play: it only downloads and checks the new games.
+
+The review page shows your top 3 mistake patterns, how often each happened, the habit that fixes it, and
+3 real positions from your games for each: your move (red), what they could do next (orange), the better
+move (green), with a link to the game on chess.com.
+
+`python -m coach.patterns` prints the full count in the terminal, for example (a ~300-rated player, 140 games):
 
 ```
 150 x left a piece hanging         in  82 games  (under 30s on clock: 16)
@@ -49,8 +58,10 @@ Example output (a ~300-rated player, 140 games):
 |---|---|
 | `coach/fetch.py` | downloads games from the chess.com public API (no login) |
 | `coach/get_engine.py` | downloads the official Stockfish release |
-| `coach/analyze.py` | checks every move, writes `data/moves.jsonl` |
+| `coach/analyze.py` | checks every move of games not checked yet, writes `data/moves.jsonl` |
 | `coach/patterns.py` | sorts big mistakes into patterns |
+| `coach/review.py` | builds `data/review.html` (top patterns on real boards) |
+| `coach/update.py` | one step: new games -> check -> review page |
 | `tests/` | `python -m pytest -q tests` |
 
 Your games, results and logbooks stay on your computer in `data/` and `logbook/`. They are never uploaded
