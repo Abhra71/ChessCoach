@@ -1,0 +1,6 @@
+# user data, keys and logbooks never go in the repo
+data/
+logbook/
+engine/
+__pycache__/
+*.pyc
