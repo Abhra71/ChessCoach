@@ -46,6 +46,23 @@ def tray(show, quit_app):
     return icon
 
 
+def allow_microphone(window):
+    """Let our own page (127.0.0.1) use the microphone for "Talk", without an endless permission wait.
+    Any other page's request is left alone (WebView2 decides as usual)."""
+    import System
+    from Microsoft.Web.WebView2.Core import CoreWebView2PermissionKind, CoreWebView2PermissionState
+    browser = window.native.browser
+
+    def on_permission(sender, args):
+        if args.Uri.startswith("http://127.0.0.1:") and args.PermissionKind == CoreWebView2PermissionKind.Microphone:
+            args.State = CoreWebView2PermissionState.Allow
+
+    def subscribe():  # the engine may only be touched from the window's own thread
+        browser.webview.CoreWebView2.PermissionRequested += on_permission
+
+    window.native.Invoke(System.Action(subscribe))
+
+
 def main():
     import webview
 
@@ -81,6 +98,16 @@ def main():
         return False
 
     window.events.closing += on_closing
+
+    def on_loaded():
+        if not state.get("mic"):
+            state["mic"] = True
+            try:
+                allow_microphone(window)
+            except Exception as e:  # never stop the app over the microphone
+                service.log.warning("microphone permission hook failed: %s", e)
+
+    window.events.loaded += on_loaded
     service.SHOW = lambda where: threading.Thread(target=show, args=(where,), daemon=True).start()
     icon = tray(show, quit_app)
     webview.start(private_mode=False, storage_path=str(service.DATA.parent / "webview"))
