@@ -63,9 +63,12 @@ def allow_microphone(window):
     window.native.Invoke(System.Action(subscribe))
 
 
-def at_login():
+def at_login(set_up):
     """Started by Windows at sign-in (not by the player)? Then wait quietly by the clock instead of opening a window.
-    The installer passes --background; the Store app's start-up task can't pass anything, so: just signed in, no link."""
+    The installer passes --background; the Store app's start-up task can't pass anything, so: just signed in, no link.
+    Never before set-up: the very first start (a new player, or a Store tester) always shows the welcome screen."""
+    if not set_up:
+        return False
     if "--background" in sys.argv:
         return True
     if not PACKAGED or len(sys.argv) > 1 or sys.platform != "win32":
@@ -91,7 +94,7 @@ def main():
 
     state = {"quitting": False}
     place_extension()
-    window = webview.create_window(NAME, f"{service.URL}/#/{route}", width=1240, height=820, hidden=at_login(),
+    window = webview.create_window(NAME, f"{service.URL}/#/{route}", width=1240, height=820, hidden=at_login(bool(service.player())),
                                    min_size=(900, 620), background_color="#0A0A0A")
 
     def show(where):

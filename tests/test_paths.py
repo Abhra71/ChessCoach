@@ -16,3 +16,21 @@ def test_store_manifest_matches_partner_center():
     assert 'Name="Abhra71.Knightwise"' in text
     assert 'Publisher="CN=D43461BE-8C8C-4E7A-A1D9-5573364016D1"' in text
     assert "<PublisherDisplayName>Abhra71</PublisherDisplayName>" in text
+
+
+def test_store_app_copies_the_extension(tmp_path, monkeypatch):
+    target = tmp_path / "Knightwise" / "extension"
+    monkeypatch.setattr(paths, "PACKAGED", True)
+    monkeypatch.setattr(paths, "EXTENSION", target)
+    paths.place_extension()
+    assert (target / "manifest.json").exists() and (target / "coach.js").exists()
+    (target / "coach.js").write_text("old", encoding="utf-8")
+    paths.place_extension()  # same version: left alone
+    assert (target / "coach.js").read_text(encoding="utf-8") == "old"
+
+
+def test_first_start_always_shows_the_window(monkeypatch):
+    from coach import app
+    monkeypatch.setattr(app.sys, "argv", ["Knightwise.exe", "--background"])
+    assert app.at_login(set_up=False) is False
+    assert app.at_login(set_up=True) is True

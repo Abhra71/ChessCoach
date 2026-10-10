@@ -634,7 +634,7 @@ async function welcome() {
       <div class="does"><div><b>It does</b><ul><li>Check every move of your finished games with Stockfish</li>
         <li>Show the key moments, with arrows</li><li>Train you on your own positions</li><li>Run quietly and check each new game</li></ul></div>
         <div class="no"><b>It never</b><ul><li>Helps during a game against a real person</li><li>Moves pieces for you</li>
-        <li>Needs your password</li><li>Sends your data anywhere</li></ul></div></div>
+        <li>Needs your password</li><li>Sells or shares your data</li></ul></div></div>
       <button class="btn primary" id="next1">Get started</button>`;
     $("#next1").onclick = name;
   }
