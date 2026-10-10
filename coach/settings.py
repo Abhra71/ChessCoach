@@ -76,6 +76,6 @@ def public():
     for slot in SLOTS:
         key = get_key(slot)
         slots[slot] = {"provider": s[slot]["provider"], "set": bool(key), "ends": key[-4:] if key else None}
-    from coach import voice
+    from coach import hearing, voice
     return {"theme": s["theme"], "voice": s["voice"], "voice_name": s["voice_name"], "voices": voice.CHOICES,
-            "voice_ready": voice.available(), "slots": slots, "providers": PROVIDERS}
+            "voice_ready": voice.available(), "listen_ready": hearing.available(), "slots": slots, "providers": PROVIDERS}

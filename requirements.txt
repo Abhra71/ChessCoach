@@ -4,5 +4,6 @@ pystray
 pywebview
 keyring
 kokoro-onnx
+faster-whisper
 anthropic
 pytest

@@ -166,3 +166,4 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 
 /* the coach's own words (AI) */
 .coach-says { border-left: 2px solid var(--text); padding: 6px 0 6px 12px; line-height: 1.6; }
+.btn.mic.rec { border-color: var(--red); color: var(--red); }

@@ -58,6 +58,62 @@ const Voice = (() => {  // the coach speaks sentence by sentence; the next one i
   return { speak, stop, set(v) { on = v; if (!v) stop(); }, get on() { return on; } };
 })();
 
+// ---------- microphone ----------
+const Mic = (() => {  // records 16 kHz mono in the window; the coach turns it into text on this computer
+  let ctx = null, stream = null, node = null, chunks = [];
+  async function start() {
+    fetch("/api/listen/warm").catch(() => {});
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+    ctx = new AudioContext({ sampleRate: 16000 });
+    const src = ctx.createMediaStreamSource(stream);
+    node = ctx.createScriptProcessor(4096, 1, 1);
+    chunks = [];
+    node.onaudioprocess = e => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+    src.connect(node); node.connect(ctx.destination);
+  }
+  async function stop() {
+    if (!ctx) return "";
+    node.disconnect(); stream.getTracks().forEach(t => t.stop()); await ctx.close(); ctx = null;
+    const n = chunks.reduce((a, c) => a + c.length, 0), pcm = new Int16Array(n);
+    let i = 0;
+    for (const c of chunks) for (const v of c) pcm[i++] = Math.max(-1, Math.min(1, v)) * 32767;
+    const r = await fetch("/api/listen", { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: pcm.buffer });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.message || "Couldn't hear that.");
+    return j.text;
+  }
+  return { start, stop, get on() { return !!ctx; } };
+})();
+
+// a question box with a microphone: onAsk(text) answers it
+function askBox(el, { placeholder, enabled, listen, onAsk }) {
+  el.innerHTML = `<div class="row"><input class="field" data-q placeholder="${esc(enabled ? placeholder : "Add an AI key in Settings to ask the coach")}" ${enabled ? "" : "disabled"}>
+    ${listen && enabled ? `<button class="btn mic" data-mic title="Hold to talk, or click to start and stop">Talk</button>` : ""}
+    <button class="btn primary" data-ask ${enabled ? "" : "disabled"}>Ask</button></div><div data-a class="small" style="margin-top:8px"></div>`;
+  if (!enabled) return;
+  const q = $("[data-q]", el), out = $("[data-a]", el), mic = $("[data-mic]", el);
+  const go = async () => {
+    const text = q.value.trim(); if (!text) return;
+    out.innerHTML = `<span class="muted">Thinking…</span>`;
+    try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>`; Voice.speak(r.text); }
+    catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  };
+  $("[data-ask]", el).onclick = go;
+  q.onkeydown = e => { if (e.key === "Enter") go(); };
+  if (mic) mic.onclick = async () => {
+    if (!Mic.on) {
+      Voice.stop();
+      try { await Mic.start(); } catch (e) { out.innerHTML = `<span class="err">The microphone isn't available (${esc(e.message)}).</span>`; return; }
+      mic.textContent = "Stop"; mic.classList.add("rec"); out.innerHTML = `<span class="muted">Listening… click Stop when you're done.</span>`;
+    } else {
+      mic.textContent = "Talk"; mic.classList.remove("rec"); out.innerHTML = `<span class="muted">Writing down what you said…</span>`;
+      try { const text = await Mic.stop(); if (!text) { out.innerHTML = `<span class="muted">I didn't catch that. Try again.</span>`; return; }
+        q.value = text; go(); }
+      catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+    }
+  };
+}
+
 // ---------- shell ----------
 function shell(active, body) {
   const item = (route, name, icon) =>
@@ -144,6 +200,7 @@ async function home() {
           <h3>vs ${esc(last.opponent)} <span class="faint">(${last.opponent_rating})</span> · <span class="${last.result === "loss" ? "delta bad" : ""}">${cap(last.result)}</span></h3>
           <p class="sub">${esc(last.date)} · ${esc(last.time_class)} · ${last.pieces_lost} pieces given away · ${last.moments} key moments</p></div>
         <a class="btn" href="#/games/${last.id}">Review game</a></div>` : ""}
+      <div class="box"><h2>Ask the coach</h2><div id="askbox"></div></div>
       <p class="note">Practice so far: ${h.practice.answers} answers, ${h.practice.right} right first time, ${h.practice.learned} positions learned.</p>
     </div>`;
   const briefing = [`${hello}, ${h.player}.`,
@@ -152,6 +209,9 @@ async function home() {
     `You give away ${h.pieces_per_game.toFixed(1)} pieces per game, and ${h.pieces_last20.toFixed(1)} in your last 20 games${better ? ", which is better" : ""}.`,
     last ? `Your last game was a ${last.result} against ${last.opponent}, with ${last.moments} key moments to look at.` : ""].join(" ");
   $("#brief").onclick = () => Voice.speak(briefing, true);
+  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "e.g. How do I stop leaving pieces hanging?",
+    enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.listen_ready,
+    onAsk: q => api("/api/ask", { question: q }) }));
 }
 
 // ---------- games ----------
@@ -191,10 +251,7 @@ async function gameView(id) {
       <div class="stack">
         <h2>${g.key_moments.length ? `${g.key_moments.length} key moments` : "No big mistakes in this game"}</h2>
         <div class="stack" id="moments"></div>
-        <div class="box stack" style="padding:14px"><h2 style="margin:0">Ask the coach</h2>
-          <div class="row"><input class="field" id="question" placeholder="${aiReady ? "e.g. Why is my bishop in danger here?" : "Add an AI key in Settings to ask questions"}" ${aiReady ? "" : "disabled"}>
-            <button class="btn primary" id="askbtn" ${aiReady ? "" : "disabled"}>Ask</button></div>
-          <div id="answer" class="small"></div></div>
+        <div class="box stack" style="padding:14px"><h2 style="margin:0">Ask the coach about this position</h2><div id="askbox"></div></div>
         <div class="box" style="padding:12px"><h2>Moves</h2><div class="movelist" id="moves"></div></div>
       </div>
     </div>`;
@@ -240,18 +297,8 @@ async function gameView(id) {
     $("#moves").innerHTML = html;
     $("#moves").querySelectorAll("span[data-p]").forEach(s => s.onclick = () => { ply = Number(s.dataset.p); view = "after"; draw(); });
   }
-  async function ask() {
-    const q = $("#question").value.trim();
-    if (!q) return;
-    const m = momentAt(ply);
-    $("#answer").innerHTML = `<span class="muted">Looking at the position…</span>`;
-    try {
-      const r = await api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: m ? m.ply : null });
-      $("#answer").innerHTML = `<div class="coach-says">${esc(r.text)}</div>`;
-      Voice.speak(r.text);
-    } catch (err) { $("#answer").innerHTML = `<span class="err">${esc(err.message)}</span>`; }
-  }
-  if (aiReady) { $("#askbtn").onclick = ask; $("#question").onkeydown = e => { if (e.key === "Enter") ask(); }; }
+  askBox($("#askbox"), { placeholder: "e.g. Why is my bishop in danger here?", enabled: aiReady, listen: cfg.listen_ready,
+    onAsk: q => { const m = momentAt(ply); return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: m ? m.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go; view = "before";
     ply = v === "0" ? 0 : v === "end" ? g.positions.length - 1 : Math.max(0, Math.min(g.positions.length - 1, ply + Number(v)));
@@ -367,7 +414,9 @@ async function settingsView() {
           <span class="small muted">${s.voice_ready ? (s.voice ? "On" : "Off") : "Voice files not installed"}</span></div>
           <div class="row"><select class="field" id="voicename" style="max-width:240px">${Object.entries(s.voices).map(([k, v]) =>
             `<option value="${k}" ${k === s.voice_name ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>
-          <button class="btn" id="sample">Play sample</button></div></div></div>
+          <button class="btn" id="sample">Play sample</button></div>
+          <div class="row"><span class="small ${s.listen_ready ? "ok-text" : "muted"}" id="listenstate">${s.listen_ready ? "Listening is on: use Talk to ask by voice." : "Ask by voice needs the listening model (about 485 MB, once)."}</span>
+            ${s.listen_ready ? "" : `<button class="btn" id="getlisten">Install listening</button>`}</div></div></div>
       <div class="settings-row"><div><h3>AI explanations</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.
         Without one it uses the engine's built-in sentences. Keys are kept in Windows Credential Manager, encrypted for your Windows account,
         and are only sent to the provider you choose.</p></div>
@@ -388,6 +437,18 @@ async function settingsView() {
   const SAMPLE = "Hi, I'm your chess coach. Before every move, ask: what can they take?";
   $("#voicename").onchange = async e => { await api("/api/settings", { voice_name: e.target.value }); Voice.speak(SAMPLE, true); };
   $("#sample").onclick = () => Voice.speak(SAMPLE, true);
+  if ($("#getlisten")) $("#getlisten").onclick = async () => {
+    $("#getlisten").disabled = true;
+    await api("/api/voice/install-listening", {});
+    for (;;) {
+      const st = await api("/api/status").catch(() => ({}));
+      const x = st.listen_install;
+      if (!x) { settingsView(); return; }
+      if (x.error) { $("#listenstate").textContent = "Download failed: " + x.error; $("#getlisten").disabled = false; return; }
+      $("#listenstate").textContent = x.total ? `Downloading… ${Math.round(100 * x.done / x.total)}%` : "Starting download…";
+      await wait(1000);
+    }
+  };
   $("#folder").onclick = () => api("/api/open-folder", {}).catch(() => {});
   $("#saveuser").onclick = async () => {
     const name = $("#user").value.trim();

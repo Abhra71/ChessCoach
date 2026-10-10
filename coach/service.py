@@ -113,6 +113,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
             STATE["extension_seen"] = time.strftime("%Y-%m-%d %H:%M")
             return self.send(200, "{}", "application/json")
+        if path == "/api/listen/warm":  # the player pressed Talk: load the listening model while they speak
+            from coach import hearing
+            if hearing.available():
+                threading.Thread(target=hearing._whisper, daemon=True).start()
+            return self.send(200, "{}", "application/json")
         if path == "/api/stats":
             return self.send(200, json.dumps(memory.practice_stats()), "application/json")
         from coach import insights
@@ -145,7 +150,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Answers from our own pages only: JSON from http://127.0.0.1:8765 (other sites can't send JSON here)."""
         origin = self.headers.get("Origin")
-        if origin not in (None, URL) or self.headers.get("Content-Type") != "application/json":
+        if origin not in (None, URL):
+            return self.send(403, "forbidden", "text/plain")
+        if self.path.startswith("/api/listen") and self.headers.get("Content-Type") == "application/octet-stream":
+            return self.listen()
+        if self.headers.get("Content-Type") != "application/json":
             return self.send(403, "forbidden", "text/plain")
         try:
             body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), 10_000)))
@@ -193,6 +202,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps({"ok": ok, "message": message}), "application/json")
         if path in ("/api/explain", "/api/ask"):
             return self.coach_ai(path, body)
+        if path == "/api/voice/install-listening":
+            if not STATE.get("listen_install"):
+                threading.Thread(target=install_listening, daemon=True).start()
+            return self.send(200, "{}", "application/json")
         if path == "/api/keys/remove":
             try:
                 settings.remove_key(str(body.get("slot")))
@@ -209,6 +222,23 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, "{}", "application/json")
         self.send(404, "not found", "text/plain")
 
+    def listen(self):
+        """The player's spoken question: 16 kHz 16-bit mono samples from the app -> text (Whisper, on this computer)."""
+        from coach import hearing
+        if not hearing.available():
+            return self.send(503, json.dumps({"message": "Listening isn't installed. Settings > Voice."}), "application/json")
+        size = int(self.headers.get("Content-Length", 0))
+        if not 0 < size <= 60 * hearing.RATE * 2:  # at most a minute of speech
+            return self.send(400, json.dumps({"message": "Too long or empty."}), "application/json")
+        import numpy as np
+        samples = np.frombuffer(self.rfile.read(size), dtype="<i2").astype(np.float32) / 32768
+        try:
+            text = hearing.transcribe(samples)
+        except Exception as e:
+            log.exception("listening failed")
+            return self.send(500, json.dumps({"message": str(e)[:200]}), "application/json")
+        return self.send(200, json.dumps({"text": text}), "application/json")
+
     def coach_ai(self, path, body):
         """AI explanation of a key moment, or an answer to the player's question (needs a key in Settings)."""
         from coach import ai, insights, live_engine
@@ -223,9 +253,14 @@ class Handler(BaseHTTPRequestHandler):
                 answer = ai.explain(moment_facts(r, classify(r)), rating)
             else:
                 fen = str(body.get("fen", ""))
-                chess.Board(fen)  # refuse anything that isn't a position
-                with live_engine.LOCK:
-                    context = {"position": position_facts(fen, live_engine.get())}
+                if fen:
+                    chess.Board(fen)  # refuse anything that isn't a position
+                    with live_engine.LOCK:
+                        context = {"position": position_facts(fen, live_engine.get())}
+                else:  # a general question: answer from the player's own record
+                    h = insights.home()
+                    context = {"player_record": {k: h.get(k) for k in ("games", "results", "rating", "focus", "patterns",
+                                                                      "pieces_per_game", "pieces_last20", "trend")}}
                 if r:
                     context["key_moment"] = moment_facts(r, classify(r))
                 answer = ai.ask(str(body.get("question", "")), context, rating)
@@ -299,7 +334,7 @@ def status():
     return {"player": player(), "last_update": STATE.get("last_update"), "phase": STATE.get("phase"),
             "done": STATE.get("done", 0), "total": STATE.get("total", 0), "error": STATE.get("error"),
             "review_ready": (DATA / "review.html").exists(), "extension_seen": STATE.get("extension_seen"),
-            "extension_path": str(EXTENSION), "browsers": sorted(browsers())}
+            "extension_path": str(EXTENSION), "browsers": sorted(browsers()), "listen_install": STATE.get("listen_install")}
 
 
 def set_player(username):
@@ -433,6 +468,18 @@ def loop():
             STATE.update(phase="error", error=str(e)[:200])
         WAKE.wait(EVERY)
         WAKE.clear()
+
+
+def install_listening():
+    """Download the listening model in the background; progress shows in /api/status."""
+    from coach.get_voice import download_hearing
+    STATE["listen_install"] = {"done": 0, "total": 0}
+    try:
+        download_hearing(lambda done, total: STATE.update(listen_install={"done": done, "total": total}))
+        STATE["listen_install"] = None
+    except Exception as e:
+        log.exception("listening download failed")
+        STATE["listen_install"] = {"error": str(e)[:200]}
 
 
 def warm_voice():
