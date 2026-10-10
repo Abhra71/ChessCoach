@@ -6,6 +6,10 @@ better moves with arrows on the chess.com board itself, picks what to learn next
 For everyone from day one, tuned to each player's level. (Replaces Jarvis, archived 10 Oct 2026:
 github.com/Abhra71/Jarvis; keys, Whisper models and data kept in `C:\Syntax_Assembler\jarvis-keep`.)
 
+## Start here
+Read `ROADMAP.md` next: where the work stands, the confirmed vision, decisions and the build order.
+Keep it up to date at the end of every session.
+
 ## Hard line: fair play
 Completely off during any game against a real person: no hints, no arrows, no reading the board.
 Fully on everywhere else (game review, analysis, puzzles, lessons, before/after games).
