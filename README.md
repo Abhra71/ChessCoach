@@ -82,9 +82,9 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 `python -m coach.patterns` prints the full count in the terminal, for example (a ~300-rated player, 140 games):
 
 ```
-150 x left a piece hanging         in  82 games  (under 30s on clock: 16)
- 51 x missed a free capture        in  33 games  (under 30s on clock: 3)
- 25 x walked into a fork or trick  in  21 games  (under 30s on clock: 0)
+124 x left a piece hanging         in  73 games  (under 30s on clock: 16)
+ 35 x walked into a fork or trick  in  28 games  (under 30s on clock: 0)
+ 31 x missed a free capture        in  24 games  (under 30s on clock: 2)
 ```
 
 ## How it works
@@ -92,7 +92,9 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 - **Stockfish** (the strongest chess engine) scores the position before and after each of your moves.
 - The score is turned into a **winning chance** (0-100). A move that drops it by 25 or more is a big mistake.
 - Each big mistake is sorted by **what happened next** in the engine's line: you lost a piece straight away
-  (hanging), a couple of moves later (fork or trick), you missed a free capture, missed a mate, or walked into one.
+  (hanging: counted after your best reply, so a piece you can take back is not hanging), a couple of moves later
+  (fork or trick), you missed a whole piece that was free (a knight, bishop, rook or queen; pawn grabs don't count),
+  missed a mate, or walked into one. Everything else is "other" (deeper tactics, slow threats).
 
 ## Files
 

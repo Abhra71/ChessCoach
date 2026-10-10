@@ -32,12 +32,16 @@ def classify(r):
     for uci in r["reply_pv"][:4]:
         board.push_uci(uci)
         balance.append(material(board, me) - material(board, not me))
-    if balance[:2] and min(balance[:2]) <= r["mat_before"] - 2:
+    # count after their capture AND our best reply, so a capture we can take back is not "hanging"
+    if balance and balance[min(1, len(balance) - 1)] <= r["mat_before"] - 2:
         return "left a piece hanging"
     if len(balance) > 2 and balance[-1] <= r["mat_before"] - 2:
         return "walked into a fork or trick"
     if r["best_is_capture"]:
-        return "missed a free capture"
+        before = chess.Board(r["fen"])
+        taken = before.piece_at(before.parse_san(r["best"]).to_square)
+        if taken and taken.piece_type != chess.PAWN:  # a whole piece was there to take (a pawn grab is rarely the point)
+            return "missed a free capture"
     return "other"
 
 
