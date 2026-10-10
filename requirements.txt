@@ -3,4 +3,5 @@ zstandard
 pystray
 pywebview
 keyring
+kokoro-onnx
 pytest

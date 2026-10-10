@@ -170,6 +170,17 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps({"opened": opened}), "application/json")
         if path == "/api/settings":
             return self.send(200, json.dumps(settings.save(body)), "application/json")
+        if path == "/api/say":  # one sentence -> WAV, spoken by the coach (Kokoro, on this computer)
+            from coach import voice
+            if not voice.available():
+                return self.send(503, json.dumps({"message": "The voice isn't installed."}), "application/json")
+            try:
+                audio = voice.say(str(body.get("text", "")), settings.load()["voice_name"] if not body.get("voice")
+                                  else str(body["voice"]))
+            except Exception as e:
+                log.exception("voice failed")
+                return self.send(500, json.dumps({"message": str(e)[:200]}), "application/json")
+            return self.send(200, audio, "audio/wav")
         if path == "/api/keys":
             try:
                 settings.set_key(str(body.get("slot")), str(body.get("provider")), str(body.get("key", "")))
@@ -389,6 +400,16 @@ def loop():
         WAKE.clear()
 
 
+def warm_voice():
+    """Load the voice once at start, so the coach's first sentence comes quickly."""
+    from coach import voice
+    try:
+        if voice.available() and settings.load()["voice"]:
+            voice.say("Ready.")
+    except Exception:
+        log.exception("voice warm-up failed")
+
+
 def start():
     """Start the server and the update loop in the background. Returns the server, or None if already running."""
     LOGBOOK.mkdir(parents=True, exist_ok=True)
@@ -406,6 +427,7 @@ def start():
     log.info("started")
     threading.Thread(target=server.serve_forever, daemon=True).start()
     threading.Thread(target=loop, daemon=True).start()
+    threading.Thread(target=warm_voice, daemon=True).start()
     return server
 
 

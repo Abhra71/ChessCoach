@@ -49,7 +49,8 @@ a { color: inherit; }
 .nav a:hover { background: var(--raised); color: var(--text); }
 .nav a.on { background: var(--raised); color: var(--text); font-weight: 600; }
 .nav svg { width: 16px; height: 16px; flex: none; }
-.side-foot { margin-top: auto; padding: 10px; font-size: 12px; color: var(--faint); display: flex; gap: 8px; align-items: center; }
+.side-voice { margin-top: auto; justify-content: flex-start; border-color: var(--line); color: var(--muted); font-weight: 500; font-size: 12px; }
+.side-foot { padding: 10px; font-size: 12px; color: var(--faint); display: flex; gap: 8px; align-items: center; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
 .dot.ok { background: var(--better); } .dot.busy { background: var(--reply); }
 main { overflow: auto; }

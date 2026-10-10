@@ -33,6 +33,31 @@ function applyTheme(theme) {
   else delete document.documentElement.dataset.theme;
 }
 
+// ---------- voice ----------
+const Voice = (() => {  // the coach speaks sentence by sentence; the next one is made while this one plays
+  let on = true, playing = null, token = 0;
+  const split = t => String(t).replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
+  const audio = text => fetch("/api/say", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }) }).then(r => { if (!r.ok) throw new Error("voice"); return r.blob(); }).then(b => URL.createObjectURL(b));
+  const play = url => new Promise(done => { const a = new Audio(url); playing = a; a.onended = a.onerror = done; a.play().catch(done); });
+  function stop() { token++; if (playing) { playing.pause(); playing = null; } }
+  async function speak(text, force) {
+    stop();
+    if ((!on && !force) || !text) return;
+    const mine = ++token, parts = split(text);
+    let next = audio(parts[0]);
+    for (let i = 0; i < parts.length; i++) {
+      let url;
+      try { url = await next; } catch (e) { return; }
+      if (mine !== token) return;
+      if (i + 1 < parts.length) next = audio(parts[i + 1]);
+      await play(url);
+      if (mine !== token) return;
+    }
+  }
+  return { speak, stop, set(v) { on = v; if (!v) stop(); }, get on() { return on; } };
+})();
+
 // ---------- shell ----------
 function shell(active, body) {
   const item = (route, name, icon) =>
@@ -42,11 +67,17 @@ function shell(active, body) {
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Chess Coach</span></div>
         <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("settings", "Settings", "settings")}</nav>
+        <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
         <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
       </aside>
       <main><div class="page" id="page">${body}</div></main>
     </div>`;
   paintStatus();
+  $("#mute").onclick = () => {
+    Voice.set(!Voice.on);
+    $("#mute").textContent = Voice.on ? "Voice on" : "Voice off";
+    api("/api/settings", { voice: Voice.on }).catch(() => {});
+  };
 }
 
 function paintStatus() {
@@ -88,7 +119,7 @@ async function home() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>${hello}, ${esc(h.player)}</h1>
       <p class="sub">${h.games} games checked by Stockfish${STATUS.last_update ? " · last check " + esc(STATUS.last_update) : ""}</p></div>
-      <a class="btn primary" href="#/practice">Start practice</a></div>
+      <div class="row"><button class="btn" id="brief">Hear your briefing</button><a class="btn primary" href="#/practice">Start practice</a></div></div>
     <div class="grid">
       ${f ? `<div class="box focus"><div class="label">Your focus</div>
         <h3 style="font-size:22px;margin:6px 0 8px">${esc(PATTERN_TITLE[f.pattern] || cap(f.pattern))}</h3>
@@ -115,6 +146,12 @@ async function home() {
         <a class="btn" href="#/games/${last.id}">Review game</a></div>` : ""}
       <p class="note">Practice so far: ${h.practice.answers} answers, ${h.practice.right} right first time, ${h.practice.learned} positions learned.</p>
     </div>`;
+  const briefing = [`${hello}, ${h.player}.`,
+    f ? `Your focus is: ${PATTERN_TITLE[f.pattern] || f.pattern}. It happened ${f.times} times, in ${f.games} of your ${h.games} games.` : "",
+    f ? f.habit : "",
+    `You give away ${h.pieces_per_game.toFixed(1)} pieces per game, and ${h.pieces_last20.toFixed(1)} in your last 20 games${better ? ", which is better" : ""}.`,
+    last ? `Your last game was a ${last.result} against ${last.opponent}, with ${last.moments} key moments to look at.` : ""].join(" ");
+  $("#brief").onclick = () => Voice.speak(briefing, true);
 }
 
 // ---------- games ----------
@@ -174,6 +211,9 @@ async function gameView(id) {
       const k = g.key_moments[Number(el.dataset.i)];
       view = e.target.dataset.view || "before";
       ply = view === "before" ? k.ply - 1 : k.ply; draw();
+      Voice.speak(view === "before"
+        ? `Move ${k.move_number}. ${cap(k.pattern)}. ${k.say} The better move was ${k.best}.`
+        : `You played ${k.move}. Watch their reply.`);
     });
     let html = "";
     for (let i = 1; i < g.positions.length; i += 2) {
@@ -223,6 +263,7 @@ async function practice() {
     $("#where").innerHTML = `${esc(x.where)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link)} ↗</a>`;
     result("muted", "Click a piece, then the square to move it to.");
     pieces = x.start; draw();
+    Voice.speak(x.intro);
     if (x.last) { done = true; await wait(700); if (d() !== x) return; pieces = x.steps[0].board; last = mark(x.last, "hl-last"); draw(); done = false; }
   }
   async function good(uci, m, shown) {
@@ -238,6 +279,7 @@ async function practice() {
     $("#count").textContent = `${i + 1} of ${drills.length} · ${right} right first time`;
     const note = x.kind === "game" ? `In the game you played ${esc(x.played)}.${m.san === x.best ? "" : " The engine's top move was " + esc(x.best) + "."}` : "Puzzle solved.";
     result("ok-text", `<b>${esc(m.san)}</b>: ${shown ? "that's the answer." : x.kind === "game" ? "yes, that keeps you safe." : "correct."}<div class="muted small" style="margin-top:4px">${note}</div>`);
+    Voice.speak(shown ? `The answer is ${m.san}.` : x.kind === "game" ? `Yes. ${m.san} keeps you safe.` : `Correct, ${m.san}.`);
     api("/api/practice", { id: x.id, kind: x.kind, right: !missed }).then(stats).catch(() => {});
   }
   function click(sq) {
@@ -254,6 +296,7 @@ async function practice() {
     if (m.good) return good(uci, m, false);
     missed = true;
     result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(m.say)}</div><div class="small muted" style="margin-top:4px">Try again.</div>`);
+    Voice.speak(`Not quite. ${m.say} Try again.`);
     draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-no"));
   }
   function answer() {
@@ -291,8 +334,12 @@ async function settingsView() {
           <button class="btn" id="saveuser">Change</button></div><div class="err" id="usermsg"></div></div></div>
       <div class="settings-row"><div><h3>Appearance</h3></div>
         <div><div class="seg" id="theme">${["system", "dark", "light"].map(t => `<button data-t="${t}" class="${s.theme === t ? "on" : ""}">${cap(t)}</button>`).join("")}</div></div></div>
-      <div class="settings-row"><div><h3>Voice</h3><p class="note">The coach speaks its explanations.</p></div>
-        <div><button class="switch ${s.voice ? "on" : ""}" id="voice" aria-label="Voice"></button></div></div>
+      <div class="settings-row"><div><h3>Voice</h3><p class="note">The coach speaks its explanations. It runs on this computer (Kokoro), no internet needed.</p></div>
+        <div class="stack"><div class="row"><button class="switch ${s.voice ? "on" : ""}" id="voice" aria-label="Voice"></button>
+          <span class="small muted">${s.voice_ready ? (s.voice ? "On" : "Off") : "Voice files not installed"}</span></div>
+          <div class="row"><select class="field" id="voicename" style="max-width:240px">${Object.entries(s.voices).map(([k, v]) =>
+            `<option value="${k}" ${k === s.voice_name ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>
+          <button class="btn" id="sample">Play sample</button></div></div></div>
       <div class="settings-row"><div><h3>AI explanations</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.
         Without one it uses the engine's built-in sentences. Keys are kept in Windows Credential Manager, encrypted for your Windows account,
         and are only sent to the provider you choose.</p></div>
@@ -309,7 +356,10 @@ async function settingsView() {
   $("#theme").querySelectorAll("button").forEach(b => b.onclick = async () => {
     const r = await api("/api/settings", { theme: b.dataset.t }); applyTheme(r.theme); settingsView();
   });
-  $("#voice").onclick = async () => { await api("/api/settings", { voice: !s.voice }); settingsView(); };
+  $("#voice").onclick = async () => { await api("/api/settings", { voice: !s.voice }); Voice.set(!s.voice); settingsView(); };
+  const SAMPLE = "Hi, I'm your chess coach. Before every move, ask: what can they take?";
+  $("#voicename").onchange = async e => { await api("/api/settings", { voice_name: e.target.value }); Voice.speak(SAMPLE, true); };
+  $("#sample").onclick = () => Voice.speak(SAMPLE, true);
   $("#folder").onclick = () => api("/api/open-folder", {}).catch(() => {});
   $("#saveuser").onclick = async () => {
     const name = $("#user").value.trim();
@@ -396,8 +446,8 @@ async function route() {
     if ($("#page")) $("#page").innerHTML = `<div class="empty">Couldn't load this screen: ${esc(e.message)}</div>`;
   }
 }
-window.addEventListener("hashchange", route);
-api("/api/settings").then(s => applyTheme(s.theme)).catch(() => {});
+window.addEventListener("hashchange", () => { Voice.stop(); route(); });
+api("/api/settings").then(s => { applyTheme(s.theme); Voice.set(s.voice && s.voice_ready); }).catch(() => {});
 api("/api/status").then(s => { STATUS = s; if (!s.player && !location.hash.includes("welcome")) go("welcome"); else route(); })
   .catch(() => route());
 pollStatus();

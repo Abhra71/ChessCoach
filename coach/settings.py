@@ -18,7 +18,8 @@ PROVIDERS = {  # what the player can choose for a slot; "free" means the provide
     "anthropic": {"name": "Anthropic Claude", "free": False, "get_key": "https://console.anthropic.com/settings/keys"},
     "openai": {"name": "OpenAI", "free": False, "get_key": "https://platform.openai.com/api-keys"},
 }
-DEFAULTS = {"theme": "system", "voice": True, "slot1": {"provider": "gemini"}, "slot2": {"provider": "groq"}}
+DEFAULTS = {"theme": "system", "voice": True, "voice_name": "af_heart",
+            "slot1": {"provider": "gemini"}, "slot2": {"provider": "groq"}}
 
 
 def load():
@@ -33,6 +34,9 @@ def save(changes):
         current["theme"] = changes["theme"]
     if isinstance(changes.get("voice"), bool):
         current["voice"] = changes["voice"]
+    from coach.voice import CHOICES
+    if changes.get("voice_name") in CHOICES:
+        current["voice_name"] = changes["voice_name"]
     FILE.parent.mkdir(parents=True, exist_ok=True)
     FILE.write_text(json.dumps({k: v for k, v in current.items() if k in DEFAULTS}, indent=2))
     return current
@@ -72,4 +76,6 @@ def public():
     for slot in SLOTS:
         key = get_key(slot)
         slots[slot] = {"provider": s[slot]["provider"], "set": bool(key), "ends": key[-4:] if key else None}
-    return {"theme": s["theme"], "voice": s["voice"], "slots": slots, "providers": PROVIDERS}
+    from coach import voice
+    return {"theme": s["theme"], "voice": s["voice"], "voice_name": s["voice_name"], "voices": voice.CHOICES,
+            "voice_ready": voice.available(), "slots": slots, "providers": PROVIDERS}

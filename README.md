@@ -23,7 +23,8 @@ games, and trains you out of them, one or two things at a time, at your level.
 | "Is this you?" answer on the review page, saved in your logbook | works |
 | Desktop app window: Home (your focus, score, trend, last game), Games, Practice, Settings; dark and light | works (beta) |
 | Settings: chess.com account, theme, voice, two optional AI key slots kept in Windows Credential Manager | works (AI use: next) |
-| Voice (talk to the coach) | next |
+| The coach speaks (Kokoro, on this computer): briefing, key moments, practice feedback; 4 voices | works |
+| Ask the coach by voice (listening) and AI explanations with your own key | next |
 | Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
 
 ## For players: install
@@ -45,6 +46,7 @@ Your data stays on your computer in `%LOCALAPPDATA%\ChessCoach`. Uninstall from 
 ```
 pip install -r requirements.txt
 python -m coach.get_engine                       # downloads Stockfish (~80 MB) into engine/
+python -m coach.get_voice                        # optional: the coach's voice (~120 MB) into voice/
 python -m coach.puzzles                          # optional: Lichess puzzles (reads ~300 MB, keeps ~2.5 MB)
 python -m coach.update <your chess.com username>
 ```
@@ -134,6 +136,7 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/paths.py` | where files live (project folder, or %LOCALAPPDATA%\ChessCoach when installed) |
 | `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Settings, Welcome) |
 | `coach/insights.py` | the numbers and lists the app shows (dashboard, games, one game in detail) |
+| `coach/voice.py`, `coach/get_voice.py` | the coach's voice (Kokoro) and its download |
 | `coach/settings.py` | theme, voice and the two AI key slots (keys in Windows Credential Manager, never in files) |
 | `coach/setup_arrows.html` | the guided extension set-up |
 | `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |
@@ -161,5 +164,5 @@ a small tray window with your logbook, and a local SQLite memory.
 
 ## Licence
 
-GPL-3.0 (see `LICENSE`). Stockfish and python-chess are also GPL-3.0. The Lichess puzzle database is
+GPL-3.0 (see `LICENSE`). Stockfish and python-chess are also GPL-3.0. The voice is Kokoro (Apache-2.0). The Lichess puzzle database is
 public domain (CC0), from database.lichess.org.
