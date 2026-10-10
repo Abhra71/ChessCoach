@@ -54,6 +54,7 @@ def main():
                                  "rating": int(row["Rating"]), "themes": sorted(themes)})
             if all(len(v) >= PER_THEME for v in kept.values()):
                 break
+    OUT.parent.mkdir(exist_ok=True)  # a new install has no data/ folder yet
     OUT.write_text(json.dumps(kept))
     print(f"\nread {seen:,} puzzles, kept " + ", ".join(f"{t}: {len(v)}" for t, v in kept.items()), file=sys.stderr)
 
