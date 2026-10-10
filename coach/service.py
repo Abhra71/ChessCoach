@@ -22,7 +22,7 @@ from logging.handlers import RotatingFileHandler
 import chess
 
 from coach import analyze, drills, fetch, memory, puzzles, review, settings
-from coach.paths import DATA, EXTENSION, FROZEN, LOGBOOK, TEMPLATES
+from coach.paths import DATA, EXTENSION, FROZEN, LOGBOOK, NAME, PACKAGE, TEMPLATES
 from coach.patterns import classify
 from coach.review import explain, move_number
 
@@ -30,7 +30,8 @@ PORT = 8765
 URL = f"http://127.0.0.1:{PORT}"
 EVERY = 600  # seconds between checks for new games
 MOMENTS = 3  # key moments shown per game
-APP_ID = "Abhra71.ChessCoach"  # the installer gives the Start menu shortcut this id, so notifications say "Chess Coach"
+# notifications say "Knightwise": the Store app's own id, or the id the installer gives the Start menu shortcut
+APP_ID = f"{PACKAGE}!Knightwise" if PACKAGE else "Abhra71.ChessCoach"
 
 log = logging.getLogger("coach")
 
@@ -493,11 +494,11 @@ def loop():
         try:
             n, first = update_once()
             if first:
-                notify("Chess Coach", f"Your review is ready: {n} games checked. Click to open it.", open_link("home"))
+                notify(NAME, f"Your review is ready: {n} games checked. Click to open it.", open_link("home"))
             elif n:
                 log.info("checked %d new games", n)
                 text, newest = summary_of_new(n)
-                notify("Chess Coach", text, open_link(f"games/{newest}"))
+                notify(NAME, text, open_link(f"games/{newest}"))
         except Exception as e:
             log.exception("update failed")
             STATE.update(phase="error", error=str(e)[:200])

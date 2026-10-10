@@ -1,4 +1,4 @@
-// Chess Coach desktop app: one page, a few screens (#/home, #/games, #/practice, #/settings, #/welcome).
+// Knightwise desktop app: one page, a few screens (#/home, #/games, #/practice, #/settings, #/welcome).
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const api = (path, body) => fetch(path, body === undefined ? {} : {
@@ -122,7 +122,7 @@ function shell(active, body) {
   $("#root").innerHTML = `
     <div class="shell">
       <aside class="side">
-        <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Chess Coach</span></div>
+        <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
         <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("play", "Play the Coach", "play")}${item("settings", "Settings", "settings")}</nav>
         <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
         <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
@@ -503,12 +503,12 @@ async function extensionView() {
           <p class="muted">The switch at the top right of that page.</p></div>${Guide.steps.dev}</div>
         <div class="gstep"><div class="gnum">3</div><div class="gtext"><h3>Click "Load unpacked"</h3>
           <p class="muted">It appears at the top left once Developer mode is on.</p></div>${Guide.steps.load}</div>
-        <div class="gstep"><div class="gnum">4</div><div class="gtext"><h3>Choose the Chess Coach folder</h3>
+        <div class="gstep"><div class="gnum">4</div><div class="gtext"><h3>Choose the Knightwise folder</h3>
           <p class="muted">In the window that opens, click its address bar, paste this path (Ctrl+V), press Enter, then click <b>Select Folder</b>.</p>
           <div class="row"><code class="addr long">${esc(st.extension_path)}</code>${copyBtn("c2", st.extension_path)}</div>
           <p class="small muted" style="margin-top:8px">Easier: <button class="btn" id="showfolder" style="padding:4px 10px">Show the folder</button> and drag the <b>extension</b> folder onto the extensions page.</p></div>${Guide.steps.pick}</div>
         <div class="gstep"><div class="gnum">5</div><div class="gtext"><h3>Done</h3>
-          <p class="muted">"Chess Coach" appears in the list, and the box at the top turns green. Then open any finished game of yours on chess.com.</p>
+          <p class="muted">"Knightwise" appears in the list, and the box at the top turns green. Then open any finished game of yours on chess.com.</p>
           <a class="btn" href="https://www.chess.com/games/archive/${encodeURIComponent(st.player || "")}" target="_blank" rel="noopener">Your games on chess.com ↗</a></div>${Guide.steps.done}</div>
       </div>`;
     document.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => navigator.clipboard.writeText(b.dataset.copy).then(() => { b.textContent = "Copied"; }));
@@ -570,7 +570,7 @@ async function settingsView() {
       <div class="settings-row"><div><h3>Your data</h3><p class="note">Games, checks, practice and your logbook.</p></div>
         <div class="row"><button class="btn" id="folder">Open data folder</button></div></div>
       <div class="settings-row"><div><h3>About</h3></div>
-        <div class="muted small">Chess Coach · beta · open source (GPL-3.0) · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a><br>
+        <div class="muted small">Knightwise · beta · open source (GPL-3.0) · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a><br>
           Engine: Stockfish 19 · Puzzles: Lichess (CC0) · Fair play: never active in games against real people.</div></div>
     </div>`;
   $("#theme").querySelectorAll("button").forEach(b => b.onclick = async () => {
@@ -629,7 +629,7 @@ async function welcome() {
   const card = $("#card");
   const dots = n => `<div class="steps-dots">${[0, 1, 2].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</div>`;
   function intro() {
-    card.innerHTML = `${dots(0)}<h1>Your chess coach</h1>
+    card.innerHTML = `${dots(0)}<h1>Knightwise</h1><p class="sub" style="margin-top:-4px">Your chess coach</p>
       <p class="muted" style="margin-top:8px">It studies your finished chess.com games, finds the one or two habits that cost you the most, and trains you out of them.</p>
       <div class="does"><div><b>It does</b><ul><li>Check every move of your finished games with Stockfish</li>
         <li>Show the key moments, with arrows</li><li>Train you on your own positions</li><li>Run quietly and check each new game</li></ul></div>

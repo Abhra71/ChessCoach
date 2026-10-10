@@ -1,4 +1,4 @@
-/* Chess Coach: minimal black and white, red only for what matters. */
+/* Knightwise: minimal black and white, red only for what matters. */
 :root {
   --bg: #fafafa; --surface: #ffffff; --raised: #f3f3f3; --line: #e4e4e4; --line-strong: #cfcfcf;
   --text: #0a0a0a; --muted: #5e5e5e; --faint: #8c8c8c; --invert: #0a0a0a; --on-invert: #ffffff;

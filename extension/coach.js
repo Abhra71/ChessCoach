@@ -1,4 +1,4 @@
-// Chess Coach on chess.com: arrows and a short note on the key moments of YOUR FINISHED games.
+// Knightwise on chess.com: arrows and a short note on the key moments of YOUR FINISHED games.
 //
 // Fair play: the coach on your computer only knows games that chess.com has already archived as finished.
 // For any other game (including one being played right now) it answers "unknown" and this script shows nothing.
@@ -123,8 +123,8 @@
     }).join("");
     panel.classList.toggle("small", small);
     panel.innerHTML = small
-      ? `<button class="pill">Chess Coach · ${moments.length} key moment${moments.length === 1 ? "" : "s"}</button>`
-      : `<div class="head"><b>Chess Coach</b><span><button class="min" title="Make small">–</button>` +
+      ? `<button class="pill">Knightwise · ${moments.length} key moment${moments.length === 1 ? "" : "s"}</button>`
+      : `<div class="head"><b>Knightwise</b><span><button class="min" title="Make small">–</button>` +
         `<button class="x" title="Close for this game">×</button></span></div>
       <p>${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game. Click one to see it on the board.</p>
       <ol>${items}</ol>`;

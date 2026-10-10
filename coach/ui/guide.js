@@ -17,11 +17,11 @@ const Guide = (() => {
     <rect x="${W - 54}" y="51" width="30" height="16" rx="8" class="${dev ? "s-on" : "s-off"}"/><circle cx="${dev ? W - 32 : W - 46}" cy="59" r="6" class="s-knob"/>
     ${dev ? `<rect x="20" y="78" width="104" height="24" rx="5" class="s-btn"/><text x="30" y="94" class="s-btntext">Load unpacked</text>
       <rect x="132" y="78" width="96" height="24" rx="5" class="s-btn2"/><text x="142" y="94" class="s-sub">Pack extension</text>` : ""}
-    ${card(20, 118, "Some extension", "On")}${loaded ? card(184, 118, "Chess Coach", "Loaded from folder") : ""}`;
+    ${card(20, 118, "Some extension", "On")}${loaded ? card(184, 118, "Knightwise", "Loaded from folder") : ""}`;
   const picker = `
     <rect x="40" y="48" width="${W - 80}" height="186" rx="6" class="s-card"/>
     <text x="54" y="68" class="s-title">Select the extension directory</text>
-    <rect x="54" y="78" width="${W - 108}" height="20" rx="3" class="s-url"/><text x="62" y="92" class="s-urltext">C:\\Users\\you\\AppData\\Local\\Programs\\ChessCoach\\extension</text>
+    <rect x="54" y="78" width="${W - 108}" height="20" rx="3" class="s-url"/><text x="62" y="92" class="s-urltext">C:\\Users\\you\\Documents\\Knightwise\\extension</text>
     <rect x="62" y="108" width="80" height="14" rx="2" class="s-btn2"/><text x="66" y="119" class="s-sub">background.js</text>
     <rect x="62" y="128" width="80" height="14" rx="2" class="s-btn2"/><text x="66" y="139" class="s-sub">manifest.json</text>
     <rect x="${W - 190}" y="200" width="90" height="22" rx="4" class="s-btn"/><text x="${W - 178}" y="215" class="s-btntext">Select Folder</text>

@@ -42,7 +42,7 @@ Name: "{userdesktop}\Chess Coach"; Filename: "{app}\ChessCoach.exe"; Tasks: desk
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "ChessCoach"; \
-  ValueData: """{app}\ChessCoach.exe"""; Flags: uninsdeletevalue; Tasks: autostart
+  ValueData: """{app}\ChessCoach.exe"" --background"; Flags: uninsdeletevalue; Tasks: autostart
 
 ; chesscoach:// links (from notifications) open the app window
 Root: HKCU; Subkey: "Software\Classes\chesscoach"; ValueType: string; ValueData: "URL:Chess Coach"; Flags: uninsdeletekey

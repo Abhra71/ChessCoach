@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Chess Coach",
-  "version": "0.3.0",
+  "name": "Knightwise",
+  "version": "0.4.0",
   "description": "Shows the key moments of your finished chess.com games with arrows on the board. Never active during a live game.",
   "icons": {
     "128": "icon128.png"
@@ -31,7 +31,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Chess Coach",
+    "default_title": "Knightwise",
     "default_icon": {
       "128": "icon128.png"
     }

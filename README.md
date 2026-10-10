@@ -1,4 +1,6 @@
-# Chess Coach
+# Knightwise
+
+<img src="installer/msix/Assets/Square150x150Logo.scale-200.png" width="96" alt="Knightwise logo">
 
 A free, open-source chess coach that learns how **you** play on chess.com, finds the habits that lose you
 games, and trains you out of them, one or two things at a time, at your level.
@@ -29,20 +31,21 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Play the Coach: a game against the engine at your level (10 levels, about 300 to 2200); the coach warns about loose pieces, pauses after a blunder (take back or play on), hints in two steps, all spoken | works (beta) |
 | Ask the coach by voice: Talk button, Whisper on this computer (one-time 485 MB download in Settings) | works (beta) |
 | Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
+| Microsoft Store package (MSIX, signed by Microsoft on upload, so Windows never blocks it): starts with Windows, notifications, extension copied to Documents\Knightwise | built, not yet submitted |
 
 ## For players: install
 
-1. Download **ChessCoach-Setup.exe** from the [Releases](https://github.com/Abhra71/ChessCoach/releases) page
-   (first beta coming soon). No Python or anything else needed; no admin rights needed.
-2. Run it: Next, Next, Finish. Windows may say "Windows protected your PC" because the beta isn't signed yet:
-   click **More info**, then **Run anyway**.
+1. Get **Knightwise** from the Microsoft Store (coming soon: the first release goes to a small private group of
+   testers). Click **Get**: no installer, no Python, no admin rights, and Windows doesn't block it, because the Store
+   signs it.
 3. A welcome page opens: type your chess.com username. The coach checks your games (about 2 minutes the first
-   time) and shows your review. From then on it lives as a green pawn icon by the clock and checks each new game
+   time) and shows your review. From then on it lives as a knight icon by the clock and checks each new game
    by itself.
 4. Optional, 1 minute: **Arrows on chess.com** (in the icon's menu) walks you through adding the browser
    extension and turns green when it works.
 
 Your data stays on your computer in `%LOCALAPPDATA%\ChessCoach`. Uninstall from Windows Settings like any app.
+Privacy: [PRIVACY.md](PRIVACY.md). Knightwise is independent and not connected with chess.com.
 
 ## For developers: run from source (Windows, Python 3.12)
 
@@ -151,6 +154,8 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/play.py` | Play the Coach: the weakened opponent, live warnings, blunder check, hints |
 | `coach/settings.py` | theme, voice and the two AI key slots (keys in Windows Credential Manager, never in files) |
 | `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |
+| `installer/msix/`, `installer/make_msix.py`, `installer/make_icons.py` | the Microsoft Store package: manifest (identity from Partner Center), icons, Store listing text |
+| `PRIVACY.md` | the privacy policy linked from the Store |
 | `tests/` | `python -m pytest -q tests` |
 
 ### Build the installer
@@ -165,6 +170,19 @@ python -m PyInstaller installer/ChessCoach.spec --noconfirm
 ```
 
 Result: `dist\ChessCoach-Setup-<version>.exe` (about 245 MB: Stockfish, the voice and the speech libraries).
+
+### Build the Microsoft Store package
+
+After the PyInstaller step above, with Microsoft's free Windows SDK Build Tools (nuget.org package
+`Microsoft.Windows.SDK.BuildTools`) unpacked in `build\sdktools`:
+
+```
+python installer/make_icons.py      # only when the logo changes (needs Microsoft Edge)
+python installer/make_msix.py
+```
+
+Result: `dist\Knightwise-<version>.msix` (about 316 MB), uploaded in Partner Center, which signs it.
+The Store page text is in `installer/msix/STORE_LISTING.md`.
 
 Your games, results and logbooks stay on your computer in `data/` and `logbook/`. They are never uploaded
 and never committed.

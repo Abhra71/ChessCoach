@@ -10,7 +10,7 @@ import sys
 import threading
 import urllib.request
 
-from coach.paths import ICON
+from coach.paths import ICON, NAME, PACKAGED, place_extension
 
 
 def ask_running_copy(route):
@@ -33,14 +33,14 @@ def tray(show, quit_app):
 
     def check_now(icon, item):
         service.WAKE.set()
-        icon.notify("Checking chess.com for new games…", "Chess Coach")
+        icon.notify("Checking chess.com for new games…", NAME)
 
-    icon = pystray.Icon("ChessCoach", Image.open(ICON), "Chess Coach", menu=pystray.Menu(
-        pystray.MenuItem("Open Chess Coach", lambda icon, item: show("home"), default=True),
+    icon = pystray.Icon("Knightwise", Image.open(ICON), NAME, menu=pystray.Menu(
+        pystray.MenuItem("Open Knightwise", lambda icon, item: show("home"), default=True),
         pystray.MenuItem("Practice", lambda icon, item: show("practice")),
         pystray.MenuItem("Check for new games now", check_now),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Quit Chess Coach", lambda icon, item: quit_app()),
+        pystray.MenuItem("Quit Knightwise", lambda icon, item: quit_app()),
     ))
     icon.run_detached()
     return icon
@@ -63,13 +63,25 @@ def allow_microphone(window):
     window.native.Invoke(System.Action(subscribe))
 
 
+def at_login():
+    """Started by Windows at sign-in (not by the player)? Then wait quietly by the clock instead of opening a window.
+    The installer passes --background; the Store app's start-up task can't pass anything, so: just signed in, no link."""
+    if "--background" in sys.argv:
+        return True
+    if not PACKAGED or len(sys.argv) > 1 or sys.platform != "win32":
+        return False
+    import ctypes
+    ctypes.windll.kernel32.GetTickCount64.restype = ctypes.c_uint64
+    return ctypes.windll.kernel32.GetTickCount64() < 4 * 60 * 1000  # Windows started less than 4 minutes ago
+
+
 def main():
     import webview
 
     from coach import service
 
     route = next((a.split("chesscoach://", 1)[1] for a in sys.argv[1:] if a.startswith("chesscoach://")), "home")
-    if sys.platform == "win32":  # notifications and taskbar show "Chess Coach", not Python
+    if sys.platform == "win32" and not PACKAGED:  # taskbar shows "Knightwise", not Python (the Store app has its own id)
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(service.APP_ID)
     server = service.start()
@@ -78,7 +90,8 @@ def main():
         return
 
     state = {"quitting": False}
-    window = webview.create_window("Chess Coach", f"{service.URL}/#/{route}", width=1240, height=820,
+    place_extension()
+    window = webview.create_window(NAME, f"{service.URL}/#/{route}", width=1240, height=820, hidden=at_login(),
                                    min_size=(900, 620), background_color="#0A0A0A")
 
     def show(where):

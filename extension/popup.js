@@ -14,6 +14,5 @@ fetch(`${COACH}/api/status`)
   .catch(() => {
     state.className = "off";
     state.innerHTML = `<span class="dot"></span>The coach is not running`;
-    more.innerHTML = `<p class="muted">Start it in the ChessCoach folder with <code>python -m coach.service</code>,
-      or once and for all with <code>python -m coach.autorun install</code>.</p>`;
+    more.innerHTML = `<p class="muted">Open <b>Knightwise</b> from the Start menu. It then keeps running by the clock.</p>`;
   });
