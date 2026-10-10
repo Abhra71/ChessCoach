@@ -44,6 +44,26 @@ def line_san(board, ucis, limit=4):
     return out
 
 
+def line_told(board, ucis, me, limit=4):
+    """The engine's expected line, each move with who plays it and what it takes: no guessing whose move is whose."""
+    b, out = board.copy(), []
+    for u in ucis[:limit]:
+        m = chess.Move.from_uci(u)
+        if m not in b.legal_moves:
+            break
+        who = "You play" if b.turn == me else "They play"
+        text = f"{who} {b.san(m)}"
+        if b.is_capture(m):
+            taken = b.piece_at(m.to_square)
+            whose = "your" if b.turn != me else "their"
+            text += f", taking {whose} {NAME[taken.piece_type] if taken else 'pawn'} on {chess.square_name(m.to_square)}"
+        if b.gives_check(m):
+            text += " (check)"
+        out.append(text)
+        b.push(m)
+    return out
+
+
 def describe_move(board, move):
     """What a move does, in plain facts: captures, check, saves a loose piece."""
     facts, mover = [], board.piece_at(move.from_square)
@@ -67,19 +87,33 @@ def describe_move(board, move):
         (" (" + "; ".join(facts) + ")" if facts else "")
 
 
+def material_swing(board, ucis, me, limit=4):
+    """Points of material you are up (+) or down (-) at the end of the engine's line, compared with now."""
+    def balance(b):
+        return sum((1 if p.color == me else -1) * VALUE[p.piece_type] for p in b.piece_map().values())
+    b, start = board.copy(), balance(board)
+    for u in ucis[:limit]:
+        m = chess.Move.from_uci(u)
+        if m not in b.legal_moves:
+            break
+        b.push(m)
+    return balance(b) - start
+
+
 def moment_facts(r, pattern):
     """Everything the coach knows for sure about one key moment, as short lines."""
     board = chess.Board(r["fen"])
     mine, best = board.parse_san(r["move"]), board.parse_san(r["best"])
     after = board.copy()
     after.push(mine)
-    them = line_san(after, r.get("reply_pv", []))
+    them = line_told(after, r.get("reply_pv", []), board.turn)
     return {
         "move_number": move_number(r), "side": "White" if board.turn == chess.WHITE else "Black",
         "pattern": pattern, "played": r["move"], "played_does": describe_move(board, mine),
         "best": r["best"], "best_does": describe_move(board, best),
         "loose_after_played": loose_pieces(after, board.turn),
         "engine_line_after_played": them,
+        "material_change_in_line": material_swing(after, r.get("reply_pv", []), board.turn),
         "win_chance_lost": round(r["loss"]),
         "fen": r["fen"],
     }

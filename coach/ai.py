@@ -13,12 +13,14 @@ from coach.paths import DATA
 
 CACHE = DATA / "explanations.json"
 TIMEOUT = 30
+AGENT = {"User-Agent": "ChessCoach (github.com/Abhra71/ChessCoach)"}  # some providers block unnamed requests (403)
 
 COACH_RULES = (
     "You are a warm, clear chess coach for a beginner (chess.com rating about {rating}). "
     "Speak to the player as 'you'. Use plain words; name squares and pieces like 'your bishop on d3'. "
     "Use ONLY the facts given to you, which come from the Stockfish engine and the board: never invent a move, "
     "a threat or a tactic that is not in the facts. If the facts don't show why, say what the engine's line shows. "
+    "In the engine's line, 'You play' moves are the player's and 'They play' moves are the opponent's. "
     "No headings, no lists, no chess jargon like 'tempo' or 'zwischenzug'. "
 )
 
@@ -28,13 +30,13 @@ class NoKey(Exception):
 
 
 def _post(url, body, headers):
-    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json", **headers})
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json", **AGENT, **headers})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         return json.load(resp)
 
 
 def _get(url, headers):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=TIMEOUT) as resp:
+    with urllib.request.urlopen(urllib.request.Request(url, headers={**AGENT, **headers}), timeout=TIMEOUT) as resp:
         return json.load(resp)
 
 
