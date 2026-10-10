@@ -69,4 +69,4 @@ First release: game review, key moments, practice, voice coach and the chess.com
 To be taken from the app: Home, Game review with a key moment, Practice, Settings, the welcome screen, the arrows on chess.com.
 
 ## Store logos
-`installer/StoreLogo2160.png` (2160×2160: the 1:1 box art and Store logo fields).
+`installer/StoreLogo2160.png` (2160×2160: the 1:1 box art) and `installer/StorePoster1440x2160.png` (9:16 poster art).
