@@ -25,6 +25,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Settings: chess.com account, theme, voice, two optional AI key slots kept in Windows Credential Manager | works (AI use: next) |
 | The coach speaks (Kokoro, on this computer): briefing, key moments, practice feedback; 4 voices | works |
 | AI explanations and "Ask the coach" with your own key (Gemini, Groq, Claude or OpenAI), grounded in engine facts | works (beta) |
+| Play the Coach: a game against the engine at your level (10 levels, about 300 to 2200); the coach warns about loose pieces, pauses after a blunder (take back or play on), hints in two steps, all spoken | works (beta) |
 | Ask the coach by voice: Talk button, Whisper on this computer (one-time 485 MB download in Settings) | works (beta) |
 | Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
 
@@ -96,6 +97,9 @@ Its own log is `logbook/service.log`.
 4. The Chess Coach button in the browser toolbar says whether the coach is running and links to your review
    and practice pages.
 
+**Why no hints in chess.com bot games?** chess.com's fair-play rules forbid any tool that analyses positions during
+play, with no exception for bot games. So live help happens only in **Play the Coach**, inside this app.
+
 **Fair play:** the extension only shows something for games the coach already knows, and the coach only knows
 games that chess.com has archived as finished. During a live game it shows nothing at all. It never moves pieces
 and never sends anything to chess.com; it only talks to the coach on your own computer.
@@ -140,7 +144,8 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/voice.py`, `coach/hearing.py`, `coach/get_voice.py` | speaking (Kokoro), listening (Whisper), and their downloads |
 | `coach/ai.py` | optional AI explanations and answers through the player's own keys (key 1, then key 2) |
 | `coach/facts.py` | hard facts about a position or moment (loose pieces, what a move does, engine lines) the AI must stick to |
-| `coach/live_engine.py` | one Stockfish kept open for live questions |
+| `coach/live_engine.py` | one Stockfish kept open for live questions and games |
+| `coach/play.py` | Play the Coach: the weakened opponent, live warnings, blunder check, hints |
 | `coach/settings.py` | theme, voice and the two AI key slots (keys in Windows Credential Manager, never in files) |
 | `coach/setup_arrows.html` | the guided extension set-up |
 | `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |
