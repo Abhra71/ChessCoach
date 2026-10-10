@@ -130,7 +130,7 @@ def example_html(pattern, r):
 
 def biggest(rows, n=3):
     """The n mistakes that cost the most in one game, in game order."""
-    big = sorted((r for r in rows if classify(r)), key=lambda r: -r["loss"])[:n]
+    big = sorted((r for r in rows if r.get("pattern", classify(r))), key=lambda r: -r["loss"])[:n]
     return sorted(big, key=lambda r: r["ply"])
 
 

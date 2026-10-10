@@ -21,7 +21,9 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
 | "Is this you?" answer on the review page, saved in your logbook | works |
-| Voice (talk to the coach) | planned |
+| Desktop app window: Home (your focus, score, trend, last game), Games, Practice, Settings; dark and light | works (beta) |
+| Settings: chess.com account, theme, voice, two optional AI key slots kept in Windows Credential Manager | works (AI use: next) |
+| Voice (talk to the coach) | next |
 | Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
 
 ## For players: install
@@ -128,9 +130,12 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/autorun.py` | start the helper with Windows (Startup folder shortcut) or remove it |
 | `coach/memory.py` | practice answers and spacing (which positions come back when), your "is this you?" answers |
 | `extension/` | the Chrome/Edge extension (arrows and key-moments panel on chess.com) |
-| `coach/app.py` | ChessCoach.exe: tray icon + the background coach |
+| `coach/app.py` | ChessCoach.exe: the app window (pywebview + WebView2), icon by the clock, the background coach |
 | `coach/paths.py` | where files live (project folder, or %LOCALAPPDATA%\ChessCoach when installed) |
-| `coach/welcome.html`, `coach/setup_arrows.html` | first-start page and the guided extension set-up |
+| `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Settings, Welcome) |
+| `coach/insights.py` | the numbers and lists the app shows (dashboard, games, one game in detail) |
+| `coach/settings.py` | theme, voice and the two AI key slots (keys in Windows Credential Manager, never in files) |
+| `coach/setup_arrows.html` | the guided extension set-up |
 | `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |
 | `tests/` | `python -m pytest -q tests` |
 

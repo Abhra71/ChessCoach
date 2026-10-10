@@ -11,10 +11,11 @@ a = Analysis(
         (str(ROOT / "engine"), "engine"),                     # Stockfish
         (str(ROOT / "extension"), "extension"),               # icon for the tray
         (str(ROOT / "coach" / "drills_template.html"), "coach"),
-        (str(ROOT / "coach" / "welcome.html"), "coach"),
+        (str(ROOT / "coach" / "ui"), "coach/ui"),             # the desktop app's screens
         (str(ROOT / "coach" / "setup_arrows.html"), "coach"),
     ],
-    hiddenimports=["pystray._win32", "coach.service", "coach.drills", "coach.puzzles"],
+    hiddenimports=["pystray._win32", "coach.service", "coach.drills", "coach.puzzles", "coach.insights",
+                   "coach.settings", "keyring.backends.Windows", "webview.platforms.edgechromium"],
     excludes=["tkinter", "pytest"],
 )
 pyz = PYZ(a.pure)

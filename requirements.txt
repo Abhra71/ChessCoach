@@ -1,4 +1,6 @@
 chess==1.11.2
 zstandard
 pystray
+pywebview
+keyring
 pytest

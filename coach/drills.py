@@ -23,6 +23,7 @@ from coach.puzzles import OUT as PUZZLES, THEMES
 from coach.review import ABOUT, EXAMPLES, NAME, move_number, pick_examples
 
 OUT = DATA / "drills.html"
+OUT_JSON = DATA / "drills.json"  # the same positions for the desktop app
 PER_PATTERN = 4
 PUZZLES_PER_PATTERN = 4
 DEPTH = 12
@@ -178,6 +179,7 @@ def build():
     drills = [d for pair in zip_longest(drills, puzzles) for d in pair if d]  # own position, puzzle, own, ...
     page = (TEMPLATES / "drills_template.html").read_text(encoding="utf-8")
     OUT.write_text(page.replace("/*DRILLS*/[]", json.dumps(drills)), encoding="utf-8")
+    OUT_JSON.write_text(json.dumps(drills), encoding="utf-8")
     return OUT, len(drills)
 
 

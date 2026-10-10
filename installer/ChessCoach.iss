@@ -44,6 +44,12 @@ Name: "{userdesktop}\Chess Coach"; Filename: "{app}\ChessCoach.exe"; Tasks: desk
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "ChessCoach"; \
   ValueData: """{app}\ChessCoach.exe"""; Flags: uninsdeletevalue; Tasks: autostart
 
+; chesscoach:// links (from notifications) open the app window
+Root: HKCU; Subkey: "Software\Classes\chesscoach"; ValueType: string; ValueData: "URL:Chess Coach"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\chesscoach"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCU; Subkey: "Software\Classes\chesscoach\DefaultIcon"; ValueType: string; ValueData: "{app}\ChessCoach.exe,0"
+Root: HKCU; Subkey: "Software\Classes\chesscoach\shell\open\command"; ValueType: string;   ValueData: """{app}\ChessCoach.exe"" ""%1"""
+
 [Run]
 Filename: "{app}\ChessCoach.exe"; Description: "Start Chess Coach now"; Flags: nowait postinstall skipifsilent
 

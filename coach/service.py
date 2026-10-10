@@ -21,7 +21,7 @@ from logging.handlers import RotatingFileHandler
 
 import chess
 
-from coach import analyze, drills, fetch, memory, puzzles, review
+from coach import analyze, drills, fetch, memory, puzzles, review, settings
 from coach.paths import DATA, EXTENSION, FROZEN, LOGBOOK, TEMPLATES
 from coach.patterns import classify
 from coach.review import explain, move_number
@@ -94,9 +94,13 @@ def key_moments(rows):
 
 
 MOMENT_CACHE = Moments()
+UI = TEMPLATES / "ui"
+SHOW = None  # set by the desktop app: show the window at a screen
 
 
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.0"
+
     def do_GET(self):
         path = self.path.split("?")[0].rstrip("/")
         if path.startswith("/api/game/"):
@@ -111,13 +115,29 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, "{}", "application/json")
         if path == "/api/stats":
             return self.send(200, json.dumps(memory.practice_stats()), "application/json")
-        if path in ("", "/review", "/review.html") and not (DATA / "review.html").exists():
-            return self.redirect("/welcome")
-        templates = {"/welcome": "welcome.html", "/setup-arrows": "setup_arrows.html"}
+        from coach import insights
+        if path == "/api/home":
+            return self.send(200, json.dumps(insights.home()), "application/json")
+        if path == "/api/games":
+            return self.send(200, json.dumps(insights.games_list()), "application/json")
+        if path.startswith("/api/games/"):
+            detail = insights.game_detail(path.rsplit("/", 1)[-1])
+            return self.send(200 if detail else 404, json.dumps(detail or {"message": "Game not found."}), "application/json")
+        if path == "/api/practice-set":
+            practice = DATA / "drills.json"
+            return self.send(200, practice.read_bytes() if practice.exists() else b"[]", "application/json")
+        if path == "/api/settings":
+            return self.send(200, json.dumps(settings.public()), "application/json")
+        if path in ("", "/app", "/welcome"):  # the desktop app (it shows the welcome screen itself when needed)
+            return self.send(200, (UI / "index.html").read_bytes(), "text/html; charset=utf-8")
+        if path.startswith("/ui/"):
+            return self.static(path[len("/ui/"):])
+        if path == "/practice":
+            return self.redirect("/#/practice")
+        templates = {"/setup-arrows": "setup_arrows.html"}
         if path in templates:
             return self.send(200, (TEMPLATES / templates[path]).read_bytes(), "text/html; charset=utf-8")
-        pages = {"": "review.html", "/review": "review.html", "/review.html": "review.html",
-                 "/practice": "drills.html", "/drills.html": "drills.html"}
+        pages = {"/review": "review.html", "/review.html": "review.html", "/drills.html": "drills.html"}
         if path in pages and (DATA / pages[path]).exists():
             return self.send(200, (DATA / pages[path]).read_bytes(), "text/html; charset=utf-8")
         self.send(404, "not found", "text/plain")
@@ -148,7 +168,46 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/open-extensions":
             opened = open_extensions_page(body.get("browser"))
             return self.send(200, json.dumps({"opened": opened}), "application/json")
+        if path == "/api/settings":
+            return self.send(200, json.dumps(settings.save(body)), "application/json")
+        if path == "/api/keys":
+            try:
+                settings.set_key(str(body.get("slot")), str(body.get("provider")), str(body.get("key", "")))
+            except ValueError as e:
+                return self.send(400, json.dumps({"message": str(e)}), "application/json")
+            return self.send(200, json.dumps(settings.public()), "application/json")
+        if path == "/api/keys/remove":
+            try:
+                settings.remove_key(str(body.get("slot")))
+            except ValueError as e:
+                return self.send(400, json.dumps({"message": str(e)}), "application/json")
+            return self.send(200, json.dumps(settings.public()), "application/json")
+        if path == "/api/open-folder":
+            if os.name == "nt":
+                os.startfile(DATA.parent)
+            return self.send(200, "{}", "application/json")
+        if path == "/api/show":  # a second ChessCoach.exe (or a notification) asks the running one to show a screen
+            if SHOW:
+                SHOW(str(body.get("route", "home"))[:100])
+            return self.send(200, "{}", "application/json")
         self.send(404, "not found", "text/plain")
+
+    def static(self, name):
+        """Files of the desktop app (coach/ui), nothing outside it."""
+        target = (UI / name).resolve()
+        if UI.resolve() not in target.parents or not target.is_file():
+            return self.send(404, "not found", "text/plain")
+        types = {".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg",
+                 ".svg": "image/svg+xml", ".glb": "model/gltf-binary", ".gltf": "model/gltf+json",
+                 ".bin": "application/octet-stream", ".wav": "audio/wav", ".json": "application/json"}
+        ctype = types.get(target.suffix, "application/octet-stream")
+        data = target.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        self.wfile.write(data)
 
     def redirect(self, where):
         self.send_response(302)
@@ -294,13 +353,18 @@ def update_once():
 
 
 def summary_of_new(n):
-    """One line about the newest games for the notification."""
+    """One line about the newest games for the notification, and the newest game's id."""
     rows = [json.loads(line) for line in open(DATA / "moves.jsonl")]
     end = {g["url"]: g["end_time"] for f in DATA.glob("games-*.json") for g in json.loads(f.read_text())["games"]}
     newest = sorted({r["url"] for r in rows}, key=lambda u: end.get(u, 0))[-n:]
     lost = sum(1 for r in rows if r["url"] in newest and classify(r) in review.LOSING_MATERIAL)
     games = "1 new game" if n == 1 else f"{n} new games"
-    return f"{games} checked. Pieces given away: {lost}. Click to see your key moments."
+    return f"{games} checked. Pieces given away: {lost}. Click to see your key moments.", game_id(newest[-1])
+
+
+def open_link(route):
+    """What a notification opens: the app window (installed app) or the page in the browser (from source)."""
+    return f"chesscoach://{route}" if FROZEN else f"{URL}/#/{route}"
 
 
 def loop():
@@ -313,10 +377,11 @@ def loop():
         try:
             n, first = update_once()
             if first:
-                notify("Chess Coach", f"Your review is ready: {n} games checked. Click to open it.", URL)
+                notify("Chess Coach", f"Your review is ready: {n} games checked. Click to open it.", open_link("home"))
             elif n:
                 log.info("checked %d new games", n)
-                notify("Chess Coach", summary_of_new(n), URL)
+                text, newest = summary_of_new(n)
+                notify("Chess Coach", text, open_link(f"games/{newest}"))
         except Exception as e:
             log.exception("update failed")
             STATE.update(phase="error", error=str(e)[:200])
