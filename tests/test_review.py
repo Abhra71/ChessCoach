@@ -27,3 +27,13 @@ def test_examples_one_per_game_turning_points_first():
     rows = [rec(url="a", loss=90, cp_before=-500), rec(url="b", loss=40), rec(url="b", loss=60),
             rec(url="c", loss=30, time_class="bullet"), rec(url="d", loss=30)]
     assert [r["url"] for r in pick_examples(rows)] == ["b", "d", "c"]
+
+
+def test_pieces_lost_overall_and_recent():
+    from coach.review import pieces_lost
+    hang = dict(stalemate=False, cp_before=0, loss=40, best_mates=False, allows_mate=False, best_is_capture=False,
+                fen="4k3/8/3p4/8/3Q4/8/8/4K3 w - - 0 1", move="Qe5", reply_pv=["d6e5"], mat_before=8)
+    quiet = dict(hang, loss=1)
+    rows = [dict(hang, url="old"), dict(hang, url="old"), dict(quiet, url="new")]
+    overall, recent, n = pieces_lost(rows, {"old": 1, "new": 2}, last=1)
+    assert (overall, recent, n) == (1.0, 0.0, 1)

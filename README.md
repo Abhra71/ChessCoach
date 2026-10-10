@@ -33,7 +33,8 @@ python -m coach.update <your chess.com username>
 8 cores, the first time) and writes **`data/review.html`**: open it in your browser. Run `python -m coach.update`
 again after you play: it only downloads and checks the new games.
 
-The review page shows your top 3 mistake patterns, how often each happened, the habit that fixes it, and
+The review page starts with your score to bring down, **pieces given away per game** (all games, and your
+last 20), then shows your top 3 mistake patterns, how often each happened, the habit that fixes it, and
 3 real positions from your games for each: your move (red), what they could do next (orange), the better
 move (green), with a link to the game on chess.com.
 
