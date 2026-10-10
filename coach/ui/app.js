@@ -572,7 +572,8 @@ async function settingsView() {
 async function welcome() {
   $("#root").innerHTML = `<div class="onboard"><div class="backdrop" id="backdrop"></div>
     <div class="card" id="card"></div></div>`;
-  if (window.Backdrop) window.Backdrop.mount($("#backdrop"));
+  const mountBackdrop = () => { try { window.Backdrop.mount($("#backdrop")); } catch (e) { console.warn("3D scene", e); } };
+  if (window.Backdrop) mountBackdrop(); else window.addEventListener("backdrop-ready", mountBackdrop, { once: true });
   const card = $("#card");
   const dots = n => `<div class="steps-dots">${[0, 1, 2].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</div>`;
   function intro() {

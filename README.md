@@ -21,6 +21,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
 | "Is this you?" answer on the review page, saved in your logbook | works |
+| Welcome screen: a photorealistic 3D antique chess set (Poly Haven, CC0) replaying the Opera Game behind the card, offline | works |
 | Desktop app window: Home (your focus, score, trend, last game), Games, Practice, Settings; dark and light | works (beta) |
 | Settings: chess.com account, theme, voice, two optional AI key slots kept in Windows Credential Manager | works (AI use: next) |
 | The coach speaks (Kokoro, on this computer): briefing, key moments, practice feedback; 4 voices | works |
@@ -49,6 +50,7 @@ Your data stays on your computer in `%LOCALAPPDATA%\ChessCoach`. Uninstall from 
 pip install -r requirements.txt
 python -m coach.get_engine                       # downloads Stockfish (~80 MB) into engine/
 python -m coach.get_voice                        # optional: speaking (~120 MB) and listening (~485 MB) into voice/
+python -m coach.get_assets                       # the 3D welcome scene (~20 MB) into coach/ui/vendor/
 python -m coach.puzzles                          # optional: Lichess puzzles (reads ~300 MB, keeps ~2.5 MB)
 python -m coach.update <your chess.com username>
 ```
@@ -139,7 +141,8 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `extension/` | the Chrome/Edge extension (arrows and key-moments panel on chess.com) |
 | `coach/app.py` | ChessCoach.exe: the app window (pywebview + WebView2), icon by the clock, the background coach |
 | `coach/paths.py` | where files live (project folder, or %LOCALAPPDATA%\ChessCoach when installed) |
-| `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Settings, Welcome) |
+| `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Play, Settings, Welcome) |
+| `coach/ui/backdrop.js`, `coach/get_assets.py` | the 3D welcome scene (Three.js + Poly Haven chess set) and its download |
 | `coach/insights.py` | the numbers and lists the app shows (dashboard, games, one game in detail) |
 | `coach/voice.py`, `coach/hearing.py`, `coach/get_voice.py` | speaking (Kokoro), listening (Whisper), and their downloads |
 | `coach/ai.py` | optional AI explanations and answers through the player's own keys (key 1, then key 2) |
@@ -174,4 +177,5 @@ a small tray window with your logbook, and a local SQLite memory.
 ## Licence
 
 GPL-3.0 (see `LICENSE`). Stockfish and python-chess are also GPL-3.0. The voice is Kokoro (Apache-2.0); listening is Whisper via faster-whisper (MIT). The Lichess puzzle database is
-public domain (CC0), from database.lichess.org.
+public domain (CC0), from database.lichess.org. The 3D chess set is "Chess Set" by Riley Queen on Poly Haven (CC0);
+Three.js is MIT.
