@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Chess Coach</title>
+<style>
+body { margin: 0; width: 280px; background: #211f1c; color: #ece8e1; font: 14px/1.45 system-ui, "Segoe UI", sans-serif; }
+main { padding: 14px 16px; }
+h1 { font-size: 16px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+h1 img { width: 20px; height: 20px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; background: #a39d93; }
+.on .dot { background: #2e9e5b; } .off .dot { background: #d64545; }
+p { margin: 6px 0; } .muted { color: #a39d93; font-size: 13px; }
+a { display: block; margin-top: 8px; background: #2e7d57; color: #fff; text-decoration: none; text-align: center;
+  border-radius: 8px; padding: 7px; }
+code { background: #34312c; padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+</style></head>
+<body><main>
+  <h1><img src="icon128.png" alt="">Chess Coach</h1>
+  <p id="state"><span class="dot"></span>Checking…</p>
+  <div id="more"></div>
+  <p class="muted">Off during live games: arrows only appear on your finished games.</p>
+</main>
+<script src="popup.js"></script>
+</body></html>

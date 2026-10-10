@@ -74,6 +74,8 @@ Its own log is `logbook/service.log`.
 3. Open one of your finished games on chess.com (`chess.com/game/live/...`). A small **Chess Coach** panel
    lists the key moments. Click one: the board jumps there and shows the better move (green) and your move
    (red). "What happened next" shows your move and their answer (orange). The – button shrinks the panel.
+4. The Chess Coach button in the browser toolbar says whether the coach is running and links to your review
+   and practice pages.
 
 **Fair play:** the extension only shows something for games the coach already knows, and the coach only knows
 games that chess.com has archived as finished. During a live game it shows nothing at all. It never moves pieces

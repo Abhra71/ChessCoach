@@ -1,11 +1,17 @@
 {
   "manifest_version": 3,
   "name": "Chess Coach",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shows the key moments of your finished chess.com games with arrows on the board. Never active during a live game.",
-  "icons": { "128": "icon128.png" },
-  "background": { "service_worker": "background.js" },
-  "host_permissions": ["http://127.0.0.1:8765/*"],
+  "icons": {
+    "128": "icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "http://127.0.0.1:8765/*"
+  ],
   "content_scripts": [
     {
       "matches": [
@@ -14,9 +20,20 @@
         "https://www.chess.com/analysis/game/live/*",
         "https://www.chess.com/analysis/game/daily/*"
       ],
-      "js": ["coach.js"],
-      "css": ["coach.css"],
+      "js": [
+        "coach.js"
+      ],
+      "css": [
+        "coach.css"
+      ],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Chess Coach",
+    "default_icon": {
+      "128": "icon128.png"
+    }
+  }
 }
