@@ -2,7 +2,7 @@
 ; Build:  "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\ChessCoach.iss
 ; Needs dist\ChessCoach from:  python -m PyInstaller installer\ChessCoach.spec --noconfirm
 
-#define AppVersion "0.3.0"
+#define AppVersion "0.4.0"
 
 [Setup]
 AppId={{6F2C8E3A-4B1D-4C7E-9A35-2D8B7F1E0C64}

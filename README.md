@@ -156,13 +156,15 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 ### Build the installer
 
 ```
-pip install pyinstaller pystray
+pip install pyinstaller -r requirements.txt
 python -m coach.get_engine
+python -m coach.get_voice
+python -m coach.get_assets
 python -m PyInstaller installer/ChessCoach.spec --noconfirm
 "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\ChessCoach.iss     # Inno Setup 6, free
 ```
 
-Result: `dist\ChessCoach-Setup-<version>.exe` (about 85 MB, mostly Stockfish).
+Result: `dist\ChessCoach-Setup-<version>.exe` (about 245 MB: Stockfish, the voice and the speech libraries).
 
 Your games, results and logbooks stay on your computer in `data/` and `logbook/`. They are never uploaded
 and never committed.
