@@ -46,3 +46,23 @@ def test_explanation_is_grounded_and_cached(isolated, monkeypatch):
     assert len(seen) == 1                         # second time came from the cache
     assert "never invent" in seen[0][0]           # the rules forbid made-up moves
     assert "leaves loose: bishop on d3" in seen[0][1] and '"fen"' not in seen[0][1]
+
+
+def test_retired_model_is_picked_again(monkeypatch):
+    import io
+    import urllib.error
+    from coach import ai
+    ai._MODELS["gemini"] = "gemini-3.5-flash"
+    seen = []
+
+    def once(provider, key, system, prompt, max_tokens):
+        seen.append(ai._MODELS.get(provider))
+        if ai._MODELS.get(provider) == "gemini-3.5-flash":
+            raise urllib.error.HTTPError("u", 404, "model retired", {}, io.BytesIO(b""))
+        ai._MODELS[provider] = "gemini-flash-latest"
+        return "ok"
+
+    monkeypatch.setattr(ai, "_call_once", once)
+    assert ai._call("gemini", "k", "s", "p", 10) == "ok"
+    assert seen == ["gemini-3.5-flash", None] and ai._MODELS["gemini"] == "gemini-flash-latest"
+    ai._MODELS.clear()

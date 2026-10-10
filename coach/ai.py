@@ -57,6 +57,7 @@ def _gemini(key, system, prompt, max_tokens):
     if "gemini" not in _MODELS:
         listed = [m["name"].split("/", 1)[1] for m in _get("https://generativelanguage.googleapis.com/v1beta/models", head)["models"]
                   if "generateContent" in m.get("supportedGenerationMethods", [])]
+        # "gemini-flash-latest" is Google's own pointer to its current Flash model, so retired versions never stick
         _MODELS["gemini"] = _pick(listed, ["flash-latest", "3.5-flash", "3-flash", "2.5-flash", "flash"],
                                   avoid=("lite", "image", "tts", "live", "audio", "embedding", "thinking"))
     body = {"systemInstruction": {"parts": [{"text": system}]}, "contents": [{"role": "user", "parts": [{"text": prompt}]}],
@@ -94,6 +95,17 @@ def _claude(key, system, prompt, max_tokens):
 
 
 def _call(provider, key, system, prompt, max_tokens):
+    """One request. If the provider has retired the model we picked (404/410), pick again from its current list once."""
+    try:
+        return _call_once(provider, key, system, prompt, max_tokens)
+    except urllib.error.HTTPError as e:
+        if e.code not in (404, 410) or provider not in _MODELS:
+            raise
+        _MODELS.pop(provider)
+        return _call_once(provider, key, system, prompt, max_tokens)
+
+
+def _call_once(provider, key, system, prompt, max_tokens):
     if provider == "gemini":
         return _gemini(key, system, prompt, max_tokens)
     if provider == "groq":
