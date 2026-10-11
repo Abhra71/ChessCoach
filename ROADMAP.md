@@ -103,6 +103,24 @@ questions on chess.com, Settings note about the coaches, README/Store text, test
 Next: AI key guide (needs the builder's screenshots), real-key test of chat, voice questions on chess.com,
 an AI-written "new idea" when a key exists, build 0.5.0, Store text and screenshots.
 
+### Hooked by value (builder's go-ahead, night of 11-12 Oct 2026; all in 0.5.0)
+- Sounds: the builder picked each one on a picker page from Kenney's CC0 packs (coach/ui/sounds, 81 KB): move, capture,
+  check, right, wrong, finished (with confetti), coach arriving, button click. Own switch in Settings; no background music.
+- Motion: pieces slide, numbers roll up, lines draw themselves, bars and rings fill.
+- No brackets in anything the player reads; shorter lines everywhere.
+- Home redesigned (the builder found the "Where your games go wrong" box cramped): Today's 5 minutes on top; focus with a
+  sparkline and Practise this; habits as clickable tiles (each opens practice for that habit, fewer or more lately);
+  You vs you; rating with a win bar; last game in one line from Maya. The big trend chart and the totals row are gone.
+- Today's 5 minutes (coach/daily.py): own position, puzzle on today's idea, first 3 moves of your opening; streak
+  forgives one missed day.
+- Progress tab with Viktor (coach/progress.py): story of the week (or the last 10 games), saved as a picture to
+  Pictures\Knightwise; badges from real games only (Safe pieces, Fork-proof, Safe king, Clean games, Daily habit).
+- Try it again: any key moment as a puzzle with Maya. Your opening tree (coach/tree.py) with a note on costly branches;
+  found for the builder: as Black against 1.d4, 23%, 10 of 35 losses.
+- README rewritten as honest marketing: real numbers only (30,000 puzzles, 3,865 openings, 0.7 vs 1.2 pieces a game,
+  45% vs 25% wins), what it doesn't do.
+Next: the animated preview for the README needs ffmpeg (ask first); the builder's verdict on the new Home and sounds.
+
 ### Vision widened (builder, 11 Oct 2026 night): "a grandmaster sitting beside you" (proposal, awaiting confirmation)
 - Gestures and faces per situation, per coach: greet (wave), explain (open palm), point (towards the ring), celebrate,
   encourage (fist pump), think (chin), worried (cheek), warn (raised finger), listen (tilt), goodbye; smooth moves.
