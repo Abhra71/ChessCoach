@@ -25,9 +25,13 @@ THEMES = {
     "walked into checkmate": "mateIn1",
     "missed a checkmate": "mateIn2",
 }
-KEEP_THEMES = {"hangingPiece", "fork", "mateIn1", "mateIn2"}
-MIN_RATING, MAX_RATING = 400, 1200
-PER_THEME = 3000
+# the grandmaster's library: every theme a beginner-to-club player needs, so the coaches can always bring something new
+KEEP_THEMES = {"hangingPiece", "fork", "mateIn1", "mateIn2", "pin", "skewer", "discoveredAttack", "doubleCheck",
+               "backRankMate", "smotheredMate", "trappedPiece", "deflection", "attraction", "capturingDefender",
+               "promotion", "defensiveMove", "pawnEndgame", "rookEndgame", "queenEndgame", "opening"}
+MIN_RATING, MAX_RATING = 300, 1600
+PER_THEME = 1500
+VERSION = 2  # bump when KEEP_THEMES changes: the app downloads again
 
 
 def wanted(row):
@@ -42,7 +46,7 @@ def main():
     seen = 0
     with urllib.request.urlopen(req, timeout=60) as resp:
         text = io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(resp), encoding="utf-8")
-        for row in csv.DictReader(text):
+        for row in csv.DictReader(text):  # the file is sorted by puzzle id, so themes and ratings come mixed
             seen += 1
             if seen % 200_000 == 0:
                 print(f"\r{seen:,} puzzles read", end="", file=sys.stderr, flush=True)
@@ -55,9 +59,17 @@ def main():
             if all(len(v) >= PER_THEME for v in kept.values()):
                 break
     OUT.parent.mkdir(exist_ok=True)  # a new install has no data/ folder yet
-    OUT.write_text(json.dumps(kept))
+    OUT.write_text(json.dumps({**kept, "_version": VERSION}))
     print(f"\nread {seen:,} puzzles, kept " + ", ".join(f"{t}: {len(v)}" for t, v in kept.items()), file=sys.stderr)
 
 
 if __name__ == "__main__":
     main()
+
+
+def current():
+    """Is the kept set up to date with KEEP_THEMES?"""
+    try:
+        return json.loads(OUT.read_text()).get("_version") == VERSION
+    except (OSError, ValueError):
+        return False

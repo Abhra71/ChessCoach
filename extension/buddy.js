@@ -46,8 +46,9 @@
         <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
           <button class="kw-x" title="Fold away">–</button></div>
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
-        ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => a.find && target(a.find)
-          ? `<button data-guide="${i}">${esc(a.label)}</button>` : `<a href="${esc(a.url)}">${esc(a.label)}</a>`).join("")}</div>` : ""}
+        ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => a.app ? `<button data-app="${esc(a.app)}">${esc(a.label)}</button>`
+          : a.find && target(a.find) ? `<button data-guide="${i}">${esc(a.label)}</button>`
+          : `<a href="${esc(a.url)}">${esc(a.label)}</a>`).join("")}</div>` : ""}
         ${s.ai_hint ? `<p class="kw-hint">${esc(s.ai_hint)}</p>` : ""}
         ${s.ai_ready ? `<form class="kw-ask"><input placeholder="Ask ${esc(s.name)} anything about your chess" maxlength="300">
           <button>Ask</button></form>` : ""}
@@ -56,6 +57,11 @@
     const wake = box.querySelector(".kw-tab");
     if (wake) wake.onclick = () => { render(true); speak(); };
     box.querySelector(".kw-char").onclick = () => { if (open) fold(); else { render(true); speak(); } };
+    box.querySelectorAll("[data-app]").forEach(b => b.onclick = () => {  // opens the Knightwise app at that page
+      send({ type: "open-app", route: b.dataset.app });
+      said = { ...said, pose: "pleased", lines: ["Opening Knightwise for you. See you there."], actions: [] };
+      render(true); speak();
+    });
     box.querySelectorAll("[data-guide]").forEach(b => b.onclick = () => guide(s.actions[Number(b.dataset.guide)]));
     const form = box.querySelector(".kw-ask");
     if (form) form.onsubmit = e => { e.preventDefault(); const q = form.querySelector("input").value.trim(); if (q) ask(q); };

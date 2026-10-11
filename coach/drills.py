@@ -111,18 +111,35 @@ CLUE = {  # what to look for, per Lichess theme
     "fork": "Look for a move that attacks two of their pieces at once.",
     "mateIn1": "Look at every check you can give: one of them is checkmate.",
     "mateIn2": "Look at every check you can give, starting with the most forcing one.",
+    "pin": "Look for a piece that can't move because something more valuable is behind it.",
+    "skewer": "Check or attack the big piece, and take the one behind it.",
+    "discoveredAttack": "Move one piece out of the way so another one attacks.",
+    "doubleCheck": "Find a move that gives check with two pieces at once.",
+    "backRankMate": "Their king is stuck behind its own pawns on the back row.",
+    "smotheredMate": "Their king is boxed in by its own pieces: a knight can mate.",
+    "trappedPiece": "One of their pieces has no safe square left. Attack it.",
+    "deflection": "Pull a defender away from the piece or square it guards.",
+    "attraction": "Lure their king or queen onto a bad square.",
+    "capturingDefender": "Take the piece that defends something, then take what it defended.",
+    "promotion": "Get your pawn to the last row.",
+    "defensiveMove": "They threaten something. Find the move that stops it.",
+    "pawnEndgame": "In pawn endings the king is a strong piece: use it.",
+    "rookEndgame": "Rooks belong behind passed pawns, and active.",
+    "queenEndgame": "Checkmate, but leave their king a square: no stalemate.",
+    "opening": "Early in the game: find the move that punishes their mistake.",
 }
 
 
-def puzzle(p, pattern):
-    """A Lichess puzzle: the opponent's move is shown first, then the player finds every move of the solution."""
+def puzzle(p, pattern, theme=None):
+    """A Lichess puzzle: the opponent's move is shown first, then the player finds every move of the solution.
+    theme: the Lichess theme it was chosen for (a new idea from the library), else the pattern's own theme."""
     board = chess.Board(p["fen"])
     first = chess.Move.from_uci(p["moves"][0])
     start = squares(board)
     their_first = board.san(first)
     board.push(first)
     color = "Black" if board.turn == chess.BLACK else "White"
-    hint = CLUE.get(THEMES.get(pattern), ABOUT[pattern][1])
+    hint = CLUE.get(theme) or CLUE.get(THEMES.get(pattern)) or ABOUT.get(pattern, ("", "Take your time."))[1]
     steps = []
     solution = [chess.Move.from_uci(u) for u in p["moves"][1:]]
     for i in range(0, len(solution), 2):

@@ -125,9 +125,10 @@ def line(kind, coach, rng=random, **facts):
     return rng.choice(options).format(**facts)
 
 
-def speak(section, home=None, hour=12, moments=None, rng=random):
+def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
     """What the coach of this section says: {coach, name, voice, mood, lines, actions}.
-    moments: for a game review, the number of key moments (None = a game the coach doesn't know)."""
+    moments: for a game review, the number of key moments (None = a game the coach doesn't know).
+    extra: {"novelty": the new thing from coach/plan.py, "advice": a do-this-not-that line} for the home section."""
     coach = SECTION_COACH.get(section, "zara")
     home = home if home is not None else insights.home()
     info = COACHES[coach]
@@ -157,6 +158,15 @@ def speak(section, home=None, hour=12, moments=None, rng=random):
             lines.append(line("better", coach, rng, **facts))
         elif face == "worried":
             lines.append(line("worse", coach, rng, **facts))
+        if section == "home" and extra and extra.get("novelty"):  # something new, when it's genuinely needed
+            n = extra["novelty"]
+            lines.append(f"Something new for you: {n['title'].lower() if n['kind'] != 'opening' else n['title']}. {n['why']}")
+            out["actions"] = [{"label": "Learn it in Knightwise", "app": "plan"}] + suggestions(home)[:1]
+            return {**out, "mood": "pleased", "lines": lines}
+        if section == "home" and extra and extra.get("advice"):
+            lines.append(extra["advice"])
+            out["actions"] = suggestions(home)
+            return {**out, "mood": face, "lines": lines}
         if section == "progress":  # the weekly memory instead of the general line: three sentences at most
             lines.append(week_line(home, coach, rng))
         elif section in ("lessons", "play"):
@@ -254,3 +264,34 @@ def chat(coach, message, history=(), home=None, extra=None, ask_ai=None, rng=ran
     if not text or not grounded(text, facts_text):
         return fallback
     return {"text": text[:700], "mood": "pleased" if "!" in text else "calm", "ai": True}
+
+
+# ---------- what to do and what not to do today (from the player's own data) ----------
+def advice(games, moves, player, now=None):
+    """One 'do this, not that' line, or None: a losing streak today, or a time control that costs pieces."""
+    import collections
+    import time
+
+    from coach.review import LOSING_MATERIAL
+    now = now or time.time()
+    today = [g for g in games if now - g["end_time"] < 12 * 3600]  # newest first
+    streak = 0
+    for g in today:
+        if insights._result(g, insights._side(g, player)[0]) != "loss":
+            break
+        streak += 1
+    if streak >= 3:
+        return f"You've lost {streak} in a row today. Take a 10-minute break, then review the last one before you play again."
+    by = collections.defaultdict(lambda: [0, 0])
+    for g in games:
+        if g["url"] in moves and g["time_class"] != "daily":
+            by[g["time_class"]][0] += sum(1 for r in moves[g["url"]] if r.get("pattern") in LOSING_MATERIAL)
+            by[g["time_class"]][1] += 1
+    rates = {tc: lost / n for tc, (lost, n) in by.items() if n >= 8}
+    if len(rates) < 2:
+        return None
+    worst, best = max(rates, key=rates.get), min(rates, key=rates.get)
+    if rates[worst] >= 1.5 * rates[best] and worst != best:
+        return (f"Skip {worst} for now: you give away {rates[worst]:.1f} pieces a game there, "
+                f"{rates[best]:.1f} in {best}.")
+    return None

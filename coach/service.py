@@ -22,7 +22,7 @@ from logging.handlers import RotatingFileHandler
 import chess
 
 from coach import analyze, drills, fetch, memory, puzzles, review, settings
-from coach.paths import DATA, EXTENSION, FROZEN, LOGBOOK, NAME, PACKAGE, TEMPLATES
+from coach.paths import BUNDLED_EXTENSION, DATA, EXTENSION, FROZEN, LOGBOOK, NAME, PACKAGE, TEMPLATES
 from coach.patterns import classify
 from coach.review import explain, move_number
 
@@ -141,6 +141,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(settings.public()), "application/json")
         if path in ("", "/app", "/welcome"):  # the desktop app (it shows the welcome screen itself when needed)
             return self.send(200, (UI / "index.html").read_bytes(), "text/html; charset=utf-8")
+        if path == "/api/plan":  # "Your plan": one opening, tactic, idea, endgame, and the new thing if it's needed now
+            from coach import live_engine, plan
+            with live_engine.LOCK:
+                return self.send(200, json.dumps(plan.plan(engine=live_engine.get())), "application/json")
+        if path.startswith("/ext/"):  # the coaches' drawings, shared with the browser extension
+            return self.static(path[len("/ext/"):], root=BUNDLED_EXTENSION)
         if path.startswith("/ui/"):
             return self.static(path[len("/ui/"):])
         if path == "/practice":
@@ -176,6 +182,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/player":
             ok, message = set_player(str(body.get("username", "")))
             return self.send(200 if ok else 400, json.dumps({"ok": ok, "message": message}), "application/json")
+        if path == "/api/plan/mark":  # the player saw or finished a new thing
+            from coach import plan
+            plan.mark(str(body.get("id", ""))[:200], done=bool(body.get("done")))
+            return self.send(200, "{}", "application/json")
         if path == "/api/chat":  # talking with a coach on chess.com (needs a key; never fails without one)
             from coach import ai, coaches
             turns = body.get("history") if isinstance(body.get("history"), list) else []
@@ -290,10 +300,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(502, json.dumps({"message": f"The AI didn't answer: {str(e)[:200]}"}), "application/json")
         return self.send(200, json.dumps(answer), "application/json")
 
-    def static(self, name):
-        """Files of the desktop app (coach/ui), nothing outside it."""
-        target = (UI / name).resolve()
-        if UI.resolve() not in target.parents or not target.is_file():
+    def static(self, name, root=None):
+        """Files of the desktop app (coach/ui), or the extension's drawings; nothing outside them."""
+        root = root or UI
+        target = (root / name).resolve()
+        if root.resolve() not in target.parents or not target.is_file():
             return self.send(404, "not found", "text/plain")
         types = {".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg",
                  ".svg": "image/svg+xml", ".glb": "model/gltf-binary", ".gltf": "model/gltf+json",
@@ -372,7 +383,16 @@ def coach_says(url):
     if q.get("game", "").isdigit():
         rows = MOMENT_CACHE.get(q["game"])
         moments = None if rows is None else len(key_moments(rows)) if rows else 0
-    said = coaches.speak(q.get("section", "home"), hour=hour % 24, moments=moments)
+    extra = {}
+    if q.get("section") in ("home", "plan"):
+        from coach import insights, live_engine, plan
+        try:
+            with live_engine.LOCK:
+                extra["novelty"] = plan.novelty(engine=live_engine.get())
+            extra["advice"] = coaches.advice(insights._games(), insights._moves(), player() or "")
+        except Exception:
+            log.exception("novelty")
+    said = coaches.speak(q.get("section", "home"), hour=hour % 24, moments=moments, extra=extra)
     from coach import voice
     s = settings.load()
     said["voice_on"] = bool(s.get("voice")) and voice.available()
@@ -475,7 +495,7 @@ def update_once():
     first = not (DATA / "review.html").exists()
     STATE.update(phase="downloading your games", done=0, total=0, error=None)
     fetch.fetch(player())
-    if not puzzles.OUT.exists():
+    if not puzzles.current():  # first run, or the library grew
         STATE["phase"] = "downloading puzzles"
         puzzles.main()
     STATE["phase"] = "checking your games"

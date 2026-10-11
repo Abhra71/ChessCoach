@@ -3,7 +3,7 @@
   --bg: #fafafa; --surface: #ffffff; --raised: #f3f3f3; --line: #e4e4e4; --line-strong: #cfcfcf;
   --text: #0a0a0a; --muted: #5e5e5e; --faint: #8c8c8c; --invert: #0a0a0a; --on-invert: #ffffff;
   --red: #d92d20; --red-soft: #fdecea;
-  --sq-light: #ececec; --sq-dark: #a8a8a8;
+  --sq-light: #ebecd0; --sq-dark: #739552;  /* the green board players know from chess.com */
   --better: #1f9d55; --mine: #d92d20; --reply: #c27a12;
   --radius: 6px; --shadow: 0 1px 2px rgba(0,0,0,.04);
   color-scheme: light;
@@ -13,7 +13,7 @@
     --bg: #0a0a0a; --surface: #111111; --raised: #181818; --line: #232323; --line-strong: #343434;
     --text: #f2f2f2; --muted: #a0a0a0; --faint: #6e6e6e; --invert: #f2f2f2; --on-invert: #0a0a0a;
     --red: #ff4d42; --red-soft: #2a1311;
-    --sq-light: #c9c9c9; --sq-dark: #6f6f6f;
+    --sq-light: #ebecd0; --sq-dark: #739552;
     --better: #36c27a; --mine: #ff4d42; --reply: #f0a43a;
     --shadow: none; color-scheme: dark;
   }
@@ -22,7 +22,7 @@
   --bg: #0a0a0a; --surface: #111111; --raised: #181818; --line: #232323; --line-strong: #343434;
   --text: #f2f2f2; --muted: #a0a0a0; --faint: #6e6e6e; --invert: #f2f2f2; --on-invert: #0a0a0a;
   --red: #ff4d42; --red-soft: #2a1311;
-  --sq-light: #c9c9c9; --sq-dark: #6f6f6f;
+  --sq-light: #ebecd0; --sq-dark: #739552;
   --better: #36c27a; --mine: #ff4d42; --reply: #f0a43a;
   --shadow: none; color-scheme: dark;
 }

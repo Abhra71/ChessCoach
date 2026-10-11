@@ -61,6 +61,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     player().then(() => chrome.runtime.sendMessage({ type: "play", url: `${COACH}/api/say`, text: msg.text, voice: msg.voice }));
     return false;
   }
+  if (msg.type === "open-app" && /^[a-z/]+$/.test(msg.route || "")) {  // bring the Knightwise window forward
+    fetch(`${COACH}/api/show`, { method: "POST", headers: { "Content-Type": "application/json" },
+                                 body: JSON.stringify({ route: msg.route }) }).catch(() => {});
+    return false;
+  }
   if (msg.type === "check-now") {  // at most once a minute, whatever the pages ask
     if (Date.now() - lastCheck > 55000) {
       lastCheck = Date.now();

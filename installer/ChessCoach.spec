@@ -16,6 +16,7 @@ a = Analysis(
         (str(ROOT / "extension"), "extension"),               # icon for the tray
         (str(ROOT / "coach" / "drills_template.html"), "coach"),
         (str(ROOT / "coach" / "ui"), "coach/ui"),             # the desktop app's screens
+        (str(ROOT / "coach" / "openings"), "coach/openings"),  # the opening catalogue (Lichess, CC0)
         (str(ROOT / "voice" / "kokoro-v1.0.int8.onnx"), "voice"),  # the coach's voice (Kokoro); listening downloads later
         (str(ROOT / "voice" / "voices-v1.0.bin"), "voice"),
     ] + [d for v in VOICE for d in v[0]],
