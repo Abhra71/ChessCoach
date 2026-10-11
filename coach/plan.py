@@ -273,4 +273,9 @@ def plan(home=None, engine=None, today=None):
         "endgame": endgame(end, rating, rng),
     }
     new = novelty(home, games, moves, engine, today, rng)
+    if new and items.get(new["kind"]) and items[new["kind"]]["id"] == new["id"]:  # no duplicate: the card shows another one
+        if new["kind"] == "endgame":
+            items["endgame"] = endgame(next(t for t in ENDGAMES if f"endgame:{t}" != new["id"]), rating, rng)
+        elif new["kind"] == "tactic":
+            items["tactic"] = tactic(next(t for t in ROTATION if f"tactic:{t}" != new["id"]), rating, rng)
     return {"player": home["player"], "rating": rating, "items": items, "novelty": new, "done": sorted(done)}

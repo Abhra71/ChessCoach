@@ -11,6 +11,7 @@ const ICON = {
   home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
   games: '<path d="M4 4h16v16H4z"/><path d="M4 12h16M12 4v16"/>',
   practice: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+  plan: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
 };
@@ -36,26 +37,29 @@ function applyTheme(theme) {
 // ---------- voice ----------
 const Voice = (() => {  // the coach speaks sentence by sentence; the next one is made while this one plays
   let on = true, playing = null, token = 0;
+  const talkers = [], tell = v => talkers.forEach(f => { try { f(v); } catch (e) {} });
   const split = t => String(t).replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
-  const audio = text => fetch("/api/say", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }) }).then(r => { if (!r.ok) throw new Error("voice"); return r.blob(); }).then(b => URL.createObjectURL(b));
+  const audio = (text, voice) => fetch("/api/say", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(voice ? { text, voice } : { text }) }).then(r => { if (!r.ok) throw new Error("voice"); return r.blob(); }).then(b => URL.createObjectURL(b));
   const play = url => new Promise(done => { const a = new Audio(url); playing = a; a.onended = a.onerror = done; a.play().catch(done); });
-  function stop() { token++; if (playing) { playing.pause(); playing = null; } }
-  async function speak(text, force) {
+  function stop() { token++; if (playing) { playing.pause(); playing = null; } tell(false); }
+  async function speak(text, force, voice) {
     stop();
     if ((!on && !force) || !text) return;
     const mine = ++token, parts = split(text);
-    let next = audio(parts[0]);
+    let next = audio(parts[0], voice);
     for (let i = 0; i < parts.length; i++) {
       let url;
       try { url = await next; } catch (e) { return; }
       if (mine !== token) return;
-      if (i + 1 < parts.length) next = audio(parts[i + 1]);
+      if (i + 1 < parts.length) next = audio(parts[i + 1], voice);
+      tell(true);
       await play(url);
       if (mine !== token) return;
     }
+    tell(false);
   }
-  return { speak, stop, set(v) { on = v; if (!v) stop(); }, get on() { return on; } };
+  return { speak, stop, set(v) { on = v; if (!v) stop(); }, get on() { return on; }, onTalk: f => talkers.push(f) };
 })();
 
 // ---------- microphone ----------
@@ -127,7 +131,7 @@ function shell(active, body) {
     <div class="shell">
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
-        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("settings", "Settings", "settings")}</nav>
+        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("settings", "Settings", "settings")}</nav>
         <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
         <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
       </aside>
@@ -173,6 +177,8 @@ async function home() {
   shell("home", `<p class="muted">Loading…</p>`);
   const h = await api("/api/home");
   if (!h.player) return go("welcome");
+  try { if (sessionStorage.getItem("kw-new")) { sessionStorage.removeItem("kw-new"); setTimeout(() => AiCard.maybe("welcome"), 2500); }
+        else AiCard.maybe("week"); } catch (e) {}
   const hour = new Date().getHours(), hello = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const f = h.focus, last = h.last_game, r = h.results || {};
   const better = h.pieces_last20 < h.pieces_per_game;
@@ -282,16 +288,16 @@ async function gameView(id) {
       b.disabled = true; b.textContent = "Thinking…";
       try {
         const r = await api("/api/explain", { game: g.id, ply: Number(b.dataset.explain) });
-        explained[Number(b.dataset.explain)] = r.text; draw(); Voice.speak(r.text);
+        explained[Number(b.dataset.explain)] = r.text; draw(); Coach.react("maya", "explain", r.text);
       } catch (err) { b.textContent = err.message.slice(0, 80); }
     });
     $("#moments").querySelectorAll(".moment").forEach(el => el.onclick = e => {
       const k = g.key_moments[Number(el.dataset.i)];
       view = e.target.dataset.view || "before";
       ply = view === "before" ? k.ply - 1 : k.ply; draw();
-      Voice.speak(view === "before"
-        ? `Move ${k.move_number}. ${cap(k.pattern)}. ${k.say} The better move was ${k.best}.`
-        : `You played ${k.move}. Watch their reply.`);
+      // Maya explains the better move, and looks worried at what your move allowed
+      if (view === "before") Coach.react("maya", "explain", `Move ${k.move_number}. ${cap(k.pattern)}. ${k.say} The better move was ${k.best}.`);
+      else Coach.react("maya", "worried", `You played ${k.move}. Watch their reply.`);
     });
     let html = "";
     for (let i = 1; i < g.positions.length; i += 2) {
@@ -317,78 +323,8 @@ async function practice() {
   shell("practice", `<p class="muted">Loading…</p>`);
   const drills = await api("/api/practice-set").catch(() => []);
   if (!drills.length) { $("#page").innerHTML = `<div class="empty">Practice appears once your games are checked.</div>`; return; }
-  let i = 0, k = 0, pieces = {}, picked = null, done = false, missed = false, last = {}, right = 0;
-  $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Practice</h1><p class="sub">Your own positions (the move before a big mistake) and puzzles on the same habits.</p></div>
-      <span class="muted num" id="count"></span></div>
-    <div class="game-layout">
-      <div><div class="board-wrap" id="board"></div><p class="small muted" id="where" style="margin-top:10px"></p></div>
-      <div class="stack"><div class="box"><div class="label" id="kind"></div><h3 id="task" style="margin:6px 0 10px"></h3>
-        <p class="muted" id="hint" style="margin:0"></p></div>
-        <div class="box" id="result" style="min-height:84px"><span class="muted">Click a piece, then the square to move it to.</span></div>
-        <div class="row"><button class="btn" id="show">Show answer</button><button class="btn primary" id="next">Next position</button></div>
-        <p class="note" id="stats"></p></div>
-    </div>`;
-  const d = () => drills[i], step = () => d().steps[k];
-  const mark = (sqs, cls) => Object.fromEntries(sqs.map(s => [s, cls]));
-  const mine = sym => (sym === sym.toUpperCase()) === !d().flip;
-  function draw(hl = {}, targets = []) { Board.render($("#board"), { pieces, flip: d().flip, highlights: { ...last, ...hl }, targets, onClick: click }); }
-  function result(cls, html) { $("#result").innerHTML = `<div class="${cls}">${html}</div>`; }
-  async function show() {
-    k = 0; picked = null; done = false; missed = false; last = {};
-    const x = d();
-    $("#count").textContent = `${i + 1} of ${drills.length} · ${right} right first time`;
-    $("#kind").textContent = x.kind === "game" ? "From your game" : "Puzzle";
-    $("#task").textContent = x.intro; $("#hint").textContent = x.hint;
-    $("#where").innerHTML = `${esc(x.where)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link)} ↗</a>`;
-    result("muted", "Click a piece, then the square to move it to.");
-    pieces = x.start; draw();
-    Voice.speak(x.intro);
-    if (x.last) { done = true; await wait(700); if (d() !== x) return; pieces = x.steps[0].board; last = mark(x.last, "hl-last"); draw(); done = false; }
-  }
-  async function good(uci, m, shown) {
-    const x = d(), s = step();
-    pieces = m.after; last = {}; draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-ok"));
-    if (s.reply) {
-      done = true; result("ok-text", `<b>${esc(m.san)}</b>: yes. Now they play ${esc(s.reply.san)}. Keep going.`);
-      await wait(800); if (d() !== x) return;
-      pieces = s.reply.board; last = mark([s.reply.uci.slice(0, 2), s.reply.uci.slice(2, 4)], "hl-last"); k++; done = false; draw();
-      if (shown) answer(); return;
-    }
-    done = true; if (!missed) right++;
-    $("#count").textContent = `${i + 1} of ${drills.length} · ${right} right first time`;
-    const note = x.kind === "game" ? `In the game you played ${esc(x.played)}.${m.san === x.best ? "" : " The engine's top move was " + esc(x.best) + "."}` : "Puzzle solved.";
-    result("ok-text", `<b>${esc(m.san)}</b>: ${shown ? "that's the answer." : x.kind === "game" ? "yes, that keeps you safe." : "correct."}<div class="muted small" style="margin-top:4px">${note}</div>`);
-    Voice.speak(shown ? `The answer is ${m.san}.` : x.kind === "game" ? `Yes. ${m.san} keeps you safe.` : `Correct, ${m.san}.`);
-    api("/api/practice", { id: x.id, kind: x.kind, right: !missed }).then(stats).catch(() => {});
-  }
-  function click(sq) {
-    if (done) return;
-    const sym = pieces[sq];
-    if (sym && mine(sym)) {
-      picked = sq;
-      return draw({ [sq]: "hl-pick" }, Object.keys(step().moves).filter(u => u.startsWith(sq)).map(u => u.slice(2, 4)));
-    }
-    if (!picked) return;
-    const uci = step().moves[picked + sq] ? picked + sq : picked + sq + "q", m = step().moves[uci];
-    picked = null;
-    if (!m) return draw();
-    if (m.good) return good(uci, m, false);
-    missed = true;
-    result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(m.say)}</div><div class="small muted" style="margin-top:4px">Try again.</div>`);
-    Voice.speak(`Not quite. ${m.say} Try again.`);
-    draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-no"));
-  }
-  function answer() {
-    const entries = Object.entries(step().moves).filter(([, m]) => m.good);
-    const pick = (d().kind === "game" && entries.find(([, m]) => m.san === d().best)) || entries[0];
-    missed = true; good(pick[0], pick[1], true);
-  }
-  function stats(s) { if (s && s.answers) $("#stats").textContent = `So far: ${s.right} of ${s.answers} right first time · ${s.learned} positions learned (right 3 times, days apart).`; }
-  $("#show").onclick = () => { if (!done) answer(); };
-  $("#next").onclick = () => { i = (i + 1) % drills.length; show(); };
-  api("/api/stats").then(stats).catch(() => {});
-  show();
+  $("#page").innerHTML = trainerPage("Practice", { text: "Your own positions (the move before a big mistake) and puzzles on the same habits." });
+  trainer(drills, { coach: "arjun", record: true });
 }
 
 // ---------- arrows on chess.com: the extension, step by step ----------
@@ -479,9 +415,10 @@ async function settingsView() {
           <button class="btn" id="sample">Play sample</button></div>
           <div class="row"><span class="small ${s.listen_ready ? "ok-text" : "muted"}" id="listenstate">${s.listen_ready ? "Listening is on: use Talk to ask by voice." : "Ask by voice needs the listening model (about 485 MB, once)."}</span>
             ${s.listen_ready ? "" : `<button class="btn" id="getlisten">Install listening</button>`}</div></div></div>
-      <div class="settings-row"><div><h3>AI explanations</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.
+      <div class="settings-row"><div><h3>AI: talk with your coaches</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.
         Without one it uses the engine's built-in sentences. Keys are kept in Windows Credential Manager, encrypted for your Windows account,
-        and are only sent to the provider you choose.</p></div>
+        and are only sent to the provider you choose.</p>
+        <button class="btn" id="aicompare" style="margin-top:8px">What AI adds</button></div>
         <div class="grid">${slot("slot1", 1)}${slot("slot2", 2)}<p class="note">Key 2 is used when key 1 fails or runs out.</p></div></div>
       <div class="settings-row"><div><h3>Arrows on chess.com</h3><p class="note">The browser extension.</p></div>
         <div class="row"><span class="${st.extension_seen ? "ok-text" : "faint"}">${st.extension_seen ? "Connected" : "Not connected yet"}</span>
@@ -499,6 +436,7 @@ async function settingsView() {
   const SAMPLE = "Hi, I'm your chess coach. Before every move, ask: what can they take?";
   $("#voicename").onchange = async e => { await api("/api/settings", { voice_name: e.target.value }); Voice.speak(SAMPLE, true); };
   $("#sample").onclick = () => Voice.speak(SAMPLE, true);
+  $("#aicompare").onclick = () => AiCard.open();
   if ($("#getlisten")) $("#getlisten").onclick = async () => {
     $("#getlisten").disabled = true;
     await api("/api/voice/install-listening", {});
@@ -635,7 +573,7 @@ async function welcome() {
       <p class="small muted" style="margin-top:16px">The first time takes a couple of minutes. You can close this window: a notification tells you when it's ready.</p>`;
     for (;;) {
       const s = await api("/api/status").catch(() => ({}));
-      if (s.phase === "ready" && s.review_ready) return go("home");
+      if (s.phase === "ready" && s.review_ready) { try { sessionStorage.setItem("kw-new", "1"); } catch (e) {} return go("home"); }
       $("#phase").textContent = s.phase === "error" ? `Something went wrong (${s.error}). Retrying by itself.` : cap(s.phase || "working") + "…";
       $("#fill").style.width = (s.total ? Math.max(3, 100 * s.done / s.total) : s.phase === "building your pages" ? 100 : 3) + "%";
       $("#cnt").textContent = s.total ? `Game ${s.done} of ${s.total}` : "";
@@ -651,7 +589,9 @@ function go(route) { location.hash = "#/" + route; }
 async function route() {
   const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
   try {
-    if (name === "welcome") return await welcome();
+    if (name === "welcome") { Coach.hide(); return await welcome(); }
+    if (["settings", "extension"].includes(name)) Coach.hide(); else Coach.arrive(name || "home");
+    if (name === "plan") return await planView(arg);
     if (name === "games" && arg) return await gameView(arg);
     if (name === "games") return await games();
     if (name === "practice") return await practice();

@@ -15,13 +15,13 @@ LESSONS = "https://www.chess.com/lessons"
 
 COACHES = {
     "maya": {"role": "Game reviews", "name": "Maya", "voice": "bf_emma", "about": "Former champion. Calm, patient, strategic.",
-             "sections": ["review"]},
+             "sections": ["review", "games"]},
     "arjun": {"role": "Puzzles and practice", "name": "Arjun", "voice": "am_puck", "about": "Young prodigy. Quick, energetic, loves tactics.",
               "sections": ["puzzles"]},
     "zara": {"role": "Before you play", "name": "Zara", "voice": "af_nova", "about": "Attacking player. Direct, bold, competitive.",
              "sections": ["home", "play"]},
     "viktor": {"role": "Progress and lessons", "name": "Viktor", "voice": "bm_george", "about": "Veteran. Wise, dry humour, has seen it all.",
-               "sections": ["progress", "lessons"]},
+               "sections": ["progress", "lessons", "plan"]},
 }
 AI_HINT = ("Want to talk with your coaches and get replies? Add a free AI key in Knightwise, Settings "
            "(about 2 minutes, step by step).")
@@ -93,6 +93,14 @@ SAY = {
     },
     "lessons": {
         "viktor": ["Lessons are good. But the best teacher is your own last game. Remember that."],
+    },
+    "games": {
+        "maya": ["Pick a game and I'll show you the moments that decided it.",
+                 "Every game has one or two moments that matter. Choose one and let's find them."],
+    },
+    "plan": {
+        "viktor": ["Here is your plan: one opening, one tactic, one idea, one endgame. Pick one and we start.",
+                   "Not a pile of homework. Four things, chosen for you. Start with whichever you like."],
     },
     "play": {
         "zara": ["Pick a bot near your level and play it like a real game. I'll stay quiet until it's over."],
@@ -169,11 +177,15 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
             return {**out, "mood": face, "lines": lines}
         if section == "progress":  # the weekly memory instead of the general line: three sentences at most
             lines.append(week_line(home, coach, rng))
-        elif section in ("lessons", "play"):
+        elif section == "plan" and extra and extra.get("novelty"):
+            n = extra["novelty"]
+            lines.append(f"But first, something new: {n['title']}. {n['why']}")
+        elif section in ("lessons", "play", "games", "plan"):
             lines.append(line(section, coach, rng, **facts))
         elif focus:
             lines.append(line("focus", coach, rng, **facts))
-        out["actions"] = suggestions(home)
+        if section not in ("games", "plan"):
+            out["actions"] = suggestions(home)
     return {**out, "mood": face, "lines": lines}
 
 
