@@ -13,7 +13,8 @@
 .kw-box p { margin: 6px 0 0; color: #e2e2e2; }
 .kw-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .kw-actions a { background: #f2f2f2; color: #0a0a0a !important; text-decoration: none; border-radius: 6px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
-.kw-actions a + a { background: transparent; color: #f2f2f2 !important; border: 1px solid #3a3a3a; }
+.kw-actions button { background: #f2f2f2; color: #0a0a0a; border: 0; border-radius: 6px; padding: 6px 12px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; }
+.kw-actions a + a, .kw-actions button + a { background: transparent; color: #f2f2f2 !important; border: 1px solid #3a3a3a; }
 .kw-box .kw-hint { margin-top: 12px; color: #8c8c8c; font-size: 12px; border-top: 1px solid #222; padding-top: 8px; }
 
 /* the face: blinks by itself, the mouth moves only while the voice plays */
@@ -27,3 +28,9 @@
 @keyframes kw-in { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) { .kw-avatar, .kw-face .kw-eyes { animation: none; } }
 @media (max-width: 700px) { .kw-box { width: calc(100vw - 40px); } }
+
+/* the navigation guide: a red ring around chess.com's own link (it never clicks for the player) */
+.kw-ring { position: fixed; z-index: 99997; pointer-events: none; border: 3px solid #ff4d42; border-radius: 10px;
+  box-shadow: 0 0 0 4px rgba(255,77,66,.25); animation: kw-pulse 1.2s ease-in-out infinite; }
+.kw-ring.again { border-width: 4px; animation-duration: .7s; }
+@keyframes kw-pulse { 50% { box-shadow: 0 0 0 10px rgba(255,77,66,0); } }

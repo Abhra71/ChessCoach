@@ -46,13 +46,59 @@
         <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
           <button class="kw-x" title="Fold away">–</button></div>
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
-        ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map(a =>
-          `<a href="${esc(a.url)}">${esc(a.label)}</a>`).join("")}</div>` : ""}
+        ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => a.find && target(a.find)
+          ? `<button data-guide="${i}">${esc(a.label)}</button>` : `<a href="${esc(a.url)}">${esc(a.label)}</a>`).join("")}</div>` : ""}
         ${s.ai_hint ? `<p class="kw-hint">${esc(s.ai_hint)}</p>` : ""}
       </div>` : face;
     box.querySelector(".kw-avatar").onclick = () => { if (open) fold(); else { render(true); speak(); } };
+    box.querySelectorAll("[data-guide]").forEach(b => b.onclick = () => guide(s.actions[Number(b.dataset.guide)]));
     const x = box.querySelector(".kw-x");
     if (x) x.onclick = fold;
+  }
+
+  // ---- the navigation guide: point at chess.com's own link, the player clicks it, the next coach notices ----
+  let ring = null, ringFor = null, nudge = null;
+
+  function target(find) {  // chess.com's visible link to that section, preferring the menu on the left
+    const links = [...document.querySelectorAll("a[href]")].filter(a => {
+      try { return new URL(a.href, location.href).pathname.startsWith(find.path) && a.getClientRects().length; } catch (e) { return false; }
+    });
+    return links.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0] || null;
+  }
+
+  function placeRing() {
+    if (!ring || !ringFor || !ringFor.isConnected) return unring();
+    const r = ringFor.getBoundingClientRect();
+    const left = Math.max(2, r.left - 6), top = Math.max(2, r.top - 6);  // never cut off at the edge
+    Object.assign(ring.style, { left: `${left}px`, top: `${top}px`, width: `${r.right + 6 - left}px`, height: `${r.bottom + 6 - top}px` });
+  }
+
+  function unring() {
+    if (ring) ring.remove();
+    ring = null; ringFor = null; clearTimeout(nudge);
+    removeEventListener("scroll", placeRing, true); removeEventListener("resize", placeRing);
+  }
+
+  function guide(action) {
+    const el = target(action.find);
+    if (!el) { location.href = action.url; return; }  // their menu moved: plain link (the player asked to go there)
+    unring();
+    ringFor = el;
+    ring = document.createElement("div");
+    ring.className = "kw-ring";
+    document.body.appendChild(ring);
+    placeRing();
+    addEventListener("scroll", placeRing, true); addEventListener("resize", placeRing);
+    try { sessionStorage.setItem("kw-guided", action.find.path); } catch (e) {}
+    said = { ...said, mood: "calm", actions: [], ai_hint: null,
+             lines: [`Click "${action.find.name}" where the red ring is. I'll wait.`] };
+    render(true); speak();
+    nudge = setTimeout(() => {  // still here: point again, a little bigger
+      if (!ring) return;
+      ring.classList.add("again");
+      said = { ...said, lines: [`It's right there, in the red ring: "${action.find.name}".`] };
+      render(true); speak();
+    }, 12000);
   }
 
   function fold() { clearTimeout(foldTimer); send({ type: "hush" }); render(false); }
@@ -72,6 +118,7 @@
   async function arrive() {
     const here = section(location.pathname);
     if (here === current) return;
+    unring();
     remove();
     if (!here) return;  // not a coach section: nothing at all
     current = here;
@@ -81,6 +128,13 @@
       coach: "zara", name: "Zara", mood: "calm", voice_on: false, actions: [],
       lines: ["I'm asleep right now. Open Knightwise from the Start menu and I'll coach you here."],
     };
+    let guided = null;
+    try { guided = sessionStorage.getItem("kw-guided"); sessionStorage.removeItem("kw-guided"); } catch (e) {}
+    if (guided && location.pathname.startsWith(guided) && r && r.ok) {  // they followed the guide: say so, warmly
+      said = { ...said, mood: "pleased", lines: ["Nice, you found it.", ...said.lines.slice(1)] };
+      render(true); speak();
+      return;
+    }
     const store = (await send({ type: "greeted", section: here })) || {};
     const first = store.day !== today();
     render(first);

@@ -156,7 +156,8 @@ def speak(section, home=None, hour=12, moments=None, rng=random):
 
 def suggestions(home):
     """One or two things to do next, as links on chess.com (the player clicks; we never click for them)."""
-    actions = [{"label": "Warm up with puzzles", "url": PUZZLES}]
+    # find: the coach can point at chess.com's own link (red ring) and check the player clicked it
+    actions = [{"label": "Warm up with puzzles", "url": PUZZLES, "find": {"path": "/puzzles", "name": "Puzzles"}}]
     last = home.get("last_game")
     if last and last.get("moments"):
         actions.append({"label": f"Review your game vs {last['opponent']}", "url": last["url"]})
