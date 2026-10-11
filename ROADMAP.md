@@ -93,6 +93,17 @@ Also done: Viktor's weekly memory. Left: AI key walkthrough with the builder's s
 questions on chess.com, Settings note about the coaches, README/Store text, test in the builder's Chrome with
 `try.bat`, screenshots, build 0.5.0.
 
+### Vision widened (builder, 11 Oct 2026 night): "a grandmaster sitting beside you" (proposal, awaiting confirmation)
+- Gestures and faces per situation, per coach: greet (wave), explain (open palm), point (towards the ring), celebrate,
+  encourage (fist pump), think (chin), worried (cheek), warn (raised finger), listen (tilt), goodbye; smooth moves.
+- On chess.com, before/after games: what to do and what NOT to do today, from the player's data (e.g. which time
+  control, rated puzzles slowly instead of Rush, take a break after 3 losses).
+- In the Knightwise app: the same coaches pop up by themselves on each tab and on key buttons, with voice; the board
+  looks like chess.com's (colours/feel; our own pieces); a "Your plan" section: ONE opening that suits the player's
+  games, one strategy idea, one endgame, taught on the board; curated practice with memory of past mistakes.
+- Boards: full live guidance on Knightwise's own boards; on chess.com puzzles/lessons only habits and encouragement
+  (never solving rated puzzles); bot games only if chess.com allows; games against people: never.
+
 ## Found after the Store launch (11 Oct 2026, builder's first use of 0.4.1)
 - **No welcome screen on first start:** the Store app reads `%LOCALAPPDATA%\ChessCoach` (`paths.HOME`), the same
   folder the old Chess Coach uses, found `player.txt` and went straight to Home. Fix in 0.4.2: the Store app keeps its
