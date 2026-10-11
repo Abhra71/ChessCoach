@@ -19,6 +19,7 @@ CHOICES = {  # the voices offered in Settings
     "af_heart": "Heart (American)", "bf_emma": "Emma (British)", "am_michael": "Michael (American)",
     "bm_george": "George (British)",
 }
+COACH_VOICES = ("bf_emma", "am_puck", "af_nova", "bm_george")  # the four coaches on chess.com (coach/coaches.py)
 DEFAULT = "af_heart"  # chosen by the player who tested the beta
 
 _engine = None
@@ -66,7 +67,7 @@ def speakable(text):
 
 def say(text, voice=DEFAULT):
     """WAV bytes for one short piece of text (cached, so repeated phrases are instant)."""
-    voice = voice if voice in CHOICES else DEFAULT
+    voice = voice if voice in CHOICES or voice in COACH_VOICES else DEFAULT
     text = speakable(text)[:600]
     key = hashlib.sha1(f"{voice}|{text}".encode()).hexdigest()
     cached = CACHE / f"{key}.wav"

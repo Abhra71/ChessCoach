@@ -46,3 +46,12 @@ def test_status_has_what_the_welcome_page_needs():
     s = status()
     for key in ("player", "phase", "done", "total", "review_ready", "extension_seen", "extension_path", "browsers"):
         assert key in s
+
+
+def test_coach_says_nothing_about_a_game_it_does_not_know(monkeypatch):
+    from coach import service
+    monkeypatch.setattr(service.MOMENT_CACHE, "get", lambda gid: [HANG] if gid == "42" else None)
+    unknown = service.coach_says("/api/coach?section=review&hour=20&game=999")
+    assert unknown["coach"] == "maya" and unknown["mood"] == "thinking" and not unknown["actions"]
+    known = service.coach_says("/api/coach?section=review&hour=20&game=42")
+    assert "1 key moment " in known["lines"][0] + " " and "moments" not in known["lines"][0]

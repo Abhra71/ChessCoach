@@ -111,6 +111,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(body), "application/json")
         if path == "/api/status":
             return self.send(200, json.dumps(status()), "application/json")
+        if path == "/api/coach":  # what the coach of a chess.com section says (the extension shows it)
+            return self.send(200, json.dumps(coach_says(self.path)), "application/json")
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
             STATE["extension_seen"] = time.strftime("%Y-%m-%d %H:%M")
             return self.send(200, "{}", "application/json")
@@ -327,6 +329,21 @@ class Server(ThreadingHTTPServer):
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         super().server_bind()
+
+
+def coach_says(url):
+    """?section=home|puzzles|review|progress|lessons|play&hour=0-23[&game=id]. A review of a game the coach doesn't
+    know (not finished and checked) gets no board facts at all (fair play)."""
+    from urllib.parse import parse_qs, urlsplit
+
+    from coach import coaches
+    q = {k: v[0] for k, v in parse_qs(urlsplit(url).query).items()}
+    hour = int(q["hour"]) if q.get("hour", "").isdigit() else time.localtime().tm_hour
+    moments = None
+    if q.get("game", "").isdigit():
+        rows = MOMENT_CACHE.get(q["game"])
+        moments = None if rows is None else len(key_moments(rows)) if rows else 0
+    return coaches.speak(q.get("section", "home"), hour=hour % 24, moments=moments)
 
 
 def player():
