@@ -37,10 +37,11 @@ really cost you points, and trains you out of them, one or two things at a time,
 - **Free and open source.** No account, no adverts, no tracking. Optional AI explanations use your own free key
   (Google Gemini or Groq).
 
-Knightwise is an independent app. It is not made by, endorsed by or connected with chess.com.
+Made by Abhra71. Knightwise is an independent app. It is not made by, endorsed by or connected with chess.com.
 
 **What's new in this version**
-0.4.2: a new welcome: a short 3D chess film with quiet piano (mute any time), opening full screen. A fresh start
+0.4.2: a new welcome: a short 3D chess film with quiet piano (mute any time), opening full screen. A clearer,
+step-by-step guide with real pictures for adding the chess.com arrows extension. A fresh start
 after every reinstall. Removed the in-app practice game so the coach stays focused on your chess.com games.
 
 **Product features** (one per line)

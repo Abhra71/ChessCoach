@@ -5,6 +5,7 @@ Closing the window keeps the coach running by the clock; "Quit" in the icon's me
 Opening ChessCoach.exe again (Start menu, a notification) just brings the running window back.
 """
 import json
+import os
 import multiprocessing
 import sys
 import threading
@@ -79,6 +80,8 @@ def at_login(set_up):
 
 
 def main():
+    # the welcome's music may start by itself (the window only ever shows our own pages, never other sites)
+    os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required")
     import webview
 
     from coach import service

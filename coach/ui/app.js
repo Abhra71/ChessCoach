@@ -539,11 +539,14 @@ const LINES = ["Every move you played, checked.", "Your habits, found.", "Silent
   "Trained on your own positions.", "A coach that never sleeps."];
 const remember = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
 
-// The welcome film's music: Satie's Gymnopedie No. 1 (public domain), very quiet, fading in; the mute is remembered.
+// The welcome film's music: Satie's Gymnopedie No. 1 (public domain), quiet; the mute is remembered.
+// The recording opens very softly (its first ~9 s are about a third as loud as the rest), so it starts a little louder
+// and settles back to quiet once the melody fills out. The app window lets it start by itself (app.py); in a plain
+// browser the first click or key starts it.
 function welcomeMusic(button) {
-  const audio = new Audio("/ui/vendor/music/gymnopedie-1.flac"), LOUD = 0.18;
-  audio.loop = true; audio.volume = 0;
-  let muted = remember("kw-music-muted") === "1", fader = null;
+  const audio = new Audio("/ui/vendor/music/gymnopedie-1.flac"), OPEN = 0.3, LOUD = 0.18;
+  audio.loop = true; audio.preload = "auto"; audio.volume = 0;
+  let muted = remember("kw-music-muted") === "1", fader = null, settle = null;
   const fade = (to, secs) => {
     clearInterval(fader);
     const step = (to - audio.volume) / (secs * 20);
@@ -553,14 +556,21 @@ function welcomeMusic(button) {
       else audio.volume = Math.min(1, Math.max(0, v));
     }, 50);
   };
-  const start = () => { if (muted) return; audio.play().then(() => fade(LOUD, 3)).catch(() => {}); };
+  const start = () => {
+    if (muted || !audio.paused) return;
+    audio.play().then(() => {
+      fade(audio.currentTime < 9 ? OPEN : LOUD, 1);
+      clearTimeout(settle);
+      settle = setTimeout(() => { if (!muted) fade(LOUD, 4); }, Math.max(0, 9 - audio.currentTime) * 1000);
+    }).catch(() => {});
+  };
   const paint = () => { button.innerHTML = muted ? "Music off" : "Music on"; button.setAttribute("aria-pressed", String(!muted)); };
-  button.onclick = () => { muted = !muted; remember("kw-music-muted", muted ? "1" : "0"); paint(); muted ? fade(0, 0.6) : start(); };
+  button.onclick = () => { muted = !muted; remember("kw-music-muted", muted ? "1" : "0"); paint(); if (muted) { clearTimeout(settle); fade(0, 0.6); } else start(); };
   paint(); start();
-  // if the window won't play sound before a click, the first click or key starts it
   const kick = () => { if (audio.paused) start(); };
-  addEventListener("pointerdown", kick, { once: true }); addEventListener("keydown", kick, { once: true });
-  return () => { removeEventListener("pointerdown", kick); removeEventListener("keydown", kick); fade(0, 0.8); };
+  const EVENTS = ["pointerdown", "keydown"];
+  EVENTS.forEach(e => addEventListener(e, kick));
+  return () => { EVENTS.forEach(e => removeEventListener(e, kick)); clearTimeout(settle); fade(0, 0.8); };
 }
 
 // Short lines typed over the film, letter by letter, held, then erased.
