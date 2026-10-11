@@ -8,7 +8,7 @@ chrome.runtime.onInstalled.addListener(hello);
 chrome.runtime.onStartup.addListener(hello);
 hello();
 
-let speakingTab = null;
+let speakingTab = null, lastCheck = 0;
 
 // The coach's voice plays in a hidden extension page (chess.com's page can't play sound from our app).
 async function player() {
@@ -40,6 +40,13 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "say" && sender.tab) {
     speakingTab = sender.tab.id;
     player().then(() => chrome.runtime.sendMessage({ type: "play", url: `${COACH}/api/say`, text: msg.text, voice: msg.voice }));
+    return false;
+  }
+  if (msg.type === "check-now") {  // at most once a minute, whatever the pages ask
+    if (Date.now() - lastCheck > 55000) {
+      lastCheck = Date.now();
+      fetch(`${COACH}/api/check-now`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
+    }
     return false;
   }
   if (msg.type === "hush") {

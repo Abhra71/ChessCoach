@@ -156,14 +156,33 @@
     });
   }
 
+  const WAIT_EVERY = 60000, WAIT_FOR = 15 * 60000;  // a game that isn't archived yet: ask again, for a while
+  let waiting = null;
+
+  // Instant review. The coach only knows a game once chess.com's public archive lists it as finished, so while a
+  // game is being played this shows nothing. When it ends and chess.com archives it, the app checks it at once.
   async function start() {
     const id = idFromUrl();
     if (!id || id === gameId) return;
     gameId = id;
+    clearTimeout(waiting);
     moments = []; clearArrows();
     if (panel) { panel.remove(); panel = null; }
-    const data = await ask(id);
-    if (!data || !data.known || !data.moments.length) return; // unknown game: show nothing at all
+    const since = Date.now();
+    const look = async () => {
+      if (gameId !== id) return;
+      const data = await ask(id);
+      if (gameId !== id) return;
+      if (data && data.known) return show(id, data);
+      if (!data || Date.now() - since > WAIT_FOR) return;  // the app isn't running, or it's been too long
+      chrome.runtime.sendMessage({ type: "check-now" });  // the app looks at chess.com's archive for new games
+      waiting = setTimeout(look, WAIT_EVERY);
+    };
+    look();
+  }
+
+  async function show(id, data) {
+    if (!data.moments.length) return;  // a clean game: nothing to show on the board
     moments = data.moments;
     const n = moments.length;
     maya = { mood: "calm", line: `${n} key moment${n === 1 ? "" : "s"} in this game. Click one to see it on the board.` };
@@ -171,9 +190,17 @@
       try { chrome.runtime.sendMessage({ type: "coach", section: "review", game: id, hour: new Date().getHours() }, res); }
       catch (e) { res(null); }
     });
-    if (r && r.ok && r.data.lines.length) maya = { mood: r.data.mood, line: r.data.lines[0] };
+    if (gameId !== id) return;
+    if (r && r.ok && r.data.lines.length) {
+      maya = { mood: r.data.mood, line: r.data.lines[0] };
+      if (r.data.voice_on) chrome.runtime.sendMessage({ type: "say", text: maya.line, voice: r.data.voice });
+    }
     draw();
   }
+
+
+  // Maya's mouth moves while her voice plays
+  chrome.runtime.onMessage.addListener(msg => { if (msg.type === "speaking" && panel) panel.classList.toggle("talking", !!msg.on); });
 
   // Redraw when the board changes (moving through the game) and notice when chess.com changes page.
   const ours = node => (overlay && overlay.contains(node)) || (panel && panel.contains(node)) || node === overlay;
