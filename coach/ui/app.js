@@ -654,7 +654,7 @@ async function settingsView() {
           <button class="btn" id="sample">Play sample</button></div>
           <div class="row"><span class="small ${s.listen_ready ? "ok-text" : "muted"}" id="listenstate">${s.listen_ready ? "Listening is on: use Talk to ask by voice." : "Ask by voice: a one-time 485 MB download."}</span>
             ${s.listen_ready ? "" : `<button class="btn" id="getlisten">Install listening</button>`}</div></div></div>
-      <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a coach arriving. No background music.</p></div>
+      <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a finished set. No background music.</p></div>
         <div class="row"><button class="switch ${s.sounds ? "on" : ""}" id="sounds" aria-label="Sounds"></button>
           <span class="small muted">${s.sounds ? "On" : "Off"}</span></div></div>
       <div class="settings-row"><div><h3>AI: talk with your coaches</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.

@@ -53,7 +53,7 @@ const Coach = (() => {
   });
 
   // say something now (open, with voice)
-  function show(s, { speak = true } = {}) { if (!box) Sound.play("coach", 0.5); said = s; clearTimeout(foldTimer); render(true); if (speak) talk(); }
+  function show(s, { speak = true } = {}) { said = s; clearTimeout(foldTimer); render(true); if (speak) talk(); }
   // a quick reaction on a board: pose (worried, celebrate, explain...) and one line
   // spoken: what the voice says when it differs from the short line in the bubble
   function react(coach, pose, text, actions, spoken) { show({ coach, pose, mood: pose, lines: [text], actions: actions || [], spoken }); }
