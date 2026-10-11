@@ -103,8 +103,11 @@ questions on chess.com, Settings note about the coaches, README/Store text, test
 Next: AI key guide (needs the builder's screenshots), real-key test of chat, voice questions on chess.com,
 an AI-written "new idea" when a key exists, build 0.5.0, Store text and screenshots.
 
-### Release plan (12 Oct 2026): the builder tests 0.5.0 with docs/TEST-SESSION.md first, then fixes, then upload.
-Voice, the bridge, the usage panel and Groq-first go in 0.6.0.
+### Release plan (12 Oct 2026, confirmed by the builder)
+1. The builder tests 0.5.0 with docs/TEST-SESSION.md, with part 9 using a real Groq key.
+2. Fix everything found: major, smaller and minor.
+3. Publish 0.5.0.
+4. Then 0.6.0: AI features and AI orchestration, meaning voice conversation, voice game review, the bridge, the usage panel, Groq first; then publish.
 
 ### Next big piece (the builder, 12 Oct 2026; waiting for the hearing choice)
 - Voice-to-voice conversation with the coach of each field, not a text chat: hold to talk, she answers out loud, and the turns continue.

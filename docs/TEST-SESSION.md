@@ -1,6 +1,6 @@
 # Knightwise 0.5.0: guided test session
 
-About 75 to 90 minutes. Do the steps in order. For each step, read **Do**, then compare with **Expect**.
+About 85 to 100 minutes. Do the steps in order. For each step, read **Do**, then compare with **Expect**.
 If anything is different, wrong, ugly, slow or confusing, write down the **step number** and what you saw.
 A short note is enough, for example: "4.3: Back button skipped two positions."
 
@@ -102,6 +102,17 @@ Before you start:
 | 8.3 | Close it and run `try.bat` again | Your real data is back, unchanged |
 
 ---
+
+## 9. The AI, with a free Groq key, 10 minutes
+
+| Step | Do | Expect |
+|---|---|---|
+| 9.1 | Ask Claude to guide you through making a free Groq key, at console.groq.com/keys | A key that starts with gsk_ |
+| 9.2 | In Settings, AI key 1, choose Groq, paste the key, save | It says the key works |
+| 9.3 | On Home, type a question in **Ask the coach**, like "How do I stop leaving pieces hanging?" | A real answer in the coach's words, read aloud, within a few seconds |
+| 9.4 | Open a game, press **Explain like a coach** on a key moment | A longer explanation from Maya; no squares or moves that aren't really on the board |
+| 9.5 | On chess.com, type to Zara in her chat box | She answers in her own personality |
+| 9.6 | Ask something silly or off-topic | A friendly answer that steers back to chess, never an error |
 
 ## Also note down
 - Anything that took longer than 3 seconds.
