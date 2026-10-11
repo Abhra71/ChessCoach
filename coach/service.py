@@ -173,6 +173,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/player":
             ok, message = set_player(str(body.get("username", "")))
             return self.send(200 if ok else 400, json.dumps({"ok": ok, "message": message}), "application/json")
+        if path == "/api/chat":  # talking with a coach on chess.com (needs a key; never fails without one)
+            from coach import ai, coaches
+            turns = body.get("history") if isinstance(body.get("history"), list) else []
+            history = [(str(t[0]), str(t[1])) for t in turns[-6:] if isinstance(t, list) and len(t) == 2]
+            reply = coaches.chat(str(body.get("coach", "zara")), str(body.get("message", "")), history)
+            if not reply["ai"] and ai.ready():
+                reply["note"] = "The AI is busy right now, so I'm keeping it short. Ask again in a minute."
+            return self.send(200, json.dumps(reply), "application/json")
         if path == "/api/check-now":
             WAKE.set()
             return self.send(200, "{}", "application/json")
@@ -348,7 +356,8 @@ def coach_says(url):
     s = settings.load()
     said["voice_on"] = bool(s.get("voice")) and voice.available()
     said["role"] = coaches.COACHES[said["coach"]]["role"]
-    if not any(settings.get_key(slot) for slot in settings.SLOTS):  # tell everyone the conversation feature exists
+    said["ai_ready"] = any(settings.get_key(slot) for slot in settings.SLOTS)
+    if not said["ai_ready"]:  # tell everyone the conversation feature exists
         said["ai_hint"] = coaches.AI_HINT
     return said
 

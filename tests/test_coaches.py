@@ -50,3 +50,25 @@ def test_every_sentence_fills_in():
         for options in by_coach.values():
             for s in options:
                 assert "{" not in s.format(**facts), (kind, s)
+
+
+def test_chat_replies_in_character_with_the_ai():
+    seen = {}
+    def fake_ai(system, prompt, max_tokens):
+        seen.update(system=system, prompt=prompt)
+        return "Keep every piece safe before you attack!", "groq"
+    r = coaches.chat("arjun", "what should I work on?", home=HOME, ask_ai=fake_ai)
+    assert r["ai"] and "Arjun" in seen["system"] and "gushynanda" in seen["prompt"] and r["text"].startswith("Keep")
+
+
+def test_chat_never_fails_when_the_ai_is_busy_or_missing():
+    def busy(*a):
+        raise RuntimeError("gemini: HTTP 503; groq: HTTP 429")
+    r = coaches.chat("maya", "hello?", home=HOME, ask_ai=busy, rng=random.Random(0))
+    assert not r["ai"] and "what can they take" in r["text"]
+
+
+def test_chat_drops_an_ai_answer_that_invents_a_square():
+    invented = lambda *a: ("Your rook on h7 was the problem.", "gemini")
+    r = coaches.chat("viktor", "why did I lose?", home=HOME, ask_ai=invented)
+    assert not r["ai"] and "h7" not in r["text"]

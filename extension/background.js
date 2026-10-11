@@ -31,6 +31,12 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     json(`${COACH}/api/coach?${q}`, reply);
     return true;
   }
+  if (msg.type === "chat") {
+    fetch(`${COACH}/api/chat`, { method: "POST", headers: { "Content-Type": "application/json" },
+                                 body: JSON.stringify({ coach: msg.coach, message: msg.message, history: msg.history || [] }) })
+      .then(r => r.json()).then(data => reply({ ok: true, data })).catch(() => reply({ ok: false }));
+    return true;
+  }
   if (msg.type === "greeted") {  // when this section's coach last greeted the player (once a day)
     const key = `greeted-${msg.section}`;
     if (msg.set) chrome.storage.local.set({ [key]: msg.set }).then(() => reply({ day: msg.set }));

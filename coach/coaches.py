@@ -164,3 +164,65 @@ def suggestions(home):
     else:
         actions.append({"label": "Play a bot at your level", "url": BOTS})
     return actions
+
+
+# ---------- talking with a coach (needs the player's own free AI key) ----------
+PERSONA = {
+    "maya": "You are Maya, a calm former women's world champion, about 35. Patient, warm, strategic; short calm sentences.",
+    "arjun": "You are Arjun, a 19-year-old chess prodigy. Energetic, quick, friendly, a bit playful; you love tactics.",
+    "zara": "You are Zara, a bold 22-year-old attacking player. Direct, motivating, competitive, never rude.",
+    "viktor": "You are Viktor, a 60-year-old veteran coach. Wise, kind, with dry humour; you have seen everything.",
+}
+# when the AI can't answer (no key, busy, down, or it said something the facts don't back up): still a warm reply
+FALLBACK = {
+    "maya": ["Let me keep this simple for now: {tip}", "Here's what matters most today: {tip}"],
+    "arjun": ["Quick one while my brain reboots: {tip}", "Short version: {tip} Let's keep going!"],
+    "zara": ["Straight to the point: {tip}", "Here's the one thing to do: {tip}"],
+    "viktor": ["The old advice still works: {tip}", "Let me give you the one lesson I'd give anyone: {tip}"],
+}
+SQUARE = __import__("re").compile(r"\b[a-h][1-8]\b")
+
+
+def player_card(home):
+    """The short card the AI gets about the player: engine facts only, never a game being played."""
+    focus = home.get("focus") or {}
+    last = home.get("last_game") or {}
+    return {"name": home.get("player"), "rating": home.get("rating"), "games_checked": home.get("games"),
+            "results": home.get("results"), "main_habit_to_fix": focus.get("pattern"), "habit_tip": focus.get("habit"),
+            "pieces_given_away_per_game": home.get("pieces_per_game"), "lately_last_20_games": home.get("pieces_last20"),
+            "other_patterns": home.get("patterns"),
+            "last_game": {k: last.get(k) for k in ("date", "result", "opponent", "opponent_rating", "pieces_lost", "moments")}
+            if last else None}
+
+
+def grounded(text, facts_text):
+    """Every square the AI names must appear in the facts it was given (Stockfish decides the chess, not the AI)."""
+    return all(sq in facts_text for sq in SQUARE.findall(text))
+
+
+def chat(coach, message, history=(), home=None, extra=None, ask_ai=None, rng=random):
+    """The coach's reply: {text, mood, ai}. Never fails: without a working AI it answers with written words."""
+    import json
+
+    from coach import ai
+    coach = coach if coach in COACHES else "zara"
+    home = home if home is not None else insights.home()
+    focus = home.get("focus") or {}
+    tip = focus.get("habit") or "Before every move, ask: what can they take, and is every piece of mine safe?"
+    fallback = {"text": rng.choice(FALLBACK[coach]).format(tip=tip), "mood": "calm", "ai": False}
+    ask_ai = ask_ai or ai.complete
+    facts = {"player": player_card(home), **(extra or {})}
+    facts_text = json.dumps(facts)
+    system = (ai.COACH_RULES.format(rating=home.get("rating") or "unknown") + PERSONA[coach] +
+              " Stay in character. Reply in at most 3 short sentences, like a real conversation. Only talk about chess and "
+              "this player's games; never give advice about a game being played right now. The facts are all you know.")
+    turns = "".join(f"{'Player' if who == 'player' else COACHES[coach]['name']}: {said}\n" for who, said in list(history)[-6:])
+    prompt = f"Facts:\n{facts_text}\n\n{turns}Player: {str(message)[:500]}\n{COACHES[coach]['name']}:"
+    try:
+        text, _provider = ask_ai(system, prompt, 300)
+    except Exception:  # no key, both providers busy or down: the conversation still goes on
+        return fallback
+    text = (text or "").strip()
+    if not text or not grounded(text, facts_text):
+        return fallback
+    return {"text": text[:700], "mood": "pleased" if "!" in text else "calm", "ai": True}

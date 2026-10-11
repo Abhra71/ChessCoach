@@ -49,9 +49,14 @@
         ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => a.find && target(a.find)
           ? `<button data-guide="${i}">${esc(a.label)}</button>` : `<a href="${esc(a.url)}">${esc(a.label)}</a>`).join("")}</div>` : ""}
         ${s.ai_hint ? `<p class="kw-hint">${esc(s.ai_hint)}</p>` : ""}
+        ${s.ai_ready ? `<form class="kw-ask"><input placeholder="Ask ${esc(s.name)} anything about your chess" maxlength="300">
+          <button>Ask</button></form>` : ""}
+        ${s.note ? `<p class="kw-hint">${esc(s.note)}</p>` : ""}
       </div>` : face;
     box.querySelector(".kw-avatar").onclick = () => { if (open) fold(); else { render(true); speak(); } };
     box.querySelectorAll("[data-guide]").forEach(b => b.onclick = () => guide(s.actions[Number(b.dataset.guide)]));
+    const form = box.querySelector(".kw-ask");
+    if (form) form.onsubmit = e => { e.preventDefault(); const q = form.querySelector("input").value.trim(); if (q) ask(q); };
     const x = box.querySelector(".kw-x");
     if (x) x.onclick = fold;
   }
@@ -99,6 +104,22 @@
       said = { ...said, lines: [`It's right there, in the red ring: "${action.find.name}".`] };
       render(true); speak();
     }, 12000);
+  }
+
+  // ---- talking with the coach (with the player's free AI key; written replies when the AI is busy) ----
+  const history = [];
+  async function ask(question) {
+    clearTimeout(foldTimer);
+    history.push(["player", question]);
+    said = { ...said, mood: "thinking", lines: [`"${question}"`, "…"], actions: [], note: null };
+    render(true);
+    const r = await send({ type: "chat", coach: said.coach, message: question, history: history.slice(0, -1) });
+    const reply = r && r.ok ? r.data : { text: "I can't reach the Knightwise app right now. Open it from the Start menu.", mood: "calm" };
+    history.push(["coach", reply.text]);
+    said = { ...said, mood: reply.mood, lines: [reply.text], note: reply.note || null };
+    render(true); speak();
+    const input = box && box.querySelector(".kw-ask input");
+    if (input) input.focus();
   }
 
   function fold() { clearTimeout(foldTimer); send({ type: "hush" }); render(false); }
