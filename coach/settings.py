@@ -18,7 +18,7 @@ PROVIDERS = {  # what the player can choose for a slot; "free" means the provide
     "anthropic": {"name": "Anthropic Claude", "free": False, "get_key": "https://console.anthropic.com/settings/keys"},
     "openai": {"name": "OpenAI", "free": False, "get_key": "https://platform.openai.com/api-keys"},
 }
-DEFAULTS = {"theme": "system", "voice": True, "voice_name": "af_heart",
+DEFAULTS = {"theme": "system", "voice": True, "sounds": True, "voice_name": "af_heart",
             "slot1": {"provider": "gemini"}, "slot2": {"provider": "groq"}}
 
 
@@ -32,8 +32,9 @@ def save(changes):
     current = load()
     if changes.get("theme") in ("system", "dark", "light"):
         current["theme"] = changes["theme"]
-    if isinstance(changes.get("voice"), bool):
-        current["voice"] = changes["voice"]
+    for flag in ("voice", "sounds"):
+        if isinstance(changes.get(flag), bool):
+            current[flag] = changes[flag]
     from coach.voice import CHOICES
     if changes.get("voice_name") in CHOICES:
         current["voice_name"] = changes["voice_name"]
@@ -77,5 +78,5 @@ def public():
         key = get_key(slot)
         slots[slot] = {"provider": s[slot]["provider"], "set": bool(key), "ends": key[-4:] if key else None}
     from coach import hearing, voice
-    return {"theme": s["theme"], "voice": s["voice"], "voice_name": s["voice_name"], "voices": voice.CHOICES,
+    return {"theme": s["theme"], "voice": s["voice"], "sounds": s["sounds"], "voice_name": s["voice_name"], "voices": voice.CHOICES,
             "voice_ready": voice.available(), "listen_ready": hearing.available(), "slots": slots, "providers": PROVIDERS}

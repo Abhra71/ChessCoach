@@ -35,6 +35,8 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Instant review: a just-finished game is reviewed as soon as chess.com archives it | built, testing (next update) |
 | Navigation guide: the coach rings chess.com's own link ("click Puzzles") and checks you got there; it never clicks for you | built, testing (next update) |
 | Talk with your coaches: with your own free AI key, ask questions and get replies in each coach's personality; the engine's facts are checked, and if the AI is busy the coach still answers | built, testing (next update) |
+| Home at a glance: your focus with a practise button, your habits as clickable tiles (each opens practice for that habit, with a fewer or more lately arrow), win bar, rating change; numbers roll up, lines draw themselves | built, testing (next update) |
+| Sounds: moves, captures, check, right and wrong answers, a finished set (with confetti), a coach arriving; picked by a player from Kenney's CC0 packs; own switch in Settings, no background music | built, testing (next update) |
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
 | "Is this you?" answer on the review page, saved in your logbook | works |
@@ -218,4 +220,4 @@ a small tray window with your logbook, and a local SQLite memory.
 
 GPL-3.0 (see `LICENSE`). Stockfish and python-chess are also GPL-3.0. The voice is Kokoro (Apache-2.0); listening is Whisper via faster-whisper (MIT). The Lichess puzzle database is
 public domain (CC0), from database.lichess.org. The 3D chess set is "Chess Set" by Riley Queen on Poly Haven (CC0);
-Three.js is MIT.
+Three.js is MIT. Sound effects are from Kenney (kenney.nl, CC0).

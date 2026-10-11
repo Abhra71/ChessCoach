@@ -146,8 +146,8 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
         out["lines"] = [line("no_player", "zara", rng)]
         return {**out, "coach": "zara", "name": "Zara", "voice": COACHES["zara"]["voice"]}
     face = mood(home)
-    facts = {"name": player, "greet": part_of_day(hour), "lately": home.get("pieces_last20"),
-             "before": home.get("pieces_per_game"), "games": home.get("games")}
+    facts = {"name": player, "greet": part_of_day(hour), "lately": round(home.get("pieces_last20") or 0, 1),
+             "before": round(home.get("pieces_per_game") or 0, 1), "games": home.get("games")}
     focus = home.get("focus")
     if focus:
         facts.update(habit=SHORT.get(focus["pattern"], focus["pattern"]), tip=focus["habit"])

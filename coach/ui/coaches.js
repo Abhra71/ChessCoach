@@ -53,7 +53,7 @@ const Coach = (() => {
   });
 
   // say something now (open, with voice)
-  function show(s, { speak = true } = {}) { said = s; clearTimeout(foldTimer); render(true); if (speak) talk(); }
+  function show(s, { speak = true } = {}) { if (!box) Sound.play("coach", 0.5); said = s; clearTimeout(foldTimer); render(true); if (speak) talk(); }
   // a quick reaction on a board: pose (worried, celebrate, explain...) and one line
   function react(coach, pose, text, actions) { show({ coach, pose, mood: pose, lines: [text], actions: actions || [] }); }
   function hide() { clearTimeout(foldTimer); if (box) box.remove(); box = null; said = null; }
@@ -111,16 +111,19 @@ function trainer(drills, opts) {
   async function good(uci, m, shown) {
     const x = d(), s = step();
     pieces = m.after; last = {}; draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-ok"));
+    Sound.move(m.san);
     if (s.reply) {
       done = true;
       result("ok-text", `<b>${esc(m.san)}</b>: yes. Now they play ${esc(s.reply.san)}. Keep going.`);
       if (s.idea) Coach.react(coach, "explain", s.idea);
       await wait(900); if (d() !== x) return;
       pieces = s.reply.board; last = mark([s.reply.uci.slice(0, 2), s.reply.uci.slice(2, 4)], "hl-last"); k++; done = false; draw();
+      Sound.move(s.reply.san);
       ticked = 0; paintChecks();  // a new position: check again
       if (shown) answer(); return;
     }
     done = true; if (!missed) right++; solved++;
+    setTimeout(() => Sound.play(shown ? "move" : "right"), 180);
     $("#count").textContent = `${i + 1} of ${drills.length} · ${right} right first time`;
     const note = x.kind === "game" ? `In the game you played ${esc(x.played)}.${m.san === x.best ? "" : " The engine's top move was " + esc(x.best) + "."}`
       : x.kind === "opening" ? "That's the whole line. Play it in your next games." : "Puzzle solved.";
@@ -129,7 +132,7 @@ function trainer(drills, opts) {
       : missed ? `${m.san}. You got there.` : x.kind === "game" ? `Yes! ${m.san} keeps you safe.` : `Correct, ${m.san}!`;
     Coach.react(coach, shown ? "explain" : missed ? "encourage" : "celebrate", praise);
     if (opts.record) api("/api/practice", { id: x.id, kind: x.kind, right: !missed }).then(stats).catch(() => {});
-    if (solved === drills.length && opts.onDone) opts.onDone(right);
+    if (solved === drills.length) { setTimeout(() => { Sound.play("done"); confetti(); }, 900); if (opts.onDone) opts.onDone(right); }
   }
   function click(sq) {
     if (done) return;
@@ -144,7 +147,7 @@ function trainer(drills, opts) {
     picked = null;
     if (!m) return draw();
     if (m.good) return good(uci, m, false);
-    missed = true;
+    missed = true; Sound.play("wrong", 0.5);
     result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(m.say)}</div><div class="small muted" style="margin-top:4px">Try again.</div>`);
     Coach.react(coach, "worried", `Not quite. ${m.say} Try again.`);  // the coach's face falls, with the hint
     draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-no"));

@@ -308,7 +308,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, "not found", "text/plain")
         types = {".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg",
                  ".svg": "image/svg+xml", ".glb": "model/gltf-binary", ".gltf": "model/gltf+json",
-                 ".bin": "application/octet-stream", ".wav": "audio/wav", ".flac": "audio/flac", ".json": "application/json"}
+                 ".bin": "application/octet-stream", ".wav": "audio/wav", ".flac": "audio/flac", ".ogg": "audio/ogg", ".json": "application/json"}
         ctype = types.get(target.suffix, "application/octet-stream")
         data = target.read_bytes()
         self.send_response(200)

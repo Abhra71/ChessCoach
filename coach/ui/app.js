@@ -13,6 +13,12 @@ const ICON = {
   practice: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
   plan: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  hang: '<path d="M12 3 2.5 20h19z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
+  fork: '<path d="M12 21v-8"/><path d="m12 13-6-7"/><path d="m12 13 6-7"/><circle cx="6" cy="4.5" r="1.6"/><circle cx="18" cy="4.5" r="1.6"/>',
+  capture: '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>',
+  mate: '<path d="M4 17 3 7l5 4 4-7 4 7 5-4-1 10z"/><path d="M4 21h16"/>',
+  draw: '<circle cx="12" cy="12" r="8.5"/><path d="M8 10h8M8 14h8"/>',
+  down: '<path d="M12 5v14M6 13l6 6 6-6"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
 };
 const svg = (name, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${ICON[name]}</svg>`;
@@ -25,6 +31,26 @@ const PATTERN_TITLE = {  // the habit as a headline
   "missed a checkmate": "Look for checkmate first",
   "stalemated a won game": "Finish won games",
 };
+
+const HABIT = {  // each habit as a tile: an icon and a few words
+  "left a piece hanging": ["hang", "Pieces left hanging"],
+  "walked into a fork or trick": ["fork", "Forks and tricks"],
+  "missed a free capture": ["capture", "Free pieces missed"],
+  "walked into checkmate": ["mate", "Walked into mate"],
+  "missed a checkmate": ["mate", "Mates missed"],
+  "stalemated a won game": ["draw", "Wins thrown to a draw"],
+};
+
+// numbers roll up when a screen opens
+function countUp(root = document) {
+  root.querySelectorAll("[data-to]").forEach(el => {
+    const to = +el.dataset.to, dec = +(el.dataset.dec || 0), t0 = performance.now(), ms = 700;
+    const step = t => { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (to * e).toFixed(dec); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  });
+}
+const roll = (v, dec = 0) => `<span class="num" data-to="${v}" data-dec="${dec}">${(0).toFixed(dec)}</span>`;
 
 let STATUS = {};
 
@@ -61,6 +87,38 @@ const Voice = (() => {  // the coach speaks sentence by sentence; the next one i
   }
   return { speak, stop, set(v) { on = v; if (!v) stop(); }, get on() { return on; }, onTalk: f => talkers.push(f) };
 })();
+
+// ---------- sounds: the player's picks from Kenney's CC0 packs (coach/ui/sounds) ----------
+const Sound = (() => {
+  let on = true;
+  const cache = {};
+  function play(name, volume = 0.6) {
+    if (!on) return;
+    try {
+      const a = (cache[name] = cache[name] || new Audio(`/ui/sounds/${name}.ogg`)).cloneNode();
+      a.volume = volume; a.play().catch(() => {});
+    } catch (e) {}
+  }
+  const move = san => play(/[+#]/.test(san || "") ? "check" : /x/.test(san || "") ? "capture" : "move", 0.8);
+  return { play, move, set(v) { on = v; }, get on() { return on; } };
+})();
+document.addEventListener("click", e => {  // a soft click on every button, link button and switch
+  if (e.target.closest(".btn, .switch, .seg button, .nav a, .check")) Sound.play("click", 0.35);
+}, true);
+
+// little bursts of colour when something is finished
+function confetti(n = 70) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const layer = document.createElement("div"); layer.className = "confetti"; document.body.appendChild(layer);
+  const colours = ["#36c27a", "#ff4d42", "#f0a43a", "#ffffff", "#4da3ff"];
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement("i");
+    p.style.cssText = `left:${50 + (Math.random() - .5) * 30}%;background:${colours[i % colours.length]};` +
+      `--dx:${(Math.random() - .5) * 900}px;--dy:${-250 - Math.random() * 400}px;--r:${Math.random() * 720}deg;animation-delay:${Math.random() * .15}s`;
+    layer.appendChild(p);
+  }
+  setTimeout(() => layer.remove(), 2200);
+}
 
 // ---------- microphone ----------
 const Mic = (() => {  // records 16 kHz mono in the window; the coach turns it into text on this computer
@@ -161,16 +219,20 @@ async function pollStatus() {
 }
 
 // ---------- home ----------
-function trendChart(points, window) {
-  if (points.length < 2) return `<p class="muted">The trend appears after ${window * 2} games.</p>`;
-  const W = 600, H = 140, pad = 24, max = Math.max(...points, 1) * 1.15;
-  const x = i => pad + i * (W - pad * 2) / (points.length - 1), y = v => H - pad - v / max * (H - pad * 2);
+function spark(points) {  // a small line, no axes: is it going down?
+  if (points.length < 2) return "";
+  const W = 220, H = 56, max = Math.max(...points, 1) * 1.1;
+  const x = i => 4 + i * (W - 8) / (points.length - 1), y = v => H - 6 - v / max * (H - 12);
   const d = points.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-  const dots = points.map((v, i) => `<circle class="pt ${i === points.length - 1 ? "last" : ""}" cx="${x(i)}" cy="${y(v)}" r="3.2"/>`).join("");
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <line class="axis" x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}"/>
-    <path class="line" d="${d}"/>${dots}
-    <text x="${pad}" y="${H - 6}">oldest</text><text x="${W - pad}" y="${H - 6}" text-anchor="end">now</text></svg>`;
+  const n = points.length - 1;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}"><path class="line draw" d="${d}" pathLength="1"/>
+    <circle class="last" cx="${x(n)}" cy="${y(points[n])}" r="4"/></svg>`;
+}
+
+function ring(part, whole) {  // a progress ring that fills
+  const k = whole ? part / whole : 0, C = 2 * Math.PI * 26;
+  return `<svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" class="track"/>
+    <circle cx="32" cy="32" r="26" class="fill" style="--to:${C * (1 - k)}" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg>`;
 }
 
 async function home() {
@@ -180,47 +242,56 @@ async function home() {
   try { if (sessionStorage.getItem("kw-new")) { sessionStorage.removeItem("kw-new"); setTimeout(() => AiCard.maybe("welcome"), 2500); }
         else AiCard.maybe("week"); } catch (e) {}
   const hour = new Date().getHours(), hello = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const f = h.focus, last = h.last_game, r = h.results || {};
+  const f = h.focus, last = h.last_game, r = h.results || {}, pr = h.practice || {};
   const better = h.pieces_last20 < h.pieces_per_game;
-  const maxP = Math.max(...h.patterns.map(p => p.times), 1);
+  const played = (r.win || 0) + (r.loss || 0) + (r.draw || 0) || 1, pct = n => (100 * (n || 0) / played).toFixed(1);
+  const rc = h.rating_change;
+  const arrow = (good, text) => `<span class="trend ${good ? "good" : "bad"}">${svg(good ? "down" : "up")}${text}</span>`;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>${hello}, ${esc(h.player)}</h1>
-      <p class="sub">${h.games} games checked by Stockfish${STATUS.last_update ? " · last check " + esc(STATUS.last_update) : ""}</p></div>
+      <p class="sub">${h.games} games checked by Stockfish</p></div>
       <div class="row"><button class="btn" id="brief">Hear your briefing</button><a class="btn primary" href="#/practice">Start practice</a></div></div>
     <div class="grid">
-      ${f ? `<div class="box focus"><div class="label">Your focus</div>
-        <h3 style="font-size:22px;margin:6px 0 8px">${esc(PATTERN_TITLE[f.pattern] || cap(f.pattern))}</h3>
-        <p class="muted" style="margin:0 0 6px">${esc(f.meaning)}</p>
-        <p style="margin:0 0 14px"><b>The habit:</b> ${esc(f.habit)}</p>
-        <div class="row small muted"><span class="num">${f.times} times in ${f.games} of your ${h.games} games</span></div></div>` : ""}
-      <div class="grid cols-3">
-        <div class="box"><div class="big num">${h.pieces_per_game.toFixed(1)}</div><div class="stat-label">Pieces given away per game</div>
-          <div class="delta ${better ? "good" : "bad"} num">${h.pieces_last20.toFixed(1)} in your last 20 · ${better ? "better" : "worse"}</div></div>
-        <div class="box"><div class="big num">${h.rating ?? "–"}</div><div class="stat-label">${cap(h.rating_class || "")} rating on chess.com</div></div>
-        <div class="box"><div class="big num">${r.win || 0}<span class="faint"> / </span>${r.loss || 0}<span class="faint"> / </span>${r.draw || 0}</div>
-          <div class="stat-label">Won / lost / drawn</div></div>
+      ${f ? `<div class="box focus hero rise">
+        <div class="hero-main"><div class="label">Your focus</div>
+          <h3 class="hero-title">${esc(PATTERN_TITLE[f.pattern] || cap(f.pattern))}</h3>
+          <p class="hero-habit">${esc(f.habit)}</p>
+          <div class="row"><a class="btn primary" href="#/practice/${encodeURIComponent(f.pattern)}">Practise this</a>
+            <span class="pill red">${f.times} times · ${f.games} games</span></div></div>
+        <div class="hero-side">${spark(h.trend)}
+          <div class="hero-num"><span class="faint num">${h.pieces_per_game.toFixed(1)}</span><span class="faint">→</span>${roll(h.pieces_last20, 1)}</div>
+          <div class="stat-label">pieces given away a game, lately</div>${arrow(better, better ? "better" : "worse")}</div></div>` : ""}
+      <div class="habits rise">${h.patterns.map(p => {
+        const [icon, name] = HABIT[p.pattern] || ["hang", cap(p.pattern)], fewer = p.recent <= p.per_game;
+        return `<a class="habit box ${p.pattern === (f && f.pattern) ? "top" : ""}" href="#/practice/${encodeURIComponent(p.pattern)}" title="Practise this">
+          <div class="habit-icon">${svg(icon)}</div><div class="big">${roll(p.times)}</div><div class="habit-name">${esc(name)}</div>
+          ${arrow(fewer, fewer ? "fewer lately" : "more lately")}</a>`; }).join("")}</div>
+      <div class="grid cols-3 rise">
+        <div class="box"><div class="big">${h.rating ? roll(h.rating) : "–"}</div><div class="stat-label">${cap(h.rating_class || "")} rating</div>
+          ${rc ? `<span class="trend ${rc > 0 ? "good" : "bad"}">${svg(rc > 0 ? "up" : "down")}${rc > 0 ? "+" : ""}${rc} this month</span>` : ""}</div>
+        <div class="box"><div class="big">${roll(r.win || 0)} <span class="stat-label">won of ${played}</span></div>
+          <div class="wld"><i class="w" style="width:${pct(r.win)}%"></i><i class="d" style="width:${pct(r.draw)}%"></i><i class="l" style="width:${pct(r.loss)}%"></i></div>
+          <div class="wld-key small muted"><span><i class="w"></i>${r.win || 0} won</span><span><i class="d"></i>${r.draw || 0} drawn</span><span><i class="l"></i>${r.loss || 0} lost</span></div></div>
+        ${pr.answers ? `<div class="box row" style="gap:16px">${ring(pr.right || 0, pr.answers)}
+          <div><div class="big">${roll(pr.right || 0)}</div><div class="stat-label">of ${pr.answers} right first time in practice</div></div></div>`
+        : `<a class="box row habit" href="#/practice" style="gap:16px">${ring(0, 1)}
+          <div><div class="big" style="font-size:22px">Start practice</div><div class="stat-label">Your own positions, 5 minutes</div></div></a>`}
       </div>
-      <div class="grid cols-2">
-        <div class="box"><h2>Pieces given away, per ${h.trend_window} games</h2>${trendChart(h.trend, h.trend_window)}
-          <p class="note">Lower is better. The red dot is now.</p></div>
-        <div class="box"><h2>Where your games go wrong</h2><div class="stack">
-          ${h.patterns.map((p, i) => `<div><div class="row spread small"><span>${esc(cap(p.pattern))}</span><span class="num muted">${p.times}</span></div>
-            <div class="bar ${i === 0 ? "red" : ""}"><div style="width:${100 * p.times / maxP}%"></div></div></div>`).join("")}</div></div>
-      </div>
-      ${last ? `<div class="box row spread"><div><h2 style="margin-bottom:6px">Your last game</h2>
-          <h3>vs ${esc(last.opponent)} <span class="faint">(${last.opponent_rating})</span> · <span class="${last.result === "loss" ? "delta bad" : ""}">${cap(last.result)}</span></h3>
-          <p class="sub">${esc(last.date)} · ${esc(last.time_class)} · ${last.pieces_lost} pieces given away · ${last.moments} key moments</p></div>
+      ${last ? `<div class="box row spread rise"><div><div class="label muted-label">Your last game</div>
+          <h3 style="margin:6px 0 4px">vs ${esc(last.opponent)} <span class="faint num">${last.opponent_rating}</span>
+            <span class="chip ${last.result}">${last.result === "win" ? "W" : last.result === "loss" ? "L" : "D"}</span></h3>
+          <p class="sub">${last.moments ? `Maya found ${last.moments} key moment${last.moments > 1 ? "s" : ""} to look at.` : "A clean game: nothing big to fix."}</p></div>
         <a class="btn" href="#/games/${last.id}">Review game</a></div>` : ""}
-      <div class="box"><h2>Ask the coach</h2><div id="askbox"></div></div>
-      <p class="note">Practice so far: ${h.practice.answers} answers, ${h.practice.right} right first time, ${h.practice.learned} positions learned.</p>
+      <div class="box rise"><h2>Ask the coach</h2><div id="askbox"></div></div>
     </div>`;
+  countUp($("#page"));
   const briefing = [`${hello}, ${h.player}.`,
     f ? `Your focus is: ${PATTERN_TITLE[f.pattern] || f.pattern}. It happened ${f.times} times, in ${f.games} of your ${h.games} games.` : "",
-    f ? f.habit : "",
+    f ? f.meaning : "", f ? f.habit : "",
     `You give away ${h.pieces_per_game.toFixed(1)} pieces per game, and ${h.pieces_last20.toFixed(1)} in your last 20 games${better ? ", which is better" : ""}.`,
     last ? `Your last game was a ${last.result} against ${last.opponent}, with ${last.moments} key moments to look at.` : ""].join(" ");
   $("#brief").onclick = () => Voice.speak(briefing, true);
-  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "e.g. How do I stop leaving pieces hanging?",
+  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.listen_ready,
     onAsk: q => api("/api/ask", { question: q }) }));
 }
@@ -308,22 +379,26 @@ async function gameView(id) {
     $("#moves").innerHTML = html;
     $("#moves").querySelectorAll("span[data-p]").forEach(s => s.onclick = () => { ply = Number(s.dataset.p); view = "after"; draw(); });
   }
-  askBox($("#askbox"), { placeholder: "e.g. Why is my bishop in danger here?", enabled: aiReady, listen: cfg.listen_ready,
+  askBox($("#askbox"), { placeholder: "Why is my bishop in danger here?", enabled: aiReady, listen: cfg.listen_ready,
     onAsk: q => { const m = momentAt(ply); return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: m ? m.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go; view = "before";
+    const was = ply;
     ply = v === "0" ? 0 : v === "end" ? g.positions.length - 1 : Math.max(0, Math.min(g.positions.length - 1, ply + Number(v)));
+    if (ply === was + 1) Sound.move(g.positions[ply].san);
     draw();
   });
   draw();
 }
 
 // ---------- practice ----------
-async function practice() {
+async function practice(pattern) {
   shell("practice", `<p class="muted">Loading…</p>`);
-  const drills = await api("/api/practice-set").catch(() => []);
+  const all = await api("/api/practice-set").catch(() => []);
+  const only = pattern ? all.filter(d => d.pattern === pattern) : [], drills = only.length ? only : all;
   if (!drills.length) { $("#page").innerHTML = `<div class="empty">Practice appears once your games are checked.</div>`; return; }
-  $("#page").innerHTML = trainerPage("Practice", { text: "Your own positions (the move before a big mistake) and puzzles on the same habits." });
+  $("#page").innerHTML = trainerPage(only.length ? (HABIT[pattern] || [])[1] || "Practice" : "Practice",
+    { text: "Your own positions, the move before a big mistake, and puzzles on the same habit." });
   trainer(drills, { coach: "arjun", record: true });
 }
 
@@ -415,6 +490,9 @@ async function settingsView() {
           <button class="btn" id="sample">Play sample</button></div>
           <div class="row"><span class="small ${s.listen_ready ? "ok-text" : "muted"}" id="listenstate">${s.listen_ready ? "Listening is on: use Talk to ask by voice." : "Ask by voice needs the listening model (about 485 MB, once)."}</span>
             ${s.listen_ready ? "" : `<button class="btn" id="getlisten">Install listening</button>`}</div></div></div>
+      <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a coach arriving. No background music.</p></div>
+        <div class="row"><button class="switch ${s.sounds ? "on" : ""}" id="sounds" aria-label="Sounds"></button>
+          <span class="small muted">${s.sounds ? "On" : "Off"}</span></div></div>
       <div class="settings-row"><div><h3>AI: talk with your coaches</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.
         Without one it uses the engine's built-in sentences. Keys are kept in Windows Credential Manager, encrypted for your Windows account,
         and are only sent to the provider you choose.</p>
@@ -432,6 +510,7 @@ async function settingsView() {
   $("#theme").querySelectorAll("button").forEach(b => b.onclick = async () => {
     const r = await api("/api/settings", { theme: b.dataset.t }); applyTheme(r.theme); settingsView();
   });
+  $("#sounds").onclick = async () => { await api("/api/settings", { sounds: !s.sounds }); Sound.set(!s.sounds); if (!s.sounds) Sound.play("right"); settingsView(); };
   $("#voice").onclick = async () => { await api("/api/settings", { voice: !s.voice }); Voice.set(!s.voice); settingsView(); };
   const SAMPLE = "Hi, I'm your chess coach. Before every move, ask: what can they take?";
   $("#voicename").onchange = async e => { await api("/api/settings", { voice_name: e.target.value }); Voice.speak(SAMPLE, true); };
@@ -594,7 +673,7 @@ async function route() {
     if (name === "plan") return await planView(arg);
     if (name === "games" && arg) return await gameView(arg);
     if (name === "games") return await games();
-    if (name === "practice") return await practice();
+    if (name === "practice") return await practice(arg && decodeURIComponent(arg));
     if (name === "extension") return await extensionView();
     if (name === "settings") return await settingsView();
     return await home();
@@ -604,7 +683,7 @@ async function route() {
   }
 }
 window.addEventListener("hashchange", () => { Voice.stop(); route(); });
-api("/api/settings").then(s => { applyTheme(s.theme); Voice.set(s.voice && s.voice_ready); }).catch(() => {});
+api("/api/settings").then(s => { applyTheme(s.theme); Voice.set(s.voice && s.voice_ready); Sound.set(s.sounds !== false); }).catch(() => {});
 api("/api/status").then(s => { STATUS = s; if (!s.player && !location.hash.includes("welcome")) go("welcome"); else route(); })
   .catch(() => route());
 pollStatus();

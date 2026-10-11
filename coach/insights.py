@@ -98,6 +98,8 @@ def home():
     results = collections.Counter(_result(g, _side(g, player)[0]) for g in checked)
     rapid = next((g for g in games if g["time_class"] == "rapid"), games[0] if games else None)
     last = game_row(checked[0], moves[checked[0]["url"]], player) if checked else None
+    recent = {g["url"] for g in checked[:20]}  # each habit: per game overall, and per game in the last 20
+    recent_counts = collections.Counter(r["pattern"] for r in rows if r["url"] in recent and r["pattern"] in ABOUT)
     due = len(memory.boxes())  # positions practised so far
     return {
         "player": player, "games": len(checked), "results": dict(results),
@@ -105,13 +107,26 @@ def home():
         "rating_class": rapid["time_class"] if rapid else None,
         "focus": {"pattern": focus, "times": counts[focus], "games": len({r["url"] for r in rows if r["pattern"] == focus}),
                   "meaning": ABOUT[focus][0], "habit": ABOUT[focus][1]} if focus else None,
-        "patterns": [{"pattern": p, "times": n} for p, n in counts.most_common(4)],
+        "patterns": [{"pattern": p, "times": n, "per_game": round(n / len(checked), 2),
+                      "recent": round(recent_counts[p] / len(recent), 2)} for p, n in counts.most_common(4)],
+        "rating_change": rating_change(games, player, rapid["time_class"]) if rapid else None,
         "pieces_per_game": round(sum(lost) / len(lost), 2) if lost else 0,
         "pieces_last20": round(sum(lost[-20:]) / len(lost[-20:]), 2) if lost else 0,
         "trend": trend, "trend_window": TREND_WINDOW,
         "last_game": last, "practice": {**memory.practice_stats(), "seen": due},
         "week": week(checked, moves),
     }
+
+
+def rating_change(games, player, time_class, days=30, now=None):
+    """How the rating moved in this time control over the last month (None without a game from before then)."""
+    import time
+    now = now or time.time()
+    mine = [g for g in games if g["time_class"] == time_class]  # newest first
+    old = next((g for g in mine if g["end_time"] < now - days * 86400), None)
+    if not mine or not old:
+        return None
+    return mine[0][_side(mine[0], player)[0]]["rating"] - old[_side(old, player)[0]]["rating"]
 
 
 def week(checked, moves, now=None):
