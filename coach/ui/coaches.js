@@ -75,8 +75,20 @@ const Coach = (() => {
 // ---------- the board trainer: practice, plan lessons, openings ----------
 // drills: as made by coach/drills.py. opts: {coach, record (save practice answers), onDone(rightFirstTime)}
 function trainer(drills, opts) {
-  const coach = opts.coach || "arjun";
-  let i = 0, k = 0, pieces = {}, picked = null, done = false, missed = false, last = {}, right = 0, solved = 0;
+  const coach = opts.coach || "arjun", checklist = opts.checklist || [];
+  let i = 0, k = 0, pieces = {}, picked = null, done = false, missed = false, last = {}, right = 0, solved = 0, ticked = 0;
+  function paintChecks() {  // before each move: tick every question, then the board lets you move
+    const el = $("#checks");
+    if (!el || !checklist.length) return;
+    el.innerHTML = `<div class="label">Before you move</div>${checklist.map((q, n) =>
+      `<button class="check ${n < ticked ? "on" : ""}" data-n="${n}" ${n !== ticked ? "disabled" : ""}><i>${n < ticked ? "✓" : n + 1}</i>${esc(q)}</button>`).join("")}`;
+    el.querySelectorAll(".check:not([disabled])").forEach(b => b.onclick = () => {
+      ticked++; paintChecks();
+      if (ticked < checklist.length) Coach.react(coach, "listen", checklist[ticked]);
+      else Coach.react(coach, "encourage", "Good. Now make your move.");
+    });
+  }
+  const ready = () => ticked >= checklist.length;
   const d = () => drills[i], step = () => d().steps[k];
   const mark = (sqs, cls) => Object.fromEntries(sqs.map(s => [s, cls]));
   const mine = sym => (sym === sym.toUpperCase()) === !d().flip;
@@ -89,9 +101,11 @@ function trainer(drills, opts) {
     $("#kind").textContent = x.kind === "game" ? "From your game" : x.kind === "opening" ? "Opening" : "Puzzle";
     $("#task").textContent = x.intro; $("#hint").textContent = x.kind === "opening" ? "" : x.hint;
     $("#where").innerHTML = `${esc(x.where)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link)} ↗</a>`;
-    result("muted", "Click a piece, then the square to move it to.");
+    result("muted", checklist.length ? "First the check, then click a piece and its square." : "Click a piece, then the square to move it to.");
     pieces = x.start; draw();
-    Coach.react(coach, x.kind === "opening" ? "explain" : "thinking", x.intro);
+    ticked = 0; paintChecks();
+    Coach.react(coach, checklist.length ? "listen" : x.kind === "opening" ? "explain" : "thinking",
+      checklist.length ? `${x.intro} First: ${checklist[0]}` : x.intro);
     if (x.last) { done = true; await wait(700); if (d() !== x) return; pieces = x.steps[0].board; last = mark(x.last, "hl-last"); draw(); done = false; }
   }
   async function good(uci, m, shown) {
@@ -103,6 +117,7 @@ function trainer(drills, opts) {
       if (s.idea) Coach.react(coach, "explain", s.idea);
       await wait(900); if (d() !== x) return;
       pieces = s.reply.board; last = mark([s.reply.uci.slice(0, 2), s.reply.uci.slice(2, 4)], "hl-last"); k++; done = false; draw();
+      ticked = 0; paintChecks();  // a new position: check again
       if (shown) answer(); return;
     }
     done = true; if (!missed) right++; solved++;
@@ -118,6 +133,7 @@ function trainer(drills, opts) {
   }
   function click(sq) {
     if (done) return;
+    if (!ready()) { Coach.react(coach, "warn", `Not yet. First: ${checklist[ticked]}`); return; }
     const sym = pieces[sq];
     if (sym && mine(sym)) {
       picked = sq;
@@ -136,7 +152,7 @@ function trainer(drills, opts) {
   function answer() {
     const entries = Object.entries(step().moves).filter(([, m]) => m.good);
     const pick = (d().kind === "game" && entries.find(([, m]) => m.san === d().best)) || entries[0];
-    missed = true; good(pick[0], pick[1], true);
+    missed = true; ticked = checklist.length; good(pick[0], pick[1], true);
   }
   function stats(s) { if (s && s.answers && $("#stats")) $("#stats").textContent = `So far: ${s.right} of ${s.answers} right first time · ${s.learned} positions learned (right 3 times, days apart).`; }
   $("#show").onclick = () => { if (!done) answer(); };
@@ -152,6 +168,7 @@ function trainerPage(title, sub) {
       <div><div class="board-wrap" id="board"></div><p class="small muted" id="where" style="margin-top:10px"></p></div>
       <div class="stack"><div class="box"><div class="label" id="kind"></div><h3 id="task" style="margin:6px 0 10px"></h3>
         <p class="muted" id="hint" style="margin:0"></p></div>
+        <div class="box checks" id="checks"></div>
         <div class="box" id="result" style="min-height:84px"><span class="muted">Click a piece, then the square to move it to.</span></div>
         <div class="row"><button class="btn" id="show">Show answer</button><button class="btn primary" id="next">Next</button></div>
         <p class="note" id="stats"></p></div>
@@ -186,12 +203,14 @@ async function planView(arg) {
 function lessonView(item) {
   const back = `<a href="#/plan" class="small muted" style="text-decoration:none">← Your plan</a>`;
   api("/api/plan/mark", { id: item.id }).catch(() => {});
-  if (item.kind === "idea") {
-    $("#page").innerHTML = `<div class="page-head"><div>${back}<h1>${esc(item.title)}</h1><p class="sub">${esc(item.why || "")}</p></div></div>
-      <div class="box" style="max-width:640px"><p style="font-size:17px;line-height:1.6;margin:0">${esc(item.intro)}</p>
-      <div class="row" style="margin-top:16px"><button class="btn primary" id="got">Got it, I'll use it</button></div></div>`;
-    Coach.react(item.coach, "explain", item.intro);
-    $("#got").onclick = () => { api("/api/plan/mark", { id: item.id, done: true }); Coach.react(item.coach, "celebrate", "Good. Use it in your next three games, and tell me how it went."); };
+  if (item.kind === "idea") {  // a way of thinking, practised on your own positions with its checklist
+    $("#page").innerHTML = trainerPage(item.title, { back, text: item.intro });
+    trainer(item.drills, { coach: item.coach, checklist: item.checklist || [], onDone: rightFirst => {
+      api("/api/plan/mark", { id: item.id, done: true }).catch(() => {});
+      setTimeout(() => Coach.react(item.coach, "celebrate",
+        `${rightFirst} of ${item.drills.length} right first time. Now do the same check in every game: after a week it becomes automatic.`,
+        [{ label: "Back to your plan", app: "plan" }]), 2500);
+    } });
     return;
   }
   $("#page").innerHTML = trainerPage(item.title, { back, text: item.why || item.intro });
@@ -218,13 +237,14 @@ const AiCard = (() => {
     ["Talk it through: why this move, what to do next time", false, true],
   ];
   function html() {
-    const cell = v => v === true ? `<td class="yes">✓</td>` : v === false ? `<td class="no">–</td>` : `<td class="small">${esc(v)}</td>`;
-    return `<div class="ai-card box"><div class="row" style="justify-content:space-between;align-items:baseline">
-        <h2 style="margin:0">Your coaches, with and without AI</h2><button class="btn ghost" data-x>×</button></div>
-      <p class="muted small" style="margin:6px 0 14px">Both are free. The AI part uses your own free key from Google or Groq (about 2 minutes, step by step).
-        The engine still decides every move; the AI only puts it into words and answers you.</p>
-      <table class="ai-table"><tr><th></th><th>Knightwise</th><th>Knightwise + AI</th></tr>
-        ${ROWS.map(([what, a, b]) => `<tr><td>${esc(what)}</td>${cell(a)}${cell(b)}</tr>`).join("")}</table>
+    const cell = (v, plus) => `<td class="${plus ? "plus " : ""}${v === true ? "yes" : v === false ? "no" : "small"}">${v === true ? "✓" : v === false ? "–" : esc(v)}</td>`;
+    return `<div class="ai-card box"><button class="btn ghost ai-x" data-x title="Close">×</button>
+      <div class="ai-title">Talk with your coaches</div>
+      <p class="ai-lead">Add a free AI key and your coaches answer you, in their own words. Both versions are free.
+        The engine still decides every move; the AI only explains it and replies to you.</p>
+      <table class="ai-table"><tr><th></th><th><span class="tier">Knightwise</span><small>Free</small></th>
+        <th class="plus"><span class="tier">Knightwise + AI</span><small>Free key, 2 minutes</small></th></tr>
+        ${ROWS.map(([what, a, b]) => `<tr><td>${esc(what)}</td>${cell(a)}${cell(b, true)}</tr>`).join("")}</table>
       <div class="row" style="margin-top:14px"><a class="btn primary" href="#/settings" data-go>Set it up (2 min)</a>
         <button class="btn" data-later>Not now</button><button class="btn ghost small" data-never>Don't show again</button></div></div>`;
   }

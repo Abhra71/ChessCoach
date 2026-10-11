@@ -44,18 +44,50 @@ THEME_NAME = {
     "attraction": "luring the king", "deflection": "deflection", "promotion": "promoting a pawn",
     "pawnEndgame": "pawn endings", "rookEndgame": "rook endings", "queenEndgame": "winning with the queen",
 }
-IDEAS = [  # core ways of thinking (the AI, with a key, can explain them in the coach's own words)
+# Core ways of thinking, each practised on the board: positions from the player's own games ("own": patterns) or
+# Lichess puzzles ("puzzles": themes), with a checklist the player ticks before every move (the habit itself).
+IDEAS = [
     {"id": "idea:blunder-check", "title": "The 3-second blunder check", "helps": [HANG, FORK],
-     "text": "Before you click, ask: after my move, what can they take? Can they check me? Is every piece protected?"},
+     "text": "Before you click, ask: after my move, what can they take? Can they check me? Is every piece protected?",
+     "own": [HANG, FORK], "puzzles": ["hangingPiece", "fork"],
+     "checklist": ["After my move, what can they take?", "Can they check me?", "Is every piece of mine protected?"]},
     {"id": "idea:cct", "title": "Checks, captures, threats", "helps": [FREE, MISSED_MATE],
-     "text": "Every move, look for checks first, then captures, then threats: theirs and yours."},
+     "text": "Every move, look for checks first, then captures, then threats: theirs and yours.",
+     "own": [FREE], "puzzles": ["mateIn1", "hangingPiece"],
+     "checklist": ["Checks: can I give check?", "Captures: is anything free to take?", "Threats: what are they threatening?"]},
     {"id": "idea:castle", "title": "Castle before move 10", "helps": [MATED],
-     "text": "Knights and bishops out, then castle, usually before move 10. A castled king is hard to mate."},
+     "text": "Knights and bishops out, then castle, usually before move 10. A castled king is hard to mate.",
+     "own": [MATED], "puzzles": ["backRankMate", "defensiveMove"],
+     "checklist": ["Is my king safe, or still in the middle?", "Can they check me next move?", "Is there a move that stops their threat?"]},
     {"id": "idea:slow-down", "title": "Slow down on the big moves", "helps": [HANG],
-     "text": "Spend your time on captures, checks, and moves where they attack something. Play the easy moves fast."},
+     "text": "Spend your time on captures, checks, and moves where they attack something. Play the easy moves fast.",
+     "own": [HANG], "puzzles": ["hangingPiece", "trappedPiece"],
+     "checklist": ["Is this a big moment: a capture, a check, an attack?", "If yes: what can they take after my move?"]},
     {"id": "idea:trade-ahead", "title": "Ahead? Trade pieces", "helps": [STALEMATE, HANG],
-     "text": "When you're ahead in material, trade pieces. Fewer pieces means fewer tricks against you."},
+     "text": "When you're ahead in material, trade pieces. Fewer pieces means fewer tricks against you.",
+     "own": [], "puzzles": ["queenEndgame", "pawnEndgame"],
+     "checklist": ["Am I ahead in material?", "Can I trade, or finish it?", "Does their king still have a square? (no stalemate)"]},
 ]
+
+
+def idea_drills(idea, rating, rng):
+    """Positions to practise an idea on: the player's own (from the practice set), topped up with puzzles."""
+    own = []
+    try:
+        own = [d for d in json.loads((DATA / "drills.json").read_text()) if d["kind"] == "game" and d["pattern"] in idea.get("own", [])]
+    except (OSError, ValueError):
+        pass
+    rng.shuffle(own)
+    picked = own[:PUZZLES_PER_LESSON]
+    for theme in idea.get("puzzles", []):
+        if len(picked) >= PUZZLES_PER_LESSON + 1:
+            break
+        picked += _puzzles(theme, rating, rng)[:2]
+    return picked
+
+
+def idea_lesson(idea, rating, rng):
+    return {**idea, "kind": "idea", "coach": "maya", "intro": idea["text"], "drills": idea_drills(idea, rating, rng)}
 OPENING_COACH = "zara"
 WHY = {
     "stalemate": "You've stalemated {n}. This is the habit that keeps those points.",
@@ -172,10 +204,10 @@ def opening_drill(o):
             "start": start, "last": [first["uci"][:2], first["uci"][2:4]] if not first["mine"] else None, "steps": steps}
 
 
-def idea_for(pattern, done):
+def idea_for(pattern, done, rating=None, rng=None):
     for idea in IDEAS:
         if pattern in idea["helps"] and idea["id"] not in done:
-            return {**idea, "kind": "idea", "coach": "maya", "intro": idea["text"]}
+            return idea_lesson(idea, rating, rng or random.Random(0))
     return None
 
 
@@ -231,7 +263,7 @@ def _novelty(home=None, games=None, moves=None, engine=None, today=None, rng=Non
         if o and o["id"] not in done:
             return o
     if s["losses"] >= 4:
-        idea = idea_for(focus, done) or idea_for(HANG, done)
+        idea = idea_for(focus, done, rating, rng) or idea_for(HANG, done, rating, rng)
         if idea:
             return {**idea, "why": fill("slump", losses=s["losses"])}
     if s["stuck"] and focus:
@@ -256,9 +288,10 @@ def build(item_id, home, games, moves, engine, rng, done):
         return endgame(rest, rating, rng)
     if kind == "idea":
         if item_id.startswith("idea:ai:"):
-            return (_memory().get("ai_idea") or {}).get("idea")
+            idea = (_memory().get("ai_idea") or {}).get("idea")
+            return _practised(idea, rating, rng) if idea else None
         idea = next((i for i in IDEAS if i["id"] == item_id), None)
-        return {**idea, "kind": "idea", "coach": "maya", "intro": idea["text"]} if idea else None
+        return idea_lesson(idea, rating, rng) if idea else None
     if kind == "opening" and engine is not None:
         focus = (home.get("focus") or {}).get("pattern")
         return opening_lesson(games, home["player"], focus in (HANG, FORK), engine, set())
@@ -285,7 +318,7 @@ def plan(home=None, engine=None, today=None):
     items = {
         "opening": opening_lesson(games, home["player"], focus in (HANG, FORK), engine, done_families) if engine else None,
         "tactic": tactic(theme, rating, rng),
-        "idea": ai_idea(home, today) or idea_for(focus, done) or {**IDEAS[0], "kind": "idea", "coach": "maya", "intro": IDEAS[0]["text"]},
+        "idea": ai_idea(home, today, rating=rating, rng=rng) or idea_for(focus, done, rating, rng) or idea_lesson(IDEAS[0], rating, rng),
         "endgame": endgame(end, rating, rng),
     }
     new = novelty(home, games, moves, engine, today, rng)
@@ -297,7 +330,7 @@ def plan(home=None, engine=None, today=None):
     return {"player": home["player"], "rating": rating, "items": items, "novelty": new, "done": sorted(done)}
 
 
-def ai_idea(home, today=None, ask_ai=None):
+def ai_idea(home, today=None, ask_ai=None, rating=None, rng=None):
     """With the player's AI key: one fresh way of approaching the game, written for them (renewed weekly).
     No moves or squares allowed (the engine decides concrete chess); None if the AI is busy or there's no key."""
     from coach import ai, coaches
@@ -306,7 +339,7 @@ def ai_idea(home, today=None, ask_ai=None):
     mem = _memory()
     cached = mem.get("ai_idea")
     if cached and cached.get("week") == week:
-        return cached["idea"]
+        return _practised(cached["idea"], rating, rng)
     if ask_ai is None:
         if not ai.ready():
             return None
@@ -327,4 +360,11 @@ def ai_idea(home, today=None, ask_ai=None):
             "why": "A new idea Maya wrote for you this week, from your games.", "ai": True}
     mem["ai_idea"] = {"week": week, "idea": idea}
     _save(mem)
-    return idea
+    return _practised(idea, rating, rng)
+
+
+def _practised(idea, rating, rng):
+    """An AI idea is practised on the player's own positions, with the blunder-check questions."""
+    base = IDEAS[0]
+    return {**idea, "own": base["own"], "puzzles": base["puzzles"], "checklist": base["checklist"],
+            "drills": idea_drills(base, rating, rng or random.Random(0))}

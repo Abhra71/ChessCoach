@@ -225,9 +225,22 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .plan-text h3 { margin: 4px 0 6px; } .plan-text p { margin: 0 0 10px; }
 /* what AI adds */
 .ai-wrap { position: fixed; inset: 0; z-index: 99999; display: grid; place-items: center; background: rgba(0,0,0,.55); padding: 16px; }
-.ai-card { max-width: 640px; width: 100%; }
+.ai-card { position: relative; max-width: 680px; width: 100%; padding: 28px 28px 22px; }
+.ai-x { position: absolute; top: 12px; right: 12px; font-size: 20px; }
+.ai-title { font-size: 26px; font-weight: 700; letter-spacing: -.02em; color: var(--text); }
+.ai-lead { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 8px 0 18px; }
+.ai-table th .tier { display: block; font-size: 15px; font-weight: 700; color: var(--text); }
+.ai-table th small { color: var(--muted); font-weight: 400; font-size: 12px; }
+.ai-table .plus { background: color-mix(in srgb, var(--better) 10%, transparent); }
+.checks:empty { display: none; }
+.check { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 1px solid var(--line);
+  border-radius: 8px; padding: 9px 12px; margin-top: 8px; font: inherit; font-size: 14px; color: var(--text); cursor: pointer; }
+.check i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px;
+  font-weight: 700; background: var(--line); flex: none; }
+.check.on { border-color: var(--better); } .check.on i { background: var(--better); color: #fff; }
+.check[disabled]:not(.on) { opacity: .45; cursor: default; }
 .ai-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.ai-table th { text-align: left; font-size: 12px; color: var(--muted); padding: 6px 8px; }
-.ai-table td { border-top: 1px solid var(--line); padding: 8px; vertical-align: top; }
+.ai-table th { text-align: left; padding: 10px 10px 8px; vertical-align: bottom; text-transform: none; letter-spacing: 0; }
+.ai-table td { border-top: 1px solid var(--line); padding: 10px; vertical-align: top; font-size: 14px; }
 .ai-table td.yes { color: var(--better); font-weight: 700; } .ai-table td.no { color: var(--muted); }
 .btn.ghost { background: none; border-color: transparent; }

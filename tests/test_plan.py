@@ -74,7 +74,7 @@ def test_ai_idea_is_written_for_the_player_and_checked(memory):
     idea = plan.ai_idea(HOME, today=date(2026, 10, 5), ask_ai=ok)
     assert idea["title"] == "Look before you leap" and idea["ai"]
     again = plan.ai_idea(HOME, today=date(2026, 10, 6), ask_ai=lambda *a: 1 / 0)  # same week: from memory, no AI call
-    assert again == idea
+    assert again["id"] == idea["id"] and again["checklist"]
 
 
 def test_ai_idea_with_a_move_in_it_is_dropped(memory):
@@ -89,3 +89,8 @@ def test_opening_a_plan_card_is_not_a_new_thing(memory):
     moves = {g["url"]: [] for g in games}
     plan.mark("tactic:pin", today=date(2026, 10, 1))  # opened from Your plan
     assert plan.novelty(HOME, games, moves, today=date(2026, 10, 1)) is None
+
+
+def test_an_idea_is_practised_on_the_board_with_its_checklist(memory):
+    lesson = plan.idea_lesson(plan.IDEAS[0], 400, random.Random(0))
+    assert lesson["checklist"][0] == "After my move, what can they take?" and lesson["drills"]
