@@ -289,3 +289,34 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
   animation: pop 1.8s cubic-bezier(.15,.7,.3,1) forwards; }
 @keyframes pop { 0% { opacity: 1; transform: translate(0, 0) rotate(0); }
   60% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 520px)) rotate(var(--r)); } }
+
+/* today's 5 minutes */
+.daily { display: flex; align-items: center; gap: 18px; text-decoration: none; color: var(--text); flex-wrap: wrap;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--better) 14%, var(--surface)), var(--surface) 60%);
+  border-color: color-mix(in srgb, var(--better) 40%, var(--line)); transition: transform .15s; }
+.daily:hover { transform: translateY(-2px); }
+.daily-icon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; flex: none;
+  background: var(--better); color: #fff; animation: bob 2.4s ease-in-out infinite; }
+.daily-icon svg { width: 26px; height: 26px; }
+.daily.done .daily-icon { background: #f0a43a; animation: none; }
+.daily-main { flex: 1 1 240px; } .daily-main .label { color: var(--better); }
+.daily.done .daily-main .label { color: #f0a43a; }
+.daily-title { font-size: 18px; font-weight: 700; margin-top: 3px; }
+.daily-week { display: flex; gap: 6px; }
+.daily-week i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11px;
+  font-weight: 700; background: var(--raised); color: var(--faint); }
+.daily-week i.on { background: var(--better); color: #fff; } .daily-week i.today { outline: 2px solid var(--line-strong); outline-offset: 1px; }
+.daily-streak { text-align: center; line-height: 1; } .daily-streak b { font-size: 26px; display: block; }
+.daily-streak span { font-size: 11px; color: var(--muted); }
+@keyframes bob { 50% { transform: translateY(-3px); } }
+/* you vs you */
+.vs-row { display: grid; grid-template-columns: 180px 1fr; gap: 14px; align-items: center; margin-top: 14px; }
+.vs-name { font-size: 13px; color: var(--muted); }
+.vs-bars { display: grid; gap: 5px; }
+.vs-bar { position: relative; height: 18px; display: flex; align-items: center; gap: 8px; }
+.vs-bar i { display: block; height: 100%; border-radius: 5px; transform-origin: left; animation: grow .9s ease-out both; min-width: 3px; }
+.vs-bar b { font-size: 12px; } .vs-bar.then i { background: var(--line-strong); }
+.vs-bar.now.good i { background: var(--better); } .vs-bar.now.bad i { background: var(--red); }
+.vs-key { display: flex; gap: 14px; } .vs-key i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.vs-key .now { background: var(--better); } .vs-key .then { background: var(--line-strong); }
+@media (max-width: 900px) { .vs { grid-column: auto !important; } .vs-row { grid-template-columns: 1fr; gap: 4px; } }

@@ -94,3 +94,12 @@ def test_opening_a_plan_card_is_not_a_new_thing(memory):
 def test_an_idea_is_practised_on_the_board_with_its_checklist(memory):
     lesson = plan.idea_lesson(plan.IDEAS[0], 400, random.Random(0))
     assert lesson["checklist"][0] == "After my move, what can they take?" and lesson["drills"]
+
+
+def test_daily_streak_forgives_one_missed_day_but_not_two():
+    from coach import daily
+    today = date(2026, 10, 10)
+    assert daily.streak(["2026-10-10", "2026-10-09", "2026-10-07"], today) == 3  # the 8th was missed: forgiven
+    assert daily.streak(["2026-10-10", "2026-10-06"], today) == 1  # two missed days: a new run
+    assert daily.streak(["2026-10-08"], today) == 1 and daily.streak(["2026-10-07"], today) == 0
+    assert daily.week_dots(["2026-10-10", "2026-10-04"], today) == [True, False, False, False, False, False, True]

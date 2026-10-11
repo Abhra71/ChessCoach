@@ -145,6 +145,14 @@ class Handler(BaseHTTPRequestHandler):
             from coach import live_engine, plan
             with live_engine.LOCK:
                 return self.send(200, json.dumps(plan.plan(engine=live_engine.get())), "application/json")
+        if path == "/api/daily":  # today's challenge: your position, today's puzzle, your opening
+            from coach import daily, live_engine
+            home = insights.home()
+            if not home.get("player"):
+                return self.send(200, json.dumps({"drills": []}), "application/json")
+            with live_engine.LOCK:
+                out = daily.challenge(home, insights._games(), live_engine.get())
+            return self.send(200, json.dumps(out), "application/json")
         if path.startswith("/ext/"):  # the coaches' drawings, shared with the browser extension
             return self.static(path[len("/ext/"):], root=BUNDLED_EXTENSION)
         if path.startswith("/ui/"):
@@ -182,6 +190,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/player":
             ok, message = set_player(str(body.get("username", "")))
             return self.send(200 if ok else 400, json.dumps({"ok": ok, "message": message}), "application/json")
+        if path == "/api/daily/done":
+            from coach import daily
+            return self.send(200, json.dumps(daily.done()), "application/json")
         if path == "/api/plan/mark":  # the player saw or finished a new thing
             from coach import plan
             plan.mark(str(body.get("id", ""))[:200], done=bool(body.get("done")), novelty=bool(body.get("novelty")))

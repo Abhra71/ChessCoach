@@ -18,6 +18,8 @@ const ICON = {
   capture: '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>',
   mate: '<path d="M4 17 3 7l5 4 4-7 4 7 5-4-1 10z"/><path d="M4 21h16"/>',
   draw: '<circle cx="12" cy="12" r="8.5"/><path d="M8 10h8M8 14h8"/>',
+  flame: '<path d="M12 22c4 0 7-2.7 7-7 0-3.5-2.2-5.6-3.6-7.5-.5 1.9-1.4 3-2.6 3.5.3-3.4-1-6.6-3.8-9-.3 3.4-2 5.7-3.6 7.6C4.2 11.3 5 13 5 15c0 4.3 3 7 7 7Z"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   down: '<path d="M12 5v14M6 13l6 6 6-6"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
 };
@@ -234,6 +236,47 @@ function ring(part, whole) {  // a progress ring that fills
     <circle cx="32" cy="32" r="26" class="fill" style="--to:${C * (1 - k)}" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg>`;
 }
 
+function dailyCard(d) {  // five minutes a day; the streak forgives one missed day and never scolds
+  const days = ["M", "T", "W", "T", "F", "S", "S"], today = (new Date().getDay() + 6) % 7;
+  const dots = (d.week || []).map((on, i) => `<i class="${on ? "on" : ""} ${i === 6 ? "today" : ""}">${days[(today - 6 + i + 7) % 7]}</i>`).join("");
+  return `<a class="box daily rise ${d.done_today ? "done" : ""}" href="#/daily">
+    <div class="daily-icon">${svg(d.done_today ? "flame" : "bolt")}</div>
+    <div class="daily-main"><div class="label">${d.done_today ? "Done today" : "Today's 5 minutes"}</div>
+      <div class="daily-title">${d.done_today ? "Nice. Back tomorrow for a new one." : "Your position, a puzzle, your opening"}</div></div>
+    <div class="daily-week">${dots}</div>
+    ${d.streak ? `<div class="daily-streak"><b class="num">${d.streak}</b><span>day${d.streak > 1 ? "s" : ""}</span></div>` : ""}
+    <span class="btn ${d.done_today ? "" : "primary"}">${d.done_today ? "Play again" : "Start"}</span></a>`;
+}
+
+function vsCard(v) {  // you now against you before: the only rival that is always fair
+  if (!v) return "";
+  const row = (name, a, b, lowerBetter, unit = "") => {
+    const max = Math.max(a, b, 0.1), good = lowerBetter ? a <= b : a >= b;
+    return `<div class="vs-row"><div class="vs-name">${name}</div>
+      <div class="vs-bars"><div class="vs-bar now ${good ? "good" : "bad"}"><i style="width:${100 * a / max}%"></i><b class="num">${a}${unit}</b></div>
+        <div class="vs-bar then"><i style="width:${100 * b / max}%"></i><b class="num">${b}${unit}</b></div></div></div>`;
+  };
+  return `<div class="box vs" style="grid-column: span 2"><div class="row spread"><h2 style="margin:0">You vs you</h2>
+      <div class="vs-key small muted"><span><i class="now"></i>${esc(v.now.label)}</span><span><i class="then"></i>${esc(v.then.label)}</span></div></div>
+    ${row("Pieces given away a game", v.now.pieces, v.then.pieces, true)}
+    ${row("Games won", v.now.wins, v.then.wins, false, "%")}
+    ${row("Big mistakes a game", v.now.moments, v.then.moments, true)}</div>`;
+}
+
+async function daily() {
+  shell("practice", `<p class="muted">Loading…</p>`);
+  const d = await api("/api/daily");
+  if (!d.drills.length) { $("#page").innerHTML = `<div class="empty">Today's challenge appears once your games are checked.</div>`; return; }
+  $("#page").innerHTML = trainerPage("Today's 5 minutes", { back: `<a href="#/home" class="small muted" style="text-decoration:none">← Home</a>`,
+    text: `Today's idea: ${d.theme}.` });
+  trainer(d.drills, { coach: "arjun", record: true, onDone: async right => {
+    const s = await api("/api/daily/done", {}).catch(() => ({}));
+    setTimeout(() => Coach.react("arjun", "celebrate",
+      `Done for today: ${right} of ${d.drills.length} right first time.${s.streak > 1 ? ` That's ${s.streak} days in a row.` : ""} See you tomorrow.`,
+      [{ label: "Back home", app: "home" }]), 2500);
+  } });
+}
+
 async function home() {
   shell("home", `<p class="muted">Loading…</p>`);
   const h = await api("/api/home");
@@ -251,6 +294,7 @@ async function home() {
       <p class="sub">${h.games} games checked by Stockfish</p></div>
       <div class="row"><button class="btn" id="brief">Hear your briefing</button><a class="btn primary" href="#/practice">Start practice</a></div></div>
     <div class="grid">
+      ${dailyCard(h.daily || {})}
       ${f ? `<div class="box focus hero rise">
         <div class="hero-main"><div class="label">Your focus</div>
           <h3 class="hero-title">${esc(PATTERN_TITLE[f.pattern] || cap(f.pattern))}</h3>
@@ -266,15 +310,11 @@ async function home() {
           <div class="habit-icon">${svg(icon)}</div><div class="big">${roll(p.times)}</div><div class="habit-name">${esc(name)}</div>
           ${arrow(fewer, fewer ? "fewer lately" : "more lately")}</a>`; }).join("")}</div>
       <div class="grid cols-3 rise">
+        ${vsCard(h.you_vs_you)}
         <div class="box"><div class="big">${h.rating ? roll(h.rating) : "–"}</div><div class="stat-label">${cap(h.rating_class || "")} rating</div>
-          ${rc ? `<span class="trend ${rc > 0 ? "good" : "bad"}">${svg(rc > 0 ? "up" : "down")}${rc > 0 ? "+" : ""}${rc} this month</span>` : ""}</div>
-        <div class="box"><div class="big">${roll(r.win || 0)} <span class="stat-label">won of ${played}</span></div>
+          ${rc ? `<span class="trend ${rc > 0 ? "good" : "bad"}">${svg(rc > 0 ? "up" : "down")}${rc > 0 ? "+" : ""}${rc} this month</span>` : ""}
           <div class="wld"><i class="w" style="width:${pct(r.win)}%"></i><i class="d" style="width:${pct(r.draw)}%"></i><i class="l" style="width:${pct(r.loss)}%"></i></div>
           <div class="wld-key small muted"><span><i class="w"></i>${r.win || 0} won</span><span><i class="d"></i>${r.draw || 0} drawn</span><span><i class="l"></i>${r.loss || 0} lost</span></div></div>
-        ${pr.answers ? `<div class="box row" style="gap:16px">${ring(pr.right || 0, pr.answers)}
-          <div><div class="big">${roll(pr.right || 0)}</div><div class="stat-label">of ${pr.answers} right first time in practice</div></div></div>`
-        : `<a class="box row habit" href="#/practice" style="gap:16px">${ring(0, 1)}
-          <div><div class="big" style="font-size:22px">Start practice</div><div class="stat-label">Your own positions, 5 minutes</div></div></a>`}
       </div>
       ${last ? `<div class="box row spread rise"><div><div class="label muted-label">Your last game</div>
           <h3 style="margin:6px 0 4px">vs ${esc(last.opponent)} <span class="faint num">${last.opponent_rating}</span>
@@ -673,6 +713,7 @@ async function route() {
     if (name === "games" && arg) return await gameView(arg);
     if (name === "games") return await games();
     if (name === "practice") return await practice(arg && decodeURIComponent(arg));
+    if (name === "daily") return await daily();
     if (name === "extension") return await extensionView();
     if (name === "settings") return await settingsView();
     return await home();

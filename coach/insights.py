@@ -115,7 +115,40 @@ def home():
         "trend": trend, "trend_window": TREND_WINDOW,
         "last_game": last, "practice": {**memory.practice_stats(), "seen": due},
         "week": week(checked, moves),
+        "you_vs_you": you_vs_you(checked, moves, player),
+        "daily": daily_summary(),
     }
+
+
+def daily_summary():
+    from datetime import date
+    from coach import daily
+    days = daily._memory().get("days", [])
+    today = date.today()
+    return {"done_today": today.isoformat() in days, "streak": daily.streak(days, today), "week": daily.week_dots(days, today)}
+
+
+def you_vs_you(checked, moves, player, now=None, size=20):
+    """You now against you before: the last month against the month before when both have enough games,
+    else your last 20 games against the 20 before them."""
+    import time
+    now = now or time.time()
+    month = 30 * 86400
+    a = [g for g in checked if g["end_time"] >= now - month]
+    b = [g for g in checked if now - 2 * month <= g["end_time"] < now - month]
+    label = ("This month", "Last month")
+    if len(a) < 5 or len(b) < 5:
+        a, b, label = checked[:size], checked[size:2 * size], (f"Last {size} games", f"The {size} before")
+    if len(b) < 5:
+        return None
+
+    def score(gs):
+        lost = [sum(1 for r in moves[g["url"]] if r["pattern"] in LOSING_MATERIAL) for g in gs]
+        keys = [len(biggest(moves[g["url"]])) for g in gs]
+        wins = sum(1 for g in gs if _result(g, _side(g, player)[0]) == "win")
+        return {"games": len(gs), "pieces": round(sum(lost) / len(gs), 1), "moments": round(sum(keys) / len(gs), 1),
+                "wins": round(100 * wins / len(gs))}
+    return {"now": {**score(a), "label": label[0]}, "then": {**score(b), "label": label[1]}}
 
 
 def rating_change(games, player, time_class, days=30, now=None):
