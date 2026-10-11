@@ -89,9 +89,9 @@
   const SHOULDER = { l: [56, 128], r: [124, 128] };
   const POSE = {
     rest: { l: "M56 128 Q40 152 54 170", r: "M124 128 Q140 152 126 170", hl: [54, 170], hr: [126, 170] },
-    thumbs: { r: "M124 128 Q154 150 148 116", hr: [148, 110], thumb: true },
-    chin: { r: "M124 128 Q146 170 106 104", hr: [104, 100] },
-    cheek: { l: "M56 128 Q28 152 64 88", hl: [66, 84] },
+    thumbs: { r: "M124 128 Q154 150 148 120", hr: [148, 114], thumb: true },
+    chin: { r: "M124 128 Q146 170 106 112", hr: [104, 109] },
+    cheek: { l: "M56 128 Q28 152 64 96", hl: [66, 92] },
   };
   const MOOD_POSE = { calm: ["rest", "rest"], pleased: ["rest", "thumbs"], thinking: ["rest", "chin"], worried: ["cheek", "rest"] };
 
@@ -115,7 +115,7 @@
       return `<path d="${path}" stroke="${L.top}" stroke-width="15" stroke-linecap="round" fill="none"/>
         ${hand(at, L, side === "r" && pose.thumb)}`;
     };
-    const head = `<g transform="translate(30 4)">
+    const head = `<g transform="translate(30 13)">
         ${fill(L.back)}
         <ellipse cx="33" cy="62" rx="4" ry="6" fill="${L.shade}"/><ellipse cx="87" cy="62" rx="4" ry="6" fill="${L.shade}"/>
         <ellipse cx="60" cy="60" rx="26" ry="29" fill="${L.skin}"/>
@@ -129,8 +129,8 @@
         ${fill(L.extra)}
       </g>`;
     return `<svg viewBox="0 0 180 176" xmlns="http://www.w3.org/2000/svg" class="kw-face kw-figure kw-${coach} kw-${mood}" role="img" aria-label="${coach}">
-      <path d="M81 82 L81 116 Q90 124 99 116 L99 82 Z" fill="${L.shade}"/>
-      <path d="M81 92 Q90 99 99 92 L99 96 Q90 103 81 96 Z" fill="#000" opacity=".12"/>
+      <path d="M81 92 L81 116 Q90 124 99 116 L99 92 Z" fill="${L.shade}"/>
+      <path d="M81 101 Q90 108 99 101 L99 105 Q90 112 81 105 Z" fill="#000" opacity=".12"/>
       <path d="M38 180 C40 134 60 114 80 113 Q90 121 100 113 C120 114 140 134 142 180Z" fill="${L.top}"/>
       <g transform="translate(30 18)">${fill(L.clothes)}</g>
       ${head}
