@@ -90,7 +90,12 @@ function askBox(el, { placeholder, enabled, listen, onAsk }) {
   el.innerHTML = `<div class="row"><input class="field" data-q placeholder="${esc(enabled ? placeholder : "Add an AI key in Settings to ask the coach")}" ${enabled ? "" : "disabled"}>
     ${listen && enabled ? `<button class="btn mic" data-mic title="Hold to talk, or click to start and stop">Talk</button>` : ""}
     <button class="btn primary" data-ask ${enabled ? "" : "disabled"}>Ask</button></div><div data-a class="small" style="margin-top:8px"></div>`;
-  if (!enabled) return;
+  if (!enabled) {  // the feature is never hidden: say what a free key gives, and where to add it
+    el.innerHTML = `<p class="small" style="margin:0 0 10px">Want to talk with your coaches and get real replies? Add a free AI key
+      (Google Gemini or Groq, about 2 minutes, step by step). Optional: everything else works without it.</p>
+      <a class="btn" href="#/settings">Set it up</a>`;
+    return;
+  }
   const q = $("[data-q]", el), out = $("[data-a]", el), mic = $("[data-mic]", el);
   const go = async () => {
     const text = q.value.trim(); if (!text) return;

@@ -80,6 +80,19 @@ Art style: flat cartoon or illustrated portrait (builder picks). Drawn by us, no
   talk with your coaches and get replies." Optional, never nagging.
 - No AI running on the PC (builder's decision). Live games are never sent to any AI (fair play).
 
+### Big update progress (11 Oct 2026, evening; builder away, provisional choices)
+Built and committed (tested with mock chess.com pages in build/preview, not yet in the builder's Chrome):
+- coach/coaches.py: four coaches, sections, written sentences per coach, moods; /api/coach.
+- extension/faces.js (flat cartoon, 4 moods, blink, talking mouth), buddy.js/css (allow-list of sections; hidden on
+  play/game/battle pages), voice via offscreen.html; Maya heads the review panel.
+- Instant review (archive-gated), navigation guide (red ring on chess.com's Puzzles link, never clicks).
+- Chat: /api/chat, coaches.chat (persona, square check, never-fail fallback); ask box only with a key; the app's
+  ask boxes explain the free-key feature instead of a disabled field. Not tested with a real key (none on this PC).
+Provisional (builder to confirm): voices Maya bf_emma, Arjun am_puck, Zara af_nova, Viktor bm_george; flat style.
+Left: Viktor's progress memory ("last week vs this week"), AI key walkthrough with the builder's screenshots, voice
+questions on chess.com, Settings note about the coaches, README/Store text, test in the builder's Chrome with
+`try.bat`, screenshots, build 0.5.0.
+
 ## Found after the Store launch (11 Oct 2026, builder's first use of 0.4.1)
 - **No welcome screen on first start:** the Store app reads `%LOCALAPPDATA%\ChessCoach` (`paths.HOME`), the same
   folder the old Chess Coach uses, found `player.txt` and went straight to Home. Fix in 0.4.2: the Store app keeps its
