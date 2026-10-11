@@ -55,6 +55,31 @@ Notes: `?shot=N` starts the film on shot N (for screenshots/trailer). AI keys li
 so they survive a reinstall. The old Chess Coach uses the same port (8765): while it runs, Knightwise defers to it,
 so it must be uninstalled.
 
+## The big update (decided 11 Oct 2026): 0.4.2 is held and ships together with the coaches on chess.com
+No beta testers yet, so one big Store update instead of 0.4.2 now. **Waiting for the builder's go-ahead before building.**
+
+**Four original coaches, nothing to pick, no switch option.** Two women, two men, original faces and names (never real
+players' likeness: personality rights, Store rules, false endorsement). Each always appears for the same sections, so it
+feels like a specialist; the brain (Stockfish + our facts) is identical. Full expressions for all (pleased, worried,
+thinking, talking, blinking), driven by engine facts. Draft (names/ages/voices to confirm):
+- Maya (woman, calm former champion): game reviews, instant review after a game.
+- Arjun (man, young prodigy): puzzles and practice.
+- Zara (woman, bold attacker): before you play: greeting, suggestions, navigation guide on chess.com.
+- Viktor (man, veteran): progress and history, lessons, endgames. New sections go to whoever fits best.
+Voices: Kokoro voices already installed (samples in dist/voice-samples); builder picks one per coach.
+Art style: flat cartoon or illustrated portrait (builder picks). Drawn by us, nothing downloaded.
+
+**How they talk (written sentences + optional AI, merged):**
+- Always: written sentences in each coach's own style, many wordings per situation picked at random, plus memory
+  ("last week 3 hanging pieces, this week 1"). Free, instant, offline, never wrong.
+- With the player's free key (Gemini, Groq): real two-way conversation, questions answered in the coach's personality.
+  The AI only words the engine's facts; our code checks every move/square it mentions against them, else falls back.
+- Never fails: if both AI providers are busy or down, the coach answers with a written sentence in a positive tone and
+  the conversation goes on; a small note says replies are briefly simpler.
+- Not hidden: everyone is told clearly, in the app and by the coach, "Add a free key (2 minutes, guided) and you can
+  talk with your coaches and get replies." Optional, never nagging.
+- No AI running on the PC (builder's decision). Live games are never sent to any AI (fair play).
+
 ## Found after the Store launch (11 Oct 2026, builder's first use of 0.4.1)
 - **No welcome screen on first start:** the Store app reads `%LOCALAPPDATA%\ChessCoach` (`paths.HOME`), the same
   folder the old Chess Coach uses, found `player.txt` and went straight to Home. Fix in 0.4.2: the Store app keeps its
