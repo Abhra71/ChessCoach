@@ -124,7 +124,9 @@
     }).join("");
     panel.classList.toggle("folded", small);
     panel.classList.toggle("open", !small);
-    const char = `<button class="kw-char" title="Maya, game reviews">${KnightwiseFaces.figure("maya", maya.mood)}</button>`;
+    // Maya's gesture follows the review: explaining the better move, worried at what your move allowed
+    const pose = active ? (active.when === "before" ? "explain" : "worried") : maya.mood;
+    const char = `<button class="kw-char" title="Maya, game reviews">${KnightwiseFaces.figure("maya", pose)}</button>`;
     panel.innerHTML = small
       ? `${char}<button class="kw-tab pill">Maya · ${moments.length} key moment${moments.length === 1 ? "" : "s"}</button>`
       : `${char}<div class="chess-coach-panel"><div class="head"><span><b>Maya</b> <small>Game reviews</small></span>` +

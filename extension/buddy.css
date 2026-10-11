@@ -34,6 +34,19 @@
 @keyframes kw-talk { from { transform: scaleY(.25); } to { transform: scaleY(1); } }
 .talking .kw-arm-r { transform-origin: 124px 128px; animation: kw-gesture .5s ease-in-out infinite alternate; }
 @keyframes kw-gesture { from { transform: rotate(0); } to { transform: rotate(-9deg); } }
+.kw-do-greet .kw-arm-r, .kw-do-bye .kw-arm-r { transform-origin: 124px 128px; animation: kw-wave .45s ease-in-out 4 alternate; }
+.kw-do-celebrate { animation: kw-hop .5s ease-in-out 3 alternate; }
+.kw-do-warn .kw-arm-r { transform-origin: 146px 120px; animation: kw-wag .3s ease-in-out 4 alternate; }
+.kw-do-encourage .kw-arm-r { transform-origin: 124px 128px; animation: kw-pump .35s ease-in-out 3 alternate; }
+.kw-do-point .kw-arm-l { animation: kw-poke .6s ease-in-out infinite alternate; }
+@keyframes kw-wave { from { transform: rotate(-6deg); } to { transform: rotate(10deg); } }
+@keyframes kw-hop { to { transform: translateY(-6px); } }
+@keyframes kw-wag { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
+@keyframes kw-pump { to { transform: translateY(-5px) rotate(-6deg); } }
+@keyframes kw-poke { to { transform: translateX(-4px); } }
+/* each coach moves in their own way */
+.kw-arjun.kw-figure { animation-duration: .38s; } .kw-coach .kw-char:has(.kw-arjun) { animation-duration: 2.4s; }
+.kw-coach .kw-char:has(.kw-viktor) { animation-duration: 6s; }
 @keyframes kw-bob { 50% { transform: translateY(-3px); } }
 @keyframes kw-in { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) { .kw-char, .talking .kw-arm-r, .kw-face .kw-eyes { animation: none; } }

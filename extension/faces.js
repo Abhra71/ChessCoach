@@ -39,16 +39,21 @@
     calm: ["M43 49 Q49 47 55 49", "M65 49 Q71 47 77 49"],
     worried: ["M43 51 Q49 49 55 46", "M65 46 Q71 49 77 51"],
     thinking: ["M43 46 Q49 42 55 45", "M65 50 Q71 49 77 50"],
+    excited: ["M43 46 Q49 41 55 45", "M65 45 Q71 41 77 46"],
+    serious: ["M43 47 Q49 48 55 51", "M65 51 Q71 48 77 47"],
   };
   const MOUTH = {
     pleased: `<path d="M50 73 Q60 84 70 73 Z" fill="#5A2A22"/><path d="M52 74 Q60 77 68 74" stroke="#fff" stroke-width="2.2" fill="none"/>`,
     calm: `<path d="M52 75 Q60 80 68 75" stroke="LIPS" stroke-width="2.6" stroke-linecap="round" fill="none"/>`,
     worried: `<path d="M53 78 Q60 73 67 78" stroke="LIPS" stroke-width="2.6" stroke-linecap="round" fill="none"/>`,
     thinking: `<path d="M54 76 Q60 76 66 74" stroke="LIPS" stroke-width="2.6" stroke-linecap="round" fill="none"/>`,
+    excited: `<path d="M48 72 Q60 88 72 72 Z" fill="#5A2A22"/><path d="M50 73 Q60 76 70 73" stroke="#fff" stroke-width="2.4" fill="none"/>
+      <ellipse cx="60" cy="81" rx="5" ry="2.2" fill="#C8505A"/>`,
+    serious: `<path d="M53 76 L67 76" stroke="LIPS" stroke-width="2.6" stroke-linecap="round" fill="none"/>`,
   };
 
   function eyes(mood) {
-    if (mood === "pleased") {
+    if (mood === "pleased" || mood === "excited") {
       return `<g class="kw-eyes" stroke="#2A1D18" stroke-width="2.6" stroke-linecap="round" fill="none">
         <path d="M45 60 Q49 55 53 60"/><path d="M67 60 Q71 55 75 60"/></g>`;
     }
@@ -86,34 +91,55 @@
   // ---- the coach as a character: head, body and arms, leaning on the top edge of the message box ----
   // Gestures by mood: calm = both hands on the edge; pleased = thumbs up; thinking = hand on chin;
   // worried = hand on cheek. While talking, the right arm gestures (coach.css).
-  const SHOULDER = { l: [56, 128], r: [124, 128] };
-  const POSE = {
-    rest: { l: "M56 128 Q40 152 54 170", r: "M124 128 Q140 152 126 170", hl: [54, 170], hr: [126, 170] },
-    thumbs: { r: "M124 128 Q154 150 148 120", hr: [148, 114], thumb: true },
-    chin: { r: "M124 128 Q146 170 106 112", hr: [104, 109] },
-    cheek: { l: "M56 128 Q28 152 64 96", hl: [66, 92] },
+  // Arms: a path from the shoulder and where the hand ends up, with the kind of hand.
+  const ARM = {
+    rest: { l: ["M56 128 Q40 152 54 170", [54, 170]], r: ["M124 128 Q140 152 126 170", [126, 170]] },
+    thumbs: { r: ["M124 128 Q154 150 148 120", [148, 114], "thumb"] },
+    chin: { r: ["M124 128 Q146 170 106 112", [104, 109]] },
+    cheek: { l: ["M56 128 Q28 152 64 96", [66, 92]] },
+    wave: { r: ["M124 128 Q152 128 150 96", [150, 88], "palm"] },
+    explain: { r: ["M124 128 Q150 158 140 134", [142, 130], "palmup"] },
+    point: { l: ["M56 128 Q34 126 18 118", [12, 116], "point"] },
+    celebrate: { l: ["M56 128 Q36 112 38 86", [38, 80], "fist"], r: ["M124 128 Q144 112 142 86", [142, 80], "fist"] },
+    warn: { r: ["M124 128 Q152 146 146 112", [146, 106], "finger"] },
+    listen: { r: ["M124 128 Q150 120 122 82", [120, 78], "palm"] },
+    pump: { r: ["M124 128 Q154 138 142 106", [142, 100], "fist"] },
   };
-  const MOOD_POSE = { calm: ["rest", "rest"], pleased: ["rest", "thumbs"], thinking: ["rest", "chin"], worried: ["cheek", "rest"] };
+  // situation -> [face, left arm, right arm]. Each coach plays them in their own style (coach.css / buddy.css).
+  const SITUATION = {
+    calm: ["calm", "rest", "rest"], pleased: ["pleased", "rest", "thumbs"], thinking: ["thinking", "rest", "chin"],
+    worried: ["worried", "cheek", "rest"], greet: ["pleased", "rest", "wave"], bye: ["pleased", "rest", "wave"],
+    explain: ["calm", "rest", "explain"], point: ["calm", "point", "rest"], celebrate: ["excited", "celebrate", "celebrate"],
+    encourage: ["excited", "rest", "pump"], warn: ["serious", "rest", "warn"], listen: ["calm", "rest", "listen"],
+  };
 
-  function hand([x, y], L, thumb) {
-    if (thumb) {  // a fist with the thumb up
-      return `<rect x="${x - 8}" y="${y - 7}" width="16" height="15" rx="6" fill="${L.skin}"/>
-        <rect x="${x - 3}" y="${y - 19}" width="7" height="15" rx="3.5" fill="${L.skin}"/>
-        <path d="M${x - 6} ${y} h11 M${x - 6} ${y + 4} h11" stroke="${L.shade}" stroke-width="1.2"/>`;
-    }
-    return `<ellipse cx="${x}" cy="${y}" rx="9.5" ry="7.5" fill="${L.skin}"/>
-      <path d="M${x - 4} ${y - 5} v6 M${x} ${y - 6} v7 M${x + 4} ${y - 5} v6" stroke="${L.shade}" stroke-width="1.1" stroke-linecap="round"/>`;
+  function hand([x, y], L, kind) {
+    const S = L.skin, D = L.shade;
+    if (kind === "thumb") return `<rect x="${x - 8}" y="${y - 7}" width="16" height="15" rx="6" fill="${S}"/>
+        <rect x="${x - 3}" y="${y - 19}" width="7" height="15" rx="3.5" fill="${S}"/>
+        <path d="M${x - 6} ${y} h11 M${x - 6} ${y + 4} h11" stroke="${D}" stroke-width="1.2"/>`;
+    if (kind === "fist") return `<rect x="${x - 8}" y="${y - 8}" width="16" height="16" rx="6" fill="${S}"/>
+        <path d="M${x - 6} ${y - 2} h12 M${x - 6} ${y + 2} h12" stroke="${D}" stroke-width="1.2"/>`;
+    if (kind === "finger") return `<rect x="${x - 7}" y="${y - 3}" width="14" height="13" rx="5" fill="${S}"/>
+        <rect x="${x - 2.5}" y="${y - 18}" width="6" height="17" rx="3" fill="${S}"/>`;
+    if (kind === "point") return `<rect x="${x - 2}" y="${y - 6}" width="14" height="13" rx="5" fill="${S}"/>
+        <rect x="${x - 14}" y="${y - 4}" width="16" height="6" rx="3" fill="${S}"/>`;
+    if (kind === "palm") return `<ellipse cx="${x}" cy="${y + 2}" rx="8.5" ry="8" fill="${S}"/>
+        ${[-6, -2, 2, 6].map(dx => `<rect x="${x + dx - 2}" y="${y - 12}" width="4" height="12" rx="2" fill="${S}"/>`).join("")}
+        <rect x="${x + 6}" y="${y - 2}" width="9" height="4.5" rx="2.2" fill="${S}" transform="rotate(-30 ${x + 6} ${y})"/>`;
+    if (kind === "palmup") return `<ellipse cx="${x}" cy="${y}" rx="11" ry="6" fill="${S}"/>
+        <path d="M${x - 8} ${y - 3} q8 -4 16 0" stroke="${D}" stroke-width="1.1" fill="none"/>`;
+    return `<ellipse cx="${x}" cy="${y}" rx="9.5" ry="7.5" fill="${S}"/>
+      <path d="M${x - 4} ${y - 5} v6 M${x} ${y - 6} v7 M${x + 4} ${y - 5} v6" stroke="${D}" stroke-width="1.1" stroke-linecap="round"/>`;
   }
 
-  function figure(coach, mood = "calm") {
+  function figure(coach, situation = "calm") {
     const L = LOOK[coach] || LOOK.zara;
-    mood = BROWS[mood] ? mood : "calm";
+    const [mood, leftArm, rightArm] = SITUATION[situation] || SITUATION.calm;
     const fill = s => s.replace(/HAIR/g, L.hair).replace(/COLLAR/g, L.collar).replace(/LIPS/g, L.lips);
-    const [left, right] = MOOD_POSE[mood].map(p => POSE[p]);
-    const arm = (side, pose) => {
-      const path = pose[side] || POSE.rest[side], at = pose[side] ? pose["h" + side] : POSE.rest["h" + side];
-      return `<path d="${path}" stroke="${L.top}" stroke-width="15" stroke-linecap="round" fill="none"/>
-        ${hand(at, L, side === "r" && pose.thumb)}`;
+    const arm = (side, name) => {
+      const [path, at, kind] = (ARM[name] && ARM[name][side]) || ARM.rest[side];
+      return `<path d="${path}" stroke="${L.top}" stroke-width="15" stroke-linecap="round" fill="none"/>${hand(at, L, kind)}`;
     };
     const head = `<g transform="translate(30 13)">
         ${fill(L.back)}
@@ -128,16 +154,16 @@
         <ellipse class="kw-talk" cx="60" cy="76" rx="5.5" ry="4" fill="#5A2A22"/>
         ${fill(L.extra)}
       </g>`;
-    return `<svg viewBox="0 0 180 176" xmlns="http://www.w3.org/2000/svg" class="kw-face kw-figure kw-${coach} kw-${mood}" role="img" aria-label="${coach}">
+    return `<svg viewBox="0 0 180 176" xmlns="http://www.w3.org/2000/svg" class="kw-face kw-figure kw-${coach} kw-${mood} kw-do-${situation}" role="img" aria-label="${coach}">
       <path d="M81 92 L81 116 Q90 124 99 116 L99 92 Z" fill="${L.shade}"/>
       <path d="M81 101 Q90 108 99 101 L99 105 Q90 112 81 105 Z" fill="#000" opacity=".12"/>
       <path d="M38 180 C40 134 60 114 80 113 Q90 121 100 113 C120 114 140 134 142 180Z" fill="${L.top}"/>
       <g transform="translate(30 18)">${fill(L.clothes)}</g>
       ${head}
-      <g class="kw-arm-l">${arm("l", left)}</g>
-      <g class="kw-arm-r">${arm("r", right)}</g>
+      <g class="kw-arm-l">${arm("l", leftArm)}</g>
+      <g class="kw-arm-r">${arm("r", rightArm)}</g>
     </svg>`;
   }
 
-  window.KnightwiseFaces = { svg, figure, coaches: Object.keys(LOOK), moods: Object.keys(BROWS) };
+  window.KnightwiseFaces = { svg, figure, coaches: Object.keys(LOOK), moods: Object.keys(BROWS), situations: Object.keys(SITUATION) };
 })();

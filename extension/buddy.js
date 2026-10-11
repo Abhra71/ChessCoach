@@ -40,7 +40,7 @@
       document.body.appendChild(box);
     }
     box.className = `kw-coach ${open ? "open" : "folded"}`;
-    const face = `<button class="kw-char" title="${esc(s.name)}, your Knightwise coach">${KnightwiseFaces.figure(s.coach, s.mood)}</button>`;
+    const face = `<button class="kw-char" title="${esc(s.name)}, your Knightwise coach">${KnightwiseFaces.figure(s.coach, s.pose || s.mood)}</button>`;
     box.innerHTML = open ? `${face}
       <div class="kw-box" role="status">
         <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
@@ -97,7 +97,7 @@
     placeRing();
     addEventListener("scroll", placeRing, true); addEventListener("resize", placeRing);
     try { sessionStorage.setItem("kw-guided", action.find.path); } catch (e) {}
-    said = { ...said, mood: "calm", actions: [], ai_hint: null,
+    said = { ...said, mood: "calm", pose: "point", actions: [], ai_hint: null,
              lines: [`Click "${action.find.name}" where the red ring is. I'll wait.`] };
     render(true); speak();
     nudge = setTimeout(() => {  // still here: point again, a little bigger
@@ -113,12 +113,12 @@
   async function ask(question) {
     clearTimeout(foldTimer);
     history.push(["player", question]);
-    said = { ...said, mood: "thinking", lines: [`"${question}"`, "…"], actions: [], note: null };
+    said = { ...said, mood: "thinking", pose: "listen", lines: [`"${question}"`, "…"], actions: [], note: null };
     render(true);
     const r = await send({ type: "chat", coach: said.coach, message: question, history: history.slice(0, -1) });
     const reply = r && r.ok ? r.data : { text: "I can't reach the Knightwise app right now. Open it from the Start menu.", mood: "calm" };
     history.push(["coach", reply.text]);
-    said = { ...said, mood: reply.mood, lines: [reply.text], note: reply.note || null };
+    said = { ...said, mood: reply.mood, pose: "explain", lines: [reply.text], note: reply.note || null };
     render(true); speak();
     const input = box && box.querySelector(".kw-ask input");
     if (input) input.focus();
@@ -135,7 +135,10 @@
   chrome.runtime.onMessage.addListener(msg => {
     if (msg.type !== "speaking" || !box) return;
     box.classList.toggle("talking", !!msg.on);
-    if (!msg.on) { clearTimeout(foldTimer); foldTimer = setTimeout(() => render(false), MINUTES_OPEN * 60000); }
+    if (!msg.on) {
+      if (said && said.pose && said.pose !== "point") { said = { ...said, pose: null }; render(true); }  // back to their mood
+      clearTimeout(foldTimer); foldTimer = setTimeout(() => render(false), MINUTES_OPEN * 60000);
+    }
   });
 
   async function arrive() {
@@ -154,12 +157,13 @@
     let guided = null;
     try { guided = sessionStorage.getItem("kw-guided"); sessionStorage.removeItem("kw-guided"); } catch (e) {}
     if (guided && location.pathname.startsWith(guided) && r && r.ok) {  // they followed the guide: say so, warmly
-      said = { ...said, mood: "pleased", lines: ["Nice, you found it.", ...said.lines.slice(1)] };
+      said = { ...said, mood: "pleased", pose: "celebrate", lines: ["Nice, you found it.", ...said.lines.slice(1)] };
       render(true); speak();
       return;
     }
     const store = (await send({ type: "greeted", section: here })) || {};
     const first = store.day !== today();
+    if (first && r && r.ok) said = { ...said, pose: "greet" };
     render(first);
     if (first && r && r.ok) { send({ type: "greeted", section: here, set: today() }); speak(); }  // asleep: try again later
   }
