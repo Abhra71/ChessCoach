@@ -30,3 +30,12 @@ def test_engine_line_says_whose_move_and_what_it_takes():
         "They play Nf5", "You play Rf3", "They play Nxh4, taking your bishop on h4",
         "You play Rxf7+, taking their pawn on f7 (check)"]
     assert material_swing(board, line, chess.WHITE) == -2
+
+
+def test_week_counts_only_the_last_seven_days():
+    from coach import insights
+    now = 1_000_000_000
+    games = [{"url": "a", "end_time": now - 86400}, {"url": "b", "end_time": now - 9 * 86400}, {"url": "c", "end_time": now - 30 * 86400}]
+    moves = {"a": [{"pattern": "left a piece hanging"}], "b": [{"pattern": "left a piece hanging"}] * 2, "c": []}
+    w = insights.week(games, moves, now=now)
+    assert w == {"this": {"games": 1, "pieces": 1}, "last": {"games": 1, "pieces": 2}}

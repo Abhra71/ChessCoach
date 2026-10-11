@@ -110,7 +110,20 @@ def home():
         "pieces_last20": round(sum(lost[-20:]) / len(lost[-20:]), 2) if lost else 0,
         "trend": trend, "trend_window": TREND_WINDOW,
         "last_game": last, "practice": {**memory.practice_stats(), "seen": due},
+        "week": week(checked, moves),
     }
+
+
+def week(checked, moves, now=None):
+    """This week against last week: games played and pieces given away (for the progress coach's memory)."""
+    import time
+    now = now or time.time()
+    out = {}
+    for name, start, end in (("this", now - 7 * 86400, now), ("last", now - 14 * 86400, now - 7 * 86400)):
+        games = [g for g in checked if start <= g["end_time"] < end]
+        lost = sum(1 for g in games for r in moves[g["url"]] if r["pattern"] in LOSING_MATERIAL)
+        out[name] = {"games": len(games), "pieces": lost}
+    return out
 
 
 def game_detail(gid):

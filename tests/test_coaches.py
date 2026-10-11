@@ -45,7 +45,8 @@ def test_no_player_yet_points_to_the_app():
 
 
 def test_every_sentence_fills_in():
-    facts = dict(name="x", greet="Hi", lately=1, before=2, games=3, habit="h", tip="t", moments="2 key moments")
+    facts = dict(name="x", greet="Hi", lately=1, before=2, games=3, habit="h", tip="t", moments="2 key moments",
+                 this_games=1, this_pieces=1, last_games=1, last_pieces=1)
     for kind, by_coach in coaches.SAY.items():
         for options in by_coach.values():
             for s in options:
@@ -72,3 +73,11 @@ def test_chat_drops_an_ai_answer_that_invents_a_square():
     invented = lambda *a: ("Your rook on h7 was the problem.", "gemini")
     r = coaches.chat("viktor", "why did I lose?", home=HOME, ask_ai=invented)
     assert not r["ai"] and "h7" not in r["text"]
+
+
+def test_progress_coach_remembers_this_week_against_last_week():
+    home = {**HOME, "week": {"this": {"games": 5, "pieces": 2}, "last": {"games": 4, "pieces": 6}}}
+    text = " ".join(coaches.speak("progress", home, rng=random.Random(0))["lines"])
+    assert "5 games, 2 pieces" in text and "6 in 4" in text and "improvement" in text
+    quiet = {**HOME, "week": {"this": {"games": 0, "pieces": 0}, "last": {"games": 3, "pieces": 1}}}
+    assert "No games this week" in " ".join(coaches.speak("progress", quiet)["lines"])

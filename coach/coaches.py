@@ -80,6 +80,17 @@ SAY = {
     "progress": {
         "viktor": ["You've played {games} games with me watching. Let's see what's changed."],
     },
+    "week_better": {
+        "viktor": ["This week: {this_games} games, {this_pieces} pieces given away. Last week it was {last_pieces} in "
+                   "{last_games}. That is how improvement looks."],
+    },
+    "week_same": {
+        "viktor": ["This week: {this_games} games, {this_pieces} pieces given away; last week {last_pieces} in {last_games}. "
+                   "Steady. Now let's make it better."],
+    },
+    "week_none": {
+        "viktor": ["No games this week yet. A game a day keeps the rust away, as I always say. Well, I say it now."],
+    },
     "lessons": {
         "viktor": ["Lessons are good. But the best teacher is your own last game. Remember that."],
     },
@@ -146,12 +157,27 @@ def speak(section, home=None, hour=12, moments=None, rng=random):
             lines.append(line("better", coach, rng, **facts))
         elif face == "worried":
             lines.append(line("worse", coach, rng, **facts))
-        if section in ("progress", "lessons", "play"):
+        if section == "progress":  # the weekly memory instead of the general line: three sentences at most
+            lines.append(week_line(home, coach, rng))
+        elif section in ("lessons", "play"):
             lines.append(line(section, coach, rng, **facts))
         elif focus:
             lines.append(line("focus", coach, rng, **facts))
         out["actions"] = suggestions(home)
     return {**out, "mood": face, "lines": lines}
+
+
+def week_line(home, coach, rng=random):
+    """The progress coach remembers: this week against last week."""
+    w = home.get("week") or {}
+    this, last = w.get("this") or {}, w.get("last") or {}
+    if not this.get("games"):
+        return line("week_none", coach, rng)
+    facts = {"this_games": this["games"], "this_pieces": this["pieces"], "last_games": last.get("games", 0),
+             "last_pieces": last.get("pieces", 0)}
+    per = lambda d: d["pieces"] / d["games"] if d.get("games") else None
+    better = last.get("games") and per(this) < per(last)
+    return line("week_better" if better else "week_same", coach, rng, **facts)
 
 
 def suggestions(home):
