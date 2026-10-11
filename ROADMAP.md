@@ -45,6 +45,16 @@ The "body" on chess.com (character, voice there, navigation, instant review) doe
   red circles on the click spots, a paste box that tests the key and turns green. The builder takes the screenshots;
   personal details are cropped or blurred.
 
+## 0.4.2 (built 11 Oct 2026, waiting for the builder to upload)
+`dist/Knightwise-0.4.2.0.msix` (327 MB). Store screenshots (1920x1080, welcome first) in `dist/store-screenshots`.
+Done: Store app keeps its data in its package LocalState (fresh start per install; the builder chose a fresh start
+for themself too); window opens maximised; cinematic welcome (film with depth of field, typed lines, Satie
+Gymnopedie No. 1 by Michael Laucke, public domain, ~18% volume, fades in, mute remembered); Play the Coach removed;
+extension guide uses real Chrome screenshots (`installer/make_guide_shots.py`); README has screenshots.
+Notes: `?shot=N` starts the film on shot N (for screenshots/trailer). AI keys live in Windows Credential Manager,
+so they survive a reinstall. The old Chess Coach uses the same port (8765): while it runs, Knightwise defers to it,
+so it must be uninstalled.
+
 ## Found after the Store launch (11 Oct 2026, builder's first use of 0.4.1)
 - **No welcome screen on first start:** the Store app reads `%LOCALAPPDATA%\ChessCoach` (`paths.HOME`), the same
   folder the old Chess Coach uses, found `player.txt` and went straight to Home. Fix in 0.4.2: the Store app keeps its
@@ -53,17 +63,16 @@ The "body" on chess.com (character, voice there, navigation, instant review) doe
 - **Window opened small and low, not centred:** `create_window(width=1240, height=820)` with no position. Fix: open
   maximised.
 - **Music:** FreePD.com has closed. Options offered (Wikimedia Commons, free to use): Satie Gymnopédie No. 1
-  (Michael Laucke, public domain), Debussy Clair de Lune (1905 piano solo, public domain), Chopin Nocturne Op. 9 No. 2
-  (Peter Johnston, CC0). Waiting for the builder's pick.
+  (Michael Laucke, public domain) chosen and shipped in 0.4.2.
 - **Making public:** stays a private beta until the welcome redesign, the coach on chess.com (steps 4–5) and the AI-key
   walkthrough are in and a few beta testers have used it. Remind the builder then.
 - **GitHub:** make the repo page industry-grade (README with real screenshots/GIF walkthroughs, accurate features,
   install steps, releases) as part of each update.
 
 ## Build order
-1. **Welcome screen redesign** (the builder's latest request, details below).
-2. **Remove "Play the Coach"** (never wanted).
-3. **Extension guide with the builder's real screenshots** (`screenshots-raw/9-11.png`, gitignored): crop, remove other
+1. ~~Welcome screen redesign~~ (done in 0.4.2).
+2. ~~Remove "Play the Coach"~~ (done in 0.4.2).
+3. ~~Extension guide with the builder's real screenshots~~ (done in 0.4.2) (`screenshots-raw/9-11.png`, gitignored): crop, remove other
    extensions and the OneDrive name (profile picture may stay), type the extension path into the folder dialog's
    address bar, mark the clicks in red; note that Developer mode must stay on and Chrome's "unsafe" warning is expected.
 4. **The coach character on chess.com** (extension overlay, voice, appears when chess.com opens, greets with the focus).
