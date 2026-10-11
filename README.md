@@ -106,6 +106,11 @@ Your numbers will be different. That's the point: everything is worked out from 
 | Ask the coach by voice: Talk button, Whisper on this computer (one-time 485 MB download in Settings) | works (beta) |
 | Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
 | Microsoft Store package (MSIX, signed by Microsoft on upload, so Windows never blocks it): starts with Windows, notifications, extension copied to Documents\Knightwise | built, not yet submitted |
+| Voice conversation with the coaches: hold to talk, she answers out loud, and the turns continue; needs the free AI key | planned, next update |
+| "Review my game against X" by voice: the coach finds and opens the game and talks through every move, what was better, and one new thing | planned, next update |
+| A two-way bridge: the app opens the game on chess.com with Maya there; chess.com buttons open the right app page | planned, next update |
+| AI usage panel in the sidebar and Settings: today's use for each key, time to reset, which AI does which job; a small dot on chess.com | planned, next update |
+| Groq first, Gemini as backup: a busy AI is rested for 10 minutes; then the smaller model, then the written sentences, so the coach always answers | planned, next update |
 
 ## For players: install
 
