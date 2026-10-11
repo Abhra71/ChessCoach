@@ -89,7 +89,7 @@ Built and committed (tested with mock chess.com pages in build/preview, not yet 
 - Chat: /api/chat, coaches.chat (persona, square check, never-fail fallback); ask box only with a key; the app's
   ask boxes explain the free-key feature instead of a disabled field. Not tested with a real key (none on this PC).
 Provisional (builder to confirm): voices Maya bf_emma, Arjun am_puck, Zara af_nova, Viktor bm_george; flat style.
-Left: Viktor's progress memory ("last week vs this week"), AI key walkthrough with the builder's screenshots, voice
+Also done: Viktor's weekly memory. Left: AI key walkthrough with the builder's screenshots, voice
 questions on chess.com, Settings note about the coaches, README/Store text, test in the builder's Chrome with
 `try.bat`, screenshots, build 0.5.0.
 
