@@ -106,9 +106,6 @@ const Sound = (() => {
   const move = san => play(/[+#]/.test(san || "") ? "check" : /x/.test(san || "") ? "capture" : "move", 0.8);
   return { play, move, set(v) { on = v; }, get on() { return on; } };
 })();
-document.addEventListener("click", e => {  // a soft click on every button, link button and switch
-  if (e.target.closest(".btn, .switch, .seg button, .nav a, .check")) Sound.play("click", 0.35);
-}, true);
 
 // little bursts of colour when something is finished
 function confetti(n = 70) {
