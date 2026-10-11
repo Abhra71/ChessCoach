@@ -28,7 +28,10 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Only new games are downloaded and checked (so it can later run by itself) | works |
 | Runs by itself in the background: checks new games every 10 minutes, Windows notification | works |
 | Browser extension: key moments of your finished games with labelled arrows (Better / You played / Reply) on the chess.com board; guided set-up with real Chrome screenshots (click spots circled) and copy buttons | works (beta) |
-| Four coaches on chess.com (original characters: Maya for reviews, Arjun for puzzles, Zara before you play, Viktor for progress): drawn faces with moods, a text box and voice; greets once a day per section; hidden on every page where a game can run | built, testing (next update) |
+| Four coaches (original characters: Maya for reviews, Arjun for puzzles and practice, Zara before you play, Viktor for progress and your plan): drawn with arms and hands, 12 gestures (wave, point, explain, celebrate, warn, worried...), voice; on chess.com and inside the app, each tab's coach comes up by themselves; hidden on every chess.com page where a game can run | built, testing (next update) |
+| Your plan: one opening that suits your games (Lichess opening catalogue + Stockfish + your results), one tactic and one endgame from 30,000 Lichess puzzles in 20 themes at your rating, one way of thinking; played on the board with the coach reacting to every move | built, testing (next update) |
+| Something new when it's needed: the coaches bring a new tactic, opening or idea only when your games show a reason (a stalemated win, a new kind of mistake, opening trouble, a losing streak, a stuck habit), one at a time | built, testing (next update) |
+| Do this, not that: e.g. "skip bullet for now: 2.0 pieces lost a game there, 0.6 in blitz", or a break after 3 losses in a row | built, testing (next update) |
 | Instant review: a just-finished game is reviewed as soon as chess.com archives it | built, testing (next update) |
 | Navigation guide: the coach rings chess.com's own link ("click Puzzles") and checks you got there; it never clicks for you | built, testing (next update) |
 | Talk with your coaches: with your own free AI key, ask questions and get replies in each coach's personality; the engine's facts are checked, and if the AI is busy the coach still answers | built, testing (next update) |
@@ -162,6 +165,8 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Settings, Welcome) |
 | `coach/ui/backdrop.js`, `coach/get_assets.py` | the 3D welcome film (Three.js + Poly Haven chess set + depth of field) and its download, with the music |
 | `coach/coaches.py` | the four coaches: who appears where, their written sentences, chat with the AI (checked, never fails) |
+| `coach/plan.py`, `coach/openings.py`, `coach/openings/` | the coaches' sense (when something new is needed, and what), Your plan, the opening chooser and the Lichess opening catalogue (CC0) |
+| `coach/ui/coaches.js` | the coaches inside the app, the board trainer (reactions on every move), Your plan, the what-AI-adds card |
 | `extension/buddy.js`, `extension/faces.js`, `extension/offscreen.js` | the coach on chess.com (allow-listed sections only), the drawn faces, the voice player |
 | `coach/insights.py` | the numbers and lists the app shows (dashboard, games, one game in detail) |
 | `coach/voice.py`, `coach/hearing.py`, `coach/get_voice.py` | speaking (Kokoro), listening (Whisper), and their downloads |

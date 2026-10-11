@@ -93,6 +93,16 @@ Also done: Viktor's weekly memory. Left: AI key walkthrough with the builder's s
 questions on chess.com, Settings note about the coaches, README/Store text, test in the builder's Chrome with
 `try.bat`, screenshots, build 0.5.0.
 
+### Built on the night of 11 Oct 2026 (builder away, tested on real chess.com + the app in the builder's Chrome)
+- 12 gestures for the four coaches; neck fixed; character centred on the box.
+- Library from real data: 30,000 Lichess puzzles in 20 themes (data/puzzles.json, v2), the Lichess opening catalogue
+  (coach/openings, CC0). The Lichess opening explorer now needs a Lichess login, so it isn't used.
+- coach/plan.py: the sense (stalemated wins, new mistakes, opening trouble, losing streak, stuck habit, fresh idea);
+  Your plan tab; Zara brings the new thing on chess.com ("Learn it in Knightwise" opens the app there).
+- App: coaches on every tab, reactions on every board move, AI card at the right moments, green chess.com board.
+Next: AI key guide (needs the builder's screenshots), real-key test of chat, voice questions on chess.com,
+an AI-written "new idea" when a key exists, build 0.5.0, Store text and screenshots.
+
 ### Vision widened (builder, 11 Oct 2026 night): "a grandmaster sitting beside you" (proposal, awaiting confirmation)
 - Gestures and faces per situation, per coach: greet (wave), explain (open palm), point (towards the ring), celebrate,
   encourage (fist pump), think (chin), worried (cheek), warn (raised finger), listen (tilt), goodbye; smooth moves.
