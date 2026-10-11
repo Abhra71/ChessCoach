@@ -44,7 +44,9 @@ APP = Path(getattr(sys, "_MEIPASS", PROJECT)) if FROZEN else PROJECT  # bundled 
 
 
 def home_for(package, frozen):
-    """Where the player's data lives (see the top of this file)."""
+    """Where the player's data lives (see the top of this file). KNIGHTWISE_HOME overrides it (try.bat fresh)."""
+    if os.environ.get("KNIGHTWISE_HOME"):
+        return Path(os.environ["KNIGHTWISE_HOME"])
     local = Path(os.environ.get("LOCALAPPDATA", Path.home()))
     if package:
         return local / "Packages" / package / "LocalState"

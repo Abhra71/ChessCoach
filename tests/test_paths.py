@@ -42,3 +42,9 @@ def test_store_app_keeps_its_own_data_apart_from_the_old_chess_coach(monkeypatch
     assert store.parts[-3:] == ("Packages", "Abhra71.Knightwise_2zqxgm1k7h82j", "LocalState")
     assert paths.home_for(None, frozen=True).name == "ChessCoach"
     assert paths.home_for(None, frozen=False) == paths.PROJECT
+
+
+def test_try_fresh_uses_its_own_folder(monkeypatch, tmp_path):
+    monkeypatch.setenv("KNIGHTWISE_HOME", str(tmp_path))
+    assert paths.home_for("Abhra71.Knightwise_x", frozen=True) == tmp_path
+    assert paths.home_for(None, frozen=False) == tmp_path

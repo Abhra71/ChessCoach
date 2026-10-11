@@ -70,6 +70,10 @@ python -m coach.update <your chess.com username>
 **`data/drills.html`**. Run `python -m coach.update`
 again after you play: it only downloads and checks the new games.
 
+**Try the desktop app before a Store release:** double-click `try.bat` (your own games), or run `try fresh` to see
+it as a brand-new player (welcome screen first; nothing is kept). It closes the Store copy first, because only one
+Knightwise can run at a time.
+
 The review page starts with **your last game** (result, pieces given away, its key moments on boards: this is
 what the notification opens), then your score to bring down, **pieces given away per game** (all games, and your
 last 20), then shows your top 3 mistake patterns, how often each happened, the habit that fixes it, and
