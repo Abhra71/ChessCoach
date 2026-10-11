@@ -38,6 +38,8 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Home at a glance: your focus with a practise button, your habits as clickable tiles (each opens practice for that habit, with a fewer or more lately arrow), win bar, rating change; numbers roll up, lines draw themselves | built, testing (next update) |
 | Today's 5 minutes: one position from your own games, one puzzle on today's idea, the first moves of your opening; a gentle streak that forgives one missed day | built, testing (next update) |
 | You vs you: your last 20 games against the 20 before (pieces given away, games won, big mistakes) | built, testing (next update) |
+| Progress with Viktor: the story of your week (games, pieces given away against the week before, most improved habit, best game, next week's one thing), saved as a picture to share | built, testing (next update) |
+| Badges earned in real chess.com games only, Bronze, Silver and Gold: Safe pieces, Fork-proof, Safe king, Clean games, Daily habit | built, testing (next update) |
 | Sounds: moves, captures, check, right and wrong answers, a finished set (with confetti), a coach arriving; picked by a player from Kenney's CC0 packs; own switch in Settings, no background music | built, testing (next update) |
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |

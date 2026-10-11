@@ -11,6 +11,8 @@ const ICON = {
   home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
   games: '<path d="M4 4h16v16H4z"/><path d="M4 12h16M12 4v16"/>',
   practice: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+  progress: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  medal: '<circle cx="12" cy="15" r="6"/><path d="m8.5 10.5-3-7.5h4l2.5 5M15.5 10.5l3-7.5h-4L12 8"/>',
   plan: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
   hang: '<path d="M12 3 2.5 20h19z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
@@ -190,7 +192,7 @@ function shell(active, body) {
     <div class="shell">
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
-        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("settings", "Settings", "settings")}</nav>
+        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
         <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
         <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
       </aside>
@@ -275,6 +277,85 @@ async function daily() {
       `Done for today: ${right} of ${d.drills.length} right first time.${s.streak > 1 ? ` That's ${s.streak} days in a row.` : ""} See you tomorrow.`,
       [{ label: "Back home", app: "home" }]), 2500);
   } });
+}
+
+// ---------- progress: Viktor's story of your week, and badges from your real games ----------
+async function progressView() {
+  shell("progress", `<p class="muted">Loading…</p>`);
+  const p = await api("/api/progress");
+  if (!p.player) return go("welcome");
+  const s = p.story, r = (s && s.results) || {};
+  const earned = p.badges.filter(b => b.tier).length;
+  $("#page").innerHTML = `
+    <div class="page-head"><div><h1>Progress</h1><p class="sub">From your real chess.com games, checked by Stockfish.</p></div></div>
+    <div class="grid">
+      ${s ? `<div class="box story rise" id="story">
+        <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>
+          <button class="btn" id="savepic">Save as picture</button></div>
+        <div class="story-grid">
+          <div class="story-tile"><div class="big">${roll(s.games)}</div><div class="stat-label">games</div>
+            <div class="small muted">${r.win || 0} won · ${r.draw || 0} drawn · ${r.loss || 0} lost</div></div>
+          <div class="story-tile"><div class="big">${roll(s.pieces, 1)}</div><div class="stat-label">pieces given away a game</div>
+            ${s.pieces_before !== null ? (s.pieces < s.pieces_before ? `<span class="trend good">${svg("down")}from ${s.pieces_before}</span>`
+              : s.pieces > s.pieces_before ? `<span class="trend bad">${svg("up")}from ${s.pieces_before}</span>` : `<span class="small muted">same as before</span>`) : ""}</div>
+          ${s.improved ? `<div class="story-tile good"><div class="habit-icon">${svg((HABIT[s.improved.pattern] || ["hang"])[0])}</div>
+            <div class="stat-label">Most improved</div><b>${esc((HABIT[s.improved.pattern] || [s.improved.pattern])[1] || s.improved.pattern)}</b>
+            <div class="small muted">${s.improved.before} → ${s.improved.now} a game</div></div>` : ""}
+          <a class="story-tile click" href="#/games/${s.best.id}"><div class="stat-label">Best game</div>
+            <b>vs ${esc(s.best.opponent)} <span class="chip ${s.best.result}">${s.best.result === "win" ? "W" : s.best.result === "loss" ? "L" : "D"}</span></b>
+            <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div></a>
+        </div>
+        ${s.next ? `<div class="story-next"><span class="label">Next week's one thing</span><div>${esc(s.next.habit)}</div></div>` : ""}
+      </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
+      <div class="box rise"><div class="row spread"><h2 style="margin:0">Badges</h2><span class="small muted">${earned} of ${p.badges.length} earned · from real games only</span></div>
+        <div class="badges">${p.badges.map(b => `<div class="badge t${b.tier}">
+          <div class="medal">${svg(b.icon)}</div><b>${esc(b.name)}</b><div class="tier-name">${b.tier_name || "Not yet"}</div>
+          <div class="small muted">${b.next ? `${b.best} of ${b.next} ${esc(b.what)}` : `${b.best} ${esc(b.what)}. Top tier`}</div>
+          <div class="bar"><div style="width:${b.next ? Math.min(100, 100 * b.best / b.next) : 100}%"></div></div></div>`).join("")}</div></div>
+    </div>`;
+  countUp($("#page"));
+  if (s) $("#savepic").onclick = async () => {
+    const b = $("#savepic"); b.disabled = true; b.textContent = "Saving…";
+    try { const r2 = await api("/api/save-picture", { png: storyPicture(p.player, s) }); b.textContent = "Saved to Pictures"; Sound.play("done"); }
+    catch (e) { b.textContent = "Couldn't save"; }
+    setTimeout(() => { b.disabled = false; b.textContent = "Save as picture"; }, 3000);
+  };
+}
+
+function storyPicture(player, s) {  // the week as a 1080 x 1350 picture, drawn on a canvas
+  const W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d"), r = s.results || {};
+  const grad = g.createLinearGradient(0, 0, W, H); grad.addColorStop(0, "#0d2a1a"); grad.addColorStop(1, "#0a0a0a");
+  g.fillStyle = grad; g.fillRect(0, 0, W, H);
+  const text = (t, x, y, size, colour = "#fff", weight = 700) => { g.font = `${weight} ${size}px Segoe UI, sans-serif`; g.fillStyle = colour; g.fillText(t, x, y); };
+  text("KNIGHTWISE", 80, 120, 30, "#36c27a", 800);
+  text(`${player}: ${s.title.toLowerCase()}`, 80, 200, 54);
+  text(`${s.from} to ${s.to}`, 80, 255, 30, "#9a9a9a", 400);
+  const tile = (x, y, big, label, colour = "#fff") => {
+    g.fillStyle = "rgba(255,255,255,.06)"; g.beginPath(); g.roundRect(x, y, 440, 260, 28); g.fill();
+    text(String(big), x + 40, y + 140, 110, colour); text(label, x + 40, y + 210, 30, "#bdbdbd", 500);
+  };
+  tile(80, 320, s.games, "games played");
+  tile(560, 320, `${r.win || 0}`, "won", "#36c27a");
+  tile(80, 620, s.pieces, "pieces given away a game", s.pieces_before !== null && s.pieces < s.pieces_before ? "#36c27a" : "#fff");
+  tile(560, 620, s.best.moments || 0, `big mistakes, best game`);
+  if (s.improved) {
+    const name = (HABIT[s.improved.pattern] || [0, s.improved.pattern])[1];
+    text("Most improved", 80, 1000, 30, "#36c27a", 600);
+    text(`${name}: ${s.improved.before} → ${s.improved.now} a game`, 80, 1050, 40);
+  }
+  if (s.next) { text("Next week's one thing", 80, 1150, 30, "#f0a43a", 600); wrap(g, s.next.habit, 80, 1200, 920, 36); }
+  text("Coached by Viktor · Knightwise", 80, 1300, 26, "#777", 500);
+  return c.toDataURL("image/png");
+}
+function wrap(g, t, x, y, width, size) {
+  g.font = `600 ${size}px Segoe UI, sans-serif`; g.fillStyle = "#fff";
+  let line = "";
+  for (const w of t.split(" ")) {
+    if (g.measureText(line + w).width > width) { g.fillText(line, x, y); line = ""; y += size * 1.3; }
+    line += w + " ";
+  }
+  g.fillText(line, x, y);
 }
 
 async function home() {
@@ -714,6 +795,7 @@ async function route() {
     if (name === "games") return await games();
     if (name === "practice") return await practice(arg && decodeURIComponent(arg));
     if (name === "daily") return await daily();
+    if (name === "progress") return await progressView();
     if (name === "extension") return await extensionView();
     if (name === "settings") return await settingsView();
     return await home();

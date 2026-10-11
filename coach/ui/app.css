@@ -320,3 +320,25 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .vs-key { display: flex; gap: 14px; } .vs-key i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
 .vs-key .now { background: var(--better); } .vs-key .then { background: var(--line-strong); }
 @media (max-width: 900px) { .vs { grid-column: auto !important; } .vs-row { grid-template-columns: 1fr; gap: 4px; } }
+
+/* progress: the week's story and badges */
+.story { background: linear-gradient(135deg, color-mix(in srgb, var(--better) 12%, var(--surface)), var(--surface) 55%); }
+.story-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.story-head .label { color: var(--better); font-size: 13px; }
+.story-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.story-tile { background: var(--raised); border-radius: 12px; padding: 16px; display: block; color: var(--text); text-decoration: none; }
+.story-tile.good .habit-icon { color: var(--better); background: color-mix(in srgb, var(--better) 14%, transparent); }
+.story-tile.click:hover { outline: 1px solid var(--line-strong); }
+.story-tile b { display: block; margin: 4px 0; }
+.story-next { margin-top: 16px; padding: 14px 16px; border-radius: 12px; border: 1px dashed var(--line-strong); }
+.story-next .label { color: #f0a43a; } .story-next div { margin-top: 4px; font-weight: 600; }
+.badges { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-top: 16px; }
+.badge { background: var(--raised); border-radius: 12px; padding: 16px; text-align: center; }
+.badge .medal { width: 58px; height: 58px; border-radius: 50%; margin: 0 auto 10px; display: grid; place-items: center;
+  background: var(--surface); color: var(--faint); border: 3px solid var(--line-strong); }
+.badge .medal svg { width: 26px; height: 26px; }
+.badge.t1 .medal { border-color: #c98a4b; color: #c98a4b; } .badge.t2 .medal { border-color: #c7ccd4; color: #c7ccd4; }
+.badge.t3 .medal { border-color: #f2c94c; color: #f2c94c; box-shadow: 0 0 22px rgba(242, 201, 76, .25); }
+.badge .tier-name { font-size: 12px; font-weight: 700; margin: 2px 0 6px; color: var(--muted); }
+.badge.t1 .tier-name { color: #c98a4b; } .badge.t2 .tier-name { color: #c7ccd4; } .badge.t3 .tier-name { color: #f2c94c; }
+.badge .bar { margin-top: 10px; } .badge.t3 .bar > div { background: #f2c94c; }

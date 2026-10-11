@@ -145,6 +145,9 @@ class Handler(BaseHTTPRequestHandler):
             from coach import live_engine, plan
             with live_engine.LOCK:
                 return self.send(200, json.dumps(plan.plan(engine=live_engine.get())), "application/json")
+        if path == "/api/progress":  # Viktor: the story of your week and your badges
+            from coach import progress
+            return self.send(200, json.dumps(progress.page()), "application/json")
         if path == "/api/daily":  # today's challenge: your position, today's puzzle, your opening
             from coach import daily, live_engine
             home = insights.home()
@@ -176,7 +179,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get("Content-Type") != "application/json":
             return self.send(403, "forbidden", "text/plain")
         try:
-            body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), 10_000)))
+            limit = 4_000_000 if self.path == "/api/save-picture" else 10_000  # a picture of your week is bigger
+            body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), limit)))
         except ValueError:
             return self.send(400, "bad json", "text/plain")
         path = self.path.split("?")[0].rstrip("/")
@@ -250,6 +254,20 @@ class Handler(BaseHTTPRequestHandler):
             if os.name == "nt":
                 subprocess.Popen(["explorer", "/select,", str(EXTENSION)])
             return self.send(200, "{}", "application/json")
+        if path == "/api/save-picture":  # Viktor's week card as a PNG in Pictures\Knightwise, shown in Explorer
+            import base64
+            from datetime import date
+            data = str(body.get("png", ""))
+            if not data.startswith("data:image/png;base64,"):
+                return self.send(400, json.dumps({"message": "Not a picture."}), "application/json")
+            from pathlib import Path
+            folder = Path.home() / "Pictures" / "Knightwise"
+            folder.mkdir(parents=True, exist_ok=True)
+            target = folder / f"my-chess-week-{date.today().isoformat()}.png"
+            target.write_bytes(base64.b64decode(data.split(",", 1)[1]))
+            if os.name == "nt":
+                subprocess.Popen(["explorer", "/select,", str(target)])
+            return self.send(200, json.dumps({"path": str(target)}), "application/json")
         if path == "/api/open-folder":
             if os.name == "nt":
                 os.startfile(DATA.parent)

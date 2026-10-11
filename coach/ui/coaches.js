@@ -8,7 +8,7 @@ const COACHES = {
   zara: { name: "Zara", voice: "af_nova", role: "Before you play" },
   viktor: { name: "Viktor", voice: "bm_george", role: "Progress and your plan" },
 };
-const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", plan: "plan" };
+const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress" };
 
 const Coach = (() => {
   let box = null, said = null, foldTimer = null;

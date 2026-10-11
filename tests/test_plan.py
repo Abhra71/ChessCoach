@@ -103,3 +103,14 @@ def test_daily_streak_forgives_one_missed_day_but_not_two():
     assert daily.streak(["2026-10-10", "2026-10-06"], today) == 1  # two missed days: a new run
     assert daily.streak(["2026-10-08"], today) == 1 and daily.streak(["2026-10-07"], today) == 0
     assert daily.week_dots(["2026-10-10", "2026-10-04"], today) == [True, False, False, False, False, False, True]
+
+
+def test_badges_count_runs_of_real_games_without_the_habit():
+    from coach import progress
+    games = [{"url": f"g{i}"} for i in range(8)]  # newest first
+    moves = {f"g{i}": [] for i in range(8)}
+    moves["g2"] = [{"pattern": progress.HANG}]
+    assert progress.runs(games, moves, progress.HANG) == (2, 5)  # 2 since the last one, best run 5
+    clean = {g["url"]: [] for g in games}  # 8 clean games in a row
+    safe = next(b for b in progress.badges(games, clean) if b["id"] == "safe")
+    assert safe["tier_name"] == "Silver" and safe["next"] == 10
