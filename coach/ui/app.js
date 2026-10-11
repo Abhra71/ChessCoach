@@ -11,7 +11,6 @@ const ICON = {
   home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
   games: '<path d="M4 4h16v16H4z"/><path d="M4 12h16M12 4v16"/>',
   practice: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
-  play: '<path d="M8 5v14l11-7z"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
 };
@@ -123,7 +122,7 @@ function shell(active, body) {
     <div class="shell">
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
-        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("play", "Play the Coach", "play")}${item("settings", "Settings", "settings")}</nav>
+        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("settings", "Settings", "settings")}</nav>
         <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
         <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
       </aside>
@@ -387,96 +386,6 @@ async function practice() {
   show();
 }
 
-// ---------- play the coach ----------
-async function playView() {
-  shell("play", `<p class="muted">Loading…</p>`);
-  const home = await api("/api/home").catch(() => ({}));
-  let g = await api("/api/play/state", {}).catch(() => null), picked = null, hintStep = 0, hintData = null, coachOn = true;
-  const LEVEL_ELO = { 1: 300, 2: 450, 3: 600, 4: 750, 5: 900, 6: 1100, 7: 1300, 8: 1500, 9: 1800, 10: 2200 };
-  const suggested = Object.keys(LEVEL_ELO).reduce((a, b) => Math.abs(LEVEL_ELO[b] - ((home.rating || 400) + 100)) < Math.abs(LEVEL_ELO[a] - ((home.rating || 400) + 100)) ? b : a);
-  $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Play the Coach</h1>
-      <p class="sub">A game against the engine at your level. The coach warns you, offers a takeback after a blunder, and gives hints.</p></div></div>
-    <div class="game-layout">
-      <div><div class="board-wrap" id="board"></div><p class="small muted" id="status" style="margin-top:10px"></p></div>
-      <div class="stack">
-        <div class="box stack" id="setup"><h2 style="margin:0">New game</h2>
-          <div class="row"><span class="small muted" style="width:60px">You play</span><div class="seg" id="color">
-            <button data-c="white" class="on">White</button><button data-c="black">Black</button></div></div>
-          <div class="row"><span class="small muted" style="width:60px">Level</span><select class="field" id="level" style="max-width:240px">
-            ${Object.entries(LEVEL_ELO).map(([lv, e]) => `<option value="${lv}" ${lv == suggested ? "selected" : ""}>Level ${lv} · about ${e}${lv == suggested ? " (suggested)" : ""}</option>`).join("")}</select></div>
-          <div class="row"><span class="small muted" style="width:60px">Coach</span><button class="switch on" id="coachon" aria-label="Coach help"></button>
-            <span class="small muted">Warnings and takebacks</span></div>
-          <button class="btn primary" id="start">Start game</button></div>
-        <div class="box" id="coachbox" style="min-height:90px"><div class="label">Coach</div><div id="coachsays" style="margin-top:6px" class="muted">Start a game when you're ready.</div></div>
-        <div class="row"><button class="btn" id="hint">Hint</button><button class="btn" id="resign">New game</button></div>
-        <div class="box" style="padding:12px"><h2>Moves</h2><div class="movelist" id="moves"></div></div>
-      </div>
-    </div>`;
-  let color = "white";
-  $("#color").querySelectorAll("button").forEach(b => b.onclick = () => {
-    color = b.dataset.c; $("#color").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); });
-  $("#coachon").onclick = () => { coachOn = !coachOn; $("#coachon").classList.toggle("on", coachOn); };
-  const say = (html, speak) => { $("#coachsays").className = ""; $("#coachsays").innerHTML = html; if (speak) Voice.speak(speak); };
-  function draw(extra = {}) {
-    if (!g) { Board.render($("#board"), { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", flip: color === "black" }); return; }
-    const hl = {};
-    if (g.last) { hl[g.last.slice(0, 2)] = "hl-last"; hl[g.last.slice(2, 4)] = "hl-last"; }
-    if (picked) hl[picked] = "hl-pick";
-    const targets = picked ? Object.keys(g.legal).filter(u => u.startsWith(picked)).map(u => u.slice(2, 4)) : [];
-    Board.render($("#board"), { fen: g.fen, flip: g.color === "black", highlights: { ...hl, ...(extra.hl || {}) }, targets, arrows: extra.arrows || [], onClick: click });
-    let html = "";
-    g.moves.forEach((m, i) => { if (i % 2 === 0) html += `<span class="n">${i / 2 + 1}.</span>`; html += `<span class="${i === g.moves.length - 1 ? "cur" : ""}">${esc(m)}</span>`; });
-    if (g.moves.length % 2) html += "<span></span>";
-    $("#moves").innerHTML = html;
-    $("#status").textContent = g.over ? `Game over: ${g.result}${g.winner ? `, ${g.winner === g.color ? "you win" : "the coach wins"}` : ""}.`
-      : `${g.turn === g.color ? "Your move" : "Coach is thinking…"} · level ${g.level} (about ${g.about_elo}) · mistakes ${g.mistakes} · takebacks ${g.takebacks}`;
-  }
-  function react(out) {
-    g = out; picked = null; hintStep = 0; hintData = null;
-    if (g.waiting && g.verdict) {
-      const v = g.verdict;
-      say(`<b class="delta bad" style="font-size:14px">Wait: ${esc(v.played)} loses ${v.loss}% of your winning chance.</b>
-        <div style="margin-top:4px">Your move: ${esc(v.played_does)}.</div><div class="small muted" style="margin-top:4px">Better was ${esc(v.best)}: ${esc(v.best_does)}.</div>
-        <div class="row" style="margin-top:10px"><button class="btn primary" id="tb">Take it back</button><button class="btn" id="po">Play on</button></div>`,
-        `Wait. ${v.played} loses a lot. Better was ${v.best}. Do you want to take it back?`);
-      $("#tb").onclick = async () => react(await api("/api/play/takeback", {}));
-      $("#po").onclick = async () => { say("Okay, playing on…"); react(await api("/api/play/playon", {})); };
-      draw({ arrows: [{ from: v.best_uci.slice(0, 2), to: v.best_uci.slice(2, 4), kind: "better" }] });
-      return;
-    }
-    if (g.over) { say(`<b>${esc(cap(g.result))}.</b> ${g.winner ? (g.winner === g.color ? "Well played, you won." : "The coach won this one.") : "It's a draw."}`,
-      g.winner ? (g.winner === g.color ? "Checkmate. Well played!" : "That's the game. Let's look at what happened.") : "It's a draw."); draw(); return; }
-    const w = (g.warnings || []).join(" ");
-    say(`${g.their_move ? `They played <b>${esc(g.their_move)}</b>. ` : ""}${w ? `<span class="delta bad" style="font-size:14px">${esc(w)}</span>` : "Your move."}`,
-      coachOn ? [g.their_move ? `They played ${g.their_move}.` : "", w].join(" ").trim() : (g.their_move ? `${g.their_move}.` : ""));
-    draw();
-  }
-  async function click(sq) {
-    if (!g || g.over || g.turn !== g.color || g.waiting) return;
-    const piece = Board.squares(g.fen)[sq];
-    const mine = piece && ((piece === piece.toUpperCase()) === (g.color === "white"));
-    if (mine) { picked = sq; return draw(); }
-    if (!picked) return;
-    const uci = g.legal[picked + sq] ? picked + sq : g.legal[picked + sq + "q"] ? picked + sq + "q" : null;
-    if (!uci) { picked = null; return draw(); }
-    picked = null;
-    g = { ...g, turn: "thinking" }; draw();
-    try { react(await api("/api/play/move", { uci, coach: coachOn })); } catch (e) { say(`<span class="err">${esc(e.message)}</span>`); }
-  }
-  $("#start").onclick = async () => { say("Setting up the board…"); react(await api("/api/play/new", { color, level: Number($("#level").value) })); };
-  $("#resign").onclick = () => { g = null; draw(); say("Choose your side and level, then start.", ""); };
-  $("#hint").onclick = async () => {
-    if (!g || g.over || g.turn !== g.color) return;
-    if (!hintData) hintData = await api("/api/play/hint", {});
-    hintStep++;
-    if (hintStep === 1) { say(`Hint: look at ${esc(hintData.piece)}.`, `Look at ${hintData.piece}.`); draw({ hl: { [hintData.piece_square]: "hl-ok" } }); }
-    else { say(`Hint: <b>${esc(hintData.move)}</b>: ${esc(hintData.does)}.`, `Try ${hintData.move}.`);
-      draw({ arrows: [{ from: hintData.uci.slice(0, 2), to: hintData.uci.slice(2, 4), kind: "better", label: "Hint" }] }); }
-  };
-  if (g && !g.message) react(g); else { g = null; draw(); }
-}
-
 // ---------- arrows on chess.com: the extension, step by step ----------
 async function extensionView() {
   shell("settings", `<p class="muted">Loading…</p>`);
@@ -621,17 +530,65 @@ async function settingsView() {
 }
 
 // ---------- welcome ----------
+const LINES = ["Every move you played, checked.", "Your habits, found.", "Silent when you play a real person.",
+  "Trained on your own positions.", "A coach that never sleeps."];
+const remember = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+
+// The welcome film's music: Satie's Gymnopedie No. 1 (public domain), very quiet, fading in; the mute is remembered.
+function welcomeMusic(button) {
+  const audio = new Audio("/ui/vendor/music/gymnopedie-1.flac"), LOUD = 0.18;
+  audio.loop = true; audio.volume = 0;
+  let muted = remember("kw-music-muted") === "1", fader = null;
+  const fade = (to, secs) => {
+    clearInterval(fader);
+    const step = (to - audio.volume) / (secs * 20);
+    fader = setInterval(() => {
+      const v = audio.volume + step;
+      if ((step >= 0 && v >= to) || (step < 0 && v <= to)) { audio.volume = to; clearInterval(fader); if (!to) audio.pause(); }
+      else audio.volume = Math.min(1, Math.max(0, v));
+    }, 50);
+  };
+  const start = () => { if (muted) return; audio.play().then(() => fade(LOUD, 3)).catch(() => {}); };
+  const paint = () => { button.innerHTML = muted ? "Music off" : "Music on"; button.setAttribute("aria-pressed", String(!muted)); };
+  button.onclick = () => { muted = !muted; remember("kw-music-muted", muted ? "1" : "0"); paint(); muted ? fade(0, 0.6) : start(); };
+  paint(); start();
+  // if the window won't play sound before a click, the first click or key starts it
+  const kick = () => { if (audio.paused) start(); };
+  addEventListener("pointerdown", kick, { once: true }); addEventListener("keydown", kick, { once: true });
+  return () => { removeEventListener("pointerdown", kick); removeEventListener("keydown", kick); fade(0, 0.8); };
+}
+
+// Short lines typed over the film, letter by letter, held, then erased.
+function typeLines(el) {
+  let alive = true, i = 0;
+  (async () => {
+    while (alive) {
+      const line = LINES[i++ % LINES.length];
+      for (let n = 1; n <= line.length && alive; n++) { el.textContent = line.slice(0, n); await wait(45 + Math.random() * 40); }
+      await wait(2600);
+      for (let n = line.length; n >= 0 && alive; n--) { el.textContent = line.slice(0, n); await wait(18); }
+      await wait(500);
+    }
+  })();
+  return () => { alive = false; };
+}
+
 async function welcome() {
-  $("#root").innerHTML = `<div class="onboard"><div class="backdrop" id="backdrop"></div>
-    <div class="card" id="card"></div></div>`;
-  const mountBackdrop = () => { try { window.Backdrop.mount($("#backdrop")); } catch (e) { console.warn("3D scene", e); } };
+  $("#root").innerHTML = `<div class="onboard"><div class="scene"><div class="backdrop" id="backdrop"></div>
+      <div class="typed"><span id="typed"></span><i class="caret"></i></div></div>
+    <aside class="panel"><div class="brand"><span class="mark">${svg("pawn")}</span>Knightwise
+      <button class="music" id="music" title="Music"></button></div><div class="card" id="card"></div>
+      <p class="credit">Music: Satie, Gymnopédie No. 1, played by Michael Laucke (public domain)</p></aside></div>`;
+  const stops = [typeLines($("#typed")), welcomeMusic($("#music"))];
+  const mountBackdrop = () => { try { stops.push(window.Backdrop.mount($("#backdrop"))); } catch (e) { console.warn("3D scene", e); } };
   if (window.Backdrop) mountBackdrop(); else window.addEventListener("backdrop-ready", mountBackdrop, { once: true });
+  addEventListener("hashchange", () => stops.forEach(f => f && f()), { once: true });
   const card = $("#card");
   const dots = n => `<div class="steps-dots">${[0, 1, 2].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</div>`;
   function intro() {
-    card.innerHTML = `${dots(0)}<h1>Knightwise</h1><p class="sub" style="margin-top:-4px">Your chess coach</p>
-      <p class="muted" style="margin-top:8px">It studies your finished chess.com games, finds the one or two habits that cost you the most, and trains you out of them.</p>
-      <div class="does"><div><b>It does</b><ul><li>Check every move of your finished games with Stockfish</li>
+    card.innerHTML = `${dots(0)}<h1>Your personal chess coach.</h1>
+      <p class="lead">Knightwise studies your finished chess.com games with Stockfish, finds the one or two habits that cost you the most, and trains you out of them.</p>
+      <div class="does"><div><b>It does</b><ul><li>Check every move of your finished games</li>
         <li>Show the key moments, with arrows</li><li>Train you on your own positions</li><li>Run quietly and check each new game</li></ul></div>
         <div class="no"><b>It never</b><ul><li>Helps during a game against a real person</li><li>Moves pieces for you</li>
         <li>Needs your password</li><li>Sells or shares your data</li></ul></div></div>
@@ -678,7 +635,6 @@ async function route() {
     if (name === "games" && arg) return await gameView(arg);
     if (name === "games") return await games();
     if (name === "practice") return await practice();
-    if (name === "play") return await playView();
     if (name === "extension") return await extensionView();
     if (name === "settings") return await settingsView();
     return await home();

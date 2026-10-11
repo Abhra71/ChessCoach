@@ -3,6 +3,8 @@
 From the project folder (developers): everything inside the project (data/, logbook/, engine/).
 Installed app (ChessCoach.exe): the program files sit in the install folder; the player's own data and logbooks
 go in %LOCALAPPDATA%\\ChessCoach, the normal place for a Windows app's per-user data.
+Store app: the data goes in the package's own LocalState folder, so it never sees the old Chess Coach's data and
+uninstalling wipes it (a reinstall starts fresh with the welcome screen; there are no accounts).
 """
 import os
 import sys
@@ -39,7 +41,17 @@ PACKAGE = package_family() if FROZEN else None
 PACKAGED = PACKAGE is not None
 PROJECT = Path(__file__).resolve().parent.parent
 APP = Path(getattr(sys, "_MEIPASS", PROJECT)) if FROZEN else PROJECT  # bundled files (engine, extension)
-HOME = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "ChessCoach" if FROZEN else PROJECT
+
+
+def home_for(package, frozen):
+    """Where the player's data lives (see the top of this file)."""
+    local = Path(os.environ.get("LOCALAPPDATA", Path.home()))
+    if package:
+        return local / "Packages" / package / "LocalState"
+    return local / "ChessCoach" if frozen else PROJECT
+
+
+HOME = home_for(PACKAGE, FROZEN)
 
 DATA = HOME / "data"
 LOGBOOK = HOME / "logbook"

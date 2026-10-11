@@ -97,7 +97,6 @@ def key_moments(rows):
 MOMENT_CACHE = Moments()
 UI = TEMPLATES / "ui"
 SHOW = None  # set by the desktop app: show the window at a screen
-PLAY = {}  # the current Play-the-Coach game
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -203,8 +202,6 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps({"ok": ok, "message": message}), "application/json")
         if path in ("/api/explain", "/api/ask"):
             return self.coach_ai(path, body)
-        if path.startswith("/api/play/"):
-            return self.play(path.rsplit("/", 1)[-1], body)
         if path == "/api/voice/install-listening":
             if not STATE.get("listen_install"):
                 threading.Thread(target=install_listening, daemon=True).start()
@@ -228,35 +225,6 @@ class Handler(BaseHTTPRequestHandler):
                 SHOW(str(body.get("route", "home"))[:100])
             return self.send(200, "{}", "application/json")
         self.send(404, "not found", "text/plain")
-
-    def play(self, action, body):
-        """Play the Coach: new game, a move, take back, play on, or a hint."""
-        from coach import insights, live_engine, play
-        try:
-            with live_engine.LOCK:
-                engine = live_engine.get()
-                if action == "new":
-                    level = body.get("level") or play.level_for(insights.home().get("rating"))
-                    PLAY["game"] = play.Game(body.get("color", "white"), int(level))
-                    return self.send(200, json.dumps(PLAY["game"].reply(engine)), "application/json")
-                game = PLAY.get("game")
-                if not game:
-                    return self.send(404, json.dumps({"message": "No game yet."}), "application/json")
-                if action == "state":
-                    out = game.view(warnings=[])
-                elif action == "move":
-                    out = game.player_move(engine, str(body.get("uci", "")), coach=bool(body.get("coach", True)))
-                elif action == "takeback":
-                    out = game.takeback()
-                elif action == "playon":
-                    out = game.reply(engine)
-                elif action == "hint":
-                    out = play.hint(engine, game.board)
-                else:
-                    return self.send(404, json.dumps({"message": "Unknown action."}), "application/json")
-        except ValueError as e:
-            return self.send(400, json.dumps({"message": str(e)}), "application/json")
-        return self.send(200, json.dumps(out), "application/json")
 
     def listen(self):
         """The player's spoken question: 16 kHz 16-bit mono samples from the app -> text (Whisper, on this computer)."""
@@ -316,7 +284,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, "not found", "text/plain")
         types = {".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg",
                  ".svg": "image/svg+xml", ".glb": "model/gltf-binary", ".gltf": "model/gltf+json",
-                 ".bin": "application/octet-stream", ".wav": "audio/wav", ".json": "application/json"}
+                 ".bin": "application/octet-stream", ".wav": "audio/wav", ".flac": "audio/flac", ".json": "application/json"}
         ctype = types.get(target.suffix, "application/octet-stream")
         data = target.read_bytes()
         self.send_response(200)

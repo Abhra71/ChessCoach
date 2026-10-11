@@ -34,3 +34,11 @@ def test_first_start_always_shows_the_window(monkeypatch):
     monkeypatch.setattr(app.sys, "argv", ["Knightwise.exe", "--background"])
     assert app.at_login(set_up=False) is False
     assert app.at_login(set_up=True) is True
+
+
+def test_store_app_keeps_its_own_data_apart_from_the_old_chess_coach(monkeypatch):
+    monkeypatch.setenv("LOCALAPPDATA", str(paths.PROJECT / "Local"))
+    store = paths.home_for("Abhra71.Knightwise_2zqxgm1k7h82j", frozen=True)
+    assert store.parts[-3:] == ("Packages", "Abhra71.Knightwise_2zqxgm1k7h82j", "LocalState")
+    assert paths.home_for(None, frozen=True).name == "ChessCoach"
+    assert paths.home_for(None, frozen=False) == paths.PROJECT

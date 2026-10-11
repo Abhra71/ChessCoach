@@ -94,13 +94,13 @@ def main():
 
     state = {"quitting": False}
     place_extension()
-    window = webview.create_window(NAME, f"{service.URL}/#/{route}", width=1240, height=820, hidden=at_login(bool(service.player())),
+    window = webview.create_window(NAME, f"{service.URL}/#/{route}", width=1240, height=820, maximized=True, hidden=at_login(bool(service.player())),
                                    min_size=(900, 620), background_color="#0A0A0A")
 
     def show(where):
         window.evaluate_js(f"location.hash = '#/{where.strip('/')}'")
         window.show()
-        window.restore()
+        window.maximize()  # also un-minimises; restore() would shrink it back to 1240×820
 
     def quit_app():
         state["quitting"] = True

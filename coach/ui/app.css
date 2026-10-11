@@ -147,19 +147,36 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .movelist span.cur { background: var(--invert); color: var(--on-invert); }
 .movelist span.key { color: var(--red); font-weight: 700; }
 
-/* onboarding */
-.onboard { position: fixed; inset: 0; display: grid; place-items: center; background: #050505; color: #f2f2f2; overflow: hidden; }
-.onboard canvas, .onboard .backdrop { position: absolute; inset: 0; width: 100%; height: 100%; }
-.onboard .backdrop canvas { opacity: 0; transition: opacity 1.6s ease; filter: blur(0.6px) saturate(.9); }
+/* onboarding: the 3D film on the left, a solid black panel on the right */
+.onboard { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) clamp(400px, 36vw, 560px);
+  background: #050505; color: #f2f2f2; overflow: hidden; }
+.onboard .scene { position: relative; overflow: hidden; }
+.onboard .backdrop { position: absolute; inset: 0; }
+.onboard .backdrop canvas { width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 2s ease; }
 .onboard .backdrop.ready canvas { opacity: 1; }
-.onboard .backdrop::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(5,5,5,.15) 0%, rgba(5,5,5,.55) 60%, rgba(5,5,5,.9) 100%); }
-.onboard .card { position: relative; width: min(520px, calc(100vw - 32px)); background: rgba(10,10,10,.72); backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 32px; }
-.onboard h1 { font-size: 30px; } .onboard .muted { color: #a8a8a8; }
-.onboard .field { background: rgba(0,0,0,.5); border-color: rgba(255,255,255,.2); color: #fff; }
-.onboard .btn.primary { background: #f2f2f2; color: #0a0a0a; border-color: #f2f2f2; }
+.onboard .scene::after { content: ""; position: absolute; inset: 0; pointer-events: none;  /* spotlight edges */
+  background: radial-gradient(ellipse 75% 70% at 50% 46%, rgba(5,5,5,0) 40%, rgba(5,5,5,.6) 78%, rgba(5,5,5,.96) 100%); }
+.onboard .typed { position: absolute; left: 7%; right: 7%; bottom: 9%; z-index: 1; font-size: clamp(22px, 2.6vw, 38px);
+  font-weight: 600; letter-spacing: -.01em; line-height: 1.2; text-shadow: 0 2px 24px rgba(0,0,0,.9); min-height: 1.2em; }
+.onboard .caret { display: inline-block; width: 2px; height: .95em; background: #f2f2f2; margin-left: 4px; vertical-align: -.1em;
+  animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.onboard .panel { position: relative; background: #0a0a0a; border-left: 1px solid rgba(255,255,255,.08);
+  display: flex; flex-direction: column; padding: 40px 44px 24px; overflow-y: auto; }
+.onboard .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+.onboard .brand .mark { width: 28px; height: 28px; border-radius: 6px; background: #f2f2f2; color: #0a0a0a; display: grid; place-items: center; }
+.onboard .brand .mark svg { width: 18px; height: 18px; }
+.onboard .music { margin-left: auto; background: none; border: 1px solid rgba(255,255,255,.18); color: #bdbdbd; border-radius: 999px;
+  padding: 5px 12px; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.onboard .music:hover { color: #fff; border-color: rgba(255,255,255,.4); }
+.onboard .card { margin: auto 0; padding: 32px 0; }
+.onboard .credit { font-size: 11px; color: #6b6b6b; margin: 0; }
+.onboard h1 { font-size: 32px; line-height: 1.15; letter-spacing: -.02em; } .onboard .muted { color: #a8a8a8; }
+.onboard .lead { color: #b8b8b8; font-size: 15px; line-height: 1.55; margin: 14px 0 0; }
+.onboard .field { background: #000; border-color: rgba(255,255,255,.2); color: #fff; }
+.onboard .btn.primary { background: #f2f2f2; color: #0a0a0a; border-color: #f2f2f2; padding: 12px 22px; }
 .onboard .bar { background: rgba(255,255,255,.12); } .onboard .bar > div { background: #f2f2f2; }
+@media (max-width: 860px) { .onboard { grid-template-columns: 1fr; grid-template-rows: 38vh 1fr; } .onboard .panel { border-left: 0; padding: 28px 24px; } }
 .does { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0 24px; font-size: 13px; }
 .does b { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
 .does ul { margin: 0; padding-left: 16px; color: #c8c8c8; } .does li + li { margin-top: 4px; }

@@ -23,28 +23,27 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
 | "Is this you?" answer on the review page, saved in your logbook | works |
-| Welcome screen: a photorealistic 3D antique chess set (Poly Haven, CC0) replaying the Opera Game behind the card, offline | works |
+| Welcome screen: a short 3D film of an antique chess set (Poly Haven, CC0) replaying the Opera Game (high above, then beside the pieces with the background out of focus, then a slow orbit), typed lines, a quiet Satie piano piece (public domain, mute remembered), set-up steps in a black panel on the right; offline | works |
 | Desktop app window: Home (your focus, score, trend, last game), Games, Practice, Settings; dark and light | works (beta) |
 | Settings: chess.com account, theme, voice, two optional AI key slots kept in Windows Credential Manager | works (AI use: next) |
 | The coach speaks (Kokoro, on this computer): briefing, key moments, practice feedback; 4 voices | works |
 | AI explanations and "Ask the coach" with your own key (Gemini, Groq, Claude or OpenAI), grounded in engine facts | works (beta) |
-| Play the Coach: a game against the engine at your level (10 levels, about 300 to 2200); the coach warns about loose pieces, pauses after a blunder (take back or play on), hints in two steps, all spoken | works (beta) |
 | Ask the coach by voice: Talk button, Whisper on this computer (one-time 485 MB download in Settings) | works (beta) |
 | Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
 | Microsoft Store package (MSIX, signed by Microsoft on upload, so Windows never blocks it): starts with Windows, notifications, extension copied to Documents\Knightwise | built, not yet submitted |
 
 ## For players: install
 
-1. Get **Knightwise** from the Microsoft Store (coming soon: the first release goes to a small private group of
-   testers). Click **Get**: no installer, no Python, no admin rights, and Windows doesn't block it, because the Store
+1. Get **Knightwise** from the Microsoft Store (now a private beta for a small group of testers; public later). Click **Get**: no installer, no Python, no admin rights, and Windows doesn't block it, because the Store
    signs it.
-3. A welcome page opens: type your chess.com username. The coach checks your games (about 2 minutes the first
+2. The app opens full screen on the welcome: type your chess.com username. The coach checks your games (about 2 minutes the first
    time) and shows your review. From then on it lives as a knight icon by the clock and checks each new game
    by itself.
-4. Optional, 1 minute: **Arrows on chess.com** (in the icon's menu) walks you through adding the browser
+3. Optional, 1 minute: **Arrows on chess.com** (in the icon's menu) walks you through adding the browser
    extension and turns green when it works.
 
-Your data stays on your computer in `%LOCALAPPDATA%\ChessCoach`. Uninstall from Windows Settings like any app.
+Your data stays on your computer, in the app's own Store folder. Uninstall from Windows Settings like any app:
+that removes your data too, and a reinstall starts fresh with the welcome screen (there are no accounts).
 Privacy: [PRIVACY.md](PRIVACY.md). Knightwise is independent and not connected with chess.com.
 
 ## For developers: run from source (Windows, Python 3.12)
@@ -53,7 +52,7 @@ Privacy: [PRIVACY.md](PRIVACY.md). Knightwise is independent and not connected w
 pip install -r requirements.txt
 python -m coach.get_engine                       # downloads Stockfish (~80 MB) into engine/
 python -m coach.get_voice                        # optional: speaking (~120 MB) and listening (~485 MB) into voice/
-python -m coach.get_assets                       # the 3D welcome scene (~20 MB) into coach/ui/vendor/
+python -m coach.get_assets                       # the 3D welcome scene and music (~32 MB) into coach/ui/vendor/
 python -m coach.puzzles                          # optional: Lichess puzzles (reads ~300 MB, keeps ~2.5 MB)
 python -m coach.update <your chess.com username>
 ```
@@ -103,7 +102,7 @@ Its own log is `logbook/service.log`.
    and practice pages.
 
 **Why no hints in chess.com bot games?** chess.com's fair-play rules forbid any tool that analyses positions during
-play, with no exception for bot games. So live help happens only in **Play the Coach**, inside this app.
+play, with no exception for bot games. So the coach helps before and after games, never during one.
 
 **Fair play:** the extension only shows something for games the coach already knows, and the coach only knows
 games that chess.com has archived as finished. During a live game it shows nothing at all. It never moves pieces
@@ -143,15 +142,14 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/memory.py` | practice answers and spacing (which positions come back when), your "is this you?" answers |
 | `extension/` | the Chrome/Edge extension (arrows and key-moments panel on chess.com) |
 | `coach/app.py` | ChessCoach.exe: the app window (pywebview + WebView2), icon by the clock, the background coach |
-| `coach/paths.py` | where files live (project folder, or %LOCALAPPDATA%\ChessCoach when installed) |
-| `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Play, Settings, Welcome) |
-| `coach/ui/backdrop.js`, `coach/get_assets.py` | the 3D welcome scene (Three.js + Poly Haven chess set) and its download |
+| `coach/paths.py` | where files live (project folder; the Store app's own LocalState folder; %LOCALAPPDATA%\ChessCoach for the old installer) |
+| `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Settings, Welcome) |
+| `coach/ui/backdrop.js`, `coach/get_assets.py` | the 3D welcome film (Three.js + Poly Haven chess set + depth of field) and its download, with the music |
 | `coach/insights.py` | the numbers and lists the app shows (dashboard, games, one game in detail) |
 | `coach/voice.py`, `coach/hearing.py`, `coach/get_voice.py` | speaking (Kokoro), listening (Whisper), and their downloads |
 | `coach/ai.py` | optional AI explanations and answers through the player's own keys (key 1, then key 2) |
 | `coach/facts.py` | hard facts about a position or moment (loose pieces, what a move does, engine lines) the AI must stick to |
 | `coach/live_engine.py` | one Stockfish kept open for live questions and games |
-| `coach/play.py` | Play the Coach: the weakened opponent, live warnings, blunder check, hints |
 | `coach/settings.py` | theme, voice and the two AI key slots (keys in Windows Credential Manager, never in files) |
 | `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |
 | `installer/msix/`, `installer/make_msix.py`, `installer/make_icons.py` | the Microsoft Store package: manifest (identity from Partner Center), icons, Store listing text |

@@ -22,7 +22,7 @@ a = Analysis(
     binaries=[b for v in VOICE for b in v[1]],
     hiddenimports=["pystray._win32", "coach.service", "coach.drills", "coach.puzzles", "coach.insights",
                    "coach.settings", "keyring.backends.Windows", "webview.platforms.edgechromium",
-                   "coach.voice", "coach.hearing", "coach.get_voice", "coach.ai", "coach.facts", "coach.live_engine", "coach.play", "anthropic"] + [h for v in VOICE for h in v[2]],
+                   "coach.voice", "coach.hearing", "coach.get_voice", "coach.ai", "coach.facts", "coach.live_engine", "anthropic"] + [h for v in VOICE for h in v[2]],
     excludes=["tkinter", "pytest"],
 )
 pyz = PYZ(a.pure)
