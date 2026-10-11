@@ -10,6 +10,19 @@ hello();
 
 let speakingTab = null, lastCheck = 0;
 
+// Updates without the player doing anything: when the Knightwise app brings new extension files (a Store update),
+// or they change on disk, the extension reloads itself. The fingerprint is remembered when it (re)loads.
+const stamp = () => fetch(`${COACH}/api/extension-stamp`).then(r => r.json()).then(d => d.stamp).catch(() => null);
+chrome.runtime.onInstalled.addListener(async () => { const s = await stamp(); if (s) chrome.storage.local.set({ stamp: s }); });
+chrome.alarms.create("update-check", { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener(async alarm => {
+  if (alarm.name !== "update-check") return;
+  const [now, { stamp: mine }] = await Promise.all([stamp(), chrome.storage.local.get("stamp")]);
+  if (!now) return;  // the app isn't running
+  if (!mine) chrome.storage.local.set({ stamp: now });
+  else if (now !== mine) chrome.runtime.reload();
+});
+
 // The coach's voice plays in a hidden extension page (chess.com's page can't play sound from our app).
 async function player() {
   if (await chrome.offscreen.hasDocument()) return;

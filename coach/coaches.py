@@ -185,8 +185,10 @@ def suggestions(home):
     # find: the coach can point at chess.com's own link (red ring) and check the player clicked it
     actions = [{"label": "Warm up with puzzles", "url": PUZZLES, "find": {"path": "/puzzles", "name": "Puzzles"}}]
     last = home.get("last_game")
-    if last and last.get("moments"):
+    if last and last.get("moments") and "/game/live/" in last["url"]:  # daily/bot addresses can point elsewhere
         actions.append({"label": f"Review your game vs {last['opponent']}", "url": last["url"]})
+    elif last and last.get("moments") and home.get("player"):
+        actions.append({"label": "Review your recent games", "url": f"https://www.chess.com/games/archive/{home['player']}"})
     else:
         actions.append({"label": "Play a bot at your level", "url": BOTS})
     return actions

@@ -40,7 +40,7 @@
       document.body.appendChild(box);
     }
     box.className = `kw-coach ${open ? "open" : "folded"}`;
-    const face = `<button class="kw-avatar" title="${esc(s.name)}, your Knightwise coach">${KnightwiseFaces.svg(s.coach, s.mood)}</button>`;
+    const face = `<button class="kw-char" title="${esc(s.name)}, your Knightwise coach">${KnightwiseFaces.figure(s.coach, s.mood)}</button>`;
     box.innerHTML = open ? `${face}
       <div class="kw-box" role="status">
         <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
@@ -52,8 +52,10 @@
         ${s.ai_ready ? `<form class="kw-ask"><input placeholder="Ask ${esc(s.name)} anything about your chess" maxlength="300">
           <button>Ask</button></form>` : ""}
         ${s.note ? `<p class="kw-hint">${esc(s.note)}</p>` : ""}
-      </div>` : face;
-    box.querySelector(".kw-avatar").onclick = () => { if (open) fold(); else { render(true); speak(); } };
+      </div>` : `${face}<button class="kw-tab">${esc(s.name)}</button>`;
+    const wake = box.querySelector(".kw-tab");
+    if (wake) wake.onclick = () => { render(true); speak(); };
+    box.querySelector(".kw-char").onclick = () => { if (open) fold(); else { render(true); speak(); } };
     box.querySelectorAll("[data-guide]").forEach(b => b.onclick = () => guide(s.actions[Number(b.dataset.guide)]));
     const form = box.querySelector(".kw-ask");
     if (form) form.onsubmit = e => { e.preventDefault(); const q = form.querySelector("input").value.trim(); if (q) ask(q); };

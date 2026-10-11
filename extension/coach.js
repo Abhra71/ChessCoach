@@ -104,8 +104,8 @@
 
   function renderPanel(active) {
     if (!panel) {
-      panel = document.createElement("div");
-      panel.className = "chess-coach-panel";
+      panel = document.createElement("div");  // Maya, leaning on the top of her review box
+      panel.className = "kw-coach kw-review";
       document.body.appendChild(panel);
     }
     const items = moments.map((m, i) => {
@@ -122,14 +122,17 @@
              <button data-go="before" data-i="${i}">Show the better move</button>`) : ""}
       </li>`;
     }).join("");
-    panel.classList.toggle("small", small);
+    panel.classList.toggle("folded", small);
+    panel.classList.toggle("open", !small);
+    const char = `<button class="kw-char" title="Maya, game reviews">${KnightwiseFaces.figure("maya", maya.mood)}</button>`;
     panel.innerHTML = small
-      ? `<button class="pill">Maya · ${moments.length} key moment${moments.length === 1 ? "" : "s"}</button>`
-      : `<div class="head"><span class="who"><span class="kw-mini">${KnightwiseFaces.svg("maya", maya.mood)}</span>` +
-        `<span><b>Maya</b><small>Game reviews</small></span></span><span><button class="min" title="Make small">–</button>` +
+      ? `${char}<button class="kw-tab pill">Maya · ${moments.length} key moment${moments.length === 1 ? "" : "s"}</button>`
+      : `${char}<div class="chess-coach-panel"><div class="head"><span><b>Maya</b> <small>Game reviews</small></span>` +
+        `<span><button class="min" title="Make small">–</button>` +
         `<button class="x" title="Close for this game">×</button></span></div>
       <p>${escapeHtml(maya.line)}</p>
-      <ol>${items}</ol>`;
+      <ol>${items}</ol></div>`;
+    panel.querySelector(".kw-char").onclick = () => setSmall(!small);
     const setSmall = v => {
       small = v;
       try { localStorage.setItem("chess-coach-small", v ? "1" : "0"); } catch (e) {}
@@ -181,8 +184,19 @@
     look();
   }
 
+  // the page must be this game: both players' names on it (chess.com's archive can point a bot game at someone
+  // else's game address). Otherwise nothing is shown.
+  function samePlayers(players) {
+    const text = document.body.innerText.toLowerCase();
+    return players.length === 2 && players.every(p => text.includes(String(p).toLowerCase()));
+  }
+
   async function show(id, data) {
     if (!data.moments.length) return;  // a clean game: nothing to show on the board
+    for (let i = 0; !samePlayers(data.players || []); i++) {  // chess.com fills in the names a few seconds late
+      if (i >= 30 || gameId !== id) return;
+      await new Promise(r => setTimeout(r, 1000));
+    }
     moments = data.moments;
     const n = moments.length;
     maya = { mood: "calm", line: `${n} key moment${n === 1 ? "" : "s"} in this game. Click one to see it on the board.` };

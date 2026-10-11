@@ -107,10 +107,13 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/game/"):
             rows = MOMENT_CACHE.get(path.rsplit("/", 1)[-1])
             # unknown game = not finished and checked yet: say nothing (fair play)
-            body = {"known": rows is not None, "moments": key_moments(rows) if rows else []}
+            body = {"known": rows is not None, "moments": key_moments(rows) if rows else [],
+                    "players": players_of(path.rsplit("/", 1)[-1]) if rows is not None else []}
             return self.send(200, json.dumps(body), "application/json")
         if path == "/api/status":
             return self.send(200, json.dumps(status()), "application/json")
+        if path == "/api/extension-stamp":  # changes whenever the extension's files change (it then reloads itself)
+            return self.send(200, json.dumps({"stamp": extension_stamp()}), "application/json")
         if path == "/api/coach":  # what the coach of a chess.com section says (the extension shows it)
             return self.send(200, json.dumps(coach_says(self.path)), "application/json")
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
@@ -337,6 +340,24 @@ class Server(ThreadingHTTPServer):
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         super().server_bind()
+
+
+def extension_stamp():
+    """A fingerprint of the extension folder Chrome loads (names, sizes, times)."""
+    import hashlib
+    h = hashlib.sha1()
+    for f in sorted(p for p in EXTENSION.rglob("*") if p.is_file()):
+        st = f.stat()
+        h.update(f"{f.relative_to(EXTENSION)}|{st.st_size}|{int(st.st_mtime)}".encode())
+    return h.hexdigest()[:12]
+
+
+def players_of(gid):
+    """Both usernames of a game. chess.com's archive can give a bot game the address of someone else's daily game,
+    so the extension only shows a review when the page shows these two names."""
+    from coach import insights
+    g = next((g for g in insights._games() if game_id(g["url"]) == str(gid)), None)
+    return [g["white"]["username"], g["black"]["username"]] if g else []
 
 
 def coach_says(url):

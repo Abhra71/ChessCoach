@@ -58,6 +58,7 @@
   },
   "permissions": [
     "offscreen",
-    "storage"
+    "storage",
+    "alarms"
   ]
 }

@@ -4,7 +4,7 @@ from coach import coaches, voice
 
 HOME = {"player": "gushynanda", "games": 140, "pieces_per_game": 1.14, "pieces_last20": 0.7,
         "focus": {"pattern": "left a piece hanging", "habit": "Before every move, ask: what can they take?"},
-        "last_game": {"opponent": "Coach-Nadia", "url": "https://www.chess.com/game/daily/162529818", "moments": 3}}
+        "last_game": {"opponent": "Coach-Nadia", "url": "https://www.chess.com/game/live/150000000001", "moments": 3}}
 
 
 def test_two_women_two_men_each_with_their_own_voice():
@@ -81,3 +81,9 @@ def test_progress_coach_remembers_this_week_against_last_week():
     assert "5 games, 2 pieces" in text and "6 in 4" in text and "improvement" in text
     quiet = {**HOME, "week": {"this": {"games": 0, "pieces": 0}, "last": {"games": 3, "pieces": 1}}}
     assert "No games this week" in " ".join(coaches.speak("progress", quiet)["lines"])
+
+
+def test_a_daily_or_bot_game_link_goes_to_the_archive_instead():
+    home = {**HOME, "last_game": {**HOME["last_game"], "url": "https://www.chess.com/game/daily/162529818"}}
+    urls = [a["url"] for a in coaches.suggestions(home)]
+    assert urls[1] == "https://www.chess.com/games/archive/gushynanda"

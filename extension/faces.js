@@ -83,5 +83,61 @@
       </g></svg>`;
   }
 
-  window.KnightwiseFaces = { svg, coaches: Object.keys(LOOK), moods: Object.keys(BROWS) };
+  // ---- the coach as a character: head, body and arms, leaning on the top edge of the message box ----
+  // Gestures by mood: calm = both hands on the edge; pleased = thumbs up; thinking = hand on chin;
+  // worried = hand on cheek. While talking, the right arm gestures (coach.css).
+  const SHOULDER = { l: [56, 128], r: [124, 128] };
+  const POSE = {
+    rest: { l: "M56 128 Q40 152 54 170", r: "M124 128 Q140 152 126 170", hl: [54, 170], hr: [126, 170] },
+    thumbs: { r: "M124 128 Q154 150 148 116", hr: [148, 110], thumb: true },
+    chin: { r: "M124 128 Q146 170 106 104", hr: [104, 100] },
+    cheek: { l: "M56 128 Q28 152 64 88", hl: [66, 84] },
+  };
+  const MOOD_POSE = { calm: ["rest", "rest"], pleased: ["rest", "thumbs"], thinking: ["rest", "chin"], worried: ["cheek", "rest"] };
+
+  function hand([x, y], L, thumb) {
+    if (thumb) {  // a fist with the thumb up
+      return `<rect x="${x - 8}" y="${y - 7}" width="16" height="15" rx="6" fill="${L.skin}"/>
+        <rect x="${x - 3}" y="${y - 19}" width="7" height="15" rx="3.5" fill="${L.skin}"/>
+        <path d="M${x - 6} ${y} h11 M${x - 6} ${y + 4} h11" stroke="${L.shade}" stroke-width="1.2"/>`;
+    }
+    return `<ellipse cx="${x}" cy="${y}" rx="9.5" ry="7.5" fill="${L.skin}"/>
+      <path d="M${x - 4} ${y - 5} v6 M${x} ${y - 6} v7 M${x + 4} ${y - 5} v6" stroke="${L.shade}" stroke-width="1.1" stroke-linecap="round"/>`;
+  }
+
+  function figure(coach, mood = "calm") {
+    const L = LOOK[coach] || LOOK.zara;
+    mood = BROWS[mood] ? mood : "calm";
+    const fill = s => s.replace(/HAIR/g, L.hair).replace(/COLLAR/g, L.collar).replace(/LIPS/g, L.lips);
+    const [left, right] = MOOD_POSE[mood].map(p => POSE[p]);
+    const arm = (side, pose) => {
+      const path = pose[side] || POSE.rest[side], at = pose[side] ? pose["h" + side] : POSE.rest["h" + side];
+      return `<path d="${path}" stroke="${L.top}" stroke-width="15" stroke-linecap="round" fill="none"/>
+        ${hand(at, L, side === "r" && pose.thumb)}`;
+    };
+    const head = `<g transform="translate(30 4)">
+        ${fill(L.back)}
+        <ellipse cx="33" cy="62" rx="4" ry="6" fill="${L.shade}"/><ellipse cx="87" cy="62" rx="4" ry="6" fill="${L.shade}"/>
+        <ellipse cx="60" cy="60" rx="26" ry="29" fill="${L.skin}"/>
+        ${fill(L.front)}
+        <g stroke="${L.hair === "#B9B6B1" ? "#8E8A84" : L.hair}" stroke-width="2.4" stroke-linecap="round" fill="none">
+          <path d="${BROWS[mood][0]}"/><path d="${BROWS[mood][1]}"/></g>
+        ${eyes(mood)}
+        <path d="M60 62 Q57 69 60 70 Q62 70 63 69" stroke="${L.shade}" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <g class="kw-mouth">${fill(MOUTH[mood])}</g>
+        <ellipse class="kw-talk" cx="60" cy="76" rx="5.5" ry="4" fill="#5A2A22"/>
+        ${fill(L.extra)}
+      </g>`;
+    return `<svg viewBox="0 0 180 176" xmlns="http://www.w3.org/2000/svg" class="kw-face kw-figure kw-${coach} kw-${mood}" role="img" aria-label="${coach}">
+      <path d="M81 82 L81 116 Q90 124 99 116 L99 82 Z" fill="${L.shade}"/>
+      <path d="M81 92 Q90 99 99 92 L99 96 Q90 103 81 96 Z" fill="#000" opacity=".12"/>
+      <path d="M38 180 C40 134 60 114 80 113 Q90 121 100 113 C120 114 140 134 142 180Z" fill="${L.top}"/>
+      <g transform="translate(30 18)">${fill(L.clothes)}</g>
+      ${head}
+      <g class="kw-arm-l">${arm("l", left)}</g>
+      <g class="kw-arm-r">${arm("r", right)}</g>
+    </svg>`;
+  }
+
+  window.KnightwiseFaces = { svg, figure, coaches: Object.keys(LOOK), moods: Object.keys(BROWS) };
 })();
