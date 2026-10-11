@@ -1,20 +1,69 @@
+<div align="center">
+
+<img src="installer/msix/Assets/Square150x150Logo.scale-200.png" width="110" alt="Knightwise logo">
+
 # Knightwise
 
-<img src="installer/msix/Assets/Square150x150Logo.scale-200.png" width="96" alt="Knightwise logo">
+### A chess coach that sits beside you on chess.com.
 
-A free, open-source chess coach that learns how **you** play on chess.com, finds the habits that lose you
-games, and trains you out of them, one or two things at a time, at your level.
+It reads your real games, finds the habits that lose them, and trains you out of them,
+one thing at a time, at your level. Free, open source, and it runs on your own PC.
 
-> **Fair play:** the coach is completely off during any game against a real person. No hints, no arrows,
-> no reading the board. It only works on finished games, analysis, puzzles and lessons.
+**30,000 puzzles** · **3,865 named openings** · **every move you played checked by Stockfish** · **4 coaches with their own voices**
 
-![The Knightwise welcome: a 3D antique chess set replaying the Opera Game](docs/screenshots/welcome.jpg)
+No account · no ads · no subscription · your games stay on your computer
 
-| Your review: what you played (red) and what was better (green) | Home: your one focus right now |
+*Microsoft Store: private beta now, public release coming. Windows 10 and 11.*
+
+</div>
+
+![Arjun, the puzzle coach, on chess.com's puzzle page](docs/screenshots/on-chesscom.jpg)
+
+> **Fair play is built in, not bolted on.** During any game against a real person the coaches are gone:
+> no hints, no arrows, nothing reads the board. They only work on finished games, puzzles, lessons and your own practice.
+
+## What you get, free
+
+| | |
 |---|---|
-| ![Game review with arrows](docs/screenshots/review.jpg) | ![Home screen](docs/screenshots/home.jpg) |
+| **Your games, checked move by move.** Every move you played on chess.com is checked by Stockfish. Knightwise sorts the mistakes into the habits behind them, like pieces left hanging or walking into forks, and counts them. | ![Home](docs/screenshots/home.jpg) |
+| **Review with arrows, on chess.com itself.** Your key moments get labelled arrows: what you played, what was better and their reply, on your own board or on chess.com's. Then **Try it again** turns any of those moments into a puzzle. | ![Review](docs/screenshots/review.jpg) |
+| **Today's 5 minutes.** One position from your own games, one puzzle on today's idea and the first moves of your opening. The streak is gentle: one missed day is forgiven, and nobody scolds you. | ![Today's 5 minutes](docs/screenshots/daily.jpg) |
+| **Four coaches, nothing to set up.** Maya reviews your games, Arjun runs puzzles and practice, Zara gets you ready to play, and Viktor tracks your progress. They are drawn characters with 12 gestures and moods: worried when you go wrong, cheering when you get it. They talk with their own voices, made on your PC. | ![Your plan](docs/screenshots/ai-card.jpg) |
+| **Progress you can see.** You vs you: your last 20 games against the 20 before. Viktor writes the story of your week, which you can save as a picture. Badges, Bronze to Gold, are earned only in real games. | ![Progress](docs/screenshots/progress.jpg) |
+| **Your opening tree.** Your first moves of every game as White and Black, with your score on each branch. A note marks the branch that costs you games, and your plan suggests an opening that suits you. | ![Opening tree](docs/screenshots/openings.jpg) |
 
-**Get it:** Microsoft Store, private beta now (Windows 10/11, free). Public release later.
+**Something new, only when you need it.** The coaches bring a new tactic, opening or idea when your games
+show a reason, like a stalemated win, a new kind of mistake or a losing streak, and one at a time.
+The rest of the time they keep you on the one habit that matters most right now.
+
+**Talk with your coaches, also free.** Add a free key from Google Gemini or Groq and they answer your
+questions in their own words. The engine still decides every move; the AI only explains it. Without a key the
+coaches use their written sentences, and if the AI is busy they still answer. The chat AI runs at the provider you pick, not on your PC.
+
+## Honest numbers
+
+From the developer's own 140 checked chess.com games, nothing hand-picked:
+
+- **Pieces given away a game:** 1.2 in the 20 games before, then **0.7** in the last 20.
+- **Games won:** 25% in the 20 games before, then **45%** in the last 20.
+- **Losses by checkmate:** 35 of the first 63 losses ended in checkmate, which is why "check their checks" is one of the habits it trains.
+
+Your numbers will be different. That's the point: everything is worked out from **your** games.
+
+## How it works
+
+1. **Type your chess.com username.** There's no password, because only your public games are read.
+2. **Knightwise checks your games** with Stockfish on your PC, which takes about 2 minutes the first time, and keeps checking new ones by itself.
+3. **Play on chess.com as usual.** After a game, the coaches show up with what mattered and what to practise next.
+
+![The welcome: a 3D antique chess set replaying the Opera Game](docs/screenshots/welcome.jpg)
+
+## What it doesn't do
+
+- It never helps during a game against a real person, and it never moves pieces or clicks for you.
+- It doesn't play against you; chess.com has bots for that.
+- It needs Windows for the app. The chess.com coaches need Chrome or Edge with the Knightwise extension.
 
 ## Status: private beta
 
