@@ -46,10 +46,10 @@ def test_a_stalemated_win_brings_the_endgame_lesson_once_then_it_stays_until_don
     moves = {g["url"]: [] for g in games}
     moves["g3"] = [{"pattern": plan.STALEMATE, "ply": 80}]
     first = plan.novelty(HOME, games, moves, today=date(2026, 10, 1))
-    assert first["id"] == "endgame:queenEndgame" and "stalemated 1 won games" in first["why"]
+    assert first["id"] == "endgame:queenEndgame" and "stalemated 1 won game." in first["why"]
     plan.mark(first["id"], today=date(2026, 10, 1))
     again = plan.novelty(HOME, games, moves, today=date(2026, 10, 2))
-    assert again["id"] == first["id"] and again["again"]
+    assert again["id"] == first["id"] and again["again"] and again["why"] == first["why"]
     plan.mark(first["id"], done=True)
     assert plan.novelty(HOME, games, moves, today=date(2026, 10, 2)) is None  # cooldown: nothing new for a few days
 

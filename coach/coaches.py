@@ -168,7 +168,7 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
             lines.append(line("worse", coach, rng, **facts))
         if section == "home" and extra and extra.get("novelty"):  # something new, when it's genuinely needed
             n = extra["novelty"]
-            lines.append(f"Something new for you: {n['title'].lower() if n['kind'] != 'opening' else n['title']}. {n['why']}")
+            lines.append(f"Something new for you: {n['title'].lower() if n['kind'] != 'opening' else n['title']}. {n.get('why') or ''}".strip())
             out["actions"] = [{"label": "Learn it in Knightwise", "app": "plan"}] + suggestions(home)[:1]
             return {**out, "mood": "pleased", "lines": lines}
         if section == "home" and extra and extra.get("advice"):
@@ -179,7 +179,7 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
             lines.append(week_line(home, coach, rng))
         elif section == "plan" and extra and extra.get("novelty"):
             n = extra["novelty"]
-            lines.append(f"But first, something new: {n['title']}. {n['why']}")
+            lines.append(f"But first, something new: {n['title']}. {n.get('why') or ''}".strip())
         elif section in ("lessons", "play", "games", "plan"):
             lines.append(line(section, coach, rng, **facts))
         elif focus:

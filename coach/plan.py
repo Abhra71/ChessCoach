@@ -58,7 +58,7 @@ IDEAS = [  # core ways of thinking (the AI, with a key, can explain them in the 
 ]
 OPENING_COACH = "zara"
 WHY = {
-    "stalemate": "You've stalemated {n} won games. This is the habit that keeps those points.",
+    "stalemate": "You've stalemated {n}. This is the habit that keeps those points.",
     "new": "{pattern_cap} is new for you: {recent} times in your last 10 games, more than before.",
     "opening": "In {pct}% of your last 20 games you lost material before move 12. A solid opening helps most there.",
     "slump": "You lost {losses} of your last 5 games. Time for something fresh, not more of the same.",
@@ -177,6 +177,16 @@ def idea_for(pattern, done):
 
 # ---------- the sense ----------
 def novelty(home=None, games=None, moves=None, engine=None, today=None, rng=None):
+    """The one new thing to bring now, or None (its reason is remembered, so it reads the same when it comes back)."""
+    new = _novelty(home, games, moves, engine, today, rng)
+    if new and not new.get("again") and new.get("why"):
+        mem = _memory()
+        mem.setdefault("why", {})[new["id"]] = new["why"]
+        _save(mem)
+    return new
+
+
+def _novelty(home=None, games=None, moves=None, engine=None, today=None, rng=None):
     """The one new thing to bring now, or None. {..., why} says why it is needed now."""
     home = home if home is not None else insights.home()
     player = home.get("player")
@@ -195,7 +205,7 @@ def novelty(home=None, games=None, moves=None, engine=None, today=None, rng=None
         if (today - date.fromisoformat(since)).days < STALE_DAYS:
             again = build(item_id, home, games, moves, engine, rng, done)
             if again:
-                return {**again, "again": True}
+                return {**again, "why": mem.get("why", {}).get(item_id) or again.get("why") or "", "again": True}
     recent = max((date.fromisoformat(d) for d in mem.get("shown", {}).values()), default=None)
     if recent and (today - recent).days < COOLDOWN_DAYS:
         return None
@@ -206,7 +216,7 @@ def novelty(home=None, games=None, moves=None, engine=None, today=None, rng=None
     fill = lambda key, **kw: WHY[key].format(**kw)
 
     if s["stalemates"] and f"endgame:queenEndgame" not in done:
-        return endgame("queenEndgame", rating, rng, fill("stalemate", n=s["stalemates"]))
+        return endgame("queenEndgame", rating, rng, fill("stalemate", n=f"{s['stalemates']} won game" + ("" if s["stalemates"] == 1 else "s")))
     for pattern, recent_n in s["new"]:
         theme = fresh(THEMES_FOR[pattern])
         if theme:
