@@ -114,3 +114,14 @@ def test_badges_count_runs_of_real_games_without_the_habit():
     clean = {g["url"]: [] for g in games}  # 8 clean games in a row
     safe = next(b for b in progress.badges(games, clean) if b["id"] == "safe")
     assert safe["tier_name"] == "Silver" and safe["next"] == 10
+
+
+def test_opening_tree_counts_results_per_branch_and_names_them():
+    from coach import tree
+    pgn = lambda moves: f'[Event "x"]\n\n{moves} *'
+    games = [{"white": {"username": "me", "result": r}, "black": {"username": "x", "result": "win" if r != "win" else "checkmated"},
+              "pgn": pgn(m)} for m, r in [("1. e4 e5 2. Nf3", "win"), ("1. e4 e5 2. Nf3", "checkmated"), ("1. d4 d5", "win")]]
+    t = tree.build(games, "me")["white"]
+    e4 = t["children"][0]
+    assert (e4["san"], e4["games"], e4["score"], e4["name"]) == ("e4", 2, 50, "King's Pawn Game")
+    assert e4["children"][0]["children"][0]["name"] == "King's Knight Opening"

@@ -99,7 +99,8 @@ def drill(eng, pattern, r):
     good = {m for m, (w, _) in scores.items() if top - w < GOOD}
     best = max(scores, key=lambda m: scores[m][0])
     color = "Black" if board.turn == chess.BLACK else "White"
-    return {"id": drill_id(r), "kind": "game", "flip": board.turn == chess.BLACK, "pattern": pattern, "hint": ABOUT[pattern][1],
+    hint = ABOUT[pattern][1] if pattern in ABOUT else "Look at every check and capture, for both sides, before you move."
+    return {"id": drill_id(r), "kind": "game", "flip": board.turn == chess.BLACK, "pattern": pattern, "hint": hint,
             "intro": f"You are {color}. Your move.", "played": r["move"], "best": board.san(best),
             "where": f"From your game: move {move_number(r)}, you are {color}", "url": r["url"],
             "link": "open game on chess.com", "start": squares(board), "last": None,

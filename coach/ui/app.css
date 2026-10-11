@@ -342,3 +342,22 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .badge .tier-name { font-size: 12px; font-weight: 700; margin: 2px 0 6px; color: var(--muted); }
 .badge.t1 .tier-name { color: #c98a4b; } .badge.t2 .tier-name { color: #c7ccd4; } .badge.t3 .tier-name { color: #f2c94c; }
 .badge .bar { margin-top: 10px; } .badge.t3 .bar > div { background: #f2c94c; }
+
+.small-btn { padding: 4px 10px; font-size: 12px; border-radius: 7px; }
+
+/* opening tree */
+.tree { margin-top: 12px; }
+.tree-node > summary { list-style: none; cursor: pointer; } .tree-node > summary::-webkit-details-marker { display: none; }
+.tree-row { display: grid; grid-template-columns: 90px 1fr 80px 150px; gap: 12px; align-items: center; padding: 8px 6px; border-radius: 8px; }
+.tree-node > summary:hover .tree-row { background: var(--raised); }
+.tree-node > summary .tree-move::before { content: "▸"; display: inline-block; width: 14px; color: var(--faint); transition: transform .15s; }
+.tree-node[open] > summary .tree-move::before { transform: rotate(90deg); }
+.tree-leaf .tree-move { padding-left: 14px; }
+.tree-move { font-weight: 700; } .tree-name { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-kids { margin-left: 18px; border-left: 1px solid var(--line); padding-left: 8px; }
+.tree-score { position: relative; height: 18px; background: var(--raised); border-radius: 5px; overflow: hidden; }
+.tree-score i { position: absolute; inset: 0 auto 0 0; background: var(--line-strong); }
+.tree-score.good i { background: color-mix(in srgb, var(--better) 70%, transparent); } .tree-score.bad i { background: color-mix(in srgb, var(--red) 70%, transparent); }
+.tree-score b { position: relative; font-size: 11px; padding-left: 8px; line-height: 18px; }
+.tree-note { margin: 0 0 6px 20px; font-size: 12px; font-weight: 600; } .tree-note.bad { color: var(--red); } .tree-note.good { color: var(--better); }
+@media (max-width: 900px) { .tree-row { grid-template-columns: 80px 1fr 110px; } .tree-games { display: none; } }

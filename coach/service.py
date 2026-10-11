@@ -145,6 +145,20 @@ class Handler(BaseHTTPRequestHandler):
             from coach import live_engine, plan
             with live_engine.LOCK:
                 return self.send(200, json.dumps(plan.plan(engine=live_engine.get())), "application/json")
+        if path.startswith("/api/try/"):  # "Try it again": a key moment of a finished, checked game as a puzzle
+            from coach import drills, live_engine
+            parts = path.split("/")
+            gid, ply = parts[-2], parts[-1]
+            rows = MOMENT_CACHE.get(gid) or []
+            r = next((r for r in rows if str(r.get("ply")) == ply), None)
+            if r is None:  # only games the coach checked: never a game that is still running
+                return self.send(404, json.dumps({"message": "That moment isn't here."}), "application/json")
+            with live_engine.LOCK:
+                d = drills.drill(live_engine.get(), classify(r), r)
+            return self.send(200, json.dumps(d), "application/json")
+        if path == "/api/openings":  # your opening tree from your own games
+            from coach import tree
+            return self.send(200, json.dumps(tree.page()), "application/json")
         if path == "/api/progress":  # Viktor: the story of your week and your badges
             from coach import progress
             return self.send(200, json.dumps(progress.page()), "application/json")

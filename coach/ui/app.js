@@ -279,6 +279,47 @@ async function daily() {
   } });
 }
 
+// ---------- your opening tree: every branch of your first moves, with your results ----------
+async function openingTree() {
+  shell("games", `<p class="muted">Loading…</p>`);
+  const t = (await api("/api/openings")).tree || {};
+  const label = n => `${Math.ceil(n.ply / 2)}${n.ply % 2 ? "." : "..."}${n.san}`;
+  const node = (n, depth) => {
+    const kids = n.children.filter(c => c.games >= 2);
+    const good = n.score >= 55, bad = n.score <= 40;
+    const row = `<div class="tree-row"><span class="tree-move num">${esc(label(n))}</span>
+      <span class="tree-name">${esc(n.name || "")}</span>
+      <span class="tree-games small muted num">${n.games} game${n.games > 1 ? "s" : ""}</span>
+      <span class="tree-score ${good ? "good" : bad ? "bad" : ""}"><i style="width:${n.score}%"></i><b class="num">${n.score}%</b></span></div>
+      ${n.note ? `<div class="tree-note ${bad ? "bad" : "good"}">${esc(n.note)}</div>` : ""}`;
+    if (!kids.length) return `<div class="tree-leaf">${row}</div>`;
+    return `<details class="tree-node" ${depth < 2 || n.note ? "open" : ""}><summary>${row}</summary>
+      <div class="tree-kids">${kids.map(c => node(c, depth + 1)).join("")}</div></details>`;
+  };
+  const side = (name, root) => root ? `<div class="box rise"><div class="row spread"><h2 style="margin:0">As ${name}</h2>
+      <span class="small muted">${root.games} games · you score ${root.score}%</span></div>
+      <div class="tree">${root.children.filter(c => c.games >= 2).map(c => node(c, 0)).join("")}</div></div>` : "";
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
+      <h1 style="margin-top:6px">Your opening tree</h1><p class="sub">Your first three moves in every game, and how each branch went. Score: a win is 1, a draw is half.</p></div></div>
+    <div class="grid">${side("White", t.white)}${side("Black", t.black)}</div>`;
+  const worst = [t.white, t.black].filter(Boolean).flatMap(function all(n) { return [n, ...n.children.flatMap(all)]; })
+    .filter(n => n.note && n.score <= 40).sort((a, b) => b.games - a.games)[0];
+  if (worst) Coach.react("zara", "point", `Look at ${label(worst)}${worst.name ? `, the ${worst.name}` : ""}. ${worst.note} Your plan has an opening that fixes this.`,
+    [{ label: "Your plan", app: "plan" }]);
+}
+
+// ---------- try it again: one key moment of your game, on the board, with Maya ----------
+async function tryAgain(gid, ply) {
+  shell("games", `<p class="muted">Loading…</p>`);
+  const d = await api(`/api/try/${gid}/${ply}`);
+  const back = `<a href="#/games/${gid}" class="small muted" style="text-decoration:none">← Back to the game</a>`;
+  $("#page").innerHTML = trainerPage("Try it again", { back, text: "The moment before your mistake. Find a better move." });
+  trainer([d], { coach: "maya", record: true, onDone: right => setTimeout(() => Coach.react("maya", right ? "celebrate" : "encourage",
+    right ? "That's the move you'll play next time." : "Now you know it. It will come back in your practice.",
+    [{ label: "Back to the game", app: `games/${gid}` }]), 2200) });
+}
+
 // ---------- progress: Viktor's story of your week, and badges from your real games ----------
 async function progressView() {
   shell("progress", `<p class="muted">Loading…</p>`);
@@ -421,7 +462,8 @@ async function games() {
   shell("games", `<p class="muted">Loading…</p>`);
   const list = await api("/api/games");
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Games</h1><p class="sub">${list.length} finished games from chess.com. Click one to see its key moments.</p></div></div>
+    <div class="page-head"><div><h1>Games</h1><p class="sub">${list.length} finished games from chess.com. Click one to see its key moments.</p></div>
+      <a class="btn" href="#/openings">Your opening tree</a></div>
     <div class="box" style="padding:8px 8px 0"><table><thead><tr><th>Date</th><th>Opponent</th><th>Result</th><th>Type</th>
       <th class="num">Pieces given away</th><th class="num">Key moments</th></tr></thead><tbody>
       ${list.map(g => `<tr class="click" data-id="${g.id}"><td class="muted num">${esc(g.date)}</td>
@@ -466,7 +508,8 @@ async function gameView(id) {
       : [{ from: m.move_uci.slice(0, 2), to: m.move_uci.slice(2, 4), kind: "mine" }].concat(m.reply_uci ? [{ from: m.reply_uci.slice(0, 2), to: m.reply_uci.slice(2, 4), kind: "reply" }] : []);
     Board.render($("#board"), { fen: pos.fen, flip, highlights: hl, arrows });
     $("#moments").innerHTML = g.key_moments.map((k, i) => `<div class="moment ${k === m ? "on" : ""}" data-i="${i}">
-      <div class="row spread"><span class="what">Move ${k.move_number} · ${esc(cap(k.pattern))}</span><span class="small faint">−${Math.round(k.loss)}%</span></div>
+      <div class="row spread"><span class="what">Move ${k.move_number} · ${esc(cap(k.pattern))}</span>
+        <span class="row" style="gap:10px"><span class="small faint">−${Math.round(k.loss)}%</span><a class="btn small-btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a></span></div>
       <div style="margin-top:4px">${esc(k.say)}</div>
       ${k === m ? `<div class="small muted" style="margin-top:6px">${view === "before" ? `Better: <b>${esc(k.best)}</b> · you played <b>${esc(k.move)}</b>` : `You played <b>${esc(k.move)}</b>, and their reply wins material.`}</div>
         ${k.habit ? `<div class="small" style="margin-top:6px"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
@@ -796,6 +839,8 @@ async function route() {
     if (name === "practice") return await practice(arg && decodeURIComponent(arg));
     if (name === "daily") return await daily();
     if (name === "progress") return await progressView();
+    if (name === "openings") return await openingTree();
+    if (name === "try") return await tryAgain(arg, location.hash.split("/")[3]);
     if (name === "extension") return await extensionView();
     if (name === "settings") return await settingsView();
     return await home();
