@@ -8,7 +8,15 @@ games, and trains you out of them, one or two things at a time, at your level.
 > **Fair play:** the coach is completely off during any game against a real person. No hints, no arrows,
 > no reading the board. It only works on finished games, analysis, puzzles and lessons.
 
-## Status: early (not ready for players yet)
+![The Knightwise welcome: a 3D antique chess set replaying the Opera Game](docs/screenshots/welcome.jpg)
+
+| Your review: what you played (red) and what was better (green) | Home: your one focus right now |
+|---|---|
+| ![Game review with arrows](docs/screenshots/review.jpg) | ![Home screen](docs/screenshots/home.jpg) |
+
+**Get it:** Microsoft Store, private beta now (Windows 10/11, free). Public release later.
+
+## Status: private beta
 
 | Piece | State |
 |---|---|
@@ -19,7 +27,7 @@ games, and trains you out of them, one or two things at a time, at your level.
 | Practice page: positions from your own games, click your move, it says right or why not | works |
 | Only new games are downloaded and checked (so it can later run by itself) | works |
 | Runs by itself in the background: checks new games every 10 minutes, Windows notification | works |
-| Browser extension: key moments of your finished games with labelled arrows (Better / You played / Reply) on the chess.com board; guided set-up with pictures and copy buttons | works (beta) |
+| Browser extension: key moments of your finished games with labelled arrows (Better / You played / Reply) on the chess.com board; guided set-up with real Chrome screenshots (click spots circled) and copy buttons | works (beta) |
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
 | "Is this you?" answer on the review page, saved in your logbook | works |

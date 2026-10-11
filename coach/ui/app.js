@@ -394,6 +394,9 @@ async function extensionView() {
   let browser = browsers.includes("chrome") ? "chrome" : browsers[0];
   const NAME = { chrome: "Chrome", edge: "Edge" };
   const copyBtn = (id, text) => `<button class="btn" data-copy="${esc(text)}" id="${id}">Copy</button>`;
+  // Chrome: real screenshots (personal details removed, the click spot circled in red); Edge: simple drawings
+  const REAL = { open: "1-address", dev: "2-developer-mode", load: "3-load-unpacked", pick: "4-choose-folder", done: "5-done" };
+  const pic = (step, alt) => browser === "chrome" ? `<img class="shot real" src="/ui/guide/${REAL[step]}.png" alt="${alt}">` : Guide.steps[step];
   function render() {
     const page = `${browser}://extensions`;
     $("#page").innerHTML = `
@@ -407,19 +410,21 @@ async function extensionView() {
         <div class="gstep"><div class="gnum">1</div><div class="gtext"><h3>Open ${NAME[browser]}'s extensions page</h3>
           <p class="muted">Click the button, or copy the address and paste it into ${NAME[browser]}'s address bar.</p>
           <div class="row"><button class="btn primary" id="openext">Open it for me</button><code class="addr">${page}</code>${copyBtn("c1", page)}</div>
-          <p class="small muted" id="openmsg"></p></div>${Guide.steps.open}</div>
+          <p class="small muted" id="openmsg"></p></div>${pic("open", "Chrome's address bar showing chrome://extensions")}</div>
         <div class="gstep"><div class="gnum">2</div><div class="gtext"><h3>Switch on "Developer mode"</h3>
-          <p class="muted">The switch at the top right of that page.</p></div>${Guide.steps.dev}</div>
+          <p class="muted">The switch at the top right of that page. Leave it on: the extension only works while it is on.</p></div>${pic("dev", "The Developer mode switch, top right")}</div>
         <div class="gstep"><div class="gnum">3</div><div class="gtext"><h3>Click "Load unpacked"</h3>
-          <p class="muted">It appears at the top left once Developer mode is on.</p></div>${Guide.steps.load}</div>
+          <p class="muted">It appears at the top left once Developer mode is on.</p></div>${pic("load", "The Load unpacked button, top left")}</div>
         <div class="gstep"><div class="gnum">4</div><div class="gtext"><h3>Choose the Knightwise folder</h3>
           <p class="muted">In the window that opens, click its address bar, paste this path (Ctrl+V), press Enter, then click <b>Select Folder</b>.</p>
           <div class="row"><code class="addr long">${esc(st.extension_path)}</code>${copyBtn("c2", st.extension_path)}</div>
-          <p class="small muted" style="margin-top:8px">Easier: <button class="btn" id="showfolder" style="padding:4px 10px">Show the folder</button> and drag the <b>extension</b> folder onto the extensions page.</p></div>${Guide.steps.pick}</div>
+          <p class="small muted" style="margin-top:8px">Easier: <button class="btn" id="showfolder" style="padding:4px 10px">Show the folder</button> and drag the <b>extension</b> folder onto the extensions page.</p></div>${pic("pick", "The folder window: path typed in its address bar, then Select Folder")}</div>
         <div class="gstep"><div class="gnum">5</div><div class="gtext"><h3>Done</h3>
           <p class="muted">"Knightwise" appears in the list, and the box at the top turns green. Then open any finished game of yours on chess.com.</p>
-          <a class="btn" href="https://www.chess.com/games/archive/${encodeURIComponent(st.player || "")}" target="_blank" rel="noopener">Your games on chess.com ↗</a></div>${Guide.steps.done}</div>
+          <p class="small muted">${NAME[browser]} may later say the extension "may be unsafe" or "can't be verified": that is expected for any extension not from its web store. Keep it.</p>
+          <a class="btn" href="https://www.chess.com/games/archive/${encodeURIComponent(st.player || "")}" target="_blank" rel="noopener">Your games on chess.com ↗</a></div>${pic("done", "Knightwise in the list of extensions")}</div>
       </div>`;
+    document.querySelectorAll(".shot.real").forEach(i => i.onclick = () => i.closest(".gstep").classList.toggle("zoom"));
     document.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => navigator.clipboard.writeText(b.dataset.copy).then(() => { b.textContent = "Copied"; }));
     if ($("#browser")) $("#browser").querySelectorAll("button").forEach(b => b.onclick = () => { browser = b.dataset.b; render(); });
     $("#openext").onclick = async () => {

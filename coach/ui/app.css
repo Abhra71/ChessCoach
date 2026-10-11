@@ -202,6 +202,8 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
   border-radius: 4px; padding: 6px 8px; white-space: nowrap; }
 .addr.long { white-space: normal; overflow-wrap: anywhere; flex: 1; min-width: 0; }
 .shot { width: 100%; height: auto; display: block; }
+.shot.real { border: 1px solid var(--line-strong); border-radius: 8px; cursor: zoom-in; }
+.gstep.zoom { grid-template-columns: 34px 1fr; } .gstep.zoom .shot { grid-column: 2; cursor: zoom-out; }
 .shot .s-win { fill: var(--bg); stroke: var(--line-strong); } .shot .s-bar { fill: var(--raised); }
 .shot .s-dot { fill: var(--line-strong); } .shot .s-url { fill: var(--surface); stroke: var(--line); }
 .shot .s-urltext { font: 10px ui-monospace, Consolas, monospace; fill: var(--muted); }
