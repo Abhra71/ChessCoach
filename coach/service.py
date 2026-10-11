@@ -343,7 +343,14 @@ def coach_says(url):
     if q.get("game", "").isdigit():
         rows = MOMENT_CACHE.get(q["game"])
         moments = None if rows is None else len(key_moments(rows)) if rows else 0
-    return coaches.speak(q.get("section", "home"), hour=hour % 24, moments=moments)
+    said = coaches.speak(q.get("section", "home"), hour=hour % 24, moments=moments)
+    from coach import voice
+    s = settings.load()
+    said["voice_on"] = bool(s.get("voice")) and voice.available()
+    said["role"] = coaches.COACHES[said["coach"]]["role"]
+    if not any(settings.get_key(slot) for slot in settings.SLOTS):  # tell everyone the conversation feature exists
+        said["ai_hint"] = coaches.AI_HINT
+    return said
 
 
 def player():

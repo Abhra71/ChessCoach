@@ -14,15 +14,17 @@ BOTS = "https://www.chess.com/play/computer"
 LESSONS = "https://www.chess.com/lessons"
 
 COACHES = {
-    "maya": {"name": "Maya", "voice": "bf_emma", "about": "Former champion. Calm, patient, strategic.",
+    "maya": {"role": "Game reviews", "name": "Maya", "voice": "bf_emma", "about": "Former champion. Calm, patient, strategic.",
              "sections": ["review"]},
-    "arjun": {"name": "Arjun", "voice": "am_puck", "about": "Young prodigy. Quick, energetic, loves tactics.",
+    "arjun": {"role": "Puzzles and practice", "name": "Arjun", "voice": "am_puck", "about": "Young prodigy. Quick, energetic, loves tactics.",
               "sections": ["puzzles"]},
-    "zara": {"name": "Zara", "voice": "af_nova", "about": "Attacking player. Direct, bold, competitive.",
+    "zara": {"role": "Before you play", "name": "Zara", "voice": "af_nova", "about": "Attacking player. Direct, bold, competitive.",
              "sections": ["home", "play"]},
-    "viktor": {"name": "Viktor", "voice": "bm_george", "about": "Veteran. Wise, dry humour, has seen it all.",
+    "viktor": {"role": "Progress and lessons", "name": "Viktor", "voice": "bm_george", "about": "Veteran. Wise, dry humour, has seen it all.",
                "sections": ["progress", "lessons"]},
 }
+AI_HINT = ("Want to talk with your coaches and get replies? Add a free AI key in Knightwise, Settings "
+           "(about 2 minutes, step by step).")
 SECTION_COACH = {s: c for c, info in COACHES.items() for s in info["sections"]}
 
 # the focus habit in a few words

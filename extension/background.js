@@ -1,5 +1,5 @@
-// Talks to the coach running on this computer (python -m coach.service). Requests come from here, not from
-// the chess.com page, so chess.com never talks to your computer directly.
+// Talks to the coach running on this computer (the Knightwise app). Requests come from here, not from the chess.com
+// page, so chess.com never talks to your computer directly.
 const COACH = "http://127.0.0.1:8765";
 
 // Say hello to the coach, so its set-up page can show "Connected" as soon as the extension is loaded.
@@ -8,11 +8,47 @@ chrome.runtime.onInstalled.addListener(hello);
 chrome.runtime.onStartup.addListener(hello);
 hello();
 
-chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
-  if (msg.type !== "game" || !/^\d+$/.test(msg.id)) return false;
-  fetch(`${COACH}/api/game/${msg.id}`)
-    .then(r => r.json())
-    .then(data => reply({ ok: true, data }))
-    .catch(() => reply({ ok: false }));
-  return true; // answer comes later
+let speakingTab = null;
+
+// The coach's voice plays in a hidden extension page (chess.com's page can't play sound from our app).
+async function player() {
+  if (await chrome.offscreen.hasDocument()) return;
+  await chrome.offscreen.createDocument({ url: "offscreen.html", reasons: ["AUDIO_PLAYBACK"],
+                                          justification: "The Knightwise coach speaks its advice." });
+}
+
+const json = (url, reply) => fetch(url).then(r => r.json()).then(data => reply({ ok: true, data }))
+  .catch(() => reply({ ok: false }));
+
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg.type === "game" && /^\d+$/.test(msg.id)) {
+    json(`${COACH}/api/game/${msg.id}`, reply);
+    return true;
+  }
+  if (msg.type === "coach") {
+    const q = new URLSearchParams({ section: String(msg.section || "home"), hour: String(msg.hour ?? "") });
+    if (/^\d+$/.test(msg.game || "")) q.set("game", msg.game);
+    json(`${COACH}/api/coach?${q}`, reply);
+    return true;
+  }
+  if (msg.type === "greeted") {  // when this section's coach last greeted the player (once a day)
+    const key = `greeted-${msg.section}`;
+    if (msg.set) chrome.storage.local.set({ [key]: msg.set }).then(() => reply({ day: msg.set }));
+    else chrome.storage.local.get(key).then(v => reply({ day: v[key] || null }));
+    return true;
+  }
+  if (msg.type === "say" && sender.tab) {
+    speakingTab = sender.tab.id;
+    player().then(() => chrome.runtime.sendMessage({ type: "play", url: `${COACH}/api/say`, text: msg.text, voice: msg.voice }));
+    return false;
+  }
+  if (msg.type === "hush") {
+    chrome.runtime.sendMessage({ type: "stop" }).catch(() => {});
+    return false;
+  }
+  if (msg.type === "speaking" && speakingTab !== null) {  // from the hidden player: pass it on to the page
+    chrome.tabs.sendMessage(speakingTab, msg).catch(() => {});
+    return false;
+  }
+  return false;
 });

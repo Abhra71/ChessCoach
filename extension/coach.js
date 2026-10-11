@@ -8,6 +8,7 @@
   const LABELS = { mine: "You played", reply: "Reply", best: "Better" };
   let moments = [], overlay = null, panel = null, timer = null, gameId = null;
   let small = false;
+  let maya = { mood: "calm", line: "" };  // Maya, the coach for game reviews: her face and her first line
   try { small = localStorage.getItem("chess-coach-small") === "1"; } catch (e) {}
 
   function idFromUrl() {
@@ -123,10 +124,11 @@
     }).join("");
     panel.classList.toggle("small", small);
     panel.innerHTML = small
-      ? `<button class="pill">Knightwise · ${moments.length} key moment${moments.length === 1 ? "" : "s"}</button>`
-      : `<div class="head"><b>Knightwise</b><span><button class="min" title="Make small">–</button>` +
+      ? `<button class="pill">Maya · ${moments.length} key moment${moments.length === 1 ? "" : "s"}</button>`
+      : `<div class="head"><span class="who"><span class="kw-mini">${KnightwiseFaces.svg("maya", maya.mood)}</span>` +
+        `<span><b>Maya</b><small>Game reviews</small></span></span><span><button class="min" title="Make small">–</button>` +
         `<button class="x" title="Close for this game">×</button></span></div>
-      <p>${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game. Click one to see it on the board.</p>
+      <p>${escapeHtml(maya.line)}</p>
       <ol>${items}</ol>`;
     const setSmall = v => {
       small = v;
@@ -163,6 +165,13 @@
     const data = await ask(id);
     if (!data || !data.known || !data.moments.length) return; // unknown game: show nothing at all
     moments = data.moments;
+    const n = moments.length;
+    maya = { mood: "calm", line: `${n} key moment${n === 1 ? "" : "s"} in this game. Click one to see it on the board.` };
+    const r = await new Promise(res => {
+      try { chrome.runtime.sendMessage({ type: "coach", section: "review", game: id, hour: new Date().getHours() }, res); }
+      catch (e) { res(null); }
+    });
+    if (r && r.ok && r.data.lines.length) maya = { mood: r.data.mood, line: r.data.lines[0] };
     draw();
   }
 

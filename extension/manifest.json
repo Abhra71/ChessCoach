@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Knightwise",
-  "version": "0.4.0",
-  "description": "Shows the key moments of your finished chess.com games with arrows on the board. Never active during a live game.",
+  "version": "0.5.0",
+  "description": "Your Knightwise coaches on chess.com, and arrows on the key moments of your finished games. Never active during a game.",
   "icons": {
     "128": "icon128.png"
   },
@@ -21,10 +21,30 @@
         "https://www.chess.com/analysis/game/daily/*"
       ],
       "js": [
+        "faces.js",
         "coach.js"
       ],
       "css": [
-        "coach.css"
+        "coach.css",
+        "buddy.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.chess.com/*"
+      ],
+      "exclude_matches": [
+        "https://www.chess.com/game/*",
+        "https://www.chess.com/analysis/game/*",
+        "https://www.chess.com/play/*"
+      ],
+      "js": [
+        "faces.js",
+        "buddy.js"
+      ],
+      "css": [
+        "buddy.css"
       ],
       "run_at": "document_idle"
     }
@@ -35,5 +55,9 @@
     "default_icon": {
       "128": "icon128.png"
     }
-  }
+  },
+  "permissions": [
+    "offscreen",
+    "storage"
+  ]
 }
