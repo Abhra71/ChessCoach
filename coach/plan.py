@@ -80,10 +80,14 @@ def _save(mem):
     MEMORY.write_text(json.dumps(mem))
 
 
-def mark(item_id, done=False, today=None):
-    """The player saw (or finished) a new thing."""
+def mark(item_id, done=False, today=None, novelty=False):
+    """The player saw (or finished) something. novelty: it was the coach's new thing (one at a time, with cooldown);
+    opening a card in Your plan is not."""
     mem = _memory()
-    mem["shown"].setdefault(item_id, (today or date.today()).isoformat())
+    day = (today or date.today()).isoformat()
+    mem.setdefault("shown", {}).setdefault(item_id, day)
+    if novelty:
+        mem.setdefault("novelty", {}).setdefault(item_id, day)
     if done and item_id not in mem["done"]:
         mem["done"].append(item_id)
     _save(mem)
@@ -199,14 +203,14 @@ def _novelty(home=None, games=None, moves=None, engine=None, today=None, rng=Non
     mem = _memory()
     done = set(mem.get("done", []))
     # one at a time: the current new thing stays until done, or for a week
-    open_items = [(i, d) for i, d in mem.get("shown", {}).items() if i not in done]
+    open_items = [(i, d) for i, d in mem.get("novelty", {}).items() if i not in done]
     if open_items:
         item_id, since = max(open_items, key=lambda x: x[1])
         if (today - date.fromisoformat(since)).days < STALE_DAYS:
             again = build(item_id, home, games, moves, engine, rng, done)
             if again:
                 return {**again, "why": mem.get("why", {}).get(item_id) or again.get("why") or "", "again": True}
-    recent = max((date.fromisoformat(d) for d in mem.get("shown", {}).values()), default=None)
+    recent = max((date.fromisoformat(d) for d in mem.get("novelty", {}).values()), default=None)
     if recent and (today - recent).days < COOLDOWN_DAYS:
         return None
     s = signals(home, games, moves, player)

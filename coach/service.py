@@ -184,7 +184,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200 if ok else 400, json.dumps({"ok": ok, "message": message}), "application/json")
         if path == "/api/plan/mark":  # the player saw or finished a new thing
             from coach import plan
-            plan.mark(str(body.get("id", ""))[:200], done=bool(body.get("done")))
+            plan.mark(str(body.get("id", ""))[:200], done=bool(body.get("done")), novelty=bool(body.get("novelty")))
             return self.send(200, "{}", "application/json")
         if path == "/api/chat":  # talking with a coach on chess.com (needs a key; never fails without one)
             from coach import ai, coaches

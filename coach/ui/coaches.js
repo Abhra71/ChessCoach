@@ -179,7 +179,7 @@ async function planView(arg) {
     <div class="plan-grid">${Object.values(p.items).filter(Boolean).map(x => card(x, false)).join("")}</div>
     <p class="note">Puzzles: Lichess puzzle database. Openings: Lichess opening catalogue, checked by Stockfish.</p>`;
   document.querySelectorAll("[data-id]").forEach(b => b.onclick = () => go(`plan/${encodeURIComponent(b.dataset.id)}`));
-  if (p.novelty && !p.novelty.again) api("/api/plan/mark", { id: p.novelty.id }).catch(() => {});
+  if (p.novelty && !p.novelty.again) api("/api/plan/mark", { id: p.novelty.id, novelty: true }).catch(() => {});
   if (p.novelty) AiCard.maybe("novelty");
 }
 

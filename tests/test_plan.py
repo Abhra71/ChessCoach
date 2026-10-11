@@ -47,7 +47,7 @@ def test_a_stalemated_win_brings_the_endgame_lesson_once_then_it_stays_until_don
     moves["g3"] = [{"pattern": plan.STALEMATE, "ply": 80}]
     first = plan.novelty(HOME, games, moves, today=date(2026, 10, 1))
     assert first["id"] == "endgame:queenEndgame" and "stalemated 1 won game." in first["why"]
-    plan.mark(first["id"], today=date(2026, 10, 1))
+    plan.mark(first["id"], today=date(2026, 10, 1), novelty=True)
     again = plan.novelty(HOME, games, moves, today=date(2026, 10, 2))
     assert again["id"] == first["id"] and again["again"] and again["why"] == first["why"]
     plan.mark(first["id"], done=True)
@@ -82,3 +82,10 @@ def test_ai_idea_with_a_move_in_it_is_dropped(memory):
     assert plan.ai_idea(HOME, today=date(2026, 10, 5), ask_ai=bad) is None
     busy = lambda *a: (_ for _ in ()).throw(RuntimeError("503"))
     assert plan.ai_idea(HOME, today=date(2026, 10, 5), ask_ai=busy) is None
+
+
+def test_opening_a_plan_card_is_not_a_new_thing(memory):
+    games = [game(f"g{i}", 1000 - i, result="win") for i in range(30)]
+    moves = {g["url"]: [] for g in games}
+    plan.mark("tactic:pin", today=date(2026, 10, 1))  # opened from Your plan
+    assert plan.novelty(HOME, games, moves, today=date(2026, 10, 1)) is None
