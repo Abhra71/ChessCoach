@@ -153,9 +153,8 @@ function askBox(el, { placeholder, enabled, listen, onAsk }) {
     ${listen && enabled ? `<button class="btn mic" data-mic title="Hold to talk, or click to start and stop">Talk</button>` : ""}
     <button class="btn primary" data-ask ${enabled ? "" : "disabled"}>Ask</button></div><div data-a class="small" style="margin-top:8px"></div>`;
   if (!enabled) {  // the feature is never hidden: say what a free key gives, and where to add it
-    el.innerHTML = `<p class="small" style="margin:0 0 10px">Want to talk with your coaches and get real replies? Add a free AI key
-      (Google Gemini or Groq, about 2 minutes, step by step). Optional: everything else works without it.</p>
-      <a class="btn" href="#/settings">Set it up</a>`;
+    el.innerHTML = `<p class="small" style="margin:0 0 10px">Talk with your coaches and get real replies with a free AI key.</p>
+      <a class="btn" href="#/settings">Set up now</a>`;
     return;
   }
   const q = $("[data-q]", el), out = $("[data-a]", el), mic = $("[data-mic]", el);
@@ -170,7 +169,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk }) {
   if (mic) mic.onclick = async () => {
     if (!Mic.on) {
       Voice.stop();
-      try { await Mic.start(); } catch (e) { out.innerHTML = `<span class="err">The microphone isn't available (${esc(e.message)}).</span>`; return; }
+      try { await Mic.start(); } catch (e) { out.innerHTML = `<span class="err">The microphone isn't available.</span>`; return; }
       mic.textContent = "Stop"; mic.classList.add("rec"); out.innerHTML = `<span class="muted">Listening… click Stop when you're done.</span>`;
     } else {
       mic.textContent = "Talk"; mic.classList.remove("rec"); out.innerHTML = `<span class="muted">Writing down what you said…</span>`;
@@ -322,7 +321,7 @@ async function gameView(id) {
   let ply = g.key_moments.length ? g.key_moments[0].ply - 1 : g.positions.length - 1, view = "before";
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
-      <h1 style="margin-top:6px">vs ${esc(g.opponent)} <span class="faint">(${g.opponent_rating})</span></h1>
+      <h1 style="margin-top:6px">vs ${esc(g.opponent)} <span class="faint num">${g.opponent_rating}</span></h1>
       <p class="sub">${cap(g.result)} · ${esc(g.date)} · ${esc(g.time_class)} · you were ${g.color}${g.opening ? " · " + esc(g.opening) : ""}</p></div>
       <a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener">Open on chess.com ↗</a></div>
     <div class="game-layout">
@@ -432,7 +431,7 @@ async function extensionView() {
         <div class="gstep"><div class="gnum">3</div><div class="gtext"><h3>Click "Load unpacked"</h3>
           <p class="muted">It appears at the top left once Developer mode is on.</p></div>${pic("load", "The Load unpacked button, top left")}</div>
         <div class="gstep"><div class="gnum">4</div><div class="gtext"><h3>Choose the Knightwise folder</h3>
-          <p class="muted">In the window that opens, click its address bar, paste this path (Ctrl+V), press Enter, then click <b>Select Folder</b>.</p>
+          <p class="muted">In the window that opens, click its address bar, paste this path with Ctrl+V, press Enter, then click <b>Select Folder</b>.</p>
           <div class="row"><code class="addr long">${esc(st.extension_path)}</code>${copyBtn("c2", st.extension_path)}</div>
           <p class="small muted" style="margin-top:8px">Easier: <button class="btn" id="showfolder" style="padding:4px 10px">Show the folder</button> and drag the <b>extension</b> folder onto the extensions page.</p></div>${pic("pick", "The folder window: path typed in its address bar, then Select Folder")}</div>
         <div class="gstep"><div class="gnum">5</div><div class="gtext"><h3>Done</h3>
@@ -482,13 +481,13 @@ async function settingsView() {
           <button class="btn" id="saveuser">Change</button></div><div class="err" id="usermsg"></div></div></div>
       <div class="settings-row"><div><h3>Appearance</h3></div>
         <div><div class="seg" id="theme">${["system", "dark", "light"].map(t => `<button data-t="${t}" class="${s.theme === t ? "on" : ""}">${cap(t)}</button>`).join("")}</div></div></div>
-      <div class="settings-row"><div><h3>Voice</h3><p class="note">The coach speaks its explanations. It runs on this computer (Kokoro), no internet needed.</p></div>
+      <div class="settings-row"><div><h3>Voice</h3><p class="note">Your coaches speak. It runs on this computer, no internet needed.</p></div>
         <div class="stack"><div class="row"><button class="switch ${s.voice ? "on" : ""}" id="voice" aria-label="Voice"></button>
           <span class="small muted">${s.voice_ready ? (s.voice ? "On" : "Off") : "Voice files not installed"}</span></div>
           <div class="row"><select class="field" id="voicename" style="max-width:240px">${Object.entries(s.voices).map(([k, v]) =>
             `<option value="${k}" ${k === s.voice_name ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>
           <button class="btn" id="sample">Play sample</button></div>
-          <div class="row"><span class="small ${s.listen_ready ? "ok-text" : "muted"}" id="listenstate">${s.listen_ready ? "Listening is on: use Talk to ask by voice." : "Ask by voice needs the listening model (about 485 MB, once)."}</span>
+          <div class="row"><span class="small ${s.listen_ready ? "ok-text" : "muted"}" id="listenstate">${s.listen_ready ? "Listening is on: use Talk to ask by voice." : "Ask by voice: a one-time 485 MB download."}</span>
             ${s.listen_ready ? "" : `<button class="btn" id="getlisten">Install listening</button>`}</div></div></div>
       <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a coach arriving. No background music.</p></div>
         <div class="row"><button class="switch ${s.sounds ? "on" : ""}" id="sounds" aria-label="Sounds"></button>
@@ -504,8 +503,8 @@ async function settingsView() {
       <div class="settings-row"><div><h3>Your data</h3><p class="note">Games, checks, practice and your logbook.</p></div>
         <div class="row"><button class="btn" id="folder">Open data folder</button></div></div>
       <div class="settings-row"><div><h3>About</h3></div>
-        <div class="muted small">Knightwise · beta · open source (GPL-3.0) · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a><br>
-          Engine: Stockfish 19 · Puzzles: Lichess (CC0) · Fair play: never active in games against real people.</div></div>
+        <div class="muted small">Knightwise · beta · open source, GPL-3.0 · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a><br>
+          Engine: Stockfish 19 · Puzzles: Lichess · Fair play: never active in games against real people.</div></div>
     </div>`;
   $("#theme").querySelectorAll("button").forEach(b => b.onclick = async () => {
     const r = await api("/api/settings", { theme: b.dataset.t }); applyTheme(r.theme); settingsView();
@@ -615,7 +614,7 @@ async function welcome() {
       <div class="typed"><span id="typed"></span><i class="caret"></i></div></div>
     <aside class="panel"><div class="brand"><span class="mark">${svg("pawn")}</span>Knightwise
       <button class="music" id="music" title="Music"></button></div><div class="card" id="card"></div>
-      <p class="credit">Music: Satie, Gymnopédie No. 1, played by Michael Laucke (public domain)</p></aside></div>`;
+      <p class="credit">Music: Satie, Gymnopédie No. 1, played by Michael Laucke, public domain</p></aside></div>`;
   const stops = [typeLines($("#typed")), welcomeMusic($("#music"))];
   const mountBackdrop = () => { try { stops.push(window.Backdrop.mount($("#backdrop"))); } catch (e) { console.warn("3D scene", e); } };
   if (window.Backdrop) mountBackdrop(); else window.addEventListener("backdrop-ready", mountBackdrop, { once: true });
@@ -653,7 +652,7 @@ async function welcome() {
     for (;;) {
       const s = await api("/api/status").catch(() => ({}));
       if (s.phase === "ready" && s.review_ready) { try { sessionStorage.setItem("kw-new", "1"); } catch (e) {} return go("home"); }
-      $("#phase").textContent = s.phase === "error" ? `Something went wrong (${s.error}). Retrying by itself.` : cap(s.phase || "working") + "…";
+      $("#phase").textContent = s.phase === "error" ? "Something went wrong. Retrying by itself." : cap(s.phase || "working") + "…";
       $("#fill").style.width = (s.total ? Math.max(3, 100 * s.done / s.total) : s.phase === "building your pages" ? 100 : 3) + "%";
       $("#cnt").textContent = s.total ? `Game ${s.done} of ${s.total}` : "";
       await wait(1000);

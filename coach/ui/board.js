@@ -57,12 +57,30 @@ const Board = (() => {
     }
     for (const [sq, p] of Object.entries(pieces)) {
       const [x, y] = xy(sq, flip);
-      s += `<g transform="translate(${x} ${y}) scale(${10 / 45})" pointer-events="none">${PIECES[p]}</g>`;
+      s += `<g data-p="${sq}"><g transform="translate(${x} ${y}) scale(${10 / 45})" pointer-events="none">${PIECES[p]}</g></g>`;
     }
     for (const a of opts.arrows || []) s += arrowSvg(a, flip);
     s += `</svg>`;
     el.innerHTML = s;
+    slide(el, el._was, pieces, flip);
+    el._was = { pieces: { ...pieces }, flip };
     if (opts.onClick) el.querySelectorAll("rect[data-sq]").forEach(r => r.onclick = () => opts.onClick(r.dataset.sq));
+  }
+
+  // a move slides instead of jumping: a piece that appeared on a square glides in from where the same piece left
+  function slide(el, was, now, flip) {
+    if (!was || was.flip !== flip || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const gone = Object.keys(was.pieces).filter(sq => was.pieces[sq] !== now[sq]);
+    const came = Object.keys(now).filter(sq => was.pieces[sq] !== now[sq]);
+    if (!came.length || came.length > 2 || gone.length > 3) return;  // a new position, not a move
+    for (const to of came) {
+      const from = gone.find(sq => was.pieces[sq] === now[to] && !now[sq]) || gone.find(sq => was.pieces[sq] === now[to]);
+      const g = from && el.querySelector(`g[data-p="${to}"]`);
+      if (!g || !g.animate) continue;
+      const [x1, y1] = xy(from, flip), [x2, y2] = xy(to, flip);
+      g.animate([{ transform: `translate(${x1 - x2}px, ${y1 - y2}px)` }, { transform: "translate(0, 0)" }],
+        { duration: 190, easing: "cubic-bezier(.2,.7,.3,1)" });
+    }
   }
 
   function legend(kinds) {

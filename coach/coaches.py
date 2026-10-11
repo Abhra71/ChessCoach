@@ -23,8 +23,7 @@ COACHES = {
     "viktor": {"role": "Progress and lessons", "name": "Viktor", "voice": "bm_george", "about": "Veteran. Wise, dry humour, has seen it all.",
                "sections": ["progress", "lessons", "plan"]},
 }
-AI_HINT = ("Want to talk with your coaches and get replies? Add a free AI key in Knightwise, Settings "
-           "(about 2 minutes, step by step).")
+AI_HINT = "Want real replies? Add a free AI key in Knightwise Settings. It takes 2 minutes."
 SECTION_COACH = {s: c for c, info in COACHES.items() for s in info["sections"]}
 
 # the focus habit in a few words

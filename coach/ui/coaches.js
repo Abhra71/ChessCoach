@@ -157,7 +157,7 @@ function trainer(drills, opts) {
     const pick = (d().kind === "game" && entries.find(([, m]) => m.san === d().best)) || entries[0];
     missed = true; ticked = checklist.length; good(pick[0], pick[1], true);
   }
-  function stats(s) { if (s && s.answers && $("#stats")) $("#stats").textContent = `So far: ${s.right} of ${s.answers} right first time · ${s.learned} positions learned (right 3 times, days apart).`; }
+  function stats(s) { if (s && s.answers && $("#stats")) $("#stats").textContent = `So far: ${s.right} of ${s.answers} right first time · ${s.learned} positions learned for good.`; }
   $("#show").onclick = () => { if (!done) answer(); };
   $("#next").onclick = () => { i = (i + 1) % drills.length; show(); };
   if (opts.record) api("/api/stats").then(stats).catch(() => {});

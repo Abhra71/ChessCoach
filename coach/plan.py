@@ -66,7 +66,7 @@ IDEAS = [
     {"id": "idea:trade-ahead", "title": "Ahead? Trade pieces", "helps": [STALEMATE, HANG],
      "text": "When you're ahead in material, trade pieces. Fewer pieces means fewer tricks against you.",
      "own": [], "puzzles": ["queenEndgame", "pawnEndgame"],
-     "checklist": ["Am I ahead in material?", "Can I trade, or finish it?", "Does their king still have a square? (no stalemate)"]},
+     "checklist": ["Am I ahead in material?", "Can I trade, or finish it?", "Does their king still have a square to move to?"]},
 ]
 
 

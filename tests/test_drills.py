@@ -8,7 +8,7 @@ from coach.drills import drill, why_wrong
 def test_why_wrong_names_the_capture():
     board = chess.Board("4k3/8/3p4/8/3Q4/8/8/4K3 w - - 0 1")
     move, reply = chess.Move.from_uci("d4e5"), chess.Move.from_uci("d6e5")
-    assert why_wrong(board, move, reply) == "Then their pawn takes your queen on e5 (dxe5)."
+    assert why_wrong(board, move, reply) == "Then their pawn takes your queen on e5."
 
 
 def test_drill_marks_hanging_the_queen_as_wrong_and_saving_it_as_right():

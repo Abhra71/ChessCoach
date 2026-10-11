@@ -29,7 +29,7 @@ ABOUT = {
         "Your opponent left something unprotected and you didn't take it.",
         "After every move they make, ask: did they just leave something I can take?"),
     "walked into a fork or trick": (
-        "Your move let them attack two things at once (or pin a piece), so you lose one a move later.",
+        "Your move let them attack two things at once, so you lose one a move later.",
         "Before you move, look at their checks and captures next move: can one piece hit two of mine?"),
     "walked into checkmate": (
         "Your move let them checkmate you.",

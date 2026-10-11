@@ -40,7 +40,7 @@ def why_wrong(board, move, reply):
         taker = NAME[after.piece_at(reply.from_square).piece_type]
         taken = after.piece_at(reply.to_square)
         what = NAME[taken.piece_type] if taken else "pawn"
-        return f"Then their {taker} takes your {what} on {chess.square_name(reply.to_square)} ({after.san(reply)})."
+        return f"Then their {taker} takes your {what} on {chess.square_name(reply.to_square)}."
     return f"Then they play {after.san(reply)} and you lose material soon after."
 
 
