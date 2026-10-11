@@ -251,6 +251,8 @@ def build(item_id, home, games, moves, engine, rng, done):
     if kind == "endgame":
         return endgame(rest, rating, rng)
     if kind == "idea":
+        if item_id.startswith("idea:ai:"):
+            return (_memory().get("ai_idea") or {}).get("idea")
         idea = next((i for i in IDEAS if i["id"] == item_id), None)
         return {**idea, "kind": "idea", "coach": "maya", "intro": idea["text"]} if idea else None
     if kind == "opening" and engine is not None:
@@ -279,7 +281,7 @@ def plan(home=None, engine=None, today=None):
     items = {
         "opening": opening_lesson(games, home["player"], focus in (HANG, FORK), engine, done_families) if engine else None,
         "tactic": tactic(theme, rating, rng),
-        "idea": idea_for(focus, done) or {**IDEAS[0], "kind": "idea", "coach": "maya", "intro": IDEAS[0]["text"]},
+        "idea": ai_idea(home, today) or idea_for(focus, done) or {**IDEAS[0], "kind": "idea", "coach": "maya", "intro": IDEAS[0]["text"]},
         "endgame": endgame(end, rating, rng),
     }
     new = novelty(home, games, moves, engine, today, rng)
@@ -289,3 +291,36 @@ def plan(home=None, engine=None, today=None):
         elif new["kind"] == "tactic":
             items["tactic"] = tactic(next(t for t in ROTATION if f"tactic:{t}" != new["id"]), rating, rng)
     return {"player": home["player"], "rating": rating, "items": items, "novelty": new, "done": sorted(done)}
+
+
+def ai_idea(home, today=None, ask_ai=None):
+    """With the player's AI key: one fresh way of approaching the game, written for them (renewed weekly).
+    No moves or squares allowed (the engine decides concrete chess); None if the AI is busy or there's no key."""
+    from coach import ai, coaches
+    today = today or date.today()
+    week = f"{today.isocalendar()[0]}-{today.isocalendar()[1]}"
+    mem = _memory()
+    cached = mem.get("ai_idea")
+    if cached and cached.get("week") == week:
+        return cached["idea"]
+    if ask_ai is None:
+        if not ai.ready():
+            return None
+        ask_ai = ai.complete
+    card = coaches.player_card(home)
+    system = (coaches.PERSONA["maya"] + " Suggest ONE new way of approaching chess for this player, at their level, that "
+              "would help with their main habit. Not a generic tip they already know from their card. Never name squares or "
+              'moves. Reply as JSON only: {"title": "3 to 6 words", "text": "2 short sentences"}.')
+    try:
+        text, _ = ask_ai(system, json.dumps(card), 200)
+        data = json.loads(text[text.index("{"): text.rindex("}") + 1])
+        title, body = str(data["title"]).strip()[:60], str(data["text"]).strip()[:400]
+    except Exception:  # busy, down, or not JSON: the written ideas stay
+        return None
+    if not title or not body or coaches.SQUARE.search(title + " " + body):
+        return None
+    idea = {"id": f"idea:ai:{week}", "kind": "idea", "coach": "maya", "title": title, "intro": body, "text": body,
+            "why": "A new idea Maya wrote for you this week, from your games.", "ai": True}
+    mem["ai_idea"] = {"week": week, "idea": idea}
+    _save(mem)
+    return idea

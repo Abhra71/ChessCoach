@@ -40,9 +40,11 @@ really cost you points, and trains you out of them, one or two things at a time,
 Made by Abhra71. Knightwise is an independent app. It is not made by, endorsed by or connected with chess.com.
 
 **What's new in this version**
-0.4.2: a new welcome: a short 3D chess film with quiet piano (mute any time), opening full screen. A clearer,
-step-by-step guide with real pictures for adding the chess.com arrows extension. A fresh start
-after every reinstall. Removed the in-app practice game so the coach stays focused on your chess.com games.
+0.5.0: Meet your four coaches: Maya (game reviews), Arjun (puzzles and practice), Zara (before you play) and Viktor
+(your progress and plan). They appear on chess.com and in the app, talk with their own voices and react to your moves,
+and stay completely away during games against real people. New: Your plan (an opening that suits how you play, plus
+a tactic, an endgame and a way of thinking), new ideas from 30,000 puzzles when your games show you need them, instant
+review right after a game, and a new 3D welcome with quiet piano. Add a free AI key to talk with your coaches.
 
 **Product features** (one per line)
 - Finds your real mistake patterns in your chess.com games
