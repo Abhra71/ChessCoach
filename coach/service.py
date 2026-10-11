@@ -135,8 +135,10 @@ class Handler(BaseHTTPRequestHandler):
             detail = insights.game_detail(path.rsplit("/", 1)[-1])
             return self.send(200 if detail else 404, json.dumps(detail or {"message": "Game not found."}), "application/json")
         if path == "/api/practice-set":
+            from coach import brief
             practice = DATA / "drills.json"
-            return self.send(200, practice.read_bytes() if practice.exists() else b"[]", "application/json")
+            stock = json.loads(practice.read_text()) if practice.exists() else []
+            return self.send(200, json.dumps(brief.add(stock)), "application/json")
         if path == "/api/settings":
             return self.send(200, json.dumps(settings.public()), "application/json")
         if path in ("", "/app", "/welcome"):  # the desktop app (it shows the welcome screen itself when needed)
@@ -144,7 +146,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/plan":  # "Your plan": one opening, tactic, idea, endgame, and the new thing if it's needed now
             from coach import live_engine, plan
             with live_engine.LOCK:
-                return self.send(200, json.dumps(plan.plan(engine=live_engine.get())), "application/json")
+                out = plan.plan(engine=live_engine.get())
+            from coach import brief
+            for item in list((out.get("items") or {}).values()) + [out.get("novelty")]:
+                if item and item.get("drills"):
+                    brief.add(item["drills"])
+            return self.send(200, json.dumps(out), "application/json")
         if path.startswith("/api/try/"):  # "Try it again": a key moment of a finished, checked game as a puzzle
             from coach import drills, live_engine
             parts = path.split("/")
@@ -155,6 +162,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(404, json.dumps({"message": "That moment isn't here."}), "application/json")
             with live_engine.LOCK:
                 d = drills.drill(live_engine.get(), classify(r), r)
+            from coach import brief
+            brief.add([d])
             return self.send(200, json.dumps(d), "application/json")
         if path == "/api/openings":  # your opening tree from your own games
             from coach import tree
@@ -169,6 +178,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, json.dumps({"drills": []}), "application/json")
             with live_engine.LOCK:
                 out = daily.challenge(home, insights._games(), live_engine.get())
+            from coach import brief
+            brief.add(out["drills"])
             return self.send(200, json.dumps(out), "application/json")
         if path.startswith("/ext/"):  # the coaches' drawings, shared with the browser extension
             return self.static(path[len("/ext/"):], root=BUNDLED_EXTENSION)

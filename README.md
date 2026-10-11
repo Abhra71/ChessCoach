@@ -28,9 +28,10 @@ No account · no ads · no subscription · your games stay on your computer
 |---|---|
 | **Your games, checked move by move.** Every move you played on chess.com is checked by Stockfish. Knightwise sorts the mistakes into the habits behind them, like pieces left hanging or walking into forks, and counts them. | ![Home](docs/screenshots/home.jpg) |
 | **Review with arrows, on chess.com itself.** Your key moments get labelled arrows: what you played, what was better and their reply, on your own board or on chess.com's. Then **Try it again** turns any of those moments into a puzzle. | ![Review](docs/screenshots/review.jpg) |
+| **A briefing before every position.** Which game it's from, the phase, the material and what happened, then the mindset to bring. Practice is grouped by habit, with Back and Next, and puzzles at your level. |  ![Practice](docs/screenshots/practice.jpg) |
 | **Today's 5 minutes.** One position from your own games, one puzzle on today's idea and the first moves of your opening. The streak is gentle: one missed day is forgiven, and nobody scolds you. | ![Today's 5 minutes](docs/screenshots/daily.jpg) |
 | **Four coaches, nothing to set up.** Maya reviews your games, Arjun runs puzzles and practice, Zara gets you ready to play, and Viktor tracks your progress. They are drawn characters with 12 gestures and moods: worried when you go wrong, cheering when you get it. They talk with their own voices, made on your PC. | ![Your plan](docs/screenshots/ai-card.jpg) |
-| **Progress you can see.** You vs you: your last 20 games against the 20 before. Viktor writes the story of your week, which you can save as a picture. Badges, Bronze to Gold, are earned only in real games. | ![Progress](docs/screenshots/progress.jpg) |
+| **Progress you can see.** You vs you: your last 20 games against the 20 before. Viktor writes the story of your week, which you can save as a picture. 20 badges, Bronze to Gold, are earned only in real games and your own practice. | ![Progress](docs/screenshots/progress.jpg) |
 | **Your opening tree.** Your first moves of every game as White and Black, with your score on each branch. A note marks the branch that costs you games, and your plan suggests an opening that suits you. | ![Opening tree](docs/screenshots/openings.jpg) |
 
 **Something new, only when you need it.** The coaches bring a new tactic, opening or idea when your games
@@ -88,7 +89,9 @@ Your numbers will be different. That's the point: everything is worked out from 
 | Today's 5 minutes: one position from your own games, one puzzle on today's idea, the first moves of your opening; a gentle streak that forgives one missed day | built, testing (next update) |
 | You vs you: your last 20 games against the 20 before (pieces given away, games won, big mistakes) | built, testing (next update) |
 | Progress with Viktor: the story of your week (games, pieces given away against the week before, most improved habit, best game, next week's one thing), saved as a picture to share | built, testing (next update) |
-| Badges earned in real chess.com games only, Bronze, Silver and Gold: Safe pieces, Fork-proof, Safe king, Clean games, Daily habit | built, testing (next update) |
+| 20 badges in four groups, Habits, Clean play, Results and Practice, Bronze, Silver and Gold, earned from real chess.com games and your own practice only | built, testing (next update) |
+| A briefing before every position: which game or puzzle it is, the phase, the material, the engine's verdict, what happened, and the mindset to bring; the coach reads it out, then the board wakes up | built, testing (next update) |
+| Practice organised by habit: numbered dots grouped by habit (green right, orange missed), Back and Next, your own positions first, then puzzles at your level from easy to hard | built, testing (next update) |
 | Try it again: any key moment of a reviewed game opens as a puzzle on the board, with Maya; it joins your practice memory | built, testing (next update) |
 | Your opening tree: your first three moves of every game as White and Black, your score on each branch, named from the Lichess catalogue, and a note on the branches that cost you games | built, testing (next update) |
 | Sounds: moves, captures, check, right and wrong answers, a finished set (with confetti), a coach arriving; picked by a player from Kenney's CC0 packs; own switch in Settings, no background music | built, testing (next update) |

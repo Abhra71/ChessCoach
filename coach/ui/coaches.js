@@ -44,7 +44,7 @@ const Coach = (() => {
     if (a.url) window.open(a.url, "_blank", "noopener");
   }
   function fold() { clearTimeout(foldTimer); Voice.stop(); render(false); }
-  function talk() { if (said) Voice.speak(said.lines.join(" "), false, (COACHES[said.coach] || {}).voice); }
+  function talk() { if (said) Voice.speak(said.spoken || said.lines.join(" "), false, (COACHES[said.coach] || {}).voice); }
 
   Voice.onTalk(on => {
     if (!box) return;
@@ -55,7 +55,8 @@ const Coach = (() => {
   // say something now (open, with voice)
   function show(s, { speak = true } = {}) { if (!box) Sound.play("coach", 0.5); said = s; clearTimeout(foldTimer); render(true); if (speak) talk(); }
   // a quick reaction on a board: pose (worried, celebrate, explain...) and one line
-  function react(coach, pose, text, actions) { show({ coach, pose, mood: pose, lines: [text], actions: actions || [] }); }
+  // spoken: what the voice says when it differs from the short line in the bubble
+  function react(coach, pose, text, actions, spoken) { show({ coach, pose, mood: pose, lines: [text], actions: actions || [], spoken }); }
   function hide() { clearTimeout(foldTimer); if (box) box.remove(); box = null; said = null; }
 
   // the tab's coach comes up by themselves: open and speaking once a day, folded after that
@@ -77,6 +78,34 @@ const Coach = (() => {
 function trainer(drills, opts) {
   const coach = opts.coach || "arjun", checklist = opts.checklist || [];
   let i = 0, k = 0, pieces = {}, picked = null, done = false, missed = false, last = {}, right = 0, solved = 0, ticked = 0;
+  const state = drills.map(() => null), briefed = drills.map(() => false);  // per position: right, missed, shown
+  const group = x => x.pattern || x.kind;
+  const groupName = x => (x.pattern && (HABIT[x.pattern] || [])[1]) || { opening: "Your opening", puzzle: "Puzzles", game: "Your games" }[x.kind] || "Practice";
+  function paintDots() {  // every position as a numbered dot, grouped by habit: click one to go there
+    const el = $("#dots");
+    if (!el) return;
+    if (drills.length < 2) { el.innerHTML = ""; return; }
+    let html = "", n = 0;
+    while (n < drills.length) {
+      const g = group(drills[n]), start = n;
+      while (n < drills.length && group(drills[n]) === g) n++;
+      html += `<div class="dot-group"><span class="dot-name">${esc(groupName(drills[start]))}</span><div class="dot-row">${
+        drills.slice(start, n).map((x, j) => `<button class="pdot ${start + j === i ? "on" : ""} ${state[start + j] || ""} ${x.kind === "puzzle" ? "puz" : ""}"
+          data-n="${start + j}" title="${x.kind === "puzzle" ? "Puzzle" : x.kind === "opening" ? "Opening" : "From your game"}">${start + j + 1}</button>`).join("")}</div></div>`;
+    }
+    el.innerHTML = html;
+    el.querySelectorAll(".pdot").forEach(b => b.onclick = () => { i = Number(b.dataset.n); show(); });
+  }
+  function paintBrief(x) {  // before the board: where this comes from, what's going on, how to think
+    const b = x.brief, el = $("#briefbox");
+    el.innerHTML = `<div class="label">${x.kind === "game" ? "From your game" : x.kind === "opening" ? "Opening" : "Puzzle"}</div>
+      <h3 class="brief-title">${esc(b.title)}</h3>
+      <div class="chips">${b.facts.map(f => `<span class="chip-fact">${esc(f)}</span>`).join("")}</div>
+      <p class="brief-text">${esc(b.situation)}</p>
+      <div class="brief-mind"><span class="label">Mindset</span><div>${esc(b.mindset)}</div></div>
+      <button class="btn primary" id="go">I'm ready</button>`;
+    $("#go").onclick = () => { briefed[i] = true; show(); };
+  }
   function paintChecks() {  // before each move: tick every question, then the board lets you move
     const el = $("#checks");
     if (!el || !checklist.length) return;
@@ -98,6 +127,19 @@ function trainer(drills, opts) {
     k = 0; picked = null; done = false; missed = false; last = {};
     const x = d();
     $("#count").textContent = `${i + 1} of ${drills.length} · ${right} right first time`;
+    paintDots();
+    const briefing = x.brief && !briefed[i];
+    $("#briefbox").hidden = !briefing;
+    document.querySelectorAll(".play-only").forEach(el => el.hidden = briefing);
+    $("#board").classList.toggle("dim", !!briefing);
+    if (briefing) {  // the coach welcomes you to this position first, then the board wakes up
+      pieces = x.last ? x.steps[0].board : x.start; last = x.last ? mark(x.last, "hl-last") : {}; done = true; draw();
+      paintBrief(x);
+      $("#where").innerHTML = `${esc(x.where)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link)} ↗</a>`;
+      Coach.react(coach, "explain", "Here's the situation. Read it, then press I'm ready.", [],
+        `${x.brief.title}. ${x.brief.situation} The mindset: ${x.brief.mindset}`);
+      return;
+    }
     $("#kind").textContent = x.kind === "game" ? "From your game" : x.kind === "opening" ? "Opening" : "Puzzle";
     $("#task").textContent = x.intro; $("#hint").textContent = x.kind === "opening" ? "" : x.hint;
     $("#where").innerHTML = `${esc(x.where)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link)} ↗</a>`;
@@ -123,6 +165,7 @@ function trainer(drills, opts) {
       if (shown) answer(); return;
     }
     done = true; if (!missed) right++; solved++;
+    state[i] = shown ? "shown" : missed ? "missed" : "right"; paintDots();
     setTimeout(() => Sound.play(shown ? "move" : "right"), 180);
     $("#count").textContent = `${i + 1} of ${drills.length} · ${right} right first time`;
     const note = x.kind === "game" ? `In the game you played ${esc(x.played)}.${m.san === x.best ? "" : " The engine's top move was " + esc(x.best) + "."}`
@@ -147,7 +190,7 @@ function trainer(drills, opts) {
     picked = null;
     if (!m) return draw();
     if (m.good) return good(uci, m, false);
-    missed = true; Sound.play("wrong", 0.5);
+    missed = true; Sound.play("wrong", 0.5); if (!state[i]) { state[i] = "missed"; paintDots(); }
     result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(m.say)}</div><div class="small muted" style="margin-top:4px">Try again.</div>`);
     Coach.react(coach, "worried", `Not quite. ${m.say} Try again.`);  // the coach's face falls, with the hint
     draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-no"));
@@ -160,6 +203,8 @@ function trainer(drills, opts) {
   function stats(s) { if (s && s.answers && $("#stats")) $("#stats").textContent = `So far: ${s.right} of ${s.answers} right first time · ${s.learned} positions learned for good.`; }
   $("#show").onclick = () => { if (!done) answer(); };
   $("#next").onclick = () => { i = (i + 1) % drills.length; show(); };
+  $("#prev").onclick = () => { i = (i - 1 + drills.length) % drills.length; show(); };
+  $("#prev").hidden = $("#next").hidden = drills.length < 2;
   if (opts.record) api("/api/stats").then(stats).catch(() => {});
   show();
 }
@@ -167,13 +212,16 @@ function trainer(drills, opts) {
 function trainerPage(title, sub) {
   return `<div class="page-head"><div>${sub.back || ""}<h1>${esc(title)}</h1><p class="sub">${esc(sub.text)}</p></div>
       <span class="muted num" id="count"></span></div>
+    <div class="dots" id="dots"></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div><p class="small muted" id="where" style="margin-top:10px"></p></div>
-      <div class="stack"><div class="box"><div class="label" id="kind"></div><h3 id="task" style="margin:6px 0 10px"></h3>
+      <div class="stack"><div class="box brief" id="briefbox" hidden></div>
+        <div class="box play-only"><div class="label" id="kind"></div><h3 id="task" style="margin:6px 0 10px"></h3>
         <p class="muted" id="hint" style="margin:0"></p></div>
-        <div class="box checks" id="checks"></div>
-        <div class="box" id="result" style="min-height:84px"><span class="muted">Click a piece, then the square to move it to.</span></div>
-        <div class="row"><button class="btn" id="show">Show answer</button><button class="btn primary" id="next">Next</button></div>
+        <div class="box checks play-only" id="checks"></div>
+        <div class="box play-only" id="result" style="min-height:84px"><span class="muted">Click a piece, then the square to move it to.</span></div>
+        <div class="row"><button class="btn" id="prev">← Back</button><button class="btn play-only" id="show">Show answer</button>
+          <button class="btn primary" id="next">Next →</button></div>
         <p class="note" id="stats"></p></div>
     </div>`;
 }

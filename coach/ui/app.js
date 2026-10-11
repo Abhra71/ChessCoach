@@ -334,8 +334,11 @@ async function progressView() {
         <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>
           <button class="btn" id="savepic">Save as picture</button></div>
         <div class="story-grid">
-          <div class="story-tile"><div class="big">${roll(s.games)}</div><div class="stat-label">games</div>
-            <div class="small muted">${r.win || 0} won · ${r.draw || 0} drawn · ${r.loss || 0} lost</div></div>
+          <div class="story-tile wide"><div class="wdl">
+              <div><b class="big good-text">${roll(r.win || 0)}</b><span>won</span></div>
+              <div><b class="big faint">${roll(r.draw || 0)}</b><span>drawn</span></div>
+              <div><b class="big bad-text">${roll(r.loss || 0)}</b><span>lost</span></div></div>
+            <div class="stat-label">of ${s.games} games</div></div>
           <div class="story-tile"><div class="big">${roll(s.pieces, 1)}</div><div class="stat-label">pieces given away a game</div>
             ${s.pieces_before !== null ? (s.pieces < s.pieces_before ? `<span class="trend good">${svg("down")}from ${s.pieces_before}</span>`
               : s.pieces > s.pieces_before ? `<span class="trend bad">${svg("up")}from ${s.pieces_before}</span>` : `<span class="small muted">same as before</span>`) : ""}</div>
@@ -349,10 +352,11 @@ async function progressView() {
         ${s.next ? `<div class="story-next"><span class="label">Next week's one thing</span><div>${esc(s.next.habit)}</div></div>` : ""}
       </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
       <div class="box rise"><div class="row spread"><h2 style="margin:0">Badges</h2><span class="small muted">${earned} of ${p.badges.length} earned · from real games only</span></div>
-        <div class="badges">${p.badges.map(b => `<div class="badge t${b.tier}">
+        ${[...new Set(p.badges.map(b => b.group))].map(gr => `<div class="badge-group">${esc(gr)}</div>
+        <div class="badges">${p.badges.filter(b => b.group === gr).map(b => `<div class="badge t${b.tier}">
           <div class="medal">${svg(b.icon)}</div><b>${esc(b.name)}</b><div class="tier-name">${b.tier_name || "Not yet"}</div>
           <div class="small muted">${b.next ? `${b.best} of ${b.next} ${esc(b.what)}` : `${b.best} ${esc(b.what)}. Top tier`}</div>
-          <div class="bar"><div style="width:${b.next ? Math.min(100, 100 * b.best / b.next) : 100}%"></div></div></div>`).join("")}</div></div>
+          <div class="bar"><div style="width:${b.next ? Math.min(100, 100 * b.best / b.next) : 100}%"></div></div></div>`).join("")}</div>`).join("")}</div>
     </div>`;
   countUp($("#page"));
   if (s) $("#savepic").onclick = async () => {

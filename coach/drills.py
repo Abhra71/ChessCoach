@@ -103,7 +103,7 @@ def drill(eng, pattern, r):
     return {"id": drill_id(r), "kind": "game", "flip": board.turn == chess.BLACK, "pattern": pattern, "hint": hint,
             "intro": f"You are {color}. Your move.", "played": r["move"], "best": board.san(best),
             "where": f"From your game: move {move_number(r)}, you are {color}", "url": r["url"],
-            "link": "open game on chess.com", "start": squares(board), "last": None,
+            "link": "open game on chess.com", "start": squares(board), "last": None, "chance": round(top),
             "steps": [step(board, good, lambda m: why_wrong(board, m, scores[m][1]))]}
 
 
@@ -161,19 +161,24 @@ def puzzle(p, pattern, theme=None):
             "intro": f"They just played {their_first}. You are {color}: find the best move.",
             "where": f"Lichess puzzle, rated {p['rating']}", "url": f"https://lichess.org/training/{p['id']}",
             "link": "open on lichess.org", "start": start, "last": [first.uci()[:2], first.uci()[2:4]],
-            "steps": steps}
+            "steps": steps, "rating": p["rating"], "themes": p.get("themes", []), "their_move": their_first}
 
 
-def pick_puzzles(by_pattern, top, seed):
-    """PUZZLES_PER_PATTERN puzzles for each top pattern, different every day."""
+def pick_puzzles(by_pattern, top, seed, rating=None):
+    """PUZZLES_PER_PATTERN puzzles for each top pattern at the player's level, different every day, easiest first."""
     if not PUZZLES.exists():
         return []
     stock = json.loads(PUZZLES.read_text())
     rng = random.Random(seed)
+    low, high = (rating or 800) - 150, (rating or 800) + 350
     out = []
     for p in top:
-        pool = stock.get(THEMES.get(p, ""), [])
-        out += [puzzle(x, p) for x in rng.sample(pool, min(PUZZLES_PER_PATTERN, len(pool)))]
+        every = stock.get(THEMES.get(p, ""), [])
+        pool = [x for x in every if low <= x["rating"] <= high]
+        if len(pool) < PUZZLES_PER_PATTERN:  # few at this level: the easiest ones there are
+            pool = sorted(every, key=lambda x: x["rating"])[:PUZZLES_PER_PATTERN * 5]
+        chosen = sorted(rng.sample(pool, min(PUZZLES_PER_PATTERN, len(pool))), key=lambda x: x["rating"])
+        out += [puzzle(x, p) for x in chosen]
     return out
 
 
@@ -193,8 +198,10 @@ def build():
     with open_engine() as eng:
         eng.configure({"Threads": 4, "Hash": 128})
         drills = [drill(eng, p, r) for p, r in chosen]
-    puzzles = pick_puzzles(by_pattern, top, seed=date.today().isoformat())
-    drills = [d for pair in zip_longest(drills, puzzles) for d in pair if d]  # own position, puzzle, own, ...
+    from coach import insights
+    puzzles = pick_puzzles(by_pattern, top, seed=date.today().isoformat(), rating=insights.home().get("rating"))
+    # organised by habit, biggest first: your own positions, then puzzles on the same habit, easiest first
+    drills = [d for p in top for d in drills + puzzles if d["pattern"] == p]
     page = (TEMPLATES / "drills_template.html").read_text(encoding="utf-8")
     OUT.write_text(page.replace("/*DRILLS*/[]", json.dumps(drills)), encoding="utf-8")
     OUT_JSON.write_text(json.dumps(drills), encoding="utf-8")
