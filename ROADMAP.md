@@ -45,6 +45,21 @@ The "body" on chess.com (character, voice there, navigation, instant review) doe
   red circles on the click spots, a paste box that tests the key and turns green. The builder takes the screenshots;
   personal details are cropped or blurred.
 
+## Found after the Store launch (11 Oct 2026, builder's first use of 0.4.1)
+- **No welcome screen on first start:** the Store app reads `%LOCALAPPDATA%\ChessCoach` (`paths.HOME`), the same
+  folder the old Chess Coach uses, found `player.txt` and went straight to Home. Fix in 0.4.2: the Store app keeps its
+  data in its own package storage, so uninstalling wipes it and a reinstall shows the welcome again (no accounts;
+  Google sign-in to keep progress across reinstalls is a later idea).
+- **Window opened small and low, not centred:** `create_window(width=1240, height=820)` with no position. Fix: open
+  maximised.
+- **Music:** FreePD.com has closed. Options offered (Wikimedia Commons, free to use): Satie Gymnopédie No. 1
+  (Michael Laucke, public domain), Debussy Clair de Lune (1905 piano solo, public domain), Chopin Nocturne Op. 9 No. 2
+  (Peter Johnston, CC0). Waiting for the builder's pick.
+- **Making public:** stays a private beta until the welcome redesign, the coach on chess.com (steps 4–5) and the AI-key
+  walkthrough are in and a few beta testers have used it. Remind the builder then.
+- **GitHub:** make the repo page industry-grade (README with real screenshots/GIF walkthroughs, accurate features,
+  install steps, releases) as part of each update.
+
 ## Build order
 1. **Welcome screen redesign** (the builder's latest request, details below).
 2. **Remove "Play the Coach"** (never wanted).
