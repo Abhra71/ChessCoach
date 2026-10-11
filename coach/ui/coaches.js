@@ -237,15 +237,14 @@ const AiCard = (() => {
     ["Talk it through: why this move, what to do next time", false, true],
   ];
   function html() {
-    const cell = (v, plus) => `<td class="${plus ? "plus " : ""}${v === true ? "yes" : v === false ? "no" : "small"}">${v === true ? "✓" : v === false ? "–" : esc(v)}</td>`;
+    const cell = (v, plus) => `<td class="${plus ? "plus " : "free "}${v === true ? "yes" : v === false ? "no" : "small"}">${v === true ? "✓" : v === false ? "–" : esc(v)}</td>`;
     return `<div class="ai-card box"><button class="btn ghost ai-x" data-x title="Close">×</button>
       <div class="ai-title">Talk with your coaches</div>
-      <p class="ai-lead">Add a free AI key and your coaches answer you, in their own words. Both versions are free.
-        The engine still decides every move; the AI only explains it and replies to you.</p>
+      <p class="ai-lead">Add a free AI key and your coaches answer you in their own words. Both versions are free.</p>
       <table class="ai-table"><tr><th></th><th><span class="tier">Knightwise</span><small>Free</small></th>
-        <th class="plus"><span class="tier">Knightwise + AI</span><small>Free key, 2 minutes</small></th></tr>
+        <th class="plus"><span class="tier">Knightwise + AI</span><small>Free key</small></th></tr>
         ${ROWS.map(([what, a, b]) => `<tr><td>${esc(what)}</td>${cell(a)}${cell(b, true)}</tr>`).join("")}</table>
-      <div class="row" style="margin-top:14px"><a class="btn primary" href="#/settings" data-go>Set it up (2 min)</a>
+      <div class="row" style="margin-top:14px"><a class="btn primary" href="#/settings" data-go>Set up now</a>
         <button class="btn" data-later>Not now</button><button class="btn ghost small" data-never>Don't show again</button></div></div>`;
   }
   function open() {

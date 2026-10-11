@@ -242,5 +242,5 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .ai-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .ai-table th { text-align: left; padding: 10px 10px 8px; vertical-align: bottom; text-transform: none; letter-spacing: 0; }
 .ai-table td { border-top: 1px solid var(--line); padding: 10px; vertical-align: top; font-size: 14px; }
-.ai-table td.yes { color: var(--better); font-weight: 700; } .ai-table td.no { color: var(--muted); }
+.ai-table td.yes { color: var(--better); font-weight: 700; } .ai-table td.free.yes { color: var(--red); } .ai-table td.no { color: var(--muted); }
 .btn.ghost { background: none; border-color: transparent; }
