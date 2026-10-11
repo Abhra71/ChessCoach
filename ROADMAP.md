@@ -103,6 +103,15 @@ questions on chess.com, Settings note about the coaches, README/Store text, test
 Next: AI key guide (needs the builder's screenshots), real-key test of chat, voice questions on chess.com,
 an AI-written "new idea" when a key exists, build 0.5.0, Store text and screenshots.
 
+### Next big piece (the builder, 12 Oct 2026; waiting for the hearing choice)
+- Voice-to-voice conversation with the coach of each field, not a text chat: hold to talk, she answers out loud, and the turns continue.
+- "Review my game against X" by voice: the coach finds the game, opens it, and talks through every move: what you played,
+  what was better, and one new thing to learn. Finished, archived games only.
+- A two-way bridge: app to chess.com, which opens the game on chess.com with Maya there; chess.com to app, which opens the right page.
+  Every pop-up has navigation to where it makes sense.
+- Hearing: recommended, the player's free Groq or Gemini key, so nothing AI runs on the PC; or Chrome's speech recognition, chess.com only;
+  or local Whisper. The builder will choose.
+
 ### Hooked by value (builder's go-ahead, night of 11-12 Oct 2026; all in 0.5.0)
 - Sounds: the builder picked each one on a picker page from Kenney's CC0 packs (coach/ui/sounds, 81 KB): move, capture,
   check, right, wrong, finished (with confetti), coach arriving, button click. Own switch in Settings; no background music.
