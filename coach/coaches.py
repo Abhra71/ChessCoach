@@ -14,13 +14,13 @@ BOTS = "https://www.chess.com/play/computer"
 LESSONS = "https://www.chess.com/lessons"
 
 COACHES = {
-    "maya": {"role": "Game reviews", "name": "Maya", "voice": "bf_emma", "about": "Former champion. Calm, patient, strategic.",
+    "maya": {"role": "Game reviews", "name": "Maya", "voice": "af_heart", "about": "Former champion. Calm, patient, strategic.",
              "sections": ["review", "games"]},
     "arjun": {"role": "Puzzles and practice", "name": "Arjun", "voice": "am_puck", "about": "Young prodigy. Quick, energetic, loves tactics.",
               "sections": ["puzzles"]},
-    "zara": {"role": "Before you play", "name": "Zara", "voice": "af_nova", "about": "Attacking player. Direct, bold, competitive.",
+    "zara": {"role": "Before you play", "name": "Zara", "voice": "hf_beta", "about": "Attacking player. Direct, bold, competitive.",
              "sections": ["home", "play"]},
-    "viktor": {"role": "Progress and lessons", "name": "Viktor", "voice": "bm_george", "about": "Veteran. Wise, dry humour, has seen it all.",
+    "viktor": {"role": "Progress and lessons", "name": "Viktor", "voice": "am_michael", "about": "Veteran. Wise, dry humour, has seen it all.",
                "sections": ["progress", "lessons", "plan"]},
 }
 AI_HINT = "Want real replies? Add a free AI key in Knightwise Settings. It takes 2 minutes."

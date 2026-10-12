@@ -89,3 +89,13 @@ def test_only_knightwise_and_its_extension_may_talk_to_it():
         service.PORT = old
         server.shutdown()
         server.server_close()
+
+
+def test_sign_in_time_is_read_from_windows_not_from_the_boot_time():
+    import sys
+    import pytest
+    if sys.platform != "win32":
+        pytest.skip("Windows only")
+    from coach import app
+    minutes = app.minutes_since_sign_in()
+    assert minutes is not None and 0 <= minutes < 60 * 24 * 60

@@ -74,9 +74,29 @@ def at_login(set_up):
         return True
     if not PACKAGED or len(sys.argv) > 1 or sys.platform != "win32":
         return False
+    minutes = minutes_since_sign_in()
+    return minutes is not None and minutes < 4  # Windows starts its start-up apps right after you sign in
+
+
+def minutes_since_sign_in():
+    """How long ago the player signed in to Windows. Not the time since Windows started: with Fast Startup,
+    turning the PC on resumes a saved Windows, so it can say it started days ago while you signed in just now."""
     import ctypes
-    ctypes.windll.kernel32.GetTickCount64.restype = ctypes.c_uint64
-    return ctypes.windll.kernel32.GetTickCount64() < 4 * 60 * 1000  # Windows started less than 4 minutes ago
+    from ctypes import wintypes
+
+    class Info(ctypes.Structure):  # WTSINFOW
+        _fields_ = [("State", ctypes.c_int), ("SessionId", wintypes.DWORD)] +                    [(n, wintypes.DWORD) for n in ("InBytes", "OutBytes", "InFrames", "OutFrames", "InComp", "OutComp")] +                    [("Station", wintypes.WCHAR * 32), ("Domain", wintypes.WCHAR * 17), ("User", wintypes.WCHAR * 21)] +                    [(n, ctypes.c_int64) for n in ("Connect", "Disconnect", "LastInput", "Logon", "Now")]
+    wts, buf, size = ctypes.windll.wtsapi32, ctypes.c_void_p(), wintypes.DWORD()
+    try:
+        if not wts.WTSQuerySessionInformationW(None, wintypes.DWORD(0xFFFFFFFF), 24, ctypes.byref(buf), ctypes.byref(size)):
+            return None
+        info = ctypes.cast(buf, ctypes.POINTER(Info)).contents
+        return (info.Now - info.Logon) / 1e7 / 60 if info.Logon else None
+    except OSError:
+        return None
+    finally:
+        if buf:
+            wts.WTSFreeMemory(buf)
 
 
 def main():

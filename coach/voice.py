@@ -19,7 +19,9 @@ CHOICES = {  # the voices offered in Settings
     "af_heart": "Heart (American)", "bf_emma": "Emma (British)", "am_michael": "Michael (American)",
     "bm_george": "George (British)",
 }
-COACH_VOICES = ("bf_emma", "am_puck", "af_nova", "bm_george")  # the four coaches on chess.com (coach/coaches.py)
+# the four coaches' voices (coach/coaches.py), picked by the builder by ear on 12 Oct 2026, and their speed
+COACH_VOICES = ("af_heart", "hf_beta", "am_puck", "am_michael")
+SPEED = {"am_michael": 0.9}
 DEFAULT = "af_heart"  # chosen by the player who tested the beta
 
 _engine = None
@@ -69,12 +71,13 @@ def say(text, voice=DEFAULT):
     """WAV bytes for one short piece of text (cached, so repeated phrases are instant)."""
     voice = voice if voice in CHOICES or voice in COACH_VOICES else DEFAULT
     text = speakable(text)[:600]
-    key = hashlib.sha1(f"{voice}|{text}".encode()).hexdigest()
+    speed = SPEED.get(voice, 1.0)
+    key = hashlib.sha1(f"{voice}|{speed}|{text}".encode()).hexdigest()
     cached = CACHE / f"{key}.wav"
     if cached.exists():
         return cached.read_bytes()
     with _lock:  # one sentence at a time: the model uses all cores anyway
-        samples, rate = _kokoro().create(text, voice=voice, speed=1.0, lang="en-gb" if voice[0] == "b" else "en-us")
+        samples, rate = _kokoro().create(text, voice=voice, speed=speed, lang="en-gb" if voice[0] == "b" else "en-us")
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
         w.setnchannels(1)

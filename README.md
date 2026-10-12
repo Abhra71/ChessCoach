@@ -94,6 +94,7 @@ Your numbers will be different. That's the point: everything is worked out from 
 | Practice organised by habit: numbered dots grouped by habit (green right, orange missed), Back and Next, your own positions first, then puzzles at your level from easy to hard | built, testing (next update) |
 | Try it again: any key moment of a reviewed game opens as a puzzle on the board, with Maya; it joins your practice memory | built, testing (next update) |
 | Your opening tree: your first three moves of every game as White and Black, your score on each branch, named from the Lichess catalogue, and a note on the branches that cost you games | built, testing (next update) |
+| The coaches' voices, picked by ear: Maya af_heart, Zara hf_beta, Arjun am_puck, Viktor am_michael a little slower | built, testing (next update) |
 | Sounds: moves, captures, check, right and wrong answers, a finished set (with confetti); no button clicks or coach sounds; picked by a player from Kenney's CC0 packs; own switch in Settings, no background music | built, testing (next update) |
 | Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
 | Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |

@@ -3,10 +3,10 @@
 // move, with a hint; celebrating a right one). Also: the "Your plan" tab, the board trainer, and the AI card.
 
 const COACHES = {
-  maya: { name: "Maya", voice: "bf_emma", role: "Game reviews" },
+  maya: { name: "Maya", voice: "af_heart", role: "Game reviews" },
   arjun: { name: "Arjun", voice: "am_puck", role: "Puzzles and practice" },
-  zara: { name: "Zara", voice: "af_nova", role: "Before you play" },
-  viktor: { name: "Viktor", voice: "bm_george", role: "Progress and your plan" },
+  zara: { name: "Zara", voice: "hf_beta", role: "Before you play" },
+  viktor: { name: "Viktor", voice: "am_michael", role: "Progress and your plan" },
 };
 const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress" };
 
