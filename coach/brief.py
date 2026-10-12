@@ -100,9 +100,17 @@ def brief(d, games=None):
         situation = " ".join(x for x in [f"It's {PHASE_WORDS[ph]}.", balance(diff),
                                          f"Your opponent just played {last}." if last else "", goal] if x)
         facts = [f"Rated {d['rating']}" if d.get("rating") else "Puzzle", f"You are {side}", ph.capitalize()]
-        return {"title": "A puzzle on the same habit" if d.get("pattern") else "Puzzle",
-                "facts": facts, "situation": situation, "mindset": mindset if d.get("pattern") else
-                "Checks, captures and threats, in that order. The first idea is often the right one."}
+        from coach import drills, plan
+        theme = d.get("theme")
+        if d.get("pattern"):
+            title = "A puzzle on the same habit"
+        elif theme in plan.THEME_NAME:
+            title = f"Puzzle: {plan.THEME_NAME[theme]}"
+        else:
+            title = "Puzzle"
+        if not d.get("pattern"):  # a lesson's puzzle: the theme's own advice
+            mindset = drills.CLUE.get(theme) or "Checks, captures and threats, in that order. The first idea is often the right one."
+        return {"title": title, "facts": facts, "situation": situation, "mindset": mindset}
     if d.get("kind") == "opening":
         return {"title": d.get("where") or "Your opening", "facts": [f"You are {side}", "From move 1", "Opening"],
                 "situation": "Play your side of the main line. I'll answer for them and explain every move.",

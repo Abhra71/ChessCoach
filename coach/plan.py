@@ -156,7 +156,7 @@ def _puzzles(theme, rating, rng, avoid=()):
 def tactic(theme, rating, rng, why=None):
     return {"id": f"tactic:{theme}", "kind": "tactic", "coach": "arjun", "theme": theme,
             "title": THEME_NAME[theme][0].upper() + THEME_NAME[theme][1:], "why": why,
-            "intro": f"New for you: {THEME_NAME[theme]}. {drills.CLUE[theme]}", "drills": _puzzles(theme, rating, rng)}
+            "intro": f"{THEME_NAME[theme][0].upper() + THEME_NAME[theme][1:]}. {drills.CLUE[theme]}", "drills": _puzzles(theme, rating, rng)}
 
 
 def endgame(theme, rating, rng, why=None):

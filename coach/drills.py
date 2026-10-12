@@ -161,7 +161,8 @@ def puzzle(p, pattern, theme=None):
             "intro": f"They just played {their_first}. You are {color}: find the best move.",
             "where": f"Lichess puzzle, rated {p['rating']}", "url": f"https://lichess.org/training/{p['id']}",
             "link": "open on lichess.org", "start": start, "last": [first.uci()[:2], first.uci()[2:4]],
-            "steps": steps, "rating": p["rating"], "themes": p.get("themes", []), "their_move": their_first}
+            "steps": steps, "rating": p["rating"], "themes": p.get("themes", []), "their_move": their_first,
+            "theme": theme or THEMES.get(pattern)}
 
 
 def pick_puzzles(by_pattern, top, seed, rating=None):
