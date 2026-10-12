@@ -149,7 +149,7 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach turns it i
 })();
 
 // a question box with a microphone: onAsk(text) answers it
-function askBox(el, { placeholder, enabled, listen, onAsk }) {
+function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
   el.innerHTML = `<div class="row"><input class="field" data-q placeholder="${esc(enabled ? placeholder : "Add an AI key in Settings to ask the coach")}" ${enabled ? "" : "disabled"}>
     ${listen && enabled ? `<button class="btn mic" data-mic title="Hold to talk, or click to start and stop">Talk</button>` : ""}
     <button class="btn primary" data-ask ${enabled ? "" : "disabled"}>Ask</button></div><div data-a class="small" style="margin-top:8px"></div>`;
@@ -162,7 +162,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk }) {
   const go = async () => {
     const text = q.value.trim(); if (!text) return;
     out.innerHTML = `<span class="muted">Thinking…</span>`;
-    try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>`; Voice.speak(r.text); }
+    try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>`; Voice.speak(r.text, false, (COACHES[coach] || {}).voice); }
     catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
   $("[data-ask]", el).onclick = go;
@@ -452,8 +452,8 @@ async function home() {
     f ? f.meaning : "", f ? f.habit : "",
     `You give away ${h.pieces_per_game.toFixed(1)} pieces per game, and ${h.pieces_last20.toFixed(1)} in your last 20 games${better ? ", which is better" : ""}.`,
     last ? `Your last game was a ${last.result} against ${last.opponent}, with ${last.moments} key moments to look at.` : ""].join(" ");
-  $("#brief").onclick = () => Voice.speak(briefing, true);
-  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?",
+  $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.zara.voice);  // Home is Zara's
+  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?", coach: "zara",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.listen_ready,
     onAsk: q => api("/api/ask", { question: q }) }));
 }
@@ -543,7 +543,7 @@ async function gameView(id) {
     $("#moves").innerHTML = html;
     $("#moves").querySelectorAll("span[data-p]").forEach(s => s.onclick = () => { ply = Number(s.dataset.p); view = "after"; draw(); });
   }
-  askBox($("#askbox"), { placeholder: "Why is my bishop in danger here?", enabled: aiReady, listen: cfg.listen_ready,
+  askBox($("#askbox"), { placeholder: "Why is my bishop in danger here?", coach: "maya", enabled: aiReady, listen: cfg.listen_ready,
     onAsk: q => { const m = momentAt(ply); return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: m ? m.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go; view = "before";
@@ -649,9 +649,8 @@ async function settingsView() {
       <div class="settings-row"><div><h3>Voice</h3><p class="note">Your coaches speak. It runs on this computer, no internet needed.</p></div>
         <div class="stack"><div class="row"><button class="switch ${s.voice ? "on" : ""}" id="voice" aria-label="Voice"></button>
           <span class="small muted">${s.voice_ready ? (s.voice ? "On" : "Off") : "Voice files not installed"}</span></div>
-          <div class="row"><select class="field" id="voicename" style="max-width:240px">${Object.entries(s.voices).map(([k, v]) =>
-            `<option value="${k}" ${k === s.voice_name ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>
-          <button class="btn" id="sample">Play sample</button></div>
+          <div class="voices">${Object.entries(COACHES).map(([id, c]) => `<button class="btn voice-chip" data-hear="${id}">
+            ${KnightwiseFaces.svg(id, "pleased")}<span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span><i>▶</i></button>`).join("")}</div>
           <div class="row"><span class="small ${s.listen_ready ? "ok-text" : "muted"}" id="listenstate">${s.listen_ready ? "Listening is on: use Talk to ask by voice." : "Ask by voice: a one-time 485 MB download."}</span>
             ${s.listen_ready ? "" : `<button class="btn" id="getlisten">Install listening</button>`}</div></div></div>
       <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a finished set. No background music.</p></div>
@@ -676,9 +675,10 @@ async function settingsView() {
   });
   $("#sounds").onclick = async () => { await api("/api/settings", { sounds: !s.sounds }); Sound.set(!s.sounds); if (!s.sounds) Sound.play("right"); settingsView(); };
   $("#voice").onclick = async () => { await api("/api/settings", { voice: !s.voice }); Voice.set(!s.voice); settingsView(); };
-  const SAMPLE = "Hi, I'm your chess coach. Before every move, ask: what can they take?";
-  $("#voicename").onchange = async e => { await api("/api/settings", { voice_name: e.target.value }); Voice.speak(SAMPLE, true); };
-  $("#sample").onclick = () => Voice.speak(SAMPLE, true);
+  const HELLO = { maya: "Hi, I'm Maya. I'll walk you through your games, one moment at a time.",
+    zara: "Hey, I'm Zara! I get you ready before you play.", arjun: "I'm Arjun. Puzzles are my thing. Ready?",
+    viktor: "Viktor. I keep an eye on your progress. Slowly, but surely." };
+  document.querySelectorAll("[data-hear]").forEach(b => b.onclick = () => Voice.speak(HELLO[b.dataset.hear], true, COACHES[b.dataset.hear].voice));
   $("#aicompare").onclick = () => AiCard.open();
   if ($("#getlisten")) $("#getlisten").onclick = async () => {
     $("#getlisten").disabled = true;

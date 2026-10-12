@@ -79,6 +79,7 @@ Before you start:
 | 6.2 | Switch **Voice** off with the sidebar button | The coaches stop talking; bubbles still show. Turn it back on |
 | 6.3 | Change the theme to Light, then back | The whole app changes colour; nothing is unreadable |
 | 6.4 | Press **What AI adds** | The Free vs AI card: red ticks free, green ticks AI, "Set up now" |
+| 6.5 | Under **Voice**, press ▶ on each of the 4 coaches | Each says hello in the voice you picked: Maya af_heart, Zara hf_beta, Arjun am_puck, Viktor am_michael a little slower |
 
 ## 7. chess.com, 20 minutes
 
