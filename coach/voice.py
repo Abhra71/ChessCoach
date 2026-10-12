@@ -16,8 +16,8 @@ MODEL = VOICE_DIR / "kokoro-v1.0.int8.onnx"
 VOICES = VOICE_DIR / "voices-v1.0.bin"
 CACHE = DATA / "voice-cache"
 CHOICES = {  # the voices offered in Settings
-    "af_heart": "Heart (American)", "bf_emma": "Emma (British)", "am_michael": "Michael (American)",
-    "bm_george": "George (British)",
+    "af_heart": "Heart, American", "bf_emma": "Emma, British", "am_michael": "Michael, American",
+    "bm_george": "George, British",
 }
 # the four coaches' voices (coach/coaches.py), picked by the builder by ear on 12 Oct 2026, and their speed
 COACH_VOICES = ("af_heart", "hf_beta", "am_puck", "am_michael")

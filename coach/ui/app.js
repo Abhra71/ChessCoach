@@ -632,7 +632,7 @@ async function settingsView() {
     return `<div class="box stack" data-slot="${id}"><div class="row spread"><h3>AI key ${n}</h3>
         <span class="small ${x.set ? "ok-text" : "faint"}">${x.set ? `Saved · ends with ••••${esc(x.ends)}` : "Not set"}</span></div>
       <select class="field" data-provider>${Object.entries(s.providers).map(([k, p]) =>
-        `<option value="${k}" ${k === x.provider ? "selected" : ""}>${esc(p.name)}${p.free ? " (has a free tier)" : ""}</option>`).join("")}</select>
+        `<option value="${k}" ${k === x.provider ? "selected" : ""}>${esc(p.name)}${p.free ? ", free" : ", paid"}</option>`).join("")}</select>
       <input class="field" type="password" autocomplete="off" spellcheck="false" placeholder="${x.set ? "Paste a new key to replace it" : "Paste your API key"}" data-key>
       <div class="row"><button class="btn primary" data-save>Save key</button>${x.set ? `<button class="btn" data-test>Test key</button><button class="btn danger" data-remove>Remove</button>` : ""}
         <a class="small muted" data-get href="${esc(prov.get_key)}" target="_blank" rel="noopener">Get a ${esc(prov.name)} key ↗</a></div>

@@ -27,8 +27,8 @@ def test_second_key_takes_over_when_first_fails(isolated, monkeypatch):
             raise RuntimeError("quota")
         return "Your bishop was left alone."
     monkeypatch.setattr(ai, "_call", fake)
-    assert ai.complete("s", "p") == ("Your bishop was left alone.", "groq")
-    assert calls == ["gemini", "groq"]
+    assert ai.complete("s", "p") == ("Your bishop was left alone.", "gemini")
+    assert calls == ["groq", "gemini"]  # Groq first, Gemini takes over
 
 
 def test_explanation_is_grounded_and_cached(isolated, monkeypatch):
@@ -42,7 +42,7 @@ def test_explanation_is_grounded_and_cached(isolated, monkeypatch):
     facts = {"fen": "x", "played": "c3", "best": "Nf3", "played_does": "pawn c2 to c3 (leaves loose: bishop on d3)"}
     first = ai.explain(facts, 300)
     again = ai.explain(facts, 300)
-    assert first == again == {"text": "c3 took away the pawn that guarded your bishop.", "provider": "gemini"}
+    assert first == again == {"text": "c3 took away the pawn that guarded your bishop.", "provider": "groq"}
     assert len(seen) == 1                         # second time came from the cache
     assert "never invent" in seen[0][0]           # the rules forbid made-up moves
     assert "leaves loose: bishop on d3" in seen[0][1] and '"fen"' not in seen[0][1]

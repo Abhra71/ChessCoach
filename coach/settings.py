@@ -19,7 +19,7 @@ PROVIDERS = {  # what the player can choose for a slot; "free" means the provide
     "openai": {"name": "OpenAI", "free": False, "get_key": "https://platform.openai.com/api-keys"},
 }
 DEFAULTS = {"theme": "system", "voice": True, "sounds": True, "voice_name": "af_heart",
-            "slot1": {"provider": "gemini"}, "slot2": {"provider": "groq"}}
+            "slot1": {"provider": "groq"}, "slot2": {"provider": "gemini"}}  # Groq first: Gemini was often busy in Jarvis
 
 
 def load():

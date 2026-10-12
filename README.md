@@ -38,7 +38,7 @@ No account · no ads · no subscription · your games stay on your computer
 show a reason, like a stalemated win, a new kind of mistake or a losing streak, and one at a time.
 The rest of the time they keep you on the one habit that matters most right now.
 
-**Talk with your coaches, also free.** Add a free key from Google Gemini or Groq and they answer your
+**Talk with your coaches, also free.** Add a free key from Groq or Google Gemini and they answer your
 questions in their own words. The engine still decides every move; the AI only explains it. Without a key the
 coaches use their written sentences, and if the AI is busy they still answer. The chat AI runs at the provider you pick, not on your PC.
 
