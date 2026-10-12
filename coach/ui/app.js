@@ -280,6 +280,7 @@ async function daily() {
 async function openingTree() {
   shell("games", `<p class="muted">Loading…</p>`);
   const t = (await api("/api/openings")).tree || {};
+  if (!t.white && !t.black) { $("#page").innerHTML = `<div class="empty">Your opening tree appears once your games are checked.</div>`; return; }
   const label = n => `${Math.ceil(n.ply / 2)}${n.ply % 2 ? "." : "..."}${n.san}`;
   const node = (n, depth) => {
     const kids = n.children.filter(c => c.games >= 2);
