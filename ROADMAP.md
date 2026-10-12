@@ -109,6 +109,13 @@ an AI-written "new idea" when a key exists, build 0.5.0, Store text and screensh
 3. Publish 0.5.0.
 4. Then 0.6.0: AI features and AI orchestration, meaning voice conversation, voice game review, the bridge, the usage panel, Groq first; then publish.
 
+### 0.6 work started on branch `ai-0.6` (12 Oct 2026, builder away): main stays exactly as the builder will test 0.5.0
+- coach/ai.py: Groq first; a busy model falls back to the provider's small model (Groq llama-3.1-8b-instant, Gemini
+  flash-lite), then the provider rests 10 minutes and the next key answers; usage counted per day; Groq's own
+  rate-limit headers kept, so "left" is exact. Tests in tests/test_ai_orchestra.py.
+- Usage panel: "AI · N% used today" in the sidebar opens a bar per key, what's left, reset time, who is resting.
+- Merge into main after 0.5.0 is published. Free-limit numbers still to be checked on the providers' pages.
+
 ### Next big piece (the builder, 12 Oct 2026; waiting for the hearing choice)
 - Voice-to-voice conversation with the coach of each field, not a text chat: hold to talk, she answers out loud, and the turns continue.
 - "Review my game against X" by voice: the coach finds the game, opens it, and talks through every move: what you played,
