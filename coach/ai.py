@@ -5,13 +5,20 @@ Without a key the coach uses its built-in sentences, so everything still works.
 Claude goes through the official Anthropic SDK; Gemini, Groq and OpenAI through their plain web APIs.
 """
 import json
+import time
 import urllib.error
 import urllib.request
+from datetime import date
 
 from coach import settings
 from coach.paths import DATA
 
 CACHE = DATA / "explanations.json"
+USAGE = DATA / "ai-usage.json"
+REST_MINUTES = 10  # a provider that says it's busy gets this long to rest before we ask it again
+SMALL = {"groq": "llama-3.1-8b-instant", "gemini": "gemini-flash-lite-latest"}  # bigger free limits, used when the main one is busy
+_REST = {}  # provider -> time it may be asked again
+_LAST = {}  # provider -> the rate-limit headers of its last answer
 TIMEOUT = 30
 AGENT = {"User-Agent": "ChessCoach (github.com/Abhra71/ChessCoach)"}  # some providers block unnamed requests (403)
 
@@ -29,9 +36,13 @@ class NoKey(Exception):
     pass
 
 
-def _post(url, body, headers):
+def _post(url, body, headers, provider=None):
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json", **AGENT, **headers})
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        if provider:  # Groq tells us exactly how much is left: kept for the usage panel
+            limits = {k.lower(): v for k, v in resp.headers.items() if k.lower().startswith("x-ratelimit-")}
+            if limits:
+                _LAST[provider] = limits
         return json.load(resp)
 
 
@@ -52,7 +63,7 @@ def _pick(names, prefer, avoid=()):
 _MODELS = {}  # provider -> model chosen from the provider's own list (once per run)
 
 
-def _gemini(key, system, prompt, max_tokens):
+def _gemini(key, system, prompt, max_tokens, model=None):
     head = {"x-goog-api-key": key}
     if "gemini" not in _MODELS:
         listed = [m["name"].split("/", 1)[1] for m in _get("https://generativelanguage.googleapis.com/v1beta/models", head)["models"]
@@ -62,18 +73,21 @@ def _gemini(key, system, prompt, max_tokens):
                                   avoid=("lite", "image", "tts", "live", "audio", "embedding", "thinking"))
     body = {"systemInstruction": {"parts": [{"text": system}]}, "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.4}}
-    out = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{_MODELS['gemini']}:generateContent", body, head)
+    out = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{model or _MODELS['gemini']}:generateContent",
+                body, head, "gemini")
+    _count("gemini", (out.get("usageMetadata") or {}).get("totalTokenCount", 0))
     return "".join(p.get("text", "") for p in out["candidates"][0]["content"]["parts"]).strip()
 
 
-def _openai_style(name, base, key, system, prompt, max_tokens, prefer):
+def _openai_style(name, base, key, system, prompt, max_tokens, prefer, model=None):
     head = {"Authorization": f"Bearer {key}"}
     if name not in _MODELS:
         listed = sorted(m["id"] for m in _get(f"{base}/models", head)["data"])
         _MODELS[name] = _pick(listed, prefer, avoid=("whisper", "tts", "embed", "guard", "image", "audio", "realtime", "dall"))
-    body = {"model": _MODELS[name], "max_completion_tokens": max_tokens,
+    body = {"model": model or _MODELS[name], "max_completion_tokens": max_tokens,
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}]}
-    out = _post(f"{base}/chat/completions", body, head)
+    out = _post(f"{base}/chat/completions", body, head, name)
+    _count(name, (out.get("usage") or {}).get("total_tokens", 0))
     return out["choices"][0]["message"]["content"].strip()
 
 
@@ -94,23 +108,51 @@ def _claude(key, system, prompt, max_tokens):
     return "".join(b.text for b in response.content if b.type == "text").strip()
 
 
+BUSY = (429, 500, 502, 503, 504)  # out of quota for now, or overloaded: the provider needs a rest
+
+
+def _busy(e):
+    if isinstance(e, urllib.error.HTTPError):
+        return e.code in BUSY
+    return "overloaded" in str(e).lower() or "timed out" in str(e).lower()
+
+
+def resting(provider, now=None):
+    return _REST.get(provider, 0) > (now or time.time())
+
+
+def _rest(provider):
+    _REST[provider] = time.time() + REST_MINUTES * 60
+
+
 def _call(provider, key, system, prompt, max_tokens):
-    """One request. If the provider has retired the model we picked (404/410), pick again from its current list once."""
+    """One request: the main model; if it's busy, the provider's smaller model; if that's busy too, the provider
+    rests for REST_MINUTES and the next key is tried. A retired model (404/410) is picked again from the list once."""
     try:
         return _call_once(provider, key, system, prompt, max_tokens)
-    except urllib.error.HTTPError as e:
-        if e.code not in (404, 410) or provider not in _MODELS:
+    except Exception as e:
+        if isinstance(e, urllib.error.HTTPError) and e.code in (404, 410) and provider in _MODELS:
+            _MODELS.pop(provider)
+            return _call_once(provider, key, system, prompt, max_tokens)
+        if not _busy(e):
             raise
-        _MODELS.pop(provider)
-        return _call_once(provider, key, system, prompt, max_tokens)
+        if provider not in SMALL:
+            _rest(provider)
+            raise
+    try:
+        return _call_once(provider, key, system, prompt, max_tokens, model=SMALL[provider])
+    except Exception as e:
+        if _busy(e):
+            _rest(provider)
+        raise
 
 
-def _call_once(provider, key, system, prompt, max_tokens):
+def _call_once(provider, key, system, prompt, max_tokens, model=None):
     if provider == "gemini":
-        return _gemini(key, system, prompt, max_tokens)
+        return _gemini(key, system, prompt, max_tokens, model)
     if provider == "groq":
         return _openai_style("groq", "https://api.groq.com/openai/v1", key, system, prompt, max_tokens,
-                             ["gpt-oss-120b", "llama-3.3-70b", "gpt-oss-20b"])
+                             ["gpt-oss-120b", "llama-3.3-70b", "gpt-oss-20b"], model)
     if provider == "openai":
         return _openai_style("openai", "https://api.openai.com/v1", key, system, prompt, max_tokens,
                              ["gpt-5-mini", "gpt-5.1-mini", "gpt-4.1-mini", "gpt-4o-mini"])
@@ -131,6 +173,9 @@ def complete(system, prompt, max_tokens=700):
         if not key:
             continue
         provider = s[slot]["provider"]
+        if resting(provider):  # it said it was busy a few minutes ago: don't make the player wait on it again
+            errors.append(f"{provider}: resting")
+            continue
         try:
             text = _call(provider, key, system, prompt, max_tokens)
             if text:
@@ -143,6 +188,45 @@ def complete(system, prompt, max_tokens=700):
     if not errors:
         raise NoKey("No AI key set. Add one in Settings.")
     raise RuntimeError("; ".join(errors))
+
+
+def _usage():
+    try:
+        return json.loads(USAGE.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def _count(provider, tokens, today=None):
+    """Requests and tokens used today, per provider; a week is kept."""
+    day = (today or date.today()).isoformat()
+    u = _usage()
+    d = u.setdefault(day, {}).setdefault(provider, {"requests": 0, "tokens": 0})
+    d["requests"] += 1
+    d["tokens"] += int(tokens or 0)
+    for old in sorted(u)[:-7]:
+        u.pop(old)
+    USAGE.parent.mkdir(parents=True, exist_ok=True)
+    USAGE.write_text(json.dumps(u))
+
+
+def usage(now=None):
+    """For the usage panel: today's use per provider, what the provider says is left (Groq says it exactly),
+    and how long a busy provider is still resting."""
+    now = now or time.time()
+    today = _usage().get(date.today().isoformat(), {})
+    out = {}
+    for provider in settings.PROVIDERS:
+        used, last = today.get(provider, {"requests": 0, "tokens": 0}), _LAST.get(provider, {})
+
+        def num(k):
+            return int(last[k]) if str(last.get(k, "")).isdigit() else None
+        out[provider] = {**used, "requests_left": num("x-ratelimit-remaining-requests"),
+                         "requests_limit": num("x-ratelimit-limit-requests"),
+                         "tokens_left": num("x-ratelimit-remaining-tokens"), "tokens_limit": num("x-ratelimit-limit-tokens"),
+                         "resets": last.get("x-ratelimit-reset-requests"),
+                         "resting_minutes": max(1, round((_REST[provider] - now) / 60)) if resting(provider, now) else 0}
+    return out
 
 
 def test_key(slot):
