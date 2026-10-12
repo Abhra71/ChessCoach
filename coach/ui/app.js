@@ -510,7 +510,7 @@ async function gameView(id) {
     Board.render($("#board"), { fen: pos.fen, flip, highlights: hl, arrows });
     $("#moments").innerHTML = g.key_moments.map((k, i) => `<div class="moment ${k === m ? "on" : ""}" data-i="${i}">
       <div class="row spread"><span class="what">Move ${k.move_number} · ${esc(cap(k.pattern))}</span>
-        <span class="row" style="gap:10px"><span class="small faint">−${Math.round(k.loss)}%</span><a class="btn small-btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a></span></div>
+        <span class="row" style="gap:10px"><span class="small faint" title="How much of your chance to win this move cost">−${Math.round(k.loss)}% win chance</span><a class="btn small-btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a></span></div>
       <div style="margin-top:4px">${esc(k.say)}</div>
       ${k === m ? `<div class="small muted" style="margin-top:6px">${view === "before" ? `Better: <b>${esc(k.best)}</b> · you played <b>${esc(k.move)}</b>` : `You played <b>${esc(k.move)}</b>, and their reply wins material.`}</div>
         ${k.habit ? `<div class="small" style="margin-top:6px"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
