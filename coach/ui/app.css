@@ -399,3 +399,10 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .voice-chip { display: flex; align-items: center; gap: 10px; justify-content: flex-start; text-align: left; padding: 6px 12px 6px 6px; }
 .voice-chip svg { width: 34px; height: 34px; flex: none; } .voice-chip span { flex: 1; line-height: 1.2; }
 .voice-chip small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 400; } .voice-chip i { font-style: normal; color: var(--muted); }
+
+/* AI usage: a line in the sidebar and a small panel */
+.side-ai { display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 6px 10px; margin-top: 6px;
+  font: inherit; font-size: 13.5px; color: var(--muted); cursor: pointer; border-radius: 8px; text-align: left; }
+.side-ai:hover { background: var(--raised); color: var(--text); }
+.ai-pop { position: fixed; left: 230px; bottom: 24px; width: 340px; z-index: 50; animation: rise .25s ease-out both; }
+.ai-row { margin-top: 14px; } .ai-row .bar { margin: 6px 0 4px; }
