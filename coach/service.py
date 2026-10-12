@@ -102,7 +102,19 @@ SHOW = None  # set by the desktop app: show the window at a screen
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.0"
 
+    def allowed(self):
+        """Who may talk to Knightwise: its own window, and the Knightwise extension. Other websites can't read
+        anything (no cross-site header) or change anything (Origin check), and a site that points its own name
+        at this computer is refused by the Host check."""
+        host = (self.headers.get("Host") or "").lower()
+        if host not in (f"127.0.0.1:{PORT}", f"localhost:{PORT}"):
+            return False
+        origin = self.headers.get("Origin")
+        return origin in (None, URL) or origin.startswith("chrome-extension://")
+
     def do_GET(self):
+        if not self.allowed():
+            return self.send(403, "forbidden", "text/plain")
         path = self.path.split("?")[0].rstrip("/")
         if path.startswith("/api/game/"):
             rows = MOMENT_CACHE.get(path.rsplit("/", 1)[-1])
@@ -196,8 +208,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Answers from our own pages only: JSON from http://127.0.0.1:8765 (other sites can't send JSON here)."""
-        origin = self.headers.get("Origin")
-        if origin not in (None, URL):
+        if not self.allowed():
             return self.send(403, "forbidden", "text/plain")
         if self.path.startswith("/api/listen") and self.headers.get("Content-Type") == "application/octet-stream":
             return self.listen()
@@ -383,7 +394,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(data)

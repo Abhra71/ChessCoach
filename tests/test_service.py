@@ -55,3 +55,37 @@ def test_coach_says_nothing_about_a_game_it_does_not_know(monkeypatch):
     assert unknown["coach"] == "maya" and unknown["mood"] == "thinking" and not unknown["actions"]
     known = service.coach_says("/api/coach?section=review&hour=20&game=42")
     assert "1 key moment " in known["lines"][0] + " " and "moments" not in known["lines"][0]
+
+
+def test_only_knightwise_and_its_extension_may_talk_to_it():
+    import threading
+    import urllib.error
+    import urllib.request
+    from coach.service import Handler, Server
+    server = Server(("127.0.0.1", 0), Handler)
+    port = server.server_address[1]
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+
+    def status(origin=None, host=None):
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/hello")
+        if origin:
+            req.add_header("Origin", origin)
+        if host:
+            req.add_header("Host", host)
+        try:
+            with urllib.request.urlopen(req) as r:
+                return r.status, r.headers.get("Access-Control-Allow-Origin")
+        except urllib.error.HTTPError as e:
+            return e.code, None
+    import coach.service as service
+    old = service.PORT
+    service.PORT = port  # the Host check uses the real port
+    try:
+        assert status()[0] != 403 and status()[1] is None  # no "any website may read this" header
+        assert status("chrome-extension://abc")[0] != 403
+        assert status("https://evil.example")[0] == 403
+        assert status(host=f"evil.example:{port}")[0] == 403  # a site pointing its own name at this computer
+    finally:
+        service.PORT = old
+        server.shutdown()
+        server.server_close()
