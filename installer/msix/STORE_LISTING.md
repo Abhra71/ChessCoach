@@ -21,40 +21,41 @@ no purchases, no location sharing). It does use the internet. Expected rating: 3
 ## Store listing (English)
 **Description**
 
-Knightwise is a chess coach that sits behind you. It reads your finished chess.com games, finds the habits that
-really cost you points, and trains you out of them, one or two things at a time, tuned to your rating.
+Knightwise is a chess coach that sits beside you on chess.com. It reads your finished games, finds the habits that
+really cost you points, and trains you out of them, one thing at a time, at your level.
 
-- **Your real mistakes, explained.** Stockfish checks every move you played. Knightwise shows the moments that mattered:
-  the piece you left hanging, the fork you walked into, the checkmate you missed. Each comes with what to do instead.
-- **Arrows on chess.com.** With the free Knightwise browser extension, open any finished game on chess.com and see
-  the better move and the opponent's reply drawn on the board itself.
-- **A coach that talks.** Knightwise speaks its advice in a natural voice, and you can ask it questions out loud.
-  Speech is processed on your PC.
-- **Practice that sticks.** Puzzles from your own games and from the Lichess puzzle database, repeated on a
-  schedule until you've learned them.
-- **Fair play first.** Knightwise never helps during a game against a real person. No hints, no arrows,
-  nothing. It coaches you before and after.
-- **Free and open source.** No account, no adverts, no tracking. Optional AI explanations use your own free key
-  (Google Gemini or Groq).
+- **Your real mistakes, explained.** Stockfish checks every move you played. Knightwise shows the moments that mattered,
+  like the piece you left hanging or the fork you walked into, and what to play instead. Try it again turns any of them into a puzzle.
+- **Four coaches, nothing to set up.** Maya reviews your games, Arjun runs puzzles and practice, Zara gets you ready
+  to play and Viktor tracks your progress. They have faces, gestures and their own voices, on chess.com and in the app.
+- **Arrows on chess.com.** With the free Knightwise browser extension, your finished games get the better move and
+  the reply drawn on chess.com's own board.
+- **Today's 5 minutes.** One position from your own games, one puzzle and your opening, every day. A gentle streak, no guilt.
+- **Practice with a briefing.** Before every position the coach tells you which game it comes from, what's going on
+  and the mindset to bring. 30,000 Lichess puzzles in 20 themes, matched to your rating.
+- **Progress you can see.** You vs you, the story of your week, your opening tree and 20 badges earned in real games.
+- **Fair play first.** Knightwise never helps during a game against a real person. No hints, no arrows, nothing.
+- **Free and open source.** No account, no adverts, no tracking. Optional AI replies use your own free key from Groq
+  or Google Gemini.
 
 Made by Abhra71. Knightwise is an independent app. It is not made by, endorsed by or connected with chess.com.
 
 **What's new in this version**
-0.5.0: Meet your four coaches: Maya (game reviews), Arjun (puzzles and practice), Zara (before you play) and Viktor
-(your progress and plan). They appear on chess.com and in the app, talk with their own voices and react to your moves,
-and stay completely away during games against real people. New: Your plan (an opening that suits how you play, plus
-a tactic, an endgame and a way of thinking), new ideas from 30,000 puzzles when your games show you need them, instant
-review right after a game, and a new 3D welcome with quiet piano. Add a free AI key to talk with your coaches.
+0.5.0: Meet your four coaches, Maya, Arjun, Zara and Viktor. They appear on chess.com and in the app, talk with their
+own voices, react to your moves and stay away during games against real people. New: Today's 5 minutes, a briefing
+before every practice position, Your plan with an opening that suits you, Try it again, your opening tree, You vs you,
+the story of your week, 20 badges, sounds, and a new welcome with quiet piano. Add a free AI key to talk with your coaches.
 
 **Product features** (one per line)
 - Finds your real mistake patterns in your chess.com games
-- Better-move arrows on chess.com's board (free browser extension)
-- Spoken coaching, and questions by voice, processed on your PC
-- Spaced-repetition practice from your own games and Lichess puzzles
+- Four coaches with faces and voices, on chess.com and in the app
+- Better-move arrows on chess.com's board with the free extension
+- Today's 5 minutes, practice with a briefing, puzzles at your level
+- Progress, your opening tree and badges from your real games
 - Strict fair play: never active in games against real people
 - Free, open source, no account, no tracking
 
-**Short description:** A chess coach for chess.com players: your real mistakes, explained by voice, with arrows on the board.
+**Short description:** A chess coach that sits beside you on chess.com: your real mistakes, four coaches with voices, practice at your level.
 
 **Keywords:** chess, chess coach, chess.com, stockfish, chess puzzles, chess training, game review
 
@@ -70,7 +71,7 @@ review right after a game, and a new 3D welcome with quiet piano. Add a free AI 
 > and waits by the clock to check for new games.
 
 ## Screenshots (1366×768 or larger, PNG)
-To be taken from the app: Home, Game review with a key moment, Practice, Settings, the welcome screen, the arrows on chess.com.
+Ready in `installer/store-shots/`, 1920×1080 PNG: on chess.com, Home, review, practice with a briefing, Today's 5 minutes, Progress, opening tree, welcome.
 
 ## Store logos
 `installer/StoreLogo2160.png` (2160×2160: the 1:1 box art) and `installer/StorePoster1440x2160.png` (9:16 poster art).
