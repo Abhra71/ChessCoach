@@ -15,7 +15,7 @@ Fix everything here, from major to minor, before publishing 0.5.0.
 
 ## Major
 0. **Most important: no review on the page right after a game.**
-   - The game, 13 Oct: 185261729330 against hemmehra0416, a loss by resignation.
+   - The game, 13 Oct: 185261729330 against the opponent, a loss by resignation.
    - During and after the game, chess.com shows `/game/<id>` and moves it to `/live/game/<id>`. Maya never appears there (checked for 30 s).
    - She only appears on the old `/game/live/<id>`, after about 25 s, with all 3 moments, and her panel sits under chess.com's ads.
    - The cause: [manifest.json:17](../extension/manifest.json) only matches `/game/live|daily/*`, and so does [coach.js:15](../extension/coach.js) `idFromUrl`.
@@ -147,7 +147,7 @@ Their rule: a symptom isn't automatically the cause, so investigate the objectiv
   - "Rated 1428" is unclear: check where it comes from and whether it's correct for a 254 player.
 - **10 The game tags.** Keep 3 or 4 at most, and drop Move 13 and Middle game.
   - Remove the labels below practice: "Your own positions", "The move before a big mistake", "Puzzles on the same habit".
-- **11 Repeated titles:** "Your game vs X, Move 7, still the opening" repeats too much. Simplify.
+- **11 Repeated titles:** "Your game vs <opponent>, Move 7, still the opening" repeats too much. Simplify.
 - **17 Game review shows too much at once.** Reveal it step by step, one clear piece at a time, keeping everything available.
 - **21 The opening tree** is confusing for a beginner (1. e4, 1... e5, the drop-downs). Explain the notation, how to move around it, and what it teaches. Same as finding 7.
 - **23 Every major section needs a beginner introduction.**
