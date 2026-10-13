@@ -196,3 +196,22 @@ Their rule: a symptom isn't automatically the cause, so investigate the objectiv
 - **48 Nothing useful came from Knightwise on chess.com.** The chess.com side feels unworked, with everything concentrated in the app.
   - On chess.com the coaches greeted, then folded. Maya's review appears only on the old address (finding 0). Nothing new or informative appeared there.
   - Product direction: the chess.com side needs real content. Flagship 1, prep before a game, belongs there, along with the review right after a game and warm-ups tied to the habit.
+
+---
+
+# Agreed plan, 13 Oct
+
+**The self-check is a firm requirement.** The user may be away for a month. When chess.com changes, Knightwise must notice, say what broke, and keep everything else working.
+1. **One dependency list:** a single file with every chess.com address, element and API field we use.
+2. **A check on every visit:** report exactly which dependency broke.
+3. **Fail gracefully:** that feature pauses with an honest line; everything else keeps working.
+4. **Visible health:** Settings and the pop-up show "chess.com check: all working, last verified …", or what broke. The API is checked daily.
+5. **Looser matching:** `/game/…`, `/live/game/…` and `/game/live/…`, with backup selectors.
+6. **Hardcore tests:** saved real pages, plus "what if" tests for a changed address, a renamed element, a missing board, and an API that's down or changed. Each ends in a clear message.
+7. **An alarm:** a weekly GitHub Action on the public API opens an issue, which emails the user. No automated page visits until chess.com's rules are checked.
+
+**0.5.0 order:** 1 truth, 2 the self-check, 3 chess.com (the review on new addresses, Open Knightwise always, where to practise, archive tags), 4 coaching, 5 clarity, 6 polish (British spelling: practice as the noun, practise as the verb), 7 wrap-up.
+
+**Later:** 0.5.1 redesigns, 0.6 AI and voice (flagship 2), 0.7 Rematch and Clock coach (flagships 4 and 5), 0.8 prep before a game (flagship 1).
+
+**The user decides:** one coach or four, and whether the PDF and opponents' usernames stay public. Then a Groq key, Rounds 2 and 3, and the Store upload.
