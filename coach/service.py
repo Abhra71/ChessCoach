@@ -355,8 +355,9 @@ class Handler(BaseHTTPRequestHandler):
                 os.startfile(DATA.parent)
             return self.send(200, "{}", "application/json")
         if path == "/api/show":  # a second ChessCoach.exe (or a notification) asks the running one to show a screen
-            if SHOW:
-                SHOW(str(body.get("route", "home"))[:100])
+            route = str(body.get("route", "home"))[:100]
+            if SHOW and all(c.isascii() and (c.isalnum() or c == "/") for c in route):  # it goes into the window's JS
+                SHOW(route)
             return self.send(200, "{}", "application/json")
         self.send(404, "not found", "text/plain")
 
@@ -538,7 +539,7 @@ def coach_says(url):
         except Exception:
             log.exception("novelty")
     said = coaches.speak(q.get("section", "home"), hour=hour % 24, moments=moments, extra=extra,
-                         again=q.get("again") == "1")
+                         again=q.get("again") == "1", in_app=q.get("in") == "app")
     from coach import voice
     s = settings.load()
     said["voice_on"] = bool(s.get("voice")) and voice.available()

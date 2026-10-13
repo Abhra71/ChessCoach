@@ -64,7 +64,7 @@ const Coach = (() => {
     const section = TAB_SECTION[tab];
     if (!section) return hide();
     const first = remember(`kw-app-greeted-${section}`) !== today();  // the first visit to this section today
-    const r = await api(`/api/coach?section=${section}&hour=${new Date().getHours()}${first ? "" : "&again=1"}`).catch(() => null);
+    const r = await api(`/api/coach?section=${section}&in=app&hour=${new Date().getHours()}${first ? "" : "&again=1"}`).catch(() => null);
     if (!r || TAB_SECTION[location.hash.replace(/^#\/?/, "").split("/")[0] || "home"] !== section) return;
     said = { ...r, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
     render(true);  // never silent: the full welcome first, later just where things stand
@@ -338,12 +338,12 @@ const AiCard = (() => {
     ["Every game checked by Stockfish, key moments with arrows", true, true],
     ["Your four coaches, their faces and voices, on chess.com and here", true, true],
     ["Your plan and new ideas from the library", true, true],
-    ["The coaches explain each moment in their own words", "Short, ready-made sentences", "Full explanations, tuned to you"],
+    ["One-to-one conversation with your coach", false, true],
     ["Ask your coach anything and get a reply", false, true],
     ["Talk it through: why this move, what to do next time", false, true],
   ];
   function html() {
-    const cell = (v, plus) => `<td class="${plus ? "plus " : "free "}${v === true ? "yes" : v === false ? "no" : "small"}">${v === true ? "✓" : v === false ? "–" : esc(v)}</td>`;
+    const cell = (v, plus) => `<td class="${plus ? "plus " : "free "}${v ? "yes" : "no"}">${v ? "✓" : "✗"}</td>`;  // ticks and crosses only
     return `<div class="ai-card box"><button class="btn ghost ai-x" data-x title="Close">×</button>
       <div class="ai-title">Talk with your coaches</div>
       <p class="ai-lead">Add a free AI key and your coaches answer you in their own words. Both versions are free.</p>

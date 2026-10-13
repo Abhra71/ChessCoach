@@ -67,7 +67,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     player().then(() => chrome.runtime.sendMessage({ type: "play", url: `${COACH}/api/say`, text: msg.text, voice: msg.voice }));
     return false;
   }
-  if (msg.type === "open-app" && /^[a-z/]+$/.test(msg.route || "")) {  // bring the Knightwise window forward
+  if (msg.type === "open-app" && /^[a-z][a-z0-9/]*$/.test(msg.route || "")) {  // bring the Knightwise window forward
     fetch(`${COACH}/api/show`, { method: "POST", headers: { "Content-Type": "application/json" },
                                  body: JSON.stringify({ route: msg.route }) }).catch(() => {});
     return false;

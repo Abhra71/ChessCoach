@@ -319,12 +319,22 @@ async function tryAgain(gid, ply) {
 }
 
 // ---------- progress: Viktor's story of your week, and badges from your real games ----------
+// chess.com games and Knightwise practice counted apart, never blended (13 Oct test, point 16)
+const BADGE_SOURCES = [["From your chess.com games", ["Habits", "Clean play", "Results"]], ["From your Knightwise practice", ["Practice"]]];
+const TIERS = ["Bronze", "Silver", "Gold"];
+function badgeCard(b) {  // what you have, what's next, and whether it's complete: one look
+  const state = b.tier === 3 ? "Complete" : b.tier ? `${b.tier_name} · Gold at ${b.tiers[2]}` : `Not started · Bronze at ${b.tiers[0]}`;
+  return `<div class="badge t${b.tier}">
+    <div class="medal">${svg(b.icon)}</div><b>${esc(b.name)}</b><div class="tier-name">${b.tier === 3 ? "✓ " : ""}${esc(state)}</div>
+    <div class="small muted">${b.next ? `${b.best} of ${b.next} ${esc(b.what)}, for ${TIERS[b.tier]}` : `${b.best} ${esc(b.what)}`}</div>
+    <div class="bar"><div style="width:${b.next ? Math.min(100, 100 * b.best / b.next) : 100}%"></div></div></div>`;
+}
 async function progressView() {
   shell("progress", `<p class="muted">Loading…</p>`);
   const p = await api("/api/progress");
   if (!p.player) return go("welcome");
   const s = p.story, r = (s && s.results) || {};
-  const earned = p.badges.filter(b => b.tier).length;
+  const complete = p.badges.filter(b => b.tier === 3).length, started = p.badges.filter(b => b.tier && b.tier < 3).length;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Progress</h1><p class="sub">From your real chess.com games, checked by Stockfish.</p></div></div>
     <div class="grid">
@@ -349,12 +359,12 @@ async function progressView() {
         </div>
         ${s.next ? `<div class="story-next"><span class="label">Next week's one thing</span><div>${esc(s.next.habit)}</div></div>` : ""}
       </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
-      <div class="box rise"><div class="row spread"><h2 style="margin:0">Badges</h2><span class="small muted">${earned} of ${p.badges.length} earned · from real games only</span></div>
-        ${[...new Set(p.badges.map(b => b.group))].map(gr => `<div class="badge-group">${esc(gr)}</div>
-        <div class="badges">${p.badges.filter(b => b.group === gr).map(b => `<div class="badge t${b.tier}">
-          <div class="medal">${svg(b.icon)}</div><b>${esc(b.name)}</b><div class="tier-name">${b.tier_name || "Not yet"}</div>
-          <div class="small muted">${b.next ? `${b.best} of ${b.next} ${esc(b.what)}` : `${b.best} ${esc(b.what)}. Top tier`}</div>
-          <div class="bar"><div style="width:${b.next ? Math.min(100, 100 * b.best / b.next) : 100}%"></div></div></div>`).join("")}</div>`).join("")}</div>
+      <div class="box rise"><div class="row spread"><h2 style="margin:0">Badges</h2>
+          <div class="ring-legend"><span><i class="t1"></i>Bronze</span><span><i class="t2"></i>Silver</span><span><i class="t3"></i>Gold, complete</span></div></div>
+        <p class="small muted" style="margin:6px 0 0">${complete} complete · ${started} on the way · ${p.badges.length - complete - started} not started. A badge is complete at Gold.</p>
+        ${BADGE_SOURCES.map(([title, groups]) => `<h3 class="badge-source">${title}</h3>
+        ${groups.filter(gr => p.badges.some(b => b.group === gr)).map(gr => `<div class="badge-group">${esc(gr)}</div>
+        <div class="badges">${p.badges.filter(b => b.group === gr).map(badgeCard).join("")}</div>`).join("")}`).join("")}</div>
     </div>`;
   countUp($("#page"));
   if (s) $("#savepic").onclick = async () => {

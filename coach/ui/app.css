@@ -243,7 +243,7 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .ai-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .ai-table th { text-align: left; padding: 10px 10px 8px; vertical-align: bottom; text-transform: none; letter-spacing: 0; }
 .ai-table td { border-top: 1px solid var(--line); padding: 10px; vertical-align: top; font-size: 14px; }
-.ai-table td.yes { color: var(--better); font-weight: 700; } .ai-table td.free.yes { color: var(--red); } .ai-table td.no { color: var(--muted); }
+.ai-table td.yes { color: var(--better); font-weight: 700; } .ai-table td.no { color: var(--red); font-weight: 700; }  /* ✓ you have it, ✗ you don't */
 .btn.ghost { background: none; border-color: transparent; }
 
 /* home: focus hero, habit tiles, small visuals instead of tables */
@@ -400,3 +400,9 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .voice-chip { display: flex; align-items: center; gap: 10px; justify-content: flex-start; text-align: left; padding: 6px 12px 6px 6px; }
 .voice-chip svg { width: 34px; height: 34px; flex: none; } .voice-chip span { flex: 1; line-height: 1.2; }
 .voice-chip small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 400; } .voice-chip i { font-style: normal; color: var(--muted); }
+/* badges: which colour is which, and where each badge comes from */
+.ring-legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+.ring-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ring-legend i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid; display: inline-block; }
+.ring-legend i.t1 { border-color: #c98a4b; } .ring-legend i.t2 { border-color: #c7ccd4; } .ring-legend i.t3 { border-color: #f2c94c; }
+.badge-source { margin: 22px 0 0; font-size: 16px; }
