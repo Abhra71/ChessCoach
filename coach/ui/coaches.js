@@ -193,7 +193,7 @@ function trainer(drills, opts) {
     setTimeout(() => Sound.play(shown ? "move" : "right"), 180);
     counter();
     const note = x.kind === "game" ? `In the game you played ${esc(x.played)}.${m.san === x.best ? "" : " The engine's top move was " + esc(x.best) + "."}`
-      : x.kind === "opening" ? "That's the whole line. Play it in your next games." : "Puzzle solved.";
+      : x.kind === "opening" ? "That's the whole line. Play it in your next games." : (x.end || "Puzzle solved.");
     result("ok-text", `<b>${esc(m.san)}</b>: ${shown ? "that's the answer." : x.kind === "game" ? "yes, that keeps you safe." : "correct."}<div class="muted small" style="margin-top:4px">${note}</div>`);
     const praise = shown ? `The answer is ${m.san}. Next time you'll see it.` : s.idea ? `${s.idea} ${note}`
       : missed ? `${m.san}. You got there.` : x.kind === "game" ? `Yes! ${m.san} keeps you safe.` : `Correct, ${m.san}!`;

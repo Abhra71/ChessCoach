@@ -58,3 +58,29 @@ def test_two_move_puzzle_has_their_answer_between():
     assert len(d["steps"]) == 2
     assert d["steps"][0]["reply"]["san"] == "d6"
     assert d["steps"][1]["moves"]["e5d6"]["good"]
+
+
+def test_a_puzzle_says_why_it_ends():
+    """13 Oct test: a queen ending stopped with the player's queen taken and "correct", with no reason given."""
+    from coach.drills import why_it_ends
+    from coach.drills import squares
+    start = chess.Board("4k3/8/8/8/8/8/3q4/3QK3 w - - 0 1")  # queens on the board, level
+    traded = chess.Board("4k3/8/8/8/8/8/8/4K3 w - - 0 1")
+    assert "queens are off" in why_it_ends(squares(start), traded, True, [])
+    up = chess.Board("4k3/8/8/8/8/8/8/3QK3 w - - 0 1")
+    assert why_it_ends(squares(start), up, True, ["crushing"]).startswith("You've won a queen")
+    mate = chess.Board("R5k1/5ppp/8/8/8/8/8/6K1 b - - 0 1")
+    assert why_it_ends(squares(start), mate, True, ["mate"]).startswith("Checkmate")
+
+
+def test_lesson_puzzles_match_the_lesson_and_the_level():
+    """The stalemate lesson ("winning with the queen") takes only queen endings that end in mate; puzzles are the
+    easiest of the theme when there are too few at the player's level, never a random 1428 for a 254 player."""
+    import random
+    from coach import plan
+    if not plan.PUZZLES.exists():
+        return
+    queen = plan._puzzles("queenEndgame", 254, random.Random(1))
+    assert queen and all(any(t.startswith("mate") for t in d["themes"]) for d in queen)
+    ratings = [d["rating"] for d in plan._puzzles("trappedPiece", 254, random.Random(1))]
+    assert ratings == sorted(ratings) and max(ratings) < 1000

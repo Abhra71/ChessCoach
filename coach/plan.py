@@ -146,11 +146,26 @@ def signals(home, games, moves, player):
 
 
 # ---------- the things to bring ----------
+# a lesson's puzzles must match what the lesson teaches: "winning with the queen" is for players who stalemate won
+# games, so it takes only the queen endings that end in checkmate (13 Oct test: a queen ending about winning
+# material ended with the player's queen taken, and the lesson's "checkmate, no stalemate" advice made no sense)
+LESSON_NEEDS = {"queenEndgame": "mate"}
+
+
 def _puzzles(theme, rating, rng, avoid=()):
+    """Puzzles on a theme at the player's level, easiest first. When there are too few at that level, the easiest
+    ones of the theme, never a random one (13 Oct test: a 1428 puzzle for a 254 player)."""
     stock = json.loads(PUZZLES.read_text()) if PUZZLES.exists() else {}
+    every = [p for p in stock.get(theme, []) if p["id"] not in avoid] or stock.get(theme, [])
+    need = LESSON_NEEDS.get(theme)
+    if need:
+        every = [p for p in every if any(t.startswith(need) for t in p.get("themes", []))] or every
     low, high = (rating or 800) - 150, (rating or 800) + 350
-    pool = [p for p in stock.get(theme, []) if low <= p["rating"] <= high and p["id"] not in avoid] or stock.get(theme, [])
-    return [drills.puzzle(p, "", theme) for p in rng.sample(pool, min(PUZZLES_PER_LESSON, len(pool)))]
+    pool = [p for p in every if low <= p["rating"] <= high]
+    if len(pool) < PUZZLES_PER_LESSON:
+        pool = sorted(every, key=lambda p: p["rating"])[:PUZZLES_PER_LESSON * 3]
+    chosen = sorted(rng.sample(pool, min(PUZZLES_PER_LESSON, len(pool))), key=lambda p: p["rating"])
+    return [drills.puzzle(p, "", theme) for p in chosen]
 
 
 def tactic(theme, rating, rng, why=None):

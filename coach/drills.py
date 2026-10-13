@@ -179,6 +179,7 @@ def puzzle(p, pattern, theme=None):
     start = squares(board)
     their_first = board.san(first)
     board.push(first)
+    task = squares(board)  # where the player starts: material is counted from here
     color = "Black" if board.turn == chess.BLACK else "White"
     hint = CLUE.get(theme) or CLUE.get(THEMES.get(pattern)) or ABOUT.get(pattern, ("", "Take your time."))[1]
     steps = []
@@ -198,11 +199,35 @@ def puzzle(p, pattern, theme=None):
         if reply:
             board.push(reply)
     return {"id": p["id"], "kind": "puzzle", "flip": color == "Black", "pattern": pattern, "hint": hint,
+            "end": why_it_ends(task, board, color == "White", p.get("themes", [])),
             "intro": f"They just played {their_first}. You are {color}: find the best move.",
             "where": f"Lichess puzzle, rated {p['rating']}", "url": f"https://lichess.org/training/{p['id']}",
             "link": "open on lichess.org", "start": start, "last": [first.uci()[:2], first.uci()[2:4]],
             "steps": steps, "rating": p["rating"], "themes": p.get("themes", []), "their_move": their_first,
             "theme": theme or THEMES.get(pattern)}
+
+
+VALUE = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
+
+
+def why_it_ends(start, end, white, themes):
+    """Why the puzzle stops where it does, in one sentence: a checkmate, the material won, or a won ending. A
+    puzzle that ends with your queen gone must say why that's a win (13 Oct test: "my queen was taken, yet right")."""
+    if end.is_checkmate():
+        return "Checkmate: that's the end of the puzzle."
+    def ahead(pieces):
+        mine = sum(VALUE[chess.Piece.from_symbol(s).piece_type] for s in pieces if s.isupper() == white)
+        theirs = sum(VALUE[chess.Piece.from_symbol(s).piece_type] for s in pieces if s.isupper() != white)
+        return mine - theirs
+    won = ahead([p.symbol() for p in end.piece_map().values()]) - ahead(list(start.values()))
+    if any(t.startswith("equality") for t in themes):
+        return "That holds the position: the puzzle ends here because you're safe."
+    if won >= 2:
+        what = {9: "a queen", 5: "a rook", 3: "a piece"}.get(won, f"{won} points of material")
+        return f"You've won {what}, so the puzzle ends here: the rest is easy."
+    if not any(p.piece_type == chess.QUEEN for p in end.piece_map().values()):
+        return "The queens are off and your ending is now won: that's why it stops here."
+    return "You're clearly winning now, so the puzzle ends here."
 
 
 def pick_puzzles(by_pattern, top, seed, rating=None):
