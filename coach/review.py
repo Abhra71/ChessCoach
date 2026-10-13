@@ -82,7 +82,7 @@ def explain(pattern, r):
         return (f"After {r['move']}, their {taker} on {chess.square_name(reply.from_square)} "
                 f"can take your {what} on {chess.square_name(reply.to_square)}.")
     if pattern == "walked into a fork or trick" and reply:
-        return (f"After {r['move']}, they answer {board.san(reply)} and you lose material "
+        return (f"After {r['move']}, they can play {board.san(reply)}, and then you lose material "
                 f"a move or two later, whatever you do.")
     if pattern == "missed a free capture" and best_capture:
         return (f"Their {NAME[best_capture.piece_type]} on {chess.square_name(best.to_square)} was there to take: "

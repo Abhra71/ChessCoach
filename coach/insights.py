@@ -184,13 +184,14 @@ def game_detail(gid):
     game = chess.pgn.read_game(io.StringIO(g["pgn"]))
     board = game.board()
     positions = [{"fen": board.fen(), "san": None, "uci": None}]
-    for move in game.mainline_moves():
+    played = list(game.mainline_moves())
+    for move in played:
         san = board.san(move)
         board.push(move)
         positions.append({"fen": board.fen(), "san": san, "uci": move.uci()})
     key = []
     for r in biggest(rows):
-        m = moment(r)
+        m = moment(r, played)
         m["habit"] = ABOUT[classify(r)][1] if classify(r) in ABOUT else None
         key.append(m)
     return {**game_row(g, rows, player), "positions": positions, "key_moments": key,

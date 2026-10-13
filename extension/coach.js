@@ -4,8 +4,9 @@
 // For any other game (including one being played right now) it answers "unknown" and this script shows nothing.
 (() => {
   const FILES = "abcdefgh";
-  const COLORS = { mine: "#e5484d", reply: "#f0a43a", best: "#2fb56f" };
-  const LABELS = { mine: "You played", reply: "Reply", best: "Better" };
+  const COLORS = { mine: "#e5484d", reply: "#f0a43a", real: "#6b9bff", best: "#2fb56f" };
+  // "reply" is the engine's best answer; "real" is what the opponent really played, when it was different
+  const LABELS = { mine: "You played", reply: "Their best reply", real: "They played", best: "Better" };
   let moments = [], overlay = null, panel = null, timer = null, gameId = null;
   let small = false;
   let maya = { mood: "calm", line: "" };  // Maya, the coach for game reviews: her face and her first line
@@ -49,7 +50,7 @@
     return [(flipped ? 7 - f : f) * 100 + 50, (flipped ? r : 7 - r) * 100 + 50];
   }
 
-  // kind: "best" | "mine" | "reply"; every arrow carries its meaning written on it
+  // kind: "best" | "mine" | "reply" | "real"; every arrow carries its meaning written on it
   function arrow(uci, kind, flipped, faint) {
     const color = COLORS[kind], label = LABELS[kind];
     const [x1, y1] = center(uci.slice(0, 2), flipped), [x2, y2] = center(uci.slice(2, 4), flipped);
@@ -86,7 +87,8 @@
       }
       if (now === m.after_placement) {    // just after your move: your move and their answer
         overlay.innerHTML = arrow(m.move_uci, "mine", flipped) +
-          (m.reply_uci ? arrow(m.reply_uci, "reply", flipped) : "");
+          (m.reply_uci ? arrow(m.reply_uci, "reply", flipped, m.reply_missed) : "") +
+          (m.reply_missed ? arrow(m.real_reply_uci, "real", flipped) : "");
         active = { m, when: "after" };
         break;
       }
@@ -118,7 +120,8 @@
              <span style="background:${COLORS.mine}"></span>you played ${escapeHtml(m.move)}</div>
              <button data-go="after" data-i="${i}">What happened next</button>`
           : `<div class="key"><span style="background:${COLORS.mine}"></span>your move ${escapeHtml(m.move)}
-             <span style="background:${COLORS.reply}"></span>their answer</div>
+             <span style="background:${COLORS.reply}"></span>their best reply ${escapeHtml(m.reply_san || "")}
+             ${m.reply_missed ? `<span style="background:${COLORS.real}"></span>they played ${escapeHtml(m.real_reply_san)}` : ""}</div>
              <button data-go="before" data-i="${i}">Show the better move</button>`) : ""}
       </li>`;
     }).join("");

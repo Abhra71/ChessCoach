@@ -8,6 +8,7 @@
 
 Run:  python -m coach.service   (the installed app, ChessCoach.exe, runs this behind its tray icon)
 """
+import io
 import json
 import logging
 import os
@@ -20,6 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from logging.handlers import RotatingFileHandler
 
 import chess
+import chess.pgn
 
 from coach import analyze, drills, fetch, memory, puzzles, review, settings
 from coach.paths import BUNDLED_EXTENSION, DATA, EXTENSION, FROZEN, LOGBOOK, NAME, PACKAGE, TEMPLATES
@@ -66,21 +68,52 @@ class Moments:
         return games
 
 
-def moment(r):
-    """One key moment as the extension needs it: where, which arrows, what to say."""
+GRADES = ((30, "Blunder"), (15, "Mistake"), (7, "Inaccuracy"))  # win chance lost by the move, in percent
+
+
+def grade(loss):
+    return next((name for least, name in GRADES if loss >= least), "Good")
+
+
+def moment(r, played=None):
+    """One key moment as the extension needs it: where, which arrows, what to say.
+    played: every move of the real game, in order, as chess.Move, so the review never passes off the engine's
+    best reply as the move the opponent actually made."""
     pattern = classify(r)
     board = chess.Board(r["fen"])
     mine, best = board.parse_san(r["move"]), board.parse_san(r["best"])
+    after = board.copy()
+    after.push(mine)
+    best_reply = chess.Move.from_uci(r["reply_pv"][0]) if r["reply_pv"] else None
+    real = played[r["ply"]] if played and len(played) > r["ply"] else None  # their real answer, if the game went on
+    say = explain(pattern, r) if pattern else f"Better was {r['best']}."
+    if real and best_reply and real != best_reply:
+        say += f" In the game they missed it and played {after.san(real)}."
     return {
         "ply": r["ply"], "move_number": move_number(r), "color": r["color"],
         "placement": r["fen"].split()[0],  # the board just before the player's move
         "after_placement": _after(r["fen"], mine),
-        "move": r["move"], "move_uci": mine.uci(), "best": r["best"], "best_uci": best.uci(),
-        "reply_uci": r["reply_pv"][0] if r["reply_pv"] else None,
+        "move": r["move"], "move_uci": mine.uci(), "grade": grade(r["loss"]),
+        "best": r["best"], "best_uci": best.uci(),
+        "reply_uci": best_reply.uci() if best_reply else None,  # the engine's best answer: "Their best reply"
+        "reply_san": after.san(best_reply) if best_reply else None,
+        "real_reply_uci": real.uci() if real else None,  # what they really played
+        "real_reply_san": after.san(real) if real else None,
+        "reply_missed": bool(real and best_reply and real != best_reply),
         "pattern": pattern if pattern != "other" else "a big mistake",
-        "say": explain(pattern, r) if pattern else f"Better was {r['best']}.",
+        "say": say,
         "loss": r["loss"],
     }
+
+
+def played_moves(gid):
+    """Every move of one archived game, in order (empty if the game isn't known)."""
+    from coach import insights
+    g = next((g for g in insights._games() if game_id(g["url"]) == str(gid)), None)
+    if not g:
+        return []
+    game = chess.pgn.read_game(io.StringIO(g["pgn"]))
+    return list(game.mainline_moves()) if game else []
 
 
 def _after(fen, move):
@@ -89,9 +122,10 @@ def _after(fen, move):
     return board.fen().split()[0]
 
 
-def key_moments(rows):
+def key_moments(rows, gid=None):
     """The few moves that cost the most in one game, in game order."""
-    return [moment(r) for r in review.biggest(rows, MOMENTS)]
+    played = played_moves(gid) if gid else None
+    return [moment(r, played) for r in review.biggest(rows, MOMENTS)]
 
 
 MOMENT_CACHE = Moments()
@@ -119,7 +153,7 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/game/"):
             rows = MOMENT_CACHE.get(path.rsplit("/", 1)[-1])
             # unknown game = not finished and checked yet: say nothing (fair play)
-            body = {"known": rows is not None, "moments": key_moments(rows) if rows else [],
+            body = {"known": rows is not None, "moments": key_moments(rows, path.rsplit("/", 1)[-1]) if rows else [],
                     "players": players_of(path.rsplit("/", 1)[-1]) if rows is not None else []}
             return self.send(200, json.dumps(body), "application/json")
         if path == "/api/status":

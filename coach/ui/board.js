@@ -4,7 +4,8 @@ const Board = (() => {
   const KIND = {  // what each arrow means, always written on the arrow too
     better: { color: "var(--better)", label: "Better" },
     mine: { color: "var(--mine)", label: "You played" },
-    reply: { color: "var(--reply)", label: "Reply" },
+    reply: { color: "var(--reply)", label: "Their best reply" },  // the engine's answer, not always what happened
+    real: { color: "var(--real)", label: "They played" },  // what the opponent really played
   };
 
   function squares(fen) {  // "rnbqkbnr/pppppppp/..." -> { e1: "K", ... }

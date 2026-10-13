@@ -477,6 +477,15 @@ async function games() {
   document.querySelectorAll("tr.click").forEach(tr => tr.onclick = () => go(`games/${tr.dataset.id}`));
 }
 
+// After your move: what they could have played, and what they really played. Never one passed off as the other.
+function afterLine(k, plain) {
+  const b = s => plain ? s : `<b>${esc(s)}</b>`;
+  if (!k.reply_san) return `You played ${b(k.move)}.`;
+  if (k.reply_missed) return `You played ${b(k.move)}. Their best reply was ${b(k.reply_san)}, but in the game they missed it and played ${b(k.real_reply_san)}.`;
+  if (k.real_reply_san) return `You played ${b(k.move)}, and they found the best reply, ${b(k.reply_san)}.`;
+  return `You played ${b(k.move)}. Their best reply would have been ${b(k.reply_san)}.`;
+}
+
 async function gameView(id) {
   shell("games", `<p class="muted">Loading…</p>`);
   const [g, cfg] = await Promise.all([api(`/api/games/${id}`), api("/api/settings")]);
@@ -493,7 +502,7 @@ async function gameView(id) {
       <div><div class="board-wrap" id="board"></div>
         <div class="controls"><button class="btn" data-go="0">⏮</button><button class="btn" data-go="-1">◀</button>
           <button class="btn" data-go="1">▶</button><button class="btn" data-go="end">⏭</button></div>
-        <div style="margin-top:12px">${Board.legend(["better", "mine", "reply"])}</div></div>
+        <div style="margin-top:12px">${Board.legend(["better", "mine", "reply", "real"])}</div></div>
       <div class="stack">
         <h2>${g.key_moments.length ? `${g.key_moments.length} key moments` : "No big mistakes in this game"}</h2>
         <div class="stack" id="moments"></div>
@@ -507,13 +516,15 @@ async function gameView(id) {
     if (pos.uci && !m) { hl[pos.uci.slice(0, 2)] = "hl-last"; hl[pos.uci.slice(2, 4)] = "hl-last"; }
     const arrows = !m ? [] : view === "before"
       ? [{ from: m.best_uci.slice(0, 2), to: m.best_uci.slice(2, 4), kind: "better" }, { from: m.move_uci.slice(0, 2), to: m.move_uci.slice(2, 4), kind: "mine" }]
-      : [{ from: m.move_uci.slice(0, 2), to: m.move_uci.slice(2, 4), kind: "mine" }].concat(m.reply_uci ? [{ from: m.reply_uci.slice(0, 2), to: m.reply_uci.slice(2, 4), kind: "reply" }] : []);
+      : [{ from: m.move_uci.slice(0, 2), to: m.move_uci.slice(2, 4), kind: "mine" }]
+        .concat(m.reply_uci ? [{ from: m.reply_uci.slice(0, 2), to: m.reply_uci.slice(2, 4), kind: "reply" }] : [])
+        .concat(m.reply_missed ? [{ from: m.real_reply_uci.slice(0, 2), to: m.real_reply_uci.slice(2, 4), kind: "real" }] : []);
     Board.render($("#board"), { fen: pos.fen, flip, highlights: hl, arrows });
     $("#moments").innerHTML = g.key_moments.map((k, i) => `<div class="moment ${k === m ? "on" : ""}" data-i="${i}">
       <div class="row spread"><span class="what">Move ${k.move_number} · ${esc(cap(k.pattern))}</span>
         <span class="row" style="gap:10px"><span class="small faint" title="How much of your chance to win this move cost">−${Math.round(k.loss)}% win chance</span><a class="btn small-btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a></span></div>
       <div style="margin-top:4px">${esc(k.say)}</div>
-      ${k === m ? `<div class="small muted" style="margin-top:6px">${view === "before" ? `Better: <b>${esc(k.best)}</b> · you played <b>${esc(k.move)}</b>` : `You played <b>${esc(k.move)}</b>, and their reply wins material.`}</div>
+      ${k === m ? `<div class="small muted" style="margin-top:6px">${view === "before" ? `You played <b>${esc(k.move)}</b>, ${k.grade === "Inaccuracy" ? "an" : "a"} ${esc(k.grade.toLowerCase())} · better was <b>${esc(k.best)}</b>` : afterLine(k)}</div>
         ${k.habit ? `<div class="small" style="margin-top:6px"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
         ${explained[k.ply] ? `<div class="coach-says" style="margin-top:10px">${esc(explained[k.ply])}</div>` : ""}
         ${aiReady && !explained[k.ply] ? `<button class="btn" style="margin-top:10px;margin-right:6px" data-explain="${k.ply}">Explain like a coach</button>` : ""}
@@ -533,7 +544,7 @@ async function gameView(id) {
       ply = view === "before" ? k.ply - 1 : k.ply; draw();
       // Maya explains the better move, and looks worried at what your move allowed
       if (view === "before") Coach.react("maya", "explain", `Move ${k.move_number}. ${cap(k.pattern)}. ${k.say} The better move was ${k.best}.`);
-      else Coach.react("maya", "worried", `You played ${k.move}. Watch their reply.`);
+      else Coach.react("maya", k.reply_missed ? "explain" : "worried", afterLine(k, true));
     });
     let html = "";
     for (let i = 1; i < g.positions.length; i += 2) {

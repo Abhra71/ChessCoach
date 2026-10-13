@@ -18,6 +18,23 @@ def test_key_moment_has_arrows_and_words():
     assert m["move_number"] == 16
 
 
+def test_review_tells_the_real_reply_from_the_engine_reply():
+    """The 13 Oct test: the arrow said "Reply" for the engine's Bxa8 when the opponent really castled."""
+    import chess
+    from coach.service import moment
+    board = chess.Board(HANG["fen"])
+    filler = [chess.Move.null()] * HANG["ply"]  # the moves before; only the one after the player's move matters
+    missed = moment(HANG, filler[:-1] + [board.parse_san("Qe5")] + [chess.Move.from_uci("e8e7")])
+    assert (missed["reply_san"], missed["real_reply_san"], missed["reply_missed"]) == ("dxe5", "Ke7", True)
+    assert missed["say"].endswith("In the game they missed it and played Ke7.")
+    found = moment(HANG, filler[:-1] + [board.parse_san("Qe5")] + [chess.Move.from_uci("d6e5")])
+    assert (found["real_reply_san"], found["reply_missed"]) == ("dxe5", False)
+    assert "missed" not in found["say"]
+    last = moment(HANG, filler)  # the game ended after the player's move
+    assert (last["real_reply_uci"], last["reply_missed"]) == (None, False)
+    assert moment(HANG)["grade"] == "Blunder"
+
+
 def test_at_most_three_moments_in_game_order():
     rows = [dict(HANG, ply=p, loss=30 + p) for p in (11, 21, 31, 41)]
     assert [m["ply"] for m in key_moments(rows)] == [21, 31, 41]
