@@ -170,8 +170,8 @@ class Handler(BaseHTTPRequestHandler):
             if hearing.available():
                 threading.Thread(target=hearing._whisper, daemon=True).start()
             return self.send(200, "{}", "application/json")
-        if path == "/api/stats":
-            return self.send(200, json.dumps(memory.practice_stats()), "application/json")
+        if path == "/api/stats":  # the numbers, and today's answer per position so a page can pick up where you were
+            return self.send(200, json.dumps({**memory.practice_stats(), "today": memory.today()}), "application/json")
         from coach import insights
         if path == "/api/home":
             return self.send(200, json.dumps(insights.home()), "application/json")
@@ -254,9 +254,10 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return self.send(400, "bad json", "text/plain")
         path = self.path.split("?")[0].rstrip("/")
-        if path == "/api/practice" and body.get("kind") in ("game", "puzzle"):
-            memory.record_practice(str(body.get("id"))[:200], body["kind"], bool(body.get("right")))
-            return self.send(200, json.dumps(memory.practice_stats()), "application/json")
+        if path == "/api/practice" and body.get("kind") in ("game", "puzzle", "opening"):
+            memory.record_practice(str(body.get("id"))[:200], body["kind"], bool(body.get("right")),
+                                   shown=bool(body.get("shown")))
+            return self.send(200, json.dumps({**memory.practice_stats(), "today": memory.today()}), "application/json")
         if path == "/api/verdict" and body.get("answer") in ("yes", "some", "no"):
             memory.record_verdict(body["answer"])
             note_in_logbook(f"Your verdict on the review (\"is this me?\"): {body['answer']}")

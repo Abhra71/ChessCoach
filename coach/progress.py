@@ -32,7 +32,7 @@ BADGES = [
     ("Results", "allround", "All-rounder", "games", "time controls you've won in", ("count", "allround"), [2, 3, 4]),
     ("Results", "games", "Regular", "games", "games played", ("count", "games"), [25, 100, 300]),
     ("Practice", "daily", "Daily habit", "bolt", "days of Today's 5 minutes", ("count", "daily"), [3, 7, 30]),
-    ("Practice", "right", "Sharp", "practice", "practice answers right first time", ("count", "right"), [10, 50, 200]),
+    ("Practice", "right", "Sharp", "practice", "positions solved on the first try", ("count", "right"), [10, 50, 200]),
     ("Practice", "learned", "Memory", "plan", "positions learned for good", ("count", "learned"), [5, 20, 50]),
     ("Practice", "lessons", "Student", "plan", "lessons finished in Your plan", ("count", "lessons"), [1, 5, 15]),
 ]
@@ -91,7 +91,7 @@ def counts(checked, moves, player, daily_days=(), practice=None, lessons=0):
     out["streak"], out["allround"] = best_streak, len(won_in)
     out["daily"] = len(set(daily_days))
     practice = practice or {}
-    out["right"], out["learned"], out["lessons"] = practice.get("right", 0), practice.get("learned", 0), lessons
+    out["right"], out["learned"], out["lessons"] = practice.get("right_first", 0), practice.get("learned", 0), lessons
     return out
 
 

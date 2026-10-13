@@ -41,5 +41,17 @@ def test_stats_and_verdict():
         memory.record_practice("a", "game", True, day=day(n))
     memory.record_practice("b", "puzzle", False, day=D)
     memory.record_verdict("yes", day=D)
-    assert memory.practice_stats() == {"answers": 4, "right": 3, "positions": 2, "learned": 1}
+    assert memory.practice_stats() == {"answers": 4, "right": 3, "positions": 2, "right_first": 1, "learned": 1}
     assert memory._read(memory.VERDICTS) == [{"answer": "yes", "day": "2026-10-10"}]
+
+
+def test_only_the_first_answer_of_the_day_counts():
+    """13 Oct test: solving the same puzzle again raised "right first time" from 4 to 6."""
+    assert memory.record_practice("a", "puzzle", False, day=D)
+    assert not memory.record_practice("a", "puzzle", True, day=D)  # back to it, solved: changes nothing
+    assert not memory.record_practice("a", "puzzle", True, day=D)
+    assert memory.practice_stats()["right_first"] == 0
+    assert memory.today(day=D) == {"a": "missed"}
+    memory.record_practice("b", "opening", True, day=D, shown=True)  # Show answer is never "right"
+    assert memory.today(["b"], day=D) == {"b": "shown"}
+    assert memory.practice_stats()["right"] == 0

@@ -75,10 +75,26 @@ const Coach = (() => {
 
 // ---------- the board trainer: practice, plan lessons, openings ----------
 // drills: as made by coach/drills.py. opts: {coach, record (save practice answers), onDone(rightFirstTime)}
+// With record, today's answers come from the server: leaving the page and coming back keeps them, a position
+// answered today stays answered (solving it again is practice and changes nothing), and onDone fires once.
 function trainer(drills, opts) {
   const coach = opts.coach || "arjun", checklist = opts.checklist || [];
-  let i = 0, k = 0, pieces = {}, picked = null, done = false, missed = false, last = {}, right = 0, solved = 0, ticked = 0;
+  let i = 0, k = 0, pieces = {}, picked = null, done = false, missed = false, last = {}, ticked = 0, finishedAll = false;
   const state = drills.map(() => null), briefed = drills.map(() => false);  // per position: right, missed, shown
+  const answered = drills.map(() => false);  // has today's answer: right, missed or shown
+  const right = () => state.filter(x => x === "right").length;
+  const counter = () => { $("#count").textContent = `${i + 1} of ${drills.length} · ${right()} right first time`; };
+  function save(x, result) {  // the day's first answer to this position; the server ignores later ones
+    if (opts.record) api("/api/practice", { id: x.id, kind: x.kind, right: result === "right", shown: result === "shown" })
+      .then(stats).catch(() => {});
+  }
+  function allDone(already) {  // every position answered: say so clearly, once
+    if (finishedAll) return;
+    finishedAll = true;
+    result("ok-text", `<b>All ${drills.length} done${opts.record ? " for today" : ""}.</b> ${right()} of ${drills.length} right first time.`);
+    if (!already) setTimeout(() => { Sound.play("done"); confetti(); }, 900);
+    if (opts.onDone) opts.onDone(right(), already);
+  }
   const group = x => x.pattern || x.kind;
   const groupName = x => (x.pattern && (HABIT[x.pattern] || [])[1]) || { opening: "Your opening", puzzle: "Puzzles", game: "Your games" }[x.kind] || "Practice";
   function paintDots() {  // every position as a numbered dot, grouped by habit: click one to go there
@@ -126,9 +142,9 @@ function trainer(drills, opts) {
   async function show() {
     k = 0; picked = null; done = false; missed = false; last = {};
     const x = d();
-    $("#count").textContent = `${i + 1} of ${drills.length} · ${right} right first time`;
+    counter();
     paintDots();
-    const briefing = x.brief && !briefed[i];
+    const briefing = x.brief && !briefed[i] && !answered[i];  // answered today: straight to the board
     $("#briefbox").hidden = !briefing;
     document.querySelectorAll(".play-only").forEach(el => el.hidden = briefing);
     $("#board").classList.toggle("dim", !!briefing);
@@ -143,7 +159,8 @@ function trainer(drills, opts) {
     $("#kind").textContent = x.kind === "game" ? "From your game" : x.kind === "opening" ? "Opening" : "Puzzle";
     $("#task").textContent = x.intro; $("#hint").textContent = x.kind === "opening" ? "" : x.hint;
     $("#where").innerHTML = `${esc(x.where)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link)} ↗</a>`;
-    result("muted", checklist.length ? "First the check, then click a piece and its square." : "Click a piece, then the square to move it to.");
+    result("muted", answered[i] ? `Done today: ${{ right: "right first time", missed: "missed the first time", shown: "you used Show answer" }[state[i]]}. Play it again for practice; it won't change your score.`
+      : checklist.length ? "First the check, then click a piece and its square." : "");
     pieces = x.start; draw();
     ticked = 0; paintChecks();
     Coach.react(coach, checklist.length ? "listen" : x.kind === "opening" ? "explain" : "thinking",
@@ -154,28 +171,34 @@ function trainer(drills, opts) {
     const x = d(), s = step();
     pieces = m.after; last = {}; draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-ok"));
     Sound.move(m.san);
+    const more = k + 1 < x.steps.length;  // the last step of an opening line can end with their answer too
     if (s.reply) {
       done = true;
-      result("ok-text", `<b>${esc(m.san)}</b>: yes. Now they play ${esc(s.reply.san)}. Keep going.`);
+      result("ok-text", `<b>${esc(m.san)}</b>: yes. Now they play ${esc(s.reply.san)}.${more ? " Keep going." : ""}`);
       if (s.idea) Coach.react(coach, "explain", s.idea);
       await wait(900); if (d() !== x) return;
-      pieces = s.reply.board; last = mark([s.reply.uci.slice(0, 2), s.reply.uci.slice(2, 4)], "hl-last"); k++; done = false; draw();
+      pieces = s.reply.board; last = mark([s.reply.uci.slice(0, 2), s.reply.uci.slice(2, 4)], "hl-last"); draw();
       Sound.move(s.reply.san);
-      ticked = 0; paintChecks();  // a new position: check again
-      if (shown) answer(); return;
+      if (more) {
+        k++; done = false;
+        ticked = 0; paintChecks();  // a new position: check again
+        if (shown) answer(); return;
+      }
+      await wait(600); if (d() !== x) return;
     }
-    done = true; if (!missed) right++; solved++;
-    state[i] = shown ? "shown" : missed ? "missed" : "right"; paintDots();
+    done = true;
+    const again = answered[i];  // already answered today: practice only, nothing changes
+    if (!again) { state[i] = shown ? "shown" : missed ? "missed" : "right"; answered[i] = true; save(x, state[i]); }
+    paintDots();
     setTimeout(() => Sound.play(shown ? "move" : "right"), 180);
-    $("#count").textContent = `${i + 1} of ${drills.length} · ${right} right first time`;
+    counter();
     const note = x.kind === "game" ? `In the game you played ${esc(x.played)}.${m.san === x.best ? "" : " The engine's top move was " + esc(x.best) + "."}`
       : x.kind === "opening" ? "That's the whole line. Play it in your next games." : "Puzzle solved.";
     result("ok-text", `<b>${esc(m.san)}</b>: ${shown ? "that's the answer." : x.kind === "game" ? "yes, that keeps you safe." : "correct."}<div class="muted small" style="margin-top:4px">${note}</div>`);
     const praise = shown ? `The answer is ${m.san}. Next time you'll see it.` : s.idea ? `${s.idea} ${note}`
       : missed ? `${m.san}. You got there.` : x.kind === "game" ? `Yes! ${m.san} keeps you safe.` : `Correct, ${m.san}!`;
     Coach.react(coach, shown ? "explain" : missed ? "encourage" : "celebrate", praise);
-    if (opts.record) api("/api/practice", { id: x.id, kind: x.kind, right: !missed }).then(stats).catch(() => {});
-    if (solved === drills.length) { setTimeout(() => { Sound.play("done"); confetti(); }, 900); if (opts.onDone) opts.onDone(right); }
+    if (!again && answered.every(Boolean)) allDone(false);
   }
   function click(sq) {
     if (done) return;
@@ -195,7 +218,8 @@ function trainer(drills, opts) {
       Coach.react(coach, "thinking", m.say);
       return draw();
     }
-    missed = true; Sound.play("wrong", 0.5); if (!state[i]) { state[i] = "missed"; paintDots(); }
+    missed = true; Sound.play("wrong", 0.5);
+    if (!answered[i]) { state[i] = "missed"; answered[i] = true; save(d(), "missed"); paintDots(); }  // saved now: leaving can't undo it
     result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(m.say)}</div><div class="small muted" style="margin-top:4px">Try again.</div>`);
     Coach.react(coach, "worried", `Not quite. ${m.say} Try again.`);  // the coach's face falls, with the hint
     draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-no"));
@@ -205,13 +229,24 @@ function trainer(drills, opts) {
     const pick = (d().kind === "game" && entries.find(([, m]) => m.san === d().best)) || entries[0];
     missed = true; ticked = checklist.length; good(pick[0], pick[1], true);
   }
-  function stats(s) { if (s && s.answers && $("#stats")) $("#stats").textContent = `So far: ${s.right} of ${s.answers} right first time · ${s.learned} positions learned for good.`; }
+  function stats(s) { if (s && s.positions && $("#stats")) $("#stats").textContent = `So far: ${s.right_first} of ${s.positions} positions right first time · ${s.learned} learned for good.`; }
   $("#show").onclick = () => { if (!done) answer(); };
-  $("#next").onclick = () => { i = (i + 1) % drills.length; show(); };
+  $("#next").onclick = () => {  // from the last one: the next unanswered, or the end of the session, never a silent loop
+    if (i === drills.length - 1 && answered.every(Boolean)) { finishedAll = false; return allDone(true); }
+    const ahead = drills.map((_, n) => (i + 1 + n) % drills.length);
+    i = i === drills.length - 1 ? (ahead.find(n => !answered[n]) ?? 0) : i + 1; show();
+  };
   $("#prev").onclick = () => { i = (i - 1 + drills.length) % drills.length; show(); };
   $("#prev").hidden = $("#next").hidden = drills.length < 2;
-  if (opts.record) api("/api/stats").then(stats).catch(() => {});
-  show();
+  if (!opts.record) return show();
+  api("/api/stats").then(s => {  // pick up where you were today
+    stats(s);
+    drills.forEach((x, n) => { const t = s.today && s.today[x.id]; if (t) { state[n] = t; answered[n] = true; } });
+    const first = answered.findIndex(a => !a);
+    i = first < 0 ? 0 : first;
+    show();
+    if (first < 0) allDone(true);
+  }).catch(() => show());
 }
 
 function trainerPage(title, sub) {
