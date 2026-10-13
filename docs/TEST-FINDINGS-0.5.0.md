@@ -242,3 +242,16 @@ Their rule: a symptom isn't automatically the cause, so investigate the objectiv
 - **Voice picks (point 2):** checked. The saved picks match what speaks, and nothing speeds up playback.
   - The "too fast" feeling, points 13, 19 and 36, comes from long dense text without pauses. The guide used short pieces with pauses.
   - The fix, in the polish phase: pauses between sentences and a slightly slower speed, same voice.
+
+## Phase 2, the chess.com self-check: done, 13 Oct, commit 3b0f7c2
+See [SELF-CHECK.md](SELF-CHECK.md).
+- **One contract**, `extension/contract.js`, with a check where each piece is used, and the health shown in Settings and the pop-up.
+- **A graceful fallback** for the review, and the API checked on every download.
+- **A weekly GitHub alarm.** The GitHub command-line tool isn't on this PC, so start it by hand from GitHub, Actions, chess.com check, Run workflow.
+- **Finding 0 is fixed.** The review works on `/game/<id>` and `/live/game/<id>`.
+  - Two more causes were found and fixed: the scripts weren't on pages reached without a reload, and "document_idle" on chess.com's ad-heavy pages delayed them.
+  - Maya now sits above the ads. The names come from the page title, so there's no false "can't confirm".
+
+## Phase 3, chess.com features: done, 13 Oct, commit 4d28830
+- **The coach's pick of where to practise, said with the reason,** on every coach section. Open Knightwise is always there. Fixes points 38 and 47, and finding 2.
+- **Archive tags** on chess.com's games archive, matching the review's key moments. 43 of 50 rows were tagged on the real page; the other 7 are bot games, which chess.com doesn't share.
