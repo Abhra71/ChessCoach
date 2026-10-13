@@ -10,4 +10,5 @@ if /i "%~1"=="fresh" (
   set "KNIGHTWISE_HOME=%TEMP%\knightwise-try"
   if exist "%TEMP%\knightwise-try" rmdir /s /q "%TEMP%\knightwise-try"
 )
-python -m coach.app
+rem No console window: closing a black window used to close Knightwise too (13 Oct test). Errors go to the logbook.
+start "" pythonw -m coach.app

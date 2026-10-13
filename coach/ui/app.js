@@ -67,6 +67,7 @@ function applyTheme(theme) {
 // ---------- voice ----------
 const Voice = (() => {  // the coach speaks sentence by sentence; the next one is made while this one plays
   let on = true, playing = null, token = 0;
+  const PAUSE = 450;  // ms between sentences: back to back they sounded rushed, though the voice itself was right
   const talkers = [], tell = v => talkers.forEach(f => { try { f(v); } catch (e) {} });
   const split = t => String(t).replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
   const audio = (text, voice) => fetch("/api/say", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -85,6 +86,8 @@ const Voice = (() => {  // the coach speaks sentence by sentence; the next one i
       if (i + 1 < parts.length) next = audio(parts[i + 1], voice);
       tell(true);
       await play(url);
+      if (mine !== token) return;
+      if (i + 1 < parts.length) await wait(PAUSE);  // a breath between sentences, like a person (13 Oct: "too fast")
       if (mine !== token) return;
     }
     tell(false);
@@ -449,8 +452,13 @@ async function home() {
   shell("home", `<p class="muted">Loading…</p>`);
   const h = await api("/api/home");
   if (!h.player) return go("welcome");
-  try { if (sessionStorage.getItem("kw-new")) { sessionStorage.removeItem("kw-new"); setTimeout(() => AiCard.maybe("welcome"), 2500); }
-        else AiCard.maybe("week"); } catch (e) {}
+  // the very first Home is for the player's own games: the AI card waits for the next visit (13 Oct test: the AI
+  // card, a sudden coach and a console window all at once "ruined the first look")
+  try {
+    if (sessionStorage.getItem("kw-new")) { sessionStorage.removeItem("kw-new"); localStorage.setItem("kw-ai-next", "1"); }
+    else if (localStorage.getItem("kw-ai-next")) { localStorage.removeItem("kw-ai-next"); setTimeout(() => AiCard.maybe("welcome"), 4000); }
+    else AiCard.maybe("week");
+  } catch (e) {}
   const hour = new Date().getHours(), hello = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const f = h.focus, last = h.last_game, r = h.results || {}, pr = h.practice || {};
   const better = h.pieces_last20 < h.pieces_per_game;
@@ -814,33 +822,35 @@ const remember = (k, v) => { try { if (v === undefined) return localStorage.getI
 // and settles back to quiet once the melody fills out. The app window lets it start by itself (app.py); in a plain
 // browser the first click or key starts it.
 function welcomeMusic(button) {
-  const audio = new Audio("/ui/vendor/music/gymnopedie-1.flac"), OPEN = 0.3, LOUD = 0.18;
-  audio.loop = true; audio.preload = "auto"; audio.volume = 0;
-  let muted = remember("kw-music-muted") === "1", fader = null, settle = null;
+  // 13 Oct test: "late, with a lull and long silences". The piece opens with quiet chords before the melody, the
+  // volume used to drop 9 s in, and the file ends with 3 s of silence before looping. So: start 3 s in, one steady
+  // volume, and loop before the silent end.
+  const audio = new Audio("/ui/vendor/music/gymnopedie-1.flac"), VOLUME = 0.26, FROM = 3, TAIL = 168.5;
+  audio.preload = "auto"; audio.volume = 0;
+  let muted = remember("kw-music-muted") === "1", fader = null;
   const fade = (to, secs) => {
     clearInterval(fader);
-    const step = (to - audio.volume) / (secs * 20);
+    const step = (to - audio.volume) / Math.max(1, secs * 20);
     fader = setInterval(() => {
       const v = audio.volume + step;
       if ((step >= 0 && v >= to) || (step < 0 && v <= to)) { audio.volume = to; clearInterval(fader); if (!to) audio.pause(); }
       else audio.volume = Math.min(1, Math.max(0, v));
     }, 50);
   };
+  audio.addEventListener("loadedmetadata", () => { if (audio.currentTime < FROM) audio.currentTime = FROM; }, { once: true });
+  audio.addEventListener("timeupdate", () => { if (audio.currentTime >= TAIL) audio.currentTime = FROM; });  // no silent tail
   const start = () => {
     if (muted || !audio.paused) return;
-    audio.play().then(() => {
-      fade(audio.currentTime < 9 ? OPEN : LOUD, 1);
-      clearTimeout(settle);
-      settle = setTimeout(() => { if (!muted) fade(LOUD, 4); }, Math.max(0, 9 - audio.currentTime) * 1000);
-    }).catch(() => {});
+    if (audio.readyState >= 1 && audio.currentTime < FROM) audio.currentTime = FROM;
+    audio.play().then(() => fade(VOLUME, 0.5)).catch(() => {});
   };
   const paint = () => { button.innerHTML = muted ? "Music off" : "Music on"; button.setAttribute("aria-pressed", String(!muted)); };
-  button.onclick = () => { muted = !muted; remember("kw-music-muted", muted ? "1" : "0"); paint(); if (muted) { clearTimeout(settle); fade(0, 0.6); } else start(); };
+  button.onclick = () => { muted = !muted; remember("kw-music-muted", muted ? "1" : "0"); paint(); if (muted) fade(0, 0.6); else start(); };
   paint(); start();
   const kick = () => { if (audio.paused) start(); };
   const EVENTS = ["pointerdown", "keydown"];
   EVENTS.forEach(e => addEventListener(e, kick));
-  return () => { EVENTS.forEach(e => removeEventListener(e, kick)); clearTimeout(settle); fade(0, 0.8); };
+  return () => { EVENTS.forEach(e => removeEventListener(e, kick)); fade(0, 0.8); };
 }
 
 // Short lines typed over the film, letter by letter, held, then erased.
@@ -918,7 +928,11 @@ async function route() {
   try {
     if (name === "welcome") { Coach.hide(); return await welcome(); }
     if (["settings", "extension"].includes(name)) Coach.hide();
-    else if (!(name === "games" && arg)) Coach.arrive(name || "home");  // one game: Maya welcomes you there herself
+    else if (!(name === "games" && arg)) {  // one game: Maya welcomes you there herself
+      let first = false; try { first = !!sessionStorage.getItem("kw-new"); } catch (e) {}
+      if (first) setTimeout(() => Coach.arrive("home"), 2500);  // the first Home: the coach comes once the cards have settled
+      else Coach.arrive(name || "home");
+    }
     if (name === "plan") return await planView(arg);
     if (name === "games" && arg) return await gameView(arg);
     if (name === "games") return await games();
