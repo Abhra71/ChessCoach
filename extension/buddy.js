@@ -161,7 +161,9 @@
     remove();
     if (!here) return;  // not a coach section: nothing at all
     current = here;
-    const r = await send({ type: "coach", section: here, hour: new Date().getHours() });
+    const store = (await send({ type: "greeted", section: here })) || {};
+    const first = store.day !== today();  // the first visit to this section today: the full welcome
+    const r = await send({ type: "coach", section: here, hour: new Date().getHours(), again: !first });
     if (current !== here) return;
     said = r && r.ok ? r.data : {
       coach: "zara", name: "Zara", mood: "calm", voice_on: false, actions: [],
@@ -174,11 +176,11 @@
       render(true); speak();
       return;
     }
-    const store = (await send({ type: "greeted", section: here })) || {};
-    const first = store.day !== today();
+    if (current !== here) return;
     if (first && r && r.ok) said = { ...said, pose: "greet" };
-    render(first);
+    render(true);  // never silent: the full welcome first, later in the day just where things stand
     if (first && r && r.ok) { send({ type: "greeted", section: here, set: today() }); speak(); }  // asleep: try again later
+    else { clearTimeout(foldTimer); foldTimer = setTimeout(() => render(false), MINUTES_OPEN * 60000); }
   }
 
   // ---- the archive: a Knightwise tag on each finished game ("clean game", "2 pieces left hanging") ----

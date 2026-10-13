@@ -133,7 +133,21 @@ def line(kind, coach, rng=random, **facts):
     return rng.choice(options).format(**facts)
 
 
-def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
+AGAIN = ["Back again. Here's where we are.", "Good, you're back.", "Picking up where we were."]
+
+
+def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, again=False):
+    """again: a second visit to this section today, so no full welcome again, just where things stand (13 Oct test:
+    "welcoming is an art"; the coach was greeting every time, then folding silently)."""
+    said = _speak(section, home, hour, moments, rng, extra)
+    if again and said.get("lines") and section != "review":
+        lines = said["lines"]
+        keep = [lines[-1]] if lines[-1].startswith("My pick") else lines[1:2]  # where things stand, in one line
+        said = {**said, "lines": [rng.choice(AGAIN)] + keep, "again": True}
+    return said
+
+
+def _speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
     """What the coach of this section says: {coach, name, voice, mood, lines, actions}.
     moments: for a game review, the number of key moments (None = a game the coach doesn't know).
     extra: {"novelty": the new thing from coach/plan.py, "advice": a do-this-not-that line} for the home section."""

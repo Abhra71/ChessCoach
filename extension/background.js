@@ -46,6 +46,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "coach") {
     const q = new URLSearchParams({ section: String(msg.section || "home"), hour: String(msg.hour ?? "") });
     if (/^\d+$/.test(msg.game || "")) q.set("game", msg.game);
+    if (msg.again) q.set("again", "1");  // a second visit today: no full welcome again
     json(`${COACH}/api/coach?${q}`, reply);
     return true;
   }

@@ -11,7 +11,7 @@ const COACHES = {
 const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress" };
 
 const Coach = (() => {
-  let box = null, said = null, foldTimer = null;
+  let box = null, said = null, foldTimer = null, quiet = null;
   const remember = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const today = () => new Date().toISOString().slice(0, 10);
 
@@ -63,12 +63,13 @@ const Coach = (() => {
   async function arrive(tab) {
     const section = TAB_SECTION[tab];
     if (!section) return hide();
-    const r = await api(`/api/coach?section=${section}&hour=${new Date().getHours()}`).catch(() => null);
+    const first = remember(`kw-app-greeted-${section}`) !== today();  // the first visit to this section today
+    const r = await api(`/api/coach?section=${section}&hour=${new Date().getHours()}${first ? "" : "&again=1"}`).catch(() => null);
     if (!r || TAB_SECTION[location.hash.replace(/^#\/?/, "").split("/")[0] || "home"] !== section) return;
-    const first = remember(`kw-app-greeted-${section}`) !== today();
     said = { ...r, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
-    render(first);
+    render(true);  // never silent: the full welcome first, later just where things stand
     if (first) { remember(`kw-app-greeted-${section}`, today()); talk(); }
+    else { const now = said; clearTimeout(quiet); quiet = setTimeout(() => { if (said === now) render(false); }, 20000); }
   }
   return { show, react, hide, arrive };
 })();

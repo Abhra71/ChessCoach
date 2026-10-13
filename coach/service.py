@@ -537,7 +537,8 @@ def coach_says(url):
             extra["advice"] = coaches.advice(insights._games(), insights._moves(), player() or "")
         except Exception:
             log.exception("novelty")
-    said = coaches.speak(q.get("section", "home"), hour=hour % 24, moments=moments, extra=extra)
+    said = coaches.speak(q.get("section", "home"), hour=hour % 24, moments=moments, extra=extra,
+                         again=q.get("again") == "1")
     from coach import voice
     s = settings.load()
     said["voice_on"] = bool(s.get("voice")) and voice.available()

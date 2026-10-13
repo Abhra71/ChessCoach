@@ -105,3 +105,13 @@ def test_a_daily_or_bot_game_link_goes_to_the_archive_instead():
     home = {**HOME, "last_game": {**HOME["last_game"], "url": "https://www.chess.com/game/daily/162529818"}}
     urls = [a["url"] for a in coaches.suggestions(home)]
     assert urls[1] == "https://www.chess.com/games/archive/gushynanda"
+
+
+def test_second_visit_today_is_short_not_a_new_welcome():
+    """13 Oct test: the full welcome every time, or silence. The first visit of the day gets the welcome; later
+    visits a short 'back again' and where things stand, never the hello again."""
+    first = coaches.speak("home", HOME, hour=19, rng=random.Random(1))
+    again = coaches.speak("home", HOME, hour=19, rng=random.Random(1), again=True)
+    assert "gushynanda" in first["lines"][0] and "gushynanda" not in again["lines"][0]
+    assert again["again"] and len(again["lines"]) == 2 and again["lines"][1].startswith("My pick")
+    assert again["actions"] == first["actions"]

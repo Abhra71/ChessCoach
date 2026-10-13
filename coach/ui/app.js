@@ -565,6 +565,11 @@ async function gameView(id) {
     draw();
   });
   draw();
+  // Maya welcomes you to the review at once (13 Oct test: she only came after a moment was clicked), with her pick
+  const worst = g.key_moments.reduce((a, b) => (b.loss > (a ? a.loss : -1) ? b : a), null);
+  if (worst) Coach.react("maya", "explain", `${g.key_moments.length} key moment${g.key_moments.length === 1 ? "" : "s"} in this game. My pick: start with move ${worst.move_number}, it cost you the most.`,
+    [{ label: `Move ${worst.move_number}`, run: () => { const el = $(`#moments .moment[data-i="${g.key_moments.indexOf(worst)}"]`); if (el) el.click(); } }]);
+  else Coach.react("maya", "celebrate", "No big mistakes in this game. That's how it's done.");
 }
 
 // ---------- practice ----------
@@ -868,7 +873,8 @@ async function route() {
   const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
   try {
     if (name === "welcome") { Coach.hide(); return await welcome(); }
-    if (["settings", "extension"].includes(name)) Coach.hide(); else Coach.arrive(name || "home");
+    if (["settings", "extension"].includes(name)) Coach.hide();
+    else if (!(name === "games" && arg)) Coach.arrive(name || "home");  // one game: Maya welcomes you there herself
     if (name === "plan") return await planView(arg);
     if (name === "games" && arg) return await gameView(arg);
     if (name === "games") return await games();
