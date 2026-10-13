@@ -1,12 +1,10 @@
-// The coaches inside the Knightwise app: the same characters as on chess.com (/ext/faces.js), sitting on their box.
-// Each tab has its coach, who comes up by themselves once a day; boards call them on every move (worried at a wrong
+// The coaches inside the Knightwise app, Maya and Viktor (two since 13 Oct 2026, the player's choice): the same
+// characters as on chess.com (/ext/faces.js), sitting on their box. Each tab has its coach, the full welcome once a day; boards call them on every move (worried at a wrong
 // move, with a hint; celebrating a right one). Also: the "Your plan" tab, the board trainer, and the AI card.
 
 const COACHES = {
-  maya: { name: "Maya", voice: "af_heart", role: "Game reviews" },
-  arjun: { name: "Arjun", voice: "am_puck", role: "Puzzles and practice" },
-  zara: { name: "Zara", voice: "hf_beta", role: "Before you play" },
-  viktor: { name: "Viktor", voice: "am_michael", role: "Progress and your plan" },
+  maya: { name: "Maya", voice: "af_heart", role: "Your games and practice" },
+  viktor: { name: "Viktor", voice: "am_michael", role: "Your progress and plan" },
 };
 const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress" };
 
@@ -21,7 +19,7 @@ const Coach = (() => {
       box = document.createElement("div");
       document.body.appendChild(box);
     }
-    const s = said, who = COACHES[s.coach] || COACHES.zara;
+    const s = said, who = COACHES[s.coach] || COACHES.maya;
     box.className = `kw-coach kw-app ${open ? "open" : "folded"}`;
     const face = `<button class="kw-char" title="${esc(who.name)}">${KnightwiseFaces.figure(s.coach, s.pose || s.mood || "calm")}</button>`;
     box.innerHTML = open ? `${face}<div class="kw-box" role="status">
@@ -79,7 +77,7 @@ const Coach = (() => {
 // With record, today's answers come from the server: leaving the page and coming back keeps them, a position
 // answered today stays answered (solving it again is practice and changes nothing), and onDone fires once.
 function trainer(drills, opts) {
-  const coach = opts.coach || "arjun", checklist = opts.checklist || [];
+  const coach = opts.coach || "maya", checklist = opts.checklist || [];
   let i = 0, k = 0, pieces = {}, picked = null, done = false, missed = false, last = {}, ticked = 0, finishedAll = false;
   const state = drills.map(() => null), briefed = drills.map(() => false);  // per position: right, missed, shown
   const answered = drills.map(() => false);  // has today's answer: right, missed or shown
@@ -336,7 +334,7 @@ const AiCard = (() => {
   const save = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} };
   const ROWS = [
     ["Every game checked by Stockfish, key moments with arrows", true, true],
-    ["Your four coaches, their faces and voices, on chess.com and here", true, true],
+    ["Your two coaches, their faces and voices, on chess.com and here", true, true],
     ["Your plan and new ideas from the library", true, true],
     ["One-to-one conversation with your coach", false, true],
     ["Ask your coach anything and get a reply", false, true],

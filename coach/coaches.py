@@ -1,9 +1,10 @@
-"""The four coaches on chess.com: who appears where, and how each one says things.
+"""Your two coaches, on chess.com and in Knightwise: Maya and Viktor. What they say, and where.
 
-All four share one brain (Stockfish + our facts). They differ only in face, voice and wording, and each always shows up
-for the same sections, so it feels like a specialist. Nothing to pick, nothing to switch.
-Written sentences work for everyone, offline; an AI key (later) lets the same coach reply in conversation.
-Fair play: nothing here looks at a game being played; the extension hides the coaches wherever one could be running.
+13 Oct 2026: two coaches instead of four, the player's choice ("that voice was the best", and they like Viktor too).
+Maya: home, games and reviews, practice and puzzles. Viktor: your progress, your plan and lessons. One brain
+(Stockfish + our facts); each always shows up for the same sections, so nothing to pick.
+Written sentences work for everyone, offline; with an AI key she replies in conversation.
+Fair play: nothing here looks at a game being played; the extension hides her wherever one could be running.
 """
 import random
 import time
@@ -15,15 +16,12 @@ BOTS = "https://www.chess.com/play/computer"
 LESSONS = "https://www.chess.com/lessons"
 
 COACHES = {
-    "maya": {"role": "Game reviews", "name": "Maya", "voice": "af_heart", "about": "Former champion. Calm, patient, strategic.",
-             "sections": ["review", "games"]},
-    "arjun": {"role": "Puzzles and practice", "name": "Arjun", "voice": "am_puck", "about": "Young prodigy. Quick, energetic, loves tactics.",
-              "sections": ["puzzles"]},
-    "zara": {"role": "Before you play", "name": "Zara", "voice": "hf_beta", "about": "Attacking player. Direct, bold, competitive.",
-             "sections": ["home", "play"]},
-    "viktor": {"role": "Progress and lessons", "name": "Viktor", "voice": "am_michael", "about": "Veteran. Wise, dry humour, has seen it all.",
-               "sections": ["progress", "lessons", "plan"]},
+    "maya": {"role": "Your games and practice", "name": "Maya", "voice": "af_heart",
+             "about": "Former champion. Calm, patient, clear.", "sections": ["home", "play", "review", "games", "puzzles"]},
+    "viktor": {"role": "Your progress and plan", "name": "Viktor", "voice": "am_michael",
+               "about": "Veteran. Wise, dry humour, has seen it all.", "sections": ["progress", "lessons", "plan"]},
 }
+COACH = "maya"  # where no section says otherwise
 AI_HINT = "Want real replies? Add a free AI key in Knightwise Settings. It takes 2 minutes."
 SECTION_COACH = {s: c for c, info in COACHES.items() for s in info["sections"]}
 
@@ -37,77 +35,34 @@ SHORT = {
     "stalemated a won game": "giving the king a square when you're winning",
 }
 
-# Each coach says the same thing in their own way. {name}, {habit}, {lately}, {before}, {moments}... are filled in.
+# What each coach says, a few ways each; a kind with only Maya's words is said by Maya's words. {name}, {habit}, {lately}, {before}, {moments}... are filled in.
 SAY = {
-    "hello": {
-        "maya": ["{greet}, {name}. Good to see you.", "{greet}, {name}. Let's take it one move at a time today."],
-        "arjun": ["Hey {name}! Ready to crush some puzzles?", "{name}! Let's go, I've got good ones for you today."],
-        "zara": ["{greet}, {name}. Let's win some games.", "{name}, you're here. Good. Let's get to work."],
-        "viktor": ["Ah, {name}. {greet}.", "{greet}, {name}. Sit down, let's look at how you're doing."],
-    },
-    "better": {
-        "maya": ["You're giving away fewer pieces: {lately} a game, down from {before}. That's real progress."],
-        "arjun": ["Whoa, only {lately} pieces lost a game lately, down from {before}. You're getting sharp!"],
-        "zara": ["You're down to {lately} pieces lost a game, from {before}. Keep that up and you'll start winning."],
-        "viktor": ["{lately} pieces a game, down from {before}. I've seen worse progress from grandmasters."],
-    },
-    "worse": {
-        "maya": ["You've lost a few more pieces lately, {lately} a game. No worry, we'll slow down and fix it."],
-        "arjun": ["Pieces have been slipping lately, {lately} a game. Let's tighten that up!"],
-        "zara": ["{lately} pieces lost a game lately, up from {before}. That's costing you games. Let's fix it."],
-        "viktor": ["{lately} pieces a game lately. Everyone has a bad week. Even me, once, in 1987."],
-    },
-    "focus": {
-        "maya": ["Today, let's work on {habit}. {tip}"],
-        "arjun": ["Today's mission: {habit}. {tip}"],
-        "zara": ["One thing today: {habit}. {tip}"],
-        "viktor": ["The lesson for today is {habit}. {tip}"],
-    },
-    "review": {
-        "maya": ["I found {moments} in this game. Click one and I'll show you on the board.",
-                 "{moments} decided this game. Let's look at them together, calmly."],
-    },
-    "review_clean": {
-        "maya": ["A clean game: no big mistakes for me to show you. Well played."],
-    },
-    "unknown_game": {
-        "maya": ["I haven't checked this game yet. Once it's finished and saved, I'll go through it with you."],
-    },
-    "puzzles": {
-        "arjun": ["Puzzles! Before every move, ask what they can take. Let's see how fast you are.",
-                  "Warm-up time. Look for checks, captures and threats, in that order."],
-    },
-    "progress": {
-        "viktor": ["You've played {games} games with me watching. Let's see what's changed."],
-    },
-    "week_better": {
-        "viktor": ["This week: {this_games} games, {this_pieces} pieces given away. Last week it was {last_pieces} in "
-                   "{last_games}. That is how improvement looks."],
-    },
-    "week_same": {
-        "viktor": ["This week: {this_games} games, {this_pieces} pieces given away; last week {last_pieces} in {last_games}. "
-                   "Steady. Now let's make it better."],
-    },
-    "week_none": {
-        "viktor": ["No games this week yet. A game a day keeps the rust away, as I always say. Well, I say it now."],
-    },
-    "lessons": {
-        "viktor": ["Lessons are good. But the best teacher is your own last game. Remember that."],
-    },
-    "games": {
-        "maya": ["Pick a game and I'll show you the moments that decided it.",
-                 "Every game has one or two moments that matter. Choose one and let's find them."],
-    },
-    "plan": {
-        "viktor": ["Here is your plan: one opening, one tactic, one idea, one endgame. Pick one and we start.",
-                   "Not a pile of homework. Four things, chosen for you. Start with whichever you like."],
-    },
-    "play": {
-        "zara": ["Pick a bot near your level and play it like a real game. I'll stay quiet until it's over."],
-    },
-    "no_player": {
-        "zara": ["Hi! I'm Zara, one of your Knightwise coaches. Open the Knightwise app and tell me your chess.com name."],
-    },
+    "hello": {"maya": ["{greet}, {name}. Good to see you.", "{greet}, {name}. Let's take it one move at a time today."],
+              "viktor": ["Ah, {name}. {greet}.", "{greet}, {name}. Sit down, let's look at how you're doing."]},
+    "better": {"maya": ["You're giving away fewer pieces: {lately} a game, down from {before}. That's real progress."],
+               "viktor": ["{lately} pieces a game, down from {before}. I've seen worse progress from grandmasters."]},
+    "worse": {"maya": ["You've lost a few more pieces lately, {lately} a game, up from {before}. No worry, we'll slow down and fix it."],
+              "viktor": ["{lately} pieces a game lately. Everyone has a bad week. Even me, once, in 1987."]},
+    "focus": {"maya": ["Today, let's work on {habit}. {tip}"], "viktor": ["The lesson for today is {habit}. {tip}"]},
+    "review": {"maya": ["I found {moments} in this game. Click one and I'll show you on the board.",
+                        "{moments} decided this game. Let's look at them together, calmly."]},
+    "review_clean": {"maya": ["A clean game: no big mistakes for me to show you. Well played."]},
+    "unknown_game": {"maya": ["I haven't checked this game yet. Once it's finished and saved, I'll go through it with you."]},
+    "puzzles": {"maya": ["Puzzles. Before every move, ask what they can take.",
+                         "Warm-up time. Look for checks, captures and threats, in that order."]},
+    "progress": {"viktor": ["You've played {games} games with me watching. Let's see what's changed."]},
+    "week_better": {"viktor": ["This week: {this_games} games, {this_pieces} pieces given away. Last week it was {last_pieces} in "
+                               "{last_games}. That is how improvement looks."]},
+    "week_same": {"viktor": ["This week: {this_games} games, {this_pieces} pieces given away; last week {last_pieces} in "
+                             "{last_games}. Steady. Now let's make it better."]},
+    "week_none": {"viktor": ["No games this week yet. A game a day keeps the rust away, as I always say. Well, I say it now."]},
+    "lessons": {"viktor": ["Lessons are good. But the best teacher is your own last game. Remember that."]},
+    "games": {"maya": ["Pick a game and I'll show you the moments that decided it.",
+                       "Every game has one or two moments that matter. Choose one and let's find them."]},
+    "plan": {"viktor": ["Here's your plan: one opening, one tactic, one idea, one endgame. Pick one and we start.",
+                      "Not a pile of homework. Four things, chosen for you. Start with whichever you like."]},
+    "play": {"maya": ["Pick a bot near your level and play it like a real game. I'll stay quiet until it's over."]},
+    "no_player": {"maya": ["Hi, I'm Maya, your Knightwise coach. Open the Knightwise app and tell me your chess.com name."]},
 }
 
 
@@ -151,14 +106,14 @@ def _speak(section, home=None, hour=12, moments=None, rng=random, extra=None, in
     """What the coach of this section says: {coach, name, voice, mood, lines, actions}.
     moments: for a game review, the number of key moments (None = a game the coach doesn't know).
     extra: {"novelty": the new thing from coach/plan.py, "advice": a do-this-not-that line} for the home section."""
-    coach = SECTION_COACH.get(section, "zara")
+    coach = SECTION_COACH.get(section, COACH)
     home = home if home is not None else insights.home()
     info = COACHES[coach]
     out = {"coach": coach, "name": info["name"], "voice": info["voice"], "mood": "calm", "lines": [], "actions": []}
     player = home.get("player")
     if not player:
-        out["lines"] = [line("no_player", "zara", rng)]
-        return {**out, "coach": "zara", "name": "Zara", "voice": COACHES["zara"]["voice"]}
+        out["lines"] = [line("no_player", COACH, rng)]
+        return out
     face = mood(home)
     facts = {"name": player, "greet": part_of_day(hour), "lately": round(home.get("pieces_last20") or 0, 1),
              "before": round(home.get("pieces_per_game") or 0, 1), "games": home.get("games")}
@@ -288,16 +243,14 @@ def suggestions(home):
 
 # ---------- talking with a coach (needs the player's own free AI key) ----------
 PERSONA = {
-    "maya": "You are Maya, a calm former women's world champion, about 35. Patient, warm, strategic; short calm sentences.",
-    "arjun": "You are Arjun, a 19-year-old chess prodigy. Energetic, quick, friendly, a bit playful; you love tactics.",
-    "zara": "You are Zara, a bold 22-year-old attacking player. Direct, motivating, competitive, never rude.",
-    "viktor": "You are Viktor, a 60-year-old veteran coach. Wise, kind, with dry humour; you have seen everything.",
+    "maya": "You are Maya, a calm former women's world champion, about 35, and this player's only coach. Patient, warm, "
+            "clear; short calm sentences.",
+    "viktor": "You are Viktor, a 60-year-old veteran coach, one of this player's two coaches. Wise, kind, with dry "
+              "humour; you have seen everything.",
 }
 # when the AI can't answer (no key, busy, down, or it said something the facts don't back up): still a warm reply
 FALLBACK = {
     "maya": ["Let me keep this simple for now: {tip}", "Here's what matters most today: {tip}"],
-    "arjun": ["Quick one while my brain reboots: {tip}", "Short version: {tip} Let's keep going!"],
-    "zara": ["Straight to the point: {tip}", "Here's the one thing to do: {tip}"],
     "viktor": ["The old advice still works: {tip}", "Let me give you the one lesson I'd give anyone: {tip}"],
 }
 SQUARE = __import__("re").compile(r"\b[a-h][1-8]\b")
@@ -325,7 +278,7 @@ def chat(coach, message, history=(), home=None, extra=None, ask_ai=None, rng=ran
     import json
 
     from coach import ai
-    coach = coach if coach in COACHES else "zara"
+    coach = coach if coach in COACHES else COACH
     home = home if home is not None else insights.home()
     focus = home.get("focus") or {}
     tip = focus.get("habit") or "Before every move, ask: what can they take, and is every piece of mine safe?"

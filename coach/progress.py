@@ -1,4 +1,4 @@
-"""Viktor's corner: the story of your week, and badges earned in your real chess.com games.
+"""Progress: the story of your week, and badges earned in your real chess.com games.
 
 Every number comes from your games and the engine's checks; nothing here is made up or estimated.
 """
@@ -135,8 +135,13 @@ def story(checked, moves, player, now=None):
         rows = moves[g["url"]]
         won = insights._result(g, insights._side(g, player)[0]) == "win"
         return (won, -len(biggest(rows)), -sum(1 for r in rows if r["pattern"] in LOSING_MATERIAL))
-    best = max(week, key=score)
-    best_row = insights.game_row(best, moves[best["url"]], player)
+    # with a single game there's no "best"; when the best of them is still a loss, it's the closest one, not the best
+    # (13 Oct test: a week of one lost game showed it as the "Best game")
+    best_row = None
+    if len(week) >= 2:
+        best = max(week, key=score)
+        best_row = insights.game_row(best, moves[best["url"]], player)
+        best_row["label"] = "Best game" if best_row["result"] == "win" else "Your closest game"
     improved = None
     if before:
         changes = [(_per_game(before, moves, {p}) - _per_game(week, moves, {p}), p) for p in ABOUT]

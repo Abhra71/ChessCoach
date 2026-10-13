@@ -271,9 +271,9 @@ async function daily() {
   if (!d.drills.length) { $("#page").innerHTML = `<div class="empty">Today's challenge appears once your games are checked.</div>`; return; }
   $("#page").innerHTML = trainerPage("Today's 5 minutes", { back: `<a href="#/home" class="small muted" style="text-decoration:none">← Home</a>`,
     text: `Today's idea: ${d.theme}.` });
-  trainer(d.drills, { coach: "arjun", record: true, onDone: async right => {
+  trainer(d.drills, { coach: "maya", record: true, onDone: async right => {
     const s = await api("/api/daily/done", {}).catch(() => ({}));
-    setTimeout(() => Coach.react("arjun", "celebrate",
+    setTimeout(() => Coach.react("maya", "celebrate",
       `Done for today: ${right} of ${d.drills.length} right first time.${s.streak > 1 ? ` That's ${s.streak} days in a row.` : ""} See you tomorrow.`,
       [{ label: "Back home", app: "home" }]), 2500);
   } });
@@ -306,7 +306,7 @@ async function openingTree() {
     <div class="grid">${side("White", t.white)}${side("Black", t.black)}</div>`;
   const worst = [t.white, t.black].filter(Boolean).flatMap(function all(n) { return [n, ...n.children.flatMap(all)]; })
     .filter(n => n.note && n.score <= 40).sort((a, b) => b.games - a.games)[0];
-  if (worst) Coach.react("zara", "point", `Look at ${label(worst)}${worst.name ? `, the ${worst.name}` : ""}. ${worst.note} Your plan has an opening that fixes this.`,
+  if (worst) Coach.react("maya", "point", `Look at ${label(worst)}${worst.name ? `, the ${worst.name}` : ""}. ${worst.note} Your plan has an opening that fixes this.`,
     [{ label: "Your plan", app: "plan" }]);
 }
 
@@ -343,7 +343,7 @@ async function progressView() {
     <div class="grid">
       ${s ? `<div class="box story rise" id="story">
         <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>
-          <div class="row share"><button class="btn primary" id="sharepic">Share</button><button class="btn" id="savepic">Save as picture</button></div></div>
+          <button class="btn primary" id="sharepic">Share</button></div>
         <div class="story-grid">
           <div class="story-tile wide"><div class="wdl">
               <div><b class="big good-text">${roll(r.win || 0)}</b><span>won</span></div>
@@ -356,9 +356,9 @@ async function progressView() {
           ${s.improved ? `<div class="story-tile good"><div class="habit-icon">${svg((HABIT[s.improved.pattern] || ["hang"])[0])}</div>
             <div class="stat-label">Most improved</div><b>${esc((HABIT[s.improved.pattern] || [s.improved.pattern])[1] || s.improved.pattern)}</b>
             <div class="small muted">${s.improved.before} → ${s.improved.now} a game</div></div>` : ""}
-          <a class="story-tile click" href="#/games/${s.best.id}"><div class="stat-label">Best game</div>
+          ${s.best ? `<a class="story-tile click" href="#/games/${s.best.id}"><div class="stat-label">${esc(s.best.label)}</div>
             <b>vs ${esc(s.best.opponent)} <span class="chip ${s.best.result}">${s.best.result === "win" ? "W" : s.best.result === "loss" ? "L" : "D"}</span></b>
-            <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div></a>
+            <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div></a>` : ""}
         </div>
         ${s.next ? `<div class="story-next"><span class="label">Next week's one thing</span><div>${esc(s.next.habit)}</div></div>` : ""}
       </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
@@ -371,40 +371,48 @@ async function progressView() {
     </div>`;
   countUp($("#page"));
   if (s) $("#sharepic").onclick = () => sharePanel(p.player, s);
-  if (s) $("#savepic").onclick = async () => {
-    const b = $("#savepic"); b.disabled = true; b.textContent = "Saving…";
-    try { const r2 = await api("/api/save-picture", { png: storyPicture(p.player, s) }); b.textContent = "Saved to Pictures"; Sound.play("done"); }
-    catch (e) { b.textContent = "Couldn't save"; }
-    setTimeout(() => { b.disabled = false; b.textContent = "Save as picture"; }, 3000);
-  };
 }
 
-// Share the week's picture. From a PC, WhatsApp and X can't take a picture through a link, so the picture goes on
-// the clipboard and the app opens with a line ready: paste it there. Instagram can't be posted to from a PC link at
-// all, so it's saved for upload (13 Oct test, point 5.5: "a share option, not only save").
+// Share the week's picture. From a PC, WhatsApp and X can't take a picture through a link, so the app puts it on
+// the clipboard and opens them with a line ready: Ctrl+V adds it. Instagram can't be posted to from a link at all:
+// the picture is copied and saved, and Instagram opens to make a post (13 Oct test, point 5.5).
+const SHARE_ICON = {  // simple glyphs, drawn here (no brand files)
+  whatsapp: `<svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.5-2-1-1 1c-1-.5-2.5-2-3-3l1-1-1-2-1.5 1z" fill="currentColor"/></svg>`,
+  x: `<svg viewBox="0 0 24 24"><path d="M4 4l16 16M20 4L4 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+  instagram: `<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.2" cy="6.8" r="1.2" fill="currentColor"/></svg>`,
+  copy: `<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`,
+  save: `<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+};
 function sharePanel(player, s) {
   const r = s.results || {}, line = `${s.title === "Your week" ? "My chess this week" : "My last 10 chess games"}: ${r.win || 0} won, ${r.draw || 0} drawn, ${r.loss || 0} lost. Coached by Knightwise, free.`;
   const url = "https://github.com/Abhra71/ChessCoach";
   const old = $(".share-pop"); if (old) old.remove();
   const pop = document.createElement("div"); pop.className = "share-pop box";
+  const btn = (to, label) => `<button class="btn share-btn" data-to="${to}">${SHARE_ICON[to]}<span>${label}</span></button>`;
   pop.innerHTML = `<div class="row spread"><b>Share your week</b><button class="btn ghost" data-x>×</button></div>
     <p class="small muted" style="margin:6px 0 12px">The picture is copied first: press Ctrl+V where it opens.</p>
-    <div class="share-grid"><button class="btn" data-to="whatsapp">WhatsApp</button><button class="btn" data-to="x">X</button>
-      <button class="btn" data-to="instagram">Instagram</button><button class="btn" data-to="copy">Copy picture</button></div>
+    <div class="share-grid">${btn("whatsapp", "WhatsApp")}${btn("x", "X (Twitter)")}${btn("instagram", "Instagram")}${btn("copy", "Copy picture")}${btn("save", "Save as picture")}</div>
     <p class="small" id="sharemsg" style="margin:10px 0 0"></p>`;
   document.body.appendChild(pop);
   $("[data-x]", pop).onclick = () => pop.remove();
   const msg = t => { $("#sharemsg", pop).textContent = t; };
-  const copy = () => api("/api/copy-picture", { png: storyPicture(player, s) });  // the app copies it: Windows' clipboard
+  const png = () => storyPicture(player, s);
+  const copy = () => api("/api/copy-picture", { png: png() });  // the app copies it: Windows' clipboard
   pop.querySelectorAll("[data-to]").forEach(b => b.onclick = async () => {
     const to = b.dataset.to;
-    if (to === "instagram") {  // no way to post from a PC link: save it, then upload it in Instagram
-      try { await api("/api/save-picture", { png: storyPicture(player, s) }); msg("Saved in Pictures, Knightwise. Upload it in Instagram."); Sound.play("done"); }
+    if (to === "save") {  // into Pictures\Knightwise, and Explorer shows it: you asked for the file
+      try { await api("/api/save-picture", { png: png(), show: true }); msg("Saved in Pictures, Knightwise."); }
       catch (e) { msg("Couldn't save the picture."); }
       return;
     }
     try { await copy(); } catch (e) { msg("Couldn't copy the picture: use Save as picture instead."); return; }
-    if (to === "copy") { msg("Copied. Paste it anywhere with Ctrl+V."); Sound.play("done"); return; }
+    if (to === "copy") { msg("Copied. Paste it anywhere with Ctrl+V."); return; }
+    if (to === "instagram") {  // no link can post to Instagram: a copy saved quietly, and Instagram opens
+      api("/api/save-picture", { png: png(), show: false }).catch(() => {});
+      window.open("https://www.instagram.com/", "_blank", "noopener");
+      msg("Picture copied, and saved in Pictures, Knightwise. In Instagram, press + to make a post with it.");
+      return;
+    }
     const link = to === "whatsapp" ? `https://wa.me/?text=${encodeURIComponent(`${line} ${url}`)}`
       : `https://x.com/intent/post?text=${encodeURIComponent(line)}&url=${encodeURIComponent(url)}`;
     window.open(link, "_blank", "noopener");
@@ -428,7 +436,7 @@ function storyPicture(player, s) {  // the week as a 1080 x 1350 picture, drawn 
   tile(80, 320, s.games, "games played");
   tile(560, 320, `${r.win || 0}`, "won", "#36c27a");
   tile(80, 620, s.pieces, "pieces given away a game", s.pieces_before !== null && s.pieces < s.pieces_before ? "#36c27a" : "#fff");
-  tile(560, 620, s.best.moments || 0, `big mistakes, best game`);
+  if (s.best) tile(560, 620, s.best.moments || 0, s.best.result === "win" ? "big mistakes, best game" : "big mistakes, closest game");
   if (s.improved) {
     const name = (HABIT[s.improved.pattern] || [0, s.improved.pattern])[1];
     text("Most improved", 80, 1000, 30, "#36c27a", 600);
@@ -505,8 +513,8 @@ async function home() {
     f ? f.meaning : "", f ? f.habit : "",
     `You give away ${h.pieces_per_game.toFixed(1)} pieces per game, and ${h.pieces_last20.toFixed(1)} in your last 20 games${better ? ", which is better" : ""}.`,
     last ? `Your last game was a ${last.result} against ${last.opponent}, with ${last.moments} key moments to look at.` : ""].join(" ");
-  $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.zara.voice);  // Home is Zara's
-  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?", coach: "zara",
+  $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
+  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?", coach: "maya",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.listen_ready,
     onAsk: q => api("/api/ask", { question: q }) }));
 }
@@ -632,7 +640,7 @@ async function practice(pattern) {
   if (!drills.length) { $("#page").innerHTML = `<div class="empty">Practice appears once your games are checked.</div>`; return; }
   $("#page").innerHTML = trainerPage(only.length ? (HABIT[pattern] || [])[1] || "Practice" : "Practice",
     { text: "" });
-  trainer(drills, { coach: "arjun", record: true });
+  trainer(drills, { coach: "maya", record: true });
 }
 
 // Settings: the chess.com self-check (coach/health.py). All working, or what chess.com changed and what still works.
@@ -768,7 +776,6 @@ async function settingsView() {
   $("#sounds").onclick = async () => { await api("/api/settings", { sounds: !s.sounds }); Sound.set(!s.sounds); if (!s.sounds) Sound.play("right"); settingsView(); };
   $("#voice").onclick = async () => { await api("/api/settings", { voice: !s.voice }); Voice.set(!s.voice); settingsView(); };
   const HELLO = { maya: "Hi, I'm Maya. I'll walk you through your games, one moment at a time.",
-    zara: "Hey, I'm Zara! I get you ready before you play.", arjun: "I'm Arjun. Puzzles are my thing. Ready?",
     viktor: "Viktor. I keep an eye on your progress. Slowly, but surely." };
   document.querySelectorAll("[data-hear]").forEach(b => b.onclick = () => Voice.speak(HELLO[b.dataset.hear], true, COACHES[b.dataset.hear].voice));
   $("#aicompare").onclick = () => AiCard.open();

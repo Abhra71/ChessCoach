@@ -1,4 +1,4 @@
-// The four Knightwise coaches, drawn in code (flat cartoon, original characters). Each face has four moods
+// The two Knightwise coaches, Maya and Viktor, drawn in code (flat cartoon, original characters). Each face has four moods
 // (pleased, calm, worried, thinking), blinks by itself and moves its mouth while it talks (see coach.css).
 // KnightwiseFaces.svg(coach, mood) -> an <svg> string.
 (() => {
@@ -9,20 +9,6 @@
       front: `<path d="M33 55 C31 33 46 24 60 24 C76 24 89 34 87 55 C84 44 76 37 60 37 C47 37 38 43 33 55Z" fill="HAIR"/>`,
       extra: `<circle cx="33.5" cy="66" r="2.2" fill="#E8C766"/><circle cx="86.5" cy="66" r="2.2" fill="#E8C766"/>`,
       clothes: `<path d="M50 96 L60 108 L70 96 Z" fill="COLLAR"/>`,
-    },
-    arjun: {  // young prodigy, about 19: light-brown skin, short wavy black hair, orange hoodie
-      skin: "#C89067", shade: "#AD7652", hair: "#16110F", top: "#E8743B", collar: "#C85E2A", lips: "#8A4E3A",
-      back: "",
-      front: `<path d="M34 54 C30 30 50 22 62 24 C72 22 90 30 86 52 C84 44 80 40 74 39 C70 33 64 36 60 33 C55 38 48 35 44 40 C39 42 35 47 34 54Z" fill="HAIR"/>`,
-      extra: "",
-      clothes: `<path d="M44 94 C48 104 72 104 76 94" stroke="COLLAR" stroke-width="4" fill="none"/><line x1="54" y1="100" x2="53" y2="112" stroke="#F6F1EA" stroke-width="2"/><line x1="66" y1="100" x2="67" y2="112" stroke="#F6F1EA" stroke-width="2"/>`,
-    },
-    zara: {  // attacking player, about 22: fair skin with freckles, auburn ponytail, green jacket
-      skin: "#F0C7A6", shade: "#DDAA87", hair: "#9C3D1F", top: "#2E7D5B", collar: "#1F5C42", lips: "#B5534A",
-      back: `<path d="M84 44 C98 50 98 74 90 86 C96 70 90 58 82 54Z" fill="HAIR"/>`,
-      front: `<path d="M33 58 C30 32 46 24 62 25 C78 26 90 36 87 56 C80 42 68 36 52 40 C44 43 37 49 33 58Z" fill="HAIR"/>`,
-      extra: `<g fill="#C98563" opacity=".7"><circle cx="45" cy="68" r=".9"/><circle cx="48.5" cy="70" r=".9"/><circle cx="44" cy="71.5" r=".9"/><circle cx="75" cy="68" r=".9"/><circle cx="71.5" cy="70" r=".9"/><circle cx="76" cy="71.5" r=".9"/></g>`,
-      clothes: `<path d="M50 95 L60 104 L70 95" stroke="COLLAR" stroke-width="5" fill="none"/>`,
     },
     viktor: {  // veteran, about 60: light skin, grey hair and beard, round glasses, brown cardigan
       skin: "#E9C2A0", shade: "#D3A783", hair: "#B9B6B1", top: "#6B4A33", collar: "#E9E4DA", lips: "#9A5A4A",
@@ -64,7 +50,7 @@
   }
 
   function svg(coach, mood = "calm") {
-    const L = LOOK[coach] || LOOK.zara;
+    const L = LOOK[coach] || LOOK.maya;
     mood = BROWS[mood] ? mood : "calm";
     const fill = s => s.replace(/HAIR/g, L.hair).replace(/COLLAR/g, L.collar).replace(/LIPS/g, L.lips);
     return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" class="kw-face kw-${coach} kw-${mood}" role="img" aria-label="${coach}">
@@ -134,7 +120,7 @@
   }
 
   function figure(coach, situation = "calm") {
-    const L = LOOK[coach] || LOOK.zara;
+    const L = LOOK[coach] || LOOK.maya;
     const [mood, leftArm, rightArm] = SITUATION[situation] || SITUATION.calm;
     const fill = s => s.replace(/HAIR/g, L.hair).replace(/COLLAR/g, L.collar).replace(/LIPS/g, L.lips);
     const arm = (side, name) => {

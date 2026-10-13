@@ -410,3 +410,6 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .share { gap: 8px; }
 .share-pop { position: fixed; right: 32px; top: 120px; width: 340px; z-index: 60; animation: rise .25s ease-out both; }
 .share-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.share-btn { display: flex; align-items: center; gap: 8px; justify-content: flex-start; }
+.share-btn svg { width: 18px; height: 18px; flex: none; }
+.share-grid .share-btn:last-child { grid-column: span 2; }

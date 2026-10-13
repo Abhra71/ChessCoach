@@ -87,8 +87,8 @@ def idea_drills(idea, rating, rng):
 
 
 def idea_lesson(idea, rating, rng):
-    return {**idea, "kind": "idea", "coach": "maya", "intro": idea["text"], "drills": idea_drills(idea, rating, rng)}
-OPENING_COACH = "zara"
+    return {**idea, "kind": "idea", "coach": "viktor", "intro": idea["text"], "drills": idea_drills(idea, rating, rng)}
+OPENING_COACH = "viktor"  # Your plan is Viktor's
 WHY = {
     "stalemate": "You've stalemated {n}. This is the habit that keeps those points.",
     "new": "{pattern_cap} is new for you: {recent} times in your last 10 games, more than before.",
@@ -169,7 +169,7 @@ def _puzzles(theme, rating, rng, avoid=()):
 
 
 def tactic(theme, rating, rng, why=None):
-    return {"id": f"tactic:{theme}", "kind": "tactic", "coach": "arjun", "theme": theme,
+    return {"id": f"tactic:{theme}", "kind": "tactic", "coach": "viktor", "theme": theme,
             "title": THEME_NAME[theme][0].upper() + THEME_NAME[theme][1:], "why": why,
             "intro": f"{THEME_NAME[theme][0].upper() + THEME_NAME[theme][1:]}. {drills.CLUE[theme]}", "drills": _puzzles(theme, rating, rng)}
 
@@ -371,7 +371,7 @@ def ai_idea(home, today=None, ask_ai=None, rating=None, rng=None):
         return None
     if not title or not body or coaches.SQUARE.search(title + " " + body):
         return None
-    idea = {"id": f"idea:ai:{week}", "kind": "idea", "coach": "maya", "title": title, "intro": body, "text": body,
+    idea = {"id": f"idea:ai:{week}", "kind": "idea", "coach": "viktor", "title": title, "intro": body, "text": body,
             "why": "A new idea Maya wrote for you this week, from your games.", "ai": True}
     mem["ai_idea"] = {"week": week, "idea": idea}
     _save(mem)

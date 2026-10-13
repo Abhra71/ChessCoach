@@ -220,7 +220,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/openings":  # your opening tree from your own games
             from coach import tree
             return self.send(200, json.dumps(tree.page()), "application/json")
-        if path == "/api/progress":  # Viktor: the story of your week and your badges
+        if path == "/api/progress":  # the story of your week and your badges
             from coach import progress
             return self.send(200, json.dumps(progress.page()), "application/json")
         if path == "/api/daily":  # today's challenge: your position, today's puzzle, your opening
@@ -288,7 +288,7 @@ class Handler(BaseHTTPRequestHandler):
             from coach import ai, coaches
             turns = body.get("history") if isinstance(body.get("history"), list) else []
             history = [(str(t[0]), str(t[1])) for t in turns[-6:] if isinstance(t, list) and len(t) == 2]
-            reply = coaches.chat(str(body.get("coach", "zara")), str(body.get("message", "")), history)
+            reply = coaches.chat(str(body.get("coach", "maya")), str(body.get("message", "")), history)
             if not reply["ai"] and ai.ready():
                 reply["note"] = "The AI is busy right now, so I'm keeping it short. Ask again in a minute."
             return self.send(200, json.dumps(reply), "application/json")
@@ -337,7 +337,7 @@ class Handler(BaseHTTPRequestHandler):
             if os.name == "nt":
                 subprocess.Popen(["explorer", "/select,", str(EXTENSION)])
             return self.send(200, "{}", "application/json")
-        if path == "/api/save-picture":  # Viktor's week card as a PNG in Pictures\Knightwise, shown in Explorer
+        if path == "/api/save-picture":  # the week card as a PNG in Pictures\Knightwise, shown in Explorer
             import base64
             from datetime import date
             data = str(body.get("png", ""))
@@ -348,7 +348,7 @@ class Handler(BaseHTTPRequestHandler):
             folder.mkdir(parents=True, exist_ok=True)
             target = folder / f"my-chess-week-{date.today().isoformat()}.png"
             target.write_bytes(base64.b64decode(data.split(",", 1)[1]))
-            if os.name == "nt":
+            if os.name == "nt" and body.get("show", True):  # Save as picture shows it; sharing saves quietly
                 subprocess.Popen(["explorer", "/select,", str(target)])
             return self.send(200, json.dumps({"path": str(target)}), "application/json")
         if path == "/api/copy-picture":  # Share: the week's picture on the Windows clipboard, to paste anywhere

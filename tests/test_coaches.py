@@ -7,11 +7,10 @@ HOME = {"player": "gushynanda", "games": 140, "pieces_per_game": 1.14, "pieces_l
         "last_game": {"opponent": "Coach-Nadia", "url": "https://www.chess.com/game/live/150000000001", "moments": 3}}
 
 
-def test_two_women_two_men_each_with_their_own_voice():
-    voices = [c["voice"] for c in coaches.COACHES.values()]
-    assert len(coaches.COACHES) == 4 and len(set(voices)) == 4
-    assert sorted(v[1] for v in voices) == ["f", "f", "m", "m"]  # Kokoro names: af_/bf_ = woman, am_/bm_ = man
-    assert all(v in voice.COACH_VOICES for v in voices)
+def test_two_coaches_maya_and_viktor_each_with_their_own_voice():
+    """13 Oct 2026, the player's choice: Maya (af_heart, the guide's voice) and Viktor; Zara and Arjun removed."""
+    assert {c: info["voice"] for c, info in coaches.COACHES.items()} == {"maya": "af_heart", "viktor": "am_michael"}
+    assert all(v in voice.COACH_VOICES for v in ("af_heart", "am_michael"))
 
 
 def test_each_section_always_gets_the_same_coach():
@@ -19,7 +18,8 @@ def test_each_section_always_gets_the_same_coach():
         who = {coaches.speak(section, HOME, rng=random.Random(i))["coach"] for i in range(5)}
         assert len(who) == 1
     assert coaches.speak("review", HOME, moments=3)["coach"] == "maya"
-    assert coaches.speak("puzzles", HOME)["coach"] == "arjun"
+    assert coaches.speak("puzzles", HOME)["coach"] == "maya" and coaches.speak("home", HOME)["coach"] == "maya"
+    assert coaches.speak("progress", HOME)["coach"] == "viktor" and coaches.speak("plan", HOME)["coach"] == "viktor"
 
 
 def test_greeting_names_the_player_their_focus_and_the_progress():
@@ -76,8 +76,8 @@ def test_chat_replies_in_character_with_the_ai():
     def fake_ai(system, prompt, max_tokens):
         seen.update(system=system, prompt=prompt)
         return "Keep every piece safe before you attack!", "groq"
-    r = coaches.chat("arjun", "what should I work on?", home=HOME, ask_ai=fake_ai)
-    assert r["ai"] and "Arjun" in seen["system"] and "gushynanda" in seen["prompt"] and r["text"].startswith("Keep")
+    r = coaches.chat("viktor", "what should I work on?", home=HOME, ask_ai=fake_ai)
+    assert r["ai"] and "Viktor" in seen["system"] and "gushynanda" in seen["prompt"] and r["text"].startswith("Keep")
 
 
 def test_chat_never_fails_when_the_ai_is_busy_or_missing():

@@ -19,10 +19,10 @@ CHOICES = {  # the voices offered in Settings
     "af_heart": "Heart, American", "bf_emma": "Emma, British", "am_michael": "Michael, American",
     "bm_george": "George, British",
 }
-# the four coaches' voices (coach/coaches.py), picked by the builder by ear on 12 Oct 2026, and their speed.
-# 13 Oct test: af_heart at normal speed, with pauses, was "the optimum"; Zara and Arjun were too fast for teaching.
-COACH_VOICES = ("af_heart", "hf_beta", "am_puck", "am_michael")
-SPEED = {"am_michael": 0.9, "hf_beta": 0.9, "am_puck": 0.92}
+# the coaches' voices (coach/coaches.py): Maya af_heart at normal speed, with pauses between sentences, was "the
+# optimum" in the 13 Oct test; Viktor am_michael, a little slower. Zara and Arjun were removed that day.
+COACH_VOICES = ("af_heart", "am_michael")
+SPEED = {"am_michael": 0.9}
 DEFAULT = "af_heart"  # chosen by the player who tested the beta
 
 _engine = None

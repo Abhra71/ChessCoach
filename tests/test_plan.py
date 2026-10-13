@@ -66,7 +66,7 @@ def test_a_new_kind_of_mistake_brings_a_tactic_for_it(memory):
     for g in games[:5]:  # forks only in the last games
         moves[g["url"]] = [{"pattern": plan.FORK, "ply": 40}]
     new = plan.novelty(HOME, games, moves, today=date(2026, 10, 1), rng=random.Random(1))
-    assert new["id"] == "tactic:fork" and new["coach"] == "arjun" and "new for you" in new["why"]
+    assert new["id"] == "tactic:fork" and new["coach"] == "viktor" and "new for you" in new["why"]
 
 
 def test_ai_idea_is_written_for_the_player_and_checked(memory):

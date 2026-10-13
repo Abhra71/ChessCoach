@@ -166,7 +166,7 @@
     const r = await send({ type: "coach", section: here, hour: new Date().getHours(), again: !first });
     if (current !== here) return;
     said = r && r.ok ? r.data : {
-      coach: "zara", name: "Zara", mood: "calm", voice_on: false, actions: [],
+      coach: "maya", name: "Maya", mood: "calm", voice_on: false, actions: [],
       lines: ["I'm asleep right now. Open Knightwise from the Start menu and I'll coach you here."],
     };
     let guided = null;
