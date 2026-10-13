@@ -38,6 +38,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     json(`${COACH}/api/game/${msg.id}`, reply);
     return true;
   }
+  if (msg.type === "tags" && Array.isArray(msg.ids)) {  // the archive's tags: finished, checked games only
+    const ids = msg.ids.filter(i => /^\d+$/.test(i)).slice(0, 100).join(",");
+    json(`${COACH}/api/tags?ids=${ids}`, reply);
+    return true;
+  }
   if (msg.type === "coach") {
     const q = new URLSearchParams({ section: String(msg.section || "home"), hour: String(msg.hour ?? "") });
     if (/^\d+$/.test(msg.game || "")) q.set("game", msg.game);

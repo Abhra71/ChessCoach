@@ -68,7 +68,7 @@ def _result(g, me):
 def game_row(g, rows, player):
     me, them = _side(g, player)
     return {
-        "id": game_id(g["url"]), "url": g["url"], "date": datetime.fromtimestamp(g["end_time"]).strftime("%d %b %Y"),
+        "id": game_id(g["url"]), "url": g["url"], "end_time": g["end_time"], "date": datetime.fromtimestamp(g["end_time"]).strftime("%d %b %Y"),
         "time_class": g["time_class"], "color": me, "result": _result(g, me),
         "opponent": g[them]["username"], "opponent_rating": g[them]["rating"], "rating": g[me]["rating"],
         "opening": g.get("eco", "").rstrip("/").split("/")[-1].replace("-", " ") or None,

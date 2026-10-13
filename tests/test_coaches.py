@@ -26,7 +26,25 @@ def test_greeting_names_the_player_their_focus_and_the_progress():
     said = coaches.speak("home", HOME, hour=19, rng=random.Random(1))
     text = " ".join(said["lines"])
     assert said["mood"] == "pleased" and "gushynanda" in text and "0.7" in text and "every piece safe" in text
-    assert [a["url"] for a in said["actions"]] == [coaches.PUZZLES, HOME["last_game"]["url"]]
+    assert [a.get("url") or a["app"] for a in said["actions"]] == [coaches.PUZZLES, HOME["last_game"]["url"], "home"]
+    assert said["actions"][0]["best"] and said["lines"][-1].startswith("My pick: Warm up with puzzles.")
+
+
+def test_the_coach_recommends_where_to_practise_and_says_why():
+    """13 Oct test: no preference from the coach about where to practise what, and no way back to the app."""
+    def pick(section, home, now=None):
+        actions, why = coaches.recommend(section, home, now=now)
+        assert any(a.get("app") for a in actions), "always a way into Knightwise"
+        return actions[0], why
+    not_done = {**HOME, "daily": {"done_today": False}}
+    best, why = pick("home", not_done)
+    assert best["app"] == "daily" and best["best"] and "your own games" in why
+    fresh = {**HOME, "daily": {"done_today": True}, "last_game": {**HOME["last_game"], "end_time": 1000}}
+    assert pick("home", fresh, now=1000 + 3600)[0]["url"] == HOME["last_game"]["url"]  # today's game: review it now
+    assert pick("home", fresh, now=1000 + 3 * 86400)[0]["url"] == coaches.PUZZLES  # an old one: a warm-up instead
+    best, why = pick("puzzles", {**HOME, "daily": {"done_today": True}})
+    assert best["app"] == "practice" and "other people's games" in why
+    assert pick("progress", HOME)[0]["app"] == "progress" and pick("lessons", HOME)[0]["app"] == "plan"
 
 
 def test_slipping_makes_the_coach_worried():

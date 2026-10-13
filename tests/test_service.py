@@ -137,3 +137,11 @@ def test_ai_nudge_follows_the_real_key(monkeypatch):
     assert "ai_hint" not in service.coach_says("/api/coach?section=puzzles&hour=10")
     keys.clear()
     assert "ai_hint" in service.coach_says("/api/coach?section=puzzles&hour=10")
+
+
+def test_archive_tag_says_what_the_review_shows():
+    """chess.com's archive gets one short, true line per checked game: the same moments as the review."""
+    from coach.service import game_tag
+    assert game_tag(None) is None  # not checked (or not finished): no tag
+    assert game_tag([dict(HANG, loss=2)]) == {"text": "clean game", "tone": "good"}  # a small slip isn't a mistake
+    assert game_tag([HANG, dict(HANG, ply=21)]) == {"text": "2 pieces left hanging", "tone": "bad"}

@@ -46,9 +46,12 @@
         <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
           <button class="kw-x" title="Fold away">–</button></div>
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
-        ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => a.app ? `<button data-app="${esc(a.app)}">${esc(a.label)}</button>`
-          : a.find && target(a.find) ? `<button data-guide="${i}">${esc(a.label)}</button>`
-          : `<a href="${esc(a.url)}">${esc(a.label)}</a>`).join("")}</div>` : ""}
+        ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => {
+          const best = a.best ? ` class="kw-best" title="${esc(a.why || "My pick")}"` : "";  // the coach's pick, said out loud
+          return a.app ? `<button data-app="${esc(a.app)}"${best}>${esc(a.label)}</button>`
+            : a.find && target(a.find) ? `<button data-guide="${i}"${best}>${esc(a.label)}</button>`
+            : `<a href="${esc(a.url)}"${best}>${esc(a.label)}</a>`;
+        }).join("")}</div>` : ""}
         ${s.ai_hint ? `<p class="kw-hint">${esc(s.ai_hint)}</p>` : ""}
         ${s.ai_ready ? `<form class="kw-ask"><input placeholder="Ask ${esc(s.name)} anything about your chess" maxlength="300">
           <button>Ask</button></form>` : ""}
@@ -177,6 +180,36 @@
     render(first);
     if (first && r && r.ok) { send({ type: "greeted", section: here, set: today() }); speak(); }  // asleep: try again later
   }
+
+  // ---- the archive: a Knightwise tag on each finished game ("clean game", "2 pieces left hanging") ----
+  let tagTimer = null, archiveSince = null;
+  async function tagArchive() {
+    if (!/^\/games\/archive(\/|$)/.test(location.pathname)) { archiveSince = null; return; }
+    archiveSince = archiveSince || Date.now();
+    const rows = KnightwiseContract.archiveRows(document).filter(r => !r.slot.querySelector(".kw-tag"));
+    if (!rows.length) {
+      if (!document.querySelector(".kw-tag") && Date.now() - archiveSince > 15000) {  // still loading before that
+        KnightwiseContract.report("archive-rows", false, "no game rows after 15 s");
+      }
+      if (!document.querySelector(".kw-tag")) { clearTimeout(tagTimer); tagTimer = setTimeout(tagArchive, 5000); }
+      return;
+    }
+    KnightwiseContract.report("archive-rows", true);
+    const r = await send({ type: "tags", ids: rows.map(x => x.id) });
+    if (!r || !r.ok) return;  // the app isn't running: no tags, nothing else changes
+    for (const { id, slot } of rows) {
+      const t = r.data[id];
+      if (!t || slot.querySelector(".kw-tag")) continue;
+      const tag = document.createElement("span");
+      tag.className = `kw-tag ${t.tone}`;
+      tag.title = "Knightwise checked this game";
+      tag.textContent = t.tone === "good" ? `✓ ${t.text}` : t.text;
+      tag.onclick = e => { e.preventDefault(); e.stopPropagation(); send({ type: "open-app", route: `games/${id}` }); };
+      slot.appendChild(tag);
+    }
+  }
+  new MutationObserver(() => { clearTimeout(tagTimer); tagTimer = setTimeout(tagArchive, 600); })  // next pages load later
+    .observe(document.body, { childList: true, subtree: true });
 
   // chess.com changes pages without reloading: notice the address changing
   let last = location.pathname;

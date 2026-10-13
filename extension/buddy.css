@@ -17,7 +17,11 @@
 .kw-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .kw-actions a { background: #f2f2f2; color: #0a0a0a !important; text-decoration: none; border-radius: 6px; padding: 6px 12px; font-weight: 600; font-size: 13px; }
 .kw-actions button { background: #f2f2f2; color: #0a0a0a; border: 0; border-radius: 6px; padding: 6px 12px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; }
-.kw-actions a + a, .kw-actions button + a { background: transparent; color: #f2f2f2 !important; border: 1px solid #3a3a3a; }
+/* every button plain, except the coach's pick: green, with "My pick" over it */
+.kw-actions a, .kw-actions button { background: transparent; color: #f2f2f2 !important; border: 1px solid #3a3a3a; }
+.kw-actions .kw-best { background: #2fb56f; color: #0a0a0a !important; border-color: #2fb56f; position: relative; }
+.kw-actions .kw-best::before { content: "My pick"; position: absolute; top: -9px; left: 8px; background: #0a0a0a; color: #2fb56f;
+  font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 3px; letter-spacing: .02em; }
 .kw-box .kw-hint { margin-top: 12px; color: #8c8c8c; font-size: 12px; border-top: 1px solid #222; padding-top: 8px; }
 
 
@@ -57,3 +61,8 @@
   box-shadow: 0 0 0 4px rgba(255,77,66,.25); animation: kw-pulse 1.2s ease-in-out infinite; }
 .kw-ring.again { border-width: 4px; animation-duration: .7s; }
 @keyframes kw-pulse { 50% { box-shadow: 0 0 0 10px rgba(255,77,66,0); } }
+/* the archive's Knightwise tag: small, after chess.com's own line; a click opens that game in Knightwise */
+.kw-tag { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font: 600 11.5px/1.6 "Segoe UI", system-ui, sans-serif;
+  cursor: pointer; vertical-align: middle; border: 1px solid; }
+.kw-tag.good { color: #2fb56f; border-color: #2fb56f55; background: #2fb56f14; }
+.kw-tag.bad { color: #f0a43a; border-color: #f0a43a55; background: #f0a43a14; }

@@ -17,6 +17,9 @@ const KnightwiseContract = (() => {
   const BOARDS = ["wc-chess-board", "chess-board", ".board"];  // chess.com's board element, with older names
   const PIECE = /^[wb][pnbrqk]$/, SQUARE = /^square-(\d)(\d)$/;  // a piece's classes: "wp", "square-52"
   const moveNode = ply => `[data-node="0-${ply}"]`;  // chess.com's move list: one node per half-move
+  // the games archive: one row per game, its link, and the line under it where the Knightwise tag goes
+  const ARCHIVE_ROWS = [".game-history-games-row", "[class*=games-row]", "tr"];
+  const ARCHIVE_SLOTS = [".game-history-games-info-footer", "[class*=info-footer]", "td:last-child"];
 
   function gameId(path) {
     for (const re of GAME_ADDRESSES) { const m = re.exec(path || ""); if (m) return m[1]; }
@@ -62,6 +65,20 @@ const KnightwiseContract = (() => {
     return placement([...boardEl.querySelectorAll(".piece")].map(el => [...el.classList]));
   }
 
+  // Each game row of the archive: {id, slot}. Rows without a game link (headers, ads) are skipped.
+  function archiveRows(doc) {
+    for (const sel of ARCHIVE_ROWS) {
+      const rows = [...doc.querySelectorAll(sel)].map(row => {
+        const link = row.querySelector('a[href*="/game/"]');
+        const id = link && gameId(new URL(link.getAttribute("href"), "https://www.chess.com").pathname);
+        const slot = id && ARCHIVE_SLOTS.map(s => row.querySelector(s)).find(Boolean);
+        return id && slot ? { id, slot } : null;
+      }).filter(Boolean);
+      if (rows.length) return rows;
+    }
+    return [];
+  }
+
   // both players' names somewhere on the page (chess.com fills them in a few seconds late)
   function namesOnPage(text, players) {
     const t = String(text || "").toLowerCase();
@@ -79,6 +96,6 @@ const KnightwiseContract = (() => {
   }
 
   return { GAME_ADDRESSES, BOARDS, gameId, unknownGameAddress, board, placement, boardPlacement, moveNode,
-           namesOnPage, report };
+           archiveRows, namesOnPage, report };
 })();
 if (typeof module !== "undefined") module.exports = KnightwiseContract;  // for the tests (tests/test_contract.py)

@@ -87,3 +87,10 @@ def test_what_if_chess_com_changes_the_page(found):
     assert found["boardGone"] is None  # no board at all: reported, and the review falls back to Knightwise
     assert found["piecesRenamed"] is None  # renamed piece classes: reported, never wrong arrows
     assert found["namesMissing"] is False  # names not on the page: no arrows on someone else's game
+
+
+def test_archive_selectors_match_the_real_page():
+    """The archive tag needs a game row, its link and the line under it (saved from chess.com on 13 Oct 2026)."""
+    js = (ROOT / "extension" / "contract.js").read_text()
+    for real in ("game-history-games-row", "game-history-games-info-footer"):
+        assert real in js, f"contract.js lost chess.com's {real}"

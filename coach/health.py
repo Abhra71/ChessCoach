@@ -27,6 +27,8 @@ CHECKS = {
                      "chess.com changed its game page, so Knightwise can't confirm it's your game. The review is in Knightwise."),
     "move-list": ("the move list on a game page",
                   "chess.com changed its move list, so clicking a moment doesn't jump there. Step to it with the arrows."),
+    "archive-rows": ("the game rows of chess.com's archive",
+                     "chess.com changed its games archive, so the Knightwise tags don't show there. Your games are in Knightwise."),
     "api-archives": ("chess.com's list of your monthly games",
                      "chess.com's game service changed or is down, so new games can't be downloaded. Your old games are safe."),
     "api-games": ("the details of each game from chess.com",

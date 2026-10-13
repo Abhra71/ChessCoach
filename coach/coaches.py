@@ -6,6 +6,7 @@ Written sentences work for everyone, offline; an AI key (later) lets the same co
 Fair play: nothing here looks at a game being played; the extension hides the coaches wherever one could be running.
 """
 import random
+import time
 
 from coach import insights
 
@@ -160,6 +161,9 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
         lines = [line("review_clean" if moments == 0 else "review", coach, rng, moments=words, **facts)]
     elif section == "puzzles":
         lines.append(line("puzzles", coach, rng, **facts))
+        out["actions"], why = recommend(section, home, actions=[])
+        if why:
+            lines.append(why)
     else:
         if face == "pleased":
             lines.append(line("better", coach, rng, **facts))
@@ -168,12 +172,13 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
         if section == "home" and extra and extra.get("novelty"):  # something new, when it's genuinely needed
             n = extra["novelty"]
             lines.append(f"Something new for you: {n['title'].lower() if n['kind'] != 'opening' else n['title']}. {n.get('why') or ''}".strip())
-            out["actions"] = [{"label": "Learn it in Knightwise", "app": "plan"}] + suggestions(home)[:1]
+            out["actions"] = [{"label": "Learn it in Knightwise", "app": "plan", "best": True,
+                               "why": "It's new for you, and it fits your habit."}] + suggestions(home)[:1] + [OPEN_APP]
             return {**out, "mood": "pleased", "lines": lines}
         if section == "home" and extra and extra.get("advice"):
             lines.append(extra["advice"])
-            out["actions"] = suggestions(home)
-            return {**out, "mood": face, "lines": lines}
+            out["actions"], why = recommend(section, home)
+            return {**out, "mood": face, "lines": lines + ([why] if why else [])}
         if section == "progress":  # the weekly memory instead of the general line: three sentences at most
             lines.append(week_line(home, coach, rng))
         elif section == "plan" and extra and extra.get("novelty"):
@@ -184,7 +189,9 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None):
         elif focus:
             lines.append(line("focus", coach, rng, **facts))
         if section not in ("games", "plan"):
-            out["actions"] = suggestions(home)
+            out["actions"], why = recommend(section, home)
+            if why:
+                lines.append(why)
     return {**out, "mood": face, "lines": lines}
 
 
@@ -199,6 +206,46 @@ def week_line(home, coach, rng=random):
     per = lambda d: d["pieces"] / d["games"] if d.get("games") else None
     better = last.get("games") and per(this) < per(last)
     return line("week_better" if better else "week_same", coach, rng, **facts)
+
+
+OPEN_APP = {"label": "Open Knightwise", "app": "home"}
+
+
+def recommend(section, home, actions=None, now=None):
+    """The coach's pick of where to practise, and why: chess.com for what it's best at (a warm-up, the review on its
+    board right after a game), Knightwise for your own positions and your plan (13 Oct test: "no preference from the
+    coach, where to practise what"). Returns (actions with the pick first and marked, the line that says why).
+    Open Knightwise is always there: the way back to the app from chess.com."""
+    actions = list(actions if actions is not None else suggestions(home))
+    focus, daily, last = home.get("focus"), home.get("daily") or {}, home.get("last_game") or {}
+    habit = SHORT.get(focus["pattern"], focus["pattern"]) if focus else None
+    pick = None
+    if section in ("home", "puzzles") and daily and not daily.get("done_today"):
+        pick = {"label": "Today's 5 minutes in Knightwise", "app": "daily",
+                "why": "It's built from your own games, so it trains exactly the moves you get wrong."}
+    elif (section == "home" and last.get("moments") and "/game/" in last.get("url", "")
+          and (now or time.time()) - last.get("end_time", 0) < 86400):  # a game from today: review it while it's fresh
+        pick = next((a for a in actions if a.get("url") == last["url"]), None)
+        if pick:
+            pick = {**pick, "why": "Look at it on chess.com's own board now, while you still remember the game."}
+    elif section == "puzzles" and habit:
+        pick = {"label": "Practise your habit in Knightwise", "app": "practice",
+                "why": f"These puzzles come from other people's games. Your own positions train exactly this: {habit}."}
+    elif section == "progress":
+        pick = {"label": "Your progress in Knightwise", "app": "progress",
+                "why": "It shows you against yourself, on the habit you're fixing, game by game."}
+    elif section == "lessons":
+        pick = {"label": "Your plan in Knightwise", "app": "plan",
+                "why": "It picks the lesson that fixes your habit, instead of a general one."}
+    if pick is None and actions:
+        pick = {**actions[0], "why": "A few puzzles here first: a quick warm-up before you play."}
+    actions = [a for a in actions if not pick or (a.get("label"), a.get("app")) != (pick.get("label"), pick.get("app"))]
+    if pick:
+        actions.insert(0, {**pick, "best": True})
+    if not any(a.get("app") for a in actions):
+        actions.append(OPEN_APP)
+    said = f"My pick: {pick['label']}. {pick['why']}" if pick else None
+    return actions[:3], said
 
 
 def suggestions(home):

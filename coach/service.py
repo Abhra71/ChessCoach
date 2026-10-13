@@ -158,6 +158,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(body), "application/json")
         if path == "/api/status":
             return self.send(200, json.dumps(status()), "application/json")
+        if path == "/api/tags":  # chess.com's archive: a Knightwise tag per finished, checked game (?ids=1,2,3)
+            from urllib.parse import parse_qs, urlsplit
+            ids = [i for i in parse_qs(urlsplit(self.path).query).get("ids", [""])[0].split(",") if i.isdigit()][:100]
+            tags = {i: t for i in ids if (t := game_tag(MOMENT_CACHE.get(i))) is not None}
+            return self.send(200, json.dumps(tags), "application/json")
         if path == "/api/extension-stamp":  # changes whenever the extension's files change (it then reloads itself)
             return self.send(200, json.dumps({"stamp": extension_stamp()}), "application/json")
         if path == "/api/coach":  # what the coach of a chess.com section says (the extension shows it)
@@ -466,6 +471,32 @@ def extension_stamp():
         st = f.stat()
         h.update(f"{f.relative_to(EXTENSION)}|{st.st_size}|{int(st.st_mtime)}".encode())
     return h.hexdigest()[:12]
+
+
+TAG_SAY = {  # pattern -> (one, many): the archive tag's words
+    "left a piece hanging": ("1 piece left hanging", "{n} pieces left hanging"),
+    "walked into a fork or trick": ("walked into a fork", "walked into {n} forks"),
+    "missed a free capture": ("missed a free piece", "missed {n} free pieces"),
+    "walked into checkmate": ("walked into checkmate", "walked into checkmate"),
+    "missed a checkmate": ("missed a checkmate", "missed {n} checkmates"),
+    "stalemated a won game": ("stalemated a won game", "stalemated a won game"),
+}
+
+
+def game_tag(rows):
+    """The Knightwise tag for one checked game in chess.com's archive: true and short. None if not checked."""
+    if rows is None:
+        return None
+    counts = {}
+    for r in review.biggest(rows, MOMENTS):  # exactly the review's key moments, read the same way
+        p = classify(r)
+        if p in TAG_SAY:
+            counts[p] = counts.get(p, 0) + 1
+    if not counts:
+        return {"text": "clean game", "tone": "good"}
+    order = sorted(counts, key=lambda p: (p != "stalemated a won game", -counts[p]))[:2]
+    words = [TAG_SAY[p][0] if counts[p] == 1 else TAG_SAY[p][1].format(n=counts[p]) for p in order]
+    return {"text": " · ".join(words), "tone": "bad"}
 
 
 def browser_of(agent):
