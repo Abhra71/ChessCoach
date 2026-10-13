@@ -116,3 +116,24 @@ def test_sign_in_time_is_read_from_windows_not_from_the_boot_time():
     from coach import app
     minutes = app.minutes_since_sign_in()
     assert minutes is not None and 0 <= minutes < 60 * 24 * 60
+
+
+def test_settings_say_which_browser_the_extension_is_in():
+    """13 Oct test: the Edge tab said Connected though the extension was only in Chrome."""
+    from coach.service import browser_of
+    chrome = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36"
+    edge = chrome + " Edg/141.0"
+    assert (browser_of(chrome), browser_of(edge), browser_of(None)) == ("chrome", "edge", "other")
+
+
+def test_ai_nudge_follows_the_real_key(monkeypatch):
+    """The 'Want real replies?' line shows only while no key is set, and comes back when it's removed."""
+    from coach import service, settings
+    monkeypatch.setattr(service, "player", lambda: None)
+    keys = {}
+    monkeypatch.setattr(settings, "get_key", lambda slot: keys.get(slot))
+    assert "ai_hint" in service.coach_says("/api/coach?section=puzzles&hour=10")
+    keys["slot1"] = "gsk_test"
+    assert "ai_hint" not in service.coach_says("/api/coach?section=puzzles&hour=10")
+    keys.clear()
+    assert "ai_hint" in service.coach_says("/api/coach?section=puzzles&hour=10")

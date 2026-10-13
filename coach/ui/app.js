@@ -578,6 +578,14 @@ async function practice(pattern) {
   trainer(drills, { coach: "arjun", record: true });
 }
 
+// Settings: where the extension really is. "Set up" only while it isn't connected anywhere.
+function connectedIn(st) {
+  const names = { chrome: "Chrome", edge: "Edge", brave: "Brave", opera: "Opera" };
+  const where = Object.keys(st.extension_in || {}).map(b => names[b] || "your browser");
+  return where.length ? `<span class="ok-text">Connected in ${where.join(" and ")}</span>`
+    : `<span class="faint">Not connected yet</span><a class="btn" href="#/extension">Set up</a>`;
+}
+
 // ---------- arrows on chess.com: the extension, step by step ----------
 async function extensionView() {
   shell("settings", `<p class="muted">Loading…</p>`);
@@ -585,6 +593,7 @@ async function extensionView() {
   const browsers = st.browsers.length ? st.browsers : ["chrome"];
   let browser = browsers.includes("chrome") ? "chrome" : browsers[0];
   const NAME = { chrome: "Chrome", edge: "Edge" };
+  const here = () => (st.extension_in || {})[browser];  // connected in the browser shown, not just anywhere
   const copyBtn = (id, text) => `<button class="btn" data-copy="${esc(text)}" id="${id}">Copy</button>`;
   // Chrome: real screenshots (personal details removed, the click spot circled in red); Edge: simple drawings
   const REAL = { open: "1-address", dev: "2-developer-mode", load: "3-load-unpacked", pick: "4-choose-folder", done: "5-done" };
@@ -596,7 +605,7 @@ async function extensionView() {
         <h1 style="margin-top:6px">Arrows on chess.com</h1>
         <p class="sub">A small browser extension shows the key moments of your finished games right on chess.com's board. One minute, once.</p></div>
         ${browsers.length > 1 ? `<div class="seg" id="browser">${browsers.map(b => `<button data-b="${b}" class="${b === browser ? "on" : ""}">${NAME[b] || b}</button>`).join("")}</div>` : ""}</div>
-      <div class="box ext-status ${st.extension_seen ? "ok" : ""}" id="extstatus">${st.extension_seen ? "Connected. The extension is working." : "Waiting for the extension… this turns green by itself."}</div>
+      <div class="box ext-status ${here() ? "ok" : ""}" id="extstatus">${here() ? `Connected in ${NAME[browser] || browser}. The extension is working.` : "Waiting for the extension… this turns green by itself."}</div>
       <p class="note" style="margin:10px 0 18px">Fair play: it only shows something on games that are already finished. During a live game it shows nothing, and it never moves pieces.</p>
       <div class="guide">
         <div class="gstep"><div class="gnum">1</div><div class="gtext"><h3>Open ${NAME[browser]}'s extensions page</h3>
@@ -629,7 +638,8 @@ async function extensionView() {
   (async function watch() {
     while (location.hash.startsWith("#/extension")) {
       const s2 = await api("/api/status").catch(() => ({}));
-      if (s2.extension_seen) { const box = $("#extstatus"); if (box) { box.classList.add("ok"); box.textContent = "Connected. The extension is working."; } return; }
+      st.extension_in = s2.extension_in || {};
+      if (here()) { const box = $("#extstatus"); if (box) { box.classList.add("ok"); box.textContent = `Connected in ${NAME[browser] || browser}. The extension is working.`; } return; }
       await wait(1500);
     }
   })();
@@ -639,6 +649,7 @@ async function extensionView() {
 async function settingsView() {
   shell("settings", `<p class="muted">Loading…</p>`);
   const [s, st] = await Promise.all([api("/api/settings"), api("/api/status")]);
+  const aiSet = Object.values(s.slots).some(x => x.set);  // the real key state, never a stale flag
   const slot = (id, n) => {
     const x = s.slots[id], prov = s.providers[x.provider];
     return `<div class="box stack" data-slot="${id}"><div class="row spread"><h3>AI key ${n}</h3>
@@ -663,7 +674,8 @@ async function settingsView() {
           <span class="small muted">${s.voice_ready ? (s.voice ? "On" : "Off") : "Voice files not installed"}</span></div>
           <div class="voices">${Object.entries(COACHES).map(([id, c]) => `<button class="btn voice-chip" data-hear="${id}">
             ${KnightwiseFaces.svg(id, "pleased")}<span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span><i>▶</i></button>`).join("")}</div>
-          <div class="row"><span class="small ${s.listen_ready ? "ok-text" : "muted"}" id="listenstate">${s.listen_ready ? "Listening is on: use Talk to ask by voice." : "Ask by voice: a one-time 485 MB download."}</span>
+          <div class="row"><span class="small ${s.listen_ready && aiSet ? "ok-text" : "muted"}" id="listenstate">${!s.listen_ready ? "Ask by voice: a one-time 485 MB download."
+            : aiSet ? "Listening is on: use Talk to ask by voice." : "Listening is installed. Asking needs an AI key: add one above."}</span>
             ${s.listen_ready ? "" : `<button class="btn" id="getlisten">Install listening</button>`}</div></div></div>
       <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a finished set. No background music.</p></div>
         <div class="row"><button class="switch ${s.sounds ? "on" : ""}" id="sounds" aria-label="Sounds"></button>
@@ -674,8 +686,7 @@ async function settingsView() {
         <button class="btn" id="aicompare" style="margin-top:8px">What AI adds</button></div>
         <div class="grid">${slot("slot1", 1)}${slot("slot2", 2)}<p class="note">Key 2 is used when key 1 fails or runs out.</p></div></div>
       <div class="settings-row"><div><h3>Arrows on chess.com</h3><p class="note">The browser extension.</p></div>
-        <div class="row"><span class="${st.extension_seen ? "ok-text" : "faint"}">${st.extension_seen ? "Connected" : "Not connected yet"}</span>
-          <a class="btn" href="#/extension">Set up</a></div></div>
+        <div class="row">${connectedIn(st)}</div></div>
       <div class="settings-row"><div><h3>Your data</h3><p class="note">Games, checks, practice and your logbook.</p></div>
         <div class="row"><button class="btn" id="folder">Open data folder</button></div></div>
       <div class="settings-row"><div><h3>About</h3></div>
