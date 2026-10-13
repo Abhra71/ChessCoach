@@ -179,3 +179,20 @@ Their rule: a symptom isn't automatically the cause, so investigate the objectiv
 - **Every status shows the real state.**
 - **A new day brings a new greeting, never a reset.**
 - **Recommend where to practise.**
+
+## The user's extra points, 13 Oct
+- **43 Welcome music.**
+  - It still starts late and has lulls.
+  - Bring it in about 3 seconds earlier and remove the long silences.
+- **44 First start took 2 to 3 minutes to load.** That's information, not a bug report, but worth a progress line that feels fast and honest.
+- **45 The first start felt chaotic.** A Windows shell window, the AI-tier pop-up and a sudden coach appearance spoiled the first impression.
+  - Hide the console.
+  - Hold the AI card until the player has seen Home.
+  - Let the coach arrive calmly after the first screen settles.
+- **46 Spelling: British English, not American.**
+  - The app mixes "practice" and "practise": 70 against 12 uses.
+  - The British rule: the noun is "practice", as in the Practice tab; the verb is "practise", as in "practise it here". Ask the user which they want, then apply British spelling everywhere: colour, analyse and the rest.
+- **47 The coaches never say where to practise what.** There's no guided navigation between chess.com and Knightwise. Same as point 38.
+- **48 Nothing useful came from Knightwise on chess.com.** The chess.com side feels unworked, with everything concentrated in the app.
+  - On chess.com the coaches greeted, then folded. Maya's review appears only on the old address (finding 0). Nothing new or informative appeared there.
+  - Product direction: the chess.com side needs real content. Flagship 1, prep before a game, belongs there, along with the review right after a game and warm-ups tied to the habit.
