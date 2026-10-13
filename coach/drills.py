@@ -132,9 +132,30 @@ def right_moves(eng, board, scores):
     return good, set(near) - good - fell, best
 
 
+def their_last_move(r):
+    """The opponent's move just before this position, from the game record, so the player sees what just happened
+    (13 Oct test, point 4). None if the game or the move can't be found, or it doesn't lead to this position."""
+    import io
+    import chess.pgn
+    from coach import insights
+    g = next((g for g in insights._games() if g["url"] == r["url"]), None)
+    if not g or r["ply"] < 2:
+        return None
+    moves = list(chess.pgn.read_game(io.StringIO(g["pgn"])).mainline_moves())
+    if len(moves) < r["ply"] - 1:
+        return None
+    board = chess.Board()
+    for m in moves[:r["ply"] - 2]:
+        board.push(m)
+    before, last = board.copy(), moves[r["ply"] - 2]
+    board.push(last)
+    return (before, last) if board.board_fen() == chess.Board(r["fen"]).board_fen() else None
+
+
 def drill(eng, pattern, r):
     """A position from the player's own game: every legal move scored by the engine."""
     board = chess.Board(r["fen"])
+    prev = their_last_move(r)
     scores = score_moves(eng, r["fen"])
     top = max(w for w, _, _ in scores.values())
     good, close, best = right_moves(eng, board, scores)
@@ -143,7 +164,9 @@ def drill(eng, pattern, r):
     return {"id": drill_id(r), "kind": "game", "flip": board.turn == chess.BLACK, "pattern": pattern, "hint": hint,
             "intro": f"You are {color}. Your move.", "played": r["move"], "best": board.san(best),
             "where": f"From your game: move {move_number(r)}, you are {color}", "url": r["url"],
-            "link": "open game on chess.com", "start": squares(board), "last": None, "chance": round(top),
+            "link": "open game on chess.com", "start": squares(prev[0] if prev else board),
+            "last": [prev[1].uci()[:2], prev[1].uci()[2:4]] if prev else None,
+            "their_move": prev[0].san(prev[1]) if prev else None, "chance": round(top),
             "steps": [step(board, good, lambda m: why_wrong(board, m, scores[m][1]), close=close)]}
 
 

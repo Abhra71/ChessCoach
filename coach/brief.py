@@ -67,7 +67,7 @@ def _games_by_url():
 
 def brief(d, games=None):
     pieces, white = d.get("start") or {}, not d.get("flip")
-    if d.get("kind") == "puzzle" and d.get("steps"):  # a puzzle starts after their move
+    if d.get("steps") and (d.get("kind") == "puzzle" or d.get("last")):  # the board after their last move
         pieces = d["steps"][0].get("board") or pieces
     w, b = material(pieces)
     diff = (w - b) if white else (b - w)
@@ -86,6 +86,7 @@ def brief(d, games=None):
             facts = [datetime.fromtimestamp(g["end_time"]).strftime("%d %b %Y"), g["time_class"].capitalize(),
                      f"You were {side}", f"You {'won' if result == 'win' else 'lost' if result == 'loss' else 'drew'} it"]
         situation = " ".join(x for x in [f"Move {move}, {PHASE_WORDS[ph]}." if move else "", balance(diff),
+                                         f"Your opponent just played {d['their_move']}." if d.get("their_move") else "",
                                          verdict(d.get("chance")),
                                          f"In the game you played {d['played']} here, and it cost you. Find a better move."
                                          if d.get("played") else ""] if x)
