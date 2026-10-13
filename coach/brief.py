@@ -85,13 +85,11 @@ def brief(d, games=None):
             title = f"Your game vs {g[them]['username']}"
             facts = [datetime.fromtimestamp(g["end_time"]).strftime("%d %b %Y"), g["time_class"].capitalize(),
                      f"You were {side}", f"You {'won' if result == 'win' else 'lost' if result == 'loss' else 'drew'} it"]
-        if move:
-            facts.append(f"Move {move}")
         situation = " ".join(x for x in [f"Move {move}, {PHASE_WORDS[ph]}." if move else "", balance(diff),
                                          verdict(d.get("chance")),
                                          f"In the game you played {d['played']} here, and it cost you. Find a better move."
                                          if d.get("played") else ""] if x)
-        return {"title": title, "facts": facts + [ph.capitalize()], "situation": situation, "mindset": mindset}
+        return {"title": title, "facts": facts[:4], "situation": situation, "mindset": mindset}
     if d.get("kind") == "puzzle":
         themes = d.get("themes") or []
         ph = next((t for t in ("opening", "middlegame", "endgame") if t in themes), phase(pieces))
@@ -99,7 +97,7 @@ def brief(d, games=None):
         last = d.get("their_move")
         situation = " ".join(x for x in [f"It's {PHASE_WORDS[ph]}.", balance(diff),
                                          f"Your opponent just played {last}." if last else "", goal] if x)
-        facts = [f"Rated {d['rating']}" if d.get("rating") else "Puzzle", f"You are {side}", ph.capitalize()]
+        facts = [f"Puzzle level {d['rating']}" if d.get("rating") else "Puzzle", f"You are {side}", ph.capitalize()]
         from coach import drills, plan
         theme = d.get("theme")
         if d.get("pattern"):
@@ -113,7 +111,8 @@ def brief(d, games=None):
         return {"title": title, "facts": facts, "situation": situation, "mindset": mindset}
     if d.get("kind") == "opening":
         return {"title": d.get("where") or "Your opening", "facts": [f"You are {side}", "From move 1", "Opening"],
-                "situation": "Play your side of the main line. I'll answer for them and explain every move.",
+                "situation": "Something new: an opening line to learn by heart. You play your side's moves, I answer"
+                              " with theirs and explain each one. Then play it in your next games.",
                 "mindset": "Develop a piece, take the centre, castle. Every move should do one of those."}
     return None
 

@@ -52,13 +52,17 @@ const Board = (() => {
       if (f === 0) s += `<text x="${0.6}" y="${r * 10 + 3}" class="coord ${light ? "on-light" : "on-dark"}">${sq[1]}</text>`;
       if (r === 7) s += `<text x="${f * 10 + 8.3}" y="${79.3}" class="coord ${light ? "on-light" : "on-dark"}">${sq[0]}</text>`;
     }
-    for (const t of opts.targets || []) {
+    for (const t of (opts.targets || []).filter(t => !pieces[t])) {  // an empty square you can move to: a dot
       const [x, y] = xy(t, flip);
       s += `<circle cx="${x + 5}" cy="${y + 5}" r="1.6" class="target" pointer-events="none"/>`;
     }
     for (const [sq, p] of Object.entries(pieces)) {
       const [x, y] = xy(sq, flip);
       s += `<g data-p="${sq}"><g transform="translate(${x} ${y}) scale(${10 / 45})" pointer-events="none">${PIECES[p]}</g></g>`;
+    }
+    for (const t of (opts.targets || []).filter(t => pieces[t])) {  // a piece you can take: a ring around it, on top
+      const [x, y] = xy(t, flip);
+      s += `<circle cx="${x + 5}" cy="${y + 5}" r="4.3" class="target-take" pointer-events="none"/>`;
     }
     for (const a of opts.arrows || []) s += arrowSvg(a, flip);
     s += `</svg>`;

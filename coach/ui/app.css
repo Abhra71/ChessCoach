@@ -131,6 +131,7 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .board .hl-last { fill: rgba(240, 164, 58, .38); } .board .hl-pick { fill: rgba(0,0,0,.18); }
 .board .hl-ok { fill: rgba(31, 157, 85, .45); } .board .hl-no { fill: rgba(217, 45, 32, .42); }
 .board .target { fill: rgba(0,0,0,.22); }
+.board .target-take { fill: none; stroke: rgba(0,0,0,.28); stroke-width: 0.9; }  /* a piece you can capture */
 .board .tag rect { rx: 1.4; } .board .tag text { font-size: 2.6px; font-weight: 700; fill: #fff; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13.5px; color: var(--muted); }
 .legend i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }

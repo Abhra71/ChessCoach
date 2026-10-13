@@ -117,7 +117,6 @@ function trainer(drills, opts) {
     el.innerHTML = `<div class="label">${x.kind === "game" ? "From your game" : x.kind === "opening" ? "Opening" : "Puzzle"}</div>
       <h3 class="brief-title">${esc(b.title)}</h3>
       <div class="chips">${b.facts.map(f => `<span class="chip-fact">${esc(f)}</span>`).join("")}</div>
-      <p class="brief-text">${esc(b.situation)}</p>
       <div class="brief-mind"><span class="label">Mindset</span><div>${esc(b.mindset)}</div></div>
       <button class="btn primary" id="go">I'm ready</button>`;
     $("#go").onclick = () => { briefed[i] = true; show(); };
@@ -134,6 +133,9 @@ function trainer(drills, opts) {
     });
   }
   const ready = () => ticked >= checklist.length;
+  const whereLink = x => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link[0].toUpperCase() + x.link.slice(1))} ↗</a>`;
+  const NAMES = { p: "pawn", n: "knight", b: "bishop", r: "rook", q: "queen", k: "king" };
+  let tries = 0;  // wrong moves on this step: the help grows with each one
   const d = () => drills[i], step = () => d().steps[k];
   const mark = (sqs, cls) => Object.fromEntries(sqs.map(s => [s, cls]));
   const mine = sym => (sym === sym.toUpperCase()) === !d().flip;
@@ -151,14 +153,14 @@ function trainer(drills, opts) {
     if (briefing) {  // the coach welcomes you to this position first, then the board wakes up
       pieces = x.last ? x.steps[0].board : x.start; last = x.last ? mark(x.last, "hl-last") : {}; done = true; draw();
       paintBrief(x);
-      $("#where").innerHTML = `${esc(x.where)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link)} ↗</a>`;
-      Coach.react(coach, "explain", "Here's the situation. Read it, then press I'm ready.", [],
-        `${x.brief.title}. ${x.brief.situation} The mindset: ${x.brief.mindset}`);
+      $("#where").innerHTML = whereLink(x);
+      Coach.react(coach, "explain", x.brief.situation, [], `${x.brief.situation} The mindset: ${x.brief.mindset}`);
       return;
     }
     $("#kind").textContent = x.kind === "game" ? "From your game" : x.kind === "opening" ? "Opening" : "Puzzle";
     $("#task").textContent = x.intro; $("#hint").textContent = x.kind === "opening" ? "" : x.hint;
-    $("#where").innerHTML = `${esc(x.where)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.link)} ↗</a>`;
+    $("#where").innerHTML = whereLink(x);
+    tries = 0;
     result("muted", answered[i] ? `Done today: ${{ right: "right first time", missed: "missed the first time", shown: "you used Show answer" }[state[i]]}. Play it again for practice; it won't change your score.`
       : checklist.length ? "First the check, then click a piece and its square." : "");
     pieces = x.start; draw();
@@ -194,9 +196,14 @@ function trainer(drills, opts) {
     counter();
     const note = x.kind === "game" ? `In the game you played ${esc(x.played)}.${m.san === x.best ? "" : " The engine's top move was " + esc(x.best) + "."}`
       : x.kind === "opening" ? "That's the whole line. Play it in your next games." : (x.end || "Puzzle solved.");
-    result("ok-text", `<b>${esc(m.san)}</b>: ${shown ? "that's the answer." : x.kind === "game" ? "yes, that keeps you safe." : "correct."}<div class="muted small" style="margin-top:4px">${note}</div>`);
-    const praise = shown ? `The answer is ${m.san}. Next time you'll see it.` : s.idea ? `${s.idea} ${note}`
-      : missed ? `${m.san}. You got there.` : x.kind === "game" ? `Yes! ${m.san} keeps you safe.` : `Correct, ${m.san}!`;
+    result("ok-text", `<b>${esc(m.san)}</b>: ${shown ? "that's the answer." : "right."}<div class="muted small" style="margin-top:4px">${esc(x.kind === "puzzle" ? (x.end || "Puzzle solved.") : note)}</div>`);
+    // what the move achieved in this exact position: for your own game, what your game move cost; for a puzzle,
+    // why it ends there
+    const played = x.kind === "game" && Object.values(x.steps[0].moves).find(e => e.san === x.played);
+    const lesson = x.kind === "game" ? (played && played.say ? `In the game you played ${x.played}. ${played.say} This time you avoided it.` : note)
+      : x.kind === "puzzle" ? (x.end || "Puzzle solved.") : note;
+    const praise = shown ? `The answer is ${m.san}. ${lesson}` : s.idea ? `${s.idea} ${note}`
+      : `${missed ? `${m.san}. You got there.` : `Yes, ${m.san}!`} ${lesson}`;
     Coach.react(coach, shown ? "explain" : missed ? "encourage" : "celebrate", praise);
     if (!again && answered.every(Boolean)) allDone(false);
   }
@@ -205,6 +212,7 @@ function trainer(drills, opts) {
     if (!ready()) { Coach.react(coach, "warn", `Not yet. First: ${checklist[ticked]}`); return; }
     const sym = pieces[sq];
     if (sym && mine(sym)) {
+      if (picked === sq) { picked = null; return draw(); }  // the same piece again: put it down
       picked = sq;
       return draw({ [sq]: "hl-pick" }, Object.keys(step().moves).filter(u => u.startsWith(sq)).map(u => u.slice(2, 4)));
     }
@@ -218,11 +226,17 @@ function trainer(drills, opts) {
       Coach.react(coach, "thinking", m.say);
       return draw();
     }
-    missed = true; Sound.play("wrong", 0.5);
+    missed = true; tries++;
+    if (tries === 1) Sound.play("wrong", 0.5);  // the low sound once, not on every try
     if (!answered[i]) { state[i] = "missed"; answered[i] = true; save(d(), "missed"); paintDots(); }  // saved now: leaving can't undo it
-    result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(m.say)}</div><div class="small muted" style="margin-top:4px">Try again.</div>`);
-    Coach.react(coach, "worried", `Not quite. ${m.say} Try again.`);  // the coach's face falls, with the hint
-    draw(mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-no"));
+    // the help grows: first why it's wrong, then the idea, then which piece, never the move itself
+    const right = Object.entries(step().moves).find(([, e]) => e.good), from = right ? right[0].slice(0, 2) : null;
+    const help = tries === 1 ? `${m.say} Try again.`
+      : tries === 2 ? `Here's a hint: ${d().hint || "look at every check and capture first."}`
+      : from ? `Look at your ${NAMES[pieces[from].toLowerCase()]} on ${from}. Where can it go?` : `${m.say} Try again.`;
+    result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(help)}</div>`);
+    Coach.react(coach, tries === 1 ? "worried" : "encourage", tries === 1 ? `Not quite. ${help}` : help);
+    draw({ ...mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-no"), ...(tries >= 3 && from ? { [from]: "hl-pick" } : {}) });
   }
   function answer() {
     const entries = Object.entries(step().moves).filter(([, m]) => m.good);

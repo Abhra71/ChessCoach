@@ -574,7 +574,7 @@ async function practice(pattern) {
   const only = pattern ? all.filter(d => d.pattern === pattern) : [], drills = only.length ? only : all;
   if (!drills.length) { $("#page").innerHTML = `<div class="empty">Practice appears once your games are checked.</div>`; return; }
   $("#page").innerHTML = trainerPage(only.length ? (HABIT[pattern] || [])[1] || "Practice" : "Practice",
-    { text: "Your own positions, the move before a big mistake, and puzzles on the same habit." });
+    { text: "" });
   trainer(drills, { coach: "arjun", record: true });
 }
 
