@@ -19,7 +19,19 @@ def test_drill_marks_hanging_the_queen_as_wrong_and_saving_it_as_right():
     moves = d["steps"][0]["moves"]
     assert not moves["d4e5"]["good"]
     assert "takes your queen" in moves["d4e5"]["say"]
-    assert moves["d4d5"]["good"]
+    assert moves["d4d5"]["good"] or moves["d4d5"].get("close")  # safe: right, or at least "playable"
+
+
+def test_one_right_move_two_at_most():
+    """13 Oct test: queen on b7, 8 moves were accepted, d3 among them, which lets ...Rb8 trap the queen."""
+    r = dict(fen="r2qkb1r/pQ1p1ppp/2n5/8/4n3/8/PPPP1PPP/RNB1KBNR w KQkq - 0 7", move="Qb4", ply=13, url="g")
+    with open_engine() as eng:
+        d = drill(eng, "left a piece hanging", r)
+    moves = d["steps"][0]["moves"]
+    right = [m["san"] for m in moves.values() if m["good"]]
+    assert 1 <= len(right) <= 2 and "Qb5" in right
+    assert not moves["d2d3"]["good"] and not moves["d2d3"].get("close")
+    assert "Qb4" not in right
 
 
 def test_puzzle_shows_their_move_then_accepts_the_mate():

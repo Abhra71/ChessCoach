@@ -190,6 +190,11 @@ function trainer(drills, opts) {
     picked = null;
     if (!m) return draw();
     if (m.good) return good(uci, m, false);
+    if (m.close) {  // playable, not the answer: no red square, no penalty, just look again
+      result("", `<b style="font-size:14px">${esc(m.san)}: playable.</b><div style="margin-top:4px">${esc(m.say)}</div>`);
+      Coach.react(coach, "thinking", m.say);
+      return draw();
+    }
     missed = true; Sound.play("wrong", 0.5); if (!state[i]) { state[i] = "missed"; paintDots(); }
     result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(m.say)}</div><div class="small muted" style="margin-top:4px">Try again.</div>`);
     Coach.react(coach, "worried", `Not quite. ${m.say} Try again.`);  // the coach's face falls, with the hint

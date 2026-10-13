@@ -27,7 +27,12 @@ OUT_JSON = DATA / "drills.json"  # the same positions for the desktop app
 PER_PATTERN = 4
 PUZZLES_PER_PATTERN = 4
 DEPTH = 12
-GOOD = 10  # a move losing less than this much winning chance (0..100) vs the best move counts as right
+GOOD = 10  # a move losing less than this much winning chance (0..100) vs the best move is still playable
+CHECK_DEPTH = 18  # the best few moves are checked again, deeper, before one is called right
+SECOND = 30  # a second move counts as right only within this many centipawns of the best...
+SECOND_SHARE = 0.10  # ...or within this share of the best move's score, when the position is already won
+CHECKED = 10  # how many of the playable moves get the deeper look
+CLOSE_CP = 100  # "playable" also means at most 1 pawn worse than the best: still winning isn't enough
 
 
 def why_wrong(board, move, reply):
@@ -45,19 +50,20 @@ def why_wrong(board, move, reply):
 
 
 def score_moves(eng, fen):
-    """Every legal move -> (win chance after it, engine's best answer)."""
+    """Every legal move -> (win chance after it, engine's best answer, centipawns after it)."""
     board = chess.Board(fen)
     me = board.turn
     out = {}
     for move in board.legal_moves:
         board.push(move)
         if board.is_checkmate():
-            out[move] = (100.0, None)
+            out[move] = (100.0, None, 100000)
         elif board.is_game_over():
-            out[move] = (50.0, None)
+            out[move] = (50.0, None, 0)
         else:
             info = eng.analyse(board, chess.engine.Limit(depth=DEPTH))
-            out[move] = (win_chance(score_cp(info["score"].pov(me))), info["pv"][0] if info.get("pv") else None)
+            cp = score_cp(info["score"].pov(me))
+            out[move] = (win_chance(cp), info["pv"][0] if info.get("pv") else None, cp)
         board.pop()
     return out
 
@@ -66,12 +72,19 @@ def squares(board):
     return {chess.square_name(s): p.symbol() for s, p in board.piece_map().items()}
 
 
-def step(board, good, say, reply=None):
+CLOSE_SAY = "That's playable, but there's a stronger move here. Look again."
+
+
+def step(board, good, say, reply=None, close=()):
     """One move to find. good: set of right moves; say(move) -> why a wrong move is wrong.
+    close: playable moves that aren't the answer (no red square, no penalty, just "look again").
     reply: the opponent's answer after the right move (puzzles with more than one move)."""
     moves = {}
     for move in board.legal_moves:
-        entry = {"san": board.san(move), "good": move in good, "say": "" if move in good else say(move)}
+        entry = {"san": board.san(move), "good": move in good,
+                 "say": "" if move in good else CLOSE_SAY if move in close else say(move)}
+        if move in close:
+            entry["close"] = True
         if move in good:
             after = board.copy()
             after.push(move)
@@ -91,20 +104,47 @@ def drill_id(r):
     return f"{r['url']}#{r['ply']}"
 
 
+def right_moves(eng, board, scores):
+    """One right move, two only when the second is genuinely as good (13 Oct test: 8 moves were accepted, one of
+    them walking into a trapped queen). The candidates are checked again at CHECK_DEPTH.
+    Returns (right moves, playable but weaker moves, the best move)."""
+    top = max(w for w, _, _ in scores.values())
+    top_cp = max(cp for _, _, cp in scores.values())
+    near = [m for m, (w, _, cp) in scores.items() if top - w < GOOD and top_cp - cp <= CLOSE_CP]  # never called wrong
+    shortlist = sorted(near, key=lambda m: -scores[m][2])[:CHECKED]  # by score: win chance is ~100% once won
+    me, deep = board.turn, {}
+    for move in shortlist:
+        board.push(move)
+        if board.is_checkmate():
+            deep[move] = 100000
+        else:
+            info = eng.analyse(board, chess.engine.Limit(depth=CHECK_DEPTH))
+            deep[move] = score_cp(info["score"].pov(me))
+        board.pop()
+    ranked = sorted(shortlist, key=lambda m: -deep[m])
+    best, good = ranked[0], {ranked[0]}
+    if len(ranked) > 1:
+        gap = deep[best] - deep[ranked[1]]
+        if gap <= SECOND or (deep[best] > 0 and gap <= SECOND_SHARE * deep[best]):
+            good.add(ranked[1])
+    # the deeper look can show a trap the quick one missed (d3 there: ...Rb8 traps the queen): then it's wrong
+    fell = {m for m in shortlist if deep[best] - deep[m] > CLOSE_CP}
+    return good, set(near) - good - fell, best
+
+
 def drill(eng, pattern, r):
     """A position from the player's own game: every legal move scored by the engine."""
     board = chess.Board(r["fen"])
     scores = score_moves(eng, r["fen"])
-    top = max(w for w, _ in scores.values())
-    good = {m for m, (w, _) in scores.items() if top - w < GOOD}
-    best = max(scores, key=lambda m: scores[m][0])
+    top = max(w for w, _, _ in scores.values())
+    good, close, best = right_moves(eng, board, scores)
     color = "Black" if board.turn == chess.BLACK else "White"
     hint = ABOUT[pattern][1] if pattern in ABOUT else "Look at every check and capture, for both sides, before you move."
     return {"id": drill_id(r), "kind": "game", "flip": board.turn == chess.BLACK, "pattern": pattern, "hint": hint,
             "intro": f"You are {color}. Your move.", "played": r["move"], "best": board.san(best),
             "where": f"From your game: move {move_number(r)}, you are {color}", "url": r["url"],
             "link": "open game on chess.com", "start": squares(board), "last": None, "chance": round(top),
-            "steps": [step(board, good, lambda m: why_wrong(board, m, scores[m][1]))]}
+            "steps": [step(board, good, lambda m: why_wrong(board, m, scores[m][1]), close=close)]}
 
 
 CLUE = {  # what to look for, per Lichess theme
