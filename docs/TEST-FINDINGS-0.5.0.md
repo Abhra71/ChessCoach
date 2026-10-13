@@ -215,3 +215,30 @@ Their rule: a symptom isn't automatically the cause, so investigate the objectiv
 **Later:** 0.5.1 redesigns, 0.6 AI and voice (flagship 2), 0.7 Rematch and Clock coach (flagships 4 and 5), 0.8 prep before a game (flagship 1).
 
 **The user decides:** one coach or four, and whether the PDF and opponents' usernames stay public. Then a Groq key, Rounds 2 and 3, and the Store upload.
+
+---
+
+# Progress on the fixes
+
+## Phase 1, truth: done, 13 Oct
+- **Review, real versus engine:** done, commit 8b321ca.
+  - Key moments carry the real reply from the game record, with "Their best reply" in orange against "They played" in blue.
+  - Each moment grades your move, and the wording became "they can play". Fixes points 41, 42 and 0b.
+  - Point 42's full layout (They replied plus Their better) gets its final shape with the one-moment-at-a-time review in 0.5.1.
+- **One right move, two at most:** done, commit ea09ce2.
+  - The candidates are checked again at depth 18.
+  - Moves within 1 pawn that are still winning count as "playable, look again", with no penalty. A trap found deeper is wrong.
+  - In the queen-on-b7 position: 8 accepted moves became Qb5 and c3, and d3 is wrong. Fixes points 33 and 6.
+- **Truthful, lasting progress:** done, commit d82819d.
+  - Only the first answer to a position each day counts. "Right first time" and Sharp count unique positions solved on the first try.
+  - Today's answers come back after switching tabs, and the session ends clearly.
+  - Two hidden causes found: opening answers were never saved, and an opening line ending with their answer froze the trainer, so Today's 5 minutes could never finish.
+  - Fixes points 14, 26, 28, 29, 7 and finding 3.
+- **Real statuses:** done, commit b17d64f.
+  - "Connected in Chrome", per browser. Set up appears only when not connected.
+  - Listening says honestly that asking needs a key.
+  - The AI nudges were already driven by the key; now there's a test for it.
+  - Fixes points 31 and 37, and findings 8 and 9.
+- **Voice picks (point 2):** checked. The saved picks match what speaks, and nothing speeds up playback.
+  - The "too fast" feeling, points 13, 19 and 36, comes from long dense text without pauses. The guide used short pieces with pauses.
+  - The fix, in the polish phase: pauses between sentences and a slightly slower speed, same voice.
