@@ -73,6 +73,12 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     }
     return false;
   }
+  if (msg.type === "health" && /^[a-z-]+$/.test(msg.check || "")) {  // the self-check: pass what a page found to the app
+    fetch(`${COACH}/api/health`, { method: "POST", headers: { "Content-Type": "application/json" },
+                                   body: JSON.stringify({ check: msg.check, ok: !!msg.ok, detail: String(msg.detail || "") }) })
+      .catch(() => {});
+    return false;
+  }
   if (msg.type === "hush") {
     chrome.runtime.sendMessage({ type: "stop" }).catch(() => {});
     return false;

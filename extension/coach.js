@@ -3,6 +3,7 @@
 // Fair play: the coach on your computer only knows games that chess.com has already archived as finished.
 // For any other game (including one being played right now) it answers "unknown" and this script shows nothing.
 (() => {
+  if (window.top !== window) return;
   const FILES = "abcdefgh";
   const COLORS = { mine: "#e5484d", reply: "#f0a43a", real: "#6b9bff", best: "#2fb56f" };
   // "reply" is the engine's best answer; "real" is what the opponent really played, when it was different
@@ -12,38 +13,11 @@
   let maya = { mood: "calm", line: "" };  // Maya, the coach for game reviews: her face and her first line
   try { small = localStorage.getItem("chess-coach-small") === "1"; } catch (e) {}
 
-  function idFromUrl() {
-    const m = location.pathname.match(/\/game\/(?:live|daily)\/(\d+)/);
-    return m ? m[1] : null;
-  }
-
-  function boardEl() { return document.querySelector("wc-chess-board"); }
-
-  // Piece placement as in a FEN ("rnbqkbnr/pppppppp/8/...") read from chess.com's piece elements.
-  function placement(board) {
-    const grid = Array.from({ length: 8 }, () => Array(8).fill(null));
-    board.querySelectorAll(".piece").forEach(el => {
-      const cls = [...el.classList];
-      const kind = cls.find(c => /^[wb][pnbrqk]$/.test(c));
-      const sq = cls.find(c => /^square-\d\d$/.test(c));
-      if (!kind || !sq) return;
-      const file = Number(sq[7]) - 1, rank = Number(sq[8]) - 1;
-      if (file < 0 || file > 7 || rank < 0 || rank > 7) return;
-      grid[rank][file] = kind[0] === "w" ? kind[1].toUpperCase() : kind[1];
-    });
-    const rows = [];
-    for (let rank = 7; rank >= 0; rank--) {
-      let row = "", empty = 0;
-      for (let file = 0; file < 8; file++) {
-        const p = grid[rank][file];
-        if (!p) { empty++; continue; }
-        if (empty) { row += empty; empty = 0; }
-        row += p;
-      }
-      rows.push(row + (empty || ""));
-    }
-    return rows.join("/");
-  }
+  // what we read from chess.com's page comes from contract.js, which also checks it (the self-check)
+  const idFromUrl = () => KnightwiseContract.gameId(location.pathname);
+  const boardEl = () => KnightwiseContract.board(document);
+  const report = KnightwiseContract.report;
+  let fallback = null;  // set when chess.com's page can't be read: the review then points to Knightwise
 
   function center(square, flipped) {
     const f = FILES.indexOf(square[0]), r = Number(square[1]) - 1;
@@ -68,15 +42,19 @@
   function clearArrows() { if (overlay) overlay.innerHTML = ""; }
 
   function draw() {
+    if (!moments.length || fallback) return;  // after a fallback: the panel only, no arrows
     const board = boardEl();
-    if (!board || !moments.length) return;
+    if (!board) return;  // start() waits for it and reports if it never comes
+    const now = KnightwiseContract.boardPlacement(board);
+    if (!now) { report("pieces", false, "no piece could be read"); return useFallback("pieces"); }
+    report("pieces", true);
     if (!overlay || !board.contains(overlay)) {
       overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       overlay.setAttribute("viewBox", "0 0 800 800");
       overlay.classList.add("chess-coach-arrows");
       board.appendChild(overlay);
     }
-    const now = placement(board), flipped = board.classList.contains("flipped");
+    const flipped = board.classList.contains("flipped");
     clearArrows();
     let active = null;
     for (const m of moments) {
@@ -99,7 +77,8 @@
   function goTo(m, when) {
     // chess.com numbers the moves in its list 0-0, 0-1, ... (one per half-move)
     const ply = when === "before" ? m.ply - 2 : m.ply - 1;
-    const node = ply < 0 ? null : document.querySelector(`[data-node="0-${ply}"]`);
+    const node = ply < 0 ? null : document.querySelector(KnightwiseContract.moveNode(ply));
+    if (ply >= 0) report("move-list", !!node, node ? "" : "no move node");
     if (node) node.click();
     setTimeout(draw, 300);
   }
@@ -130,12 +109,14 @@
     // Maya's gesture follows the review: explaining the better move, worried at what your move allowed
     const pose = active ? (active.when === "before" ? "explain" : "worried") : maya.mood;
     const char = `<button class="kw-char" title="Maya, game reviews">${KnightwiseFaces.figure("maya", pose)}</button>`;
+    const broken = fallback ? `<p class="kw-broken">${escapeHtml(fallback)}</p>
+      <button class="kw-open" data-open>Open this review in Knightwise</button>` : "";
     panel.innerHTML = small
       ? `${char}<button class="kw-tab pill">Maya · ${moments.length} key moment${moments.length === 1 ? "" : "s"}</button>`
       : `${char}<div class="chess-coach-panel"><div class="head"><span><b>Maya</b> <small>Game reviews</small></span>` +
         `<span><button class="min" title="Make small">–</button>` +
         `<button class="x" title="Close for this game">×</button></span></div>
-      <p>${escapeHtml(maya.line)}</p>
+      <p>${escapeHtml(maya.line)}</p>${broken}
       <ol>${items}</ol></div>`;
     panel.querySelector(".kw-char").onclick = () => setSmall(!small);
     const setSmall = v => {
@@ -146,6 +127,8 @@
     if (small) { panel.querySelector(".pill").onclick = () => setSmall(false); return; }
     panel.querySelector(".min").onclick = e => { e.stopPropagation(); setSmall(true); };
     panel.querySelector(".x").onclick = () => { panel.remove(); panel = null; moments = []; clearArrows(); };
+    const open = panel.querySelector("[data-open]");
+    if (open) open.onclick = e => { e.stopPropagation(); chrome.runtime.sendMessage({ type: "open-app", route: `games/${gameId}` }); };
     panel.querySelectorAll("li").forEach(li => li.onclick = e => {
       const m = moments[Number(li.dataset.i)];
       const go = e.target.dataset && e.target.dataset.go;
@@ -164,15 +147,21 @@
     });
   }
 
-  const WAIT_EVERY = 60000, WAIT_FOR = 15 * 60000;  // a game that isn't archived yet: ask again, for a while
+  const WAIT_EVERY = 20000, WAIT_FOR = 15 * 60000;  // a game that isn't archived yet: ask again, for a while
   let waiting = null;
 
   // Instant review. The coach only knows a game once chess.com's public archive lists it as finished, so while a
   // game is being played this shows nothing. When it ends and chess.com archives it, the app checks it at once.
   async function start() {
     const id = idFromUrl();
-    if (!id || id === gameId) return;
-    gameId = id;
+    if (id === gameId) return;
+    if (!id) {  // left the game page (chess.com changes pages without reloading): take everything away
+      gameId = null; moments = []; fallback = null; clearTimeout(waiting); clearArrows();
+      if (panel) { panel.remove(); panel = null; }
+      return;
+    }
+    gameId = id; fallback = null;
+    report("game-address", true);
     clearTimeout(waiting);
     moments = []; clearArrows();
     if (panel) { panel.remove(); panel = null; }
@@ -191,18 +180,38 @@
 
   // the page must be this game: both players' names on it (chess.com's archive can point a bot game at someone
   // else's game address). Otherwise nothing is shown.
-  function samePlayers(players) {
-    const text = document.body.innerText.toLowerCase();
-    return players.length === 2 && players.every(p => text.includes(String(p).toLowerCase()));
+  // the page title has both names at once ("Chess: a vs b - Chess.com"); the page text fills in later, and reading
+  // all of it is heavy on chess.com's busy page, so only every few seconds
+  function samePlayers(players, i) {
+    return KnightwiseContract.namesOnPage(document.title, players)
+      || (i % 3 === 2 && KnightwiseContract.namesOnPage(document.body.innerText, players));
+  }
+
+  // chess.com's page couldn't be read: no arrows, but Maya still has the moments, and says honestly why
+  const FALLBACK = {
+    "player-names": "I can't confirm this page is your game, so no arrows here.",
+    board: "chess.com changed its board, so I can't draw the arrows here.",
+    pieces: "chess.com changed how it shows the pieces, so I can't draw the arrows here.",
+  };
+  function useFallback(check) {
+    if (fallback) return;
+    fallback = FALLBACK[check] || "I can't draw the arrows on this page.";
+    clearArrows(); renderPanel(null);
   }
 
   async function show(id, data) {
     if (!data.moments.length) return;  // a clean game: nothing to show on the board
-    for (let i = 0; !samePlayers(data.players || []); i++) {  // chess.com fills in the names a few seconds late
-      if (i >= 30 || gameId !== id) return;
+    let names = false, board = null;
+    for (let i = 0; i < 45 && gameId === id; i++) {  // chess.com fills in the names and the board a few seconds late
+      names = names || samePlayers(data.players || [], i); board = boardEl();
+      if (names && board) break;
       await new Promise(r => setTimeout(r, 1000));
     }
+    if (gameId !== id) return;
+    report("player-names", names, names ? "" : "names not on the page after 45 s");
+    report("board", !!board, board ? "" : "no board element after 45 s");
     moments = data.moments;
+    if (!names || !board) useFallback(!names ? "player-names" : "board");
     const n = moments.length;
     maya = { mood: "calm", line: `${n} key moment${n === 1 ? "" : "s"} in this game. Click one to see it on the board.` };
     const r = await new Promise(res => {

@@ -1,0 +1,33 @@
+# Weekly: does chess.com's public game API still give Knightwise what it reads? If not, open an issue (GitHub
+# emails the owner), so a change is noticed even when nobody is working on the app. Pages aren't checked from here:
+# visiting chess.com's pages from a server may break its rules; the extension checks them in the player's browser.
+name: chess.com check
+on:
+  schedule:
+    - cron: "17 6 * * 1"  # Mondays, 06:17 UTC
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install chess==1.11.2 pytest
+      - name: Live check of chess.com's game API
+        env:
+          KNIGHTWISE_LIVE: "1"
+        run: python -m pytest -q tests/test_live_chesscom.py tests/test_contract.py tests/test_health.py
+      - name: Open an issue when it fails
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="chess.com check failed"
+          if ! gh issue list --state open --search "$title in:title" --json number --jq '.[0].number' | grep -q .; then
+            gh issue create --title "$title" --body "The weekly check of chess.com's game API failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. chess.com may have changed what it sends, so new games may not download. See docs/SELF-CHECK.md."
+          fi

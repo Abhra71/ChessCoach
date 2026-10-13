@@ -148,7 +148,11 @@
   });
 
   async function arrive() {
-    const here = section(location.pathname);
+    const here = section(location.pathname), path = location.pathname;
+    if (!here) setTimeout(() => {  // the self-check: a game page at an address the review doesn't know yet?
+      if (location.pathname === path && KnightwiseContract.unknownGameAddress(path, !!KnightwiseContract.board(document)))
+        KnightwiseContract.report("game-address", false, `unknown: ${path.replace(/\d{6,}/g, "<id>")}`);
+    }, 4000);
     if (here === current) return;
     unring();
     remove();

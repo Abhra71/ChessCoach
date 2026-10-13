@@ -15,38 +15,19 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.chess.com/game/live/*",
-        "https://www.chess.com/game/daily/*",
-        "https://www.chess.com/analysis/game/live/*",
-        "https://www.chess.com/analysis/game/daily/*"
+        "https://www.chess.com/*"
       ],
       "js": [
+        "contract.js",
         "faces.js",
-        "coach.js"
+        "coach.js",
+        "buddy.js"
       ],
       "css": [
         "coach.css",
         "buddy.css"
       ],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://www.chess.com/*"
-      ],
-      "exclude_matches": [
-        "https://www.chess.com/game/*",
-        "https://www.chess.com/analysis/game/*",
-        "https://www.chess.com/play/*"
-      ],
-      "js": [
-        "faces.js",
-        "buddy.js"
-      ],
-      "css": [
-        "buddy.css"
-      ],
-      "run_at": "document_idle"
+      "run_at": "document_end"
     }
   ],
   "action": {

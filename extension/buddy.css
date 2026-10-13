@@ -1,5 +1,5 @@
 /* The Knightwise coach on chess.com: face in the corner, the box under it. */
-.kw-coach { position: fixed; right: 20px; bottom: 20px; z-index: 99998; display: flex; flex-direction: column; align-items: flex-end;
+.kw-coach { position: fixed; right: 20px; bottom: 20px; z-index: 2147483645; display: flex; flex-direction: column; align-items: flex-end;
   gap: 10px; font: 14px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: #f2f2f2; }
 /* the character leans on the top edge of the box: its hands rest on it */
 .kw-char { position: relative; z-index: 2; width: 150px; height: 147px; margin: 0 0 -15px; align-self: center; padding: 0; border: 0;

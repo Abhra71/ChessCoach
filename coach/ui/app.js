@@ -578,6 +578,16 @@ async function practice(pattern) {
   trainer(drills, { coach: "arjun", record: true });
 }
 
+// Settings: the chess.com self-check (coach/health.py). All working, or what chess.com changed and what still works.
+function healthRow(h) {
+  if (!h || (!h.verified && !h.broken.length)) return `<span class="faint">Not run yet: it runs when you open chess.com.</span>`;
+  const when = t => new Date(t * 1000).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  if (!h.broken.length) return `<span class="ok-text">All working · last verified ${when(h.verified)}</span>`;
+  return h.broken.map(b => `<div class="delta bad" style="font-size:13.5px">${esc(b.says)}</div>
+    <div class="small faint">Since ${when(b.since)}${b.detail ? ` · ${esc(b.detail)}` : ""}</div>`).join("")
+    + `<div class="small muted" style="margin-top:6px">Everything else keeps working. An update will fix it.</div>`;
+}
+
 // Settings: where the extension really is. "Set up" only while it isn't connected anywhere.
 function connectedIn(st) {
   const names = { chrome: "Chrome", edge: "Edge", brave: "Brave", opera: "Opera" };
@@ -687,6 +697,8 @@ async function settingsView() {
         <div class="grid">${slot("slot1", 1)}${slot("slot2", 2)}<p class="note">Key 2 is used when key 1 fails or runs out.</p></div></div>
       <div class="settings-row"><div><h3>Arrows on chess.com</h3><p class="note">The browser extension.</p></div>
         <div class="row">${connectedIn(st)}</div></div>
+      <div class="settings-row"><div><h3>chess.com check</h3><p class="note">chess.com changes its site now and then. Knightwise checks everything it uses there, each time.</p></div>
+        <div>${healthRow(st.health)}</div></div>
       <div class="settings-row"><div><h3>Your data</h3><p class="note">Games, checks, practice and your logbook.</p></div>
         <div class="row"><button class="btn" id="folder">Open data folder</button></div></div>
       <div class="settings-row"><div><h3>About</h3></div>

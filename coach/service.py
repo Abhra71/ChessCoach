@@ -23,7 +23,7 @@ from logging.handlers import RotatingFileHandler
 import chess
 import chess.pgn
 
-from coach import analyze, drills, fetch, memory, puzzles, review, settings
+from coach import analyze, drills, fetch, health, memory, puzzles, review, settings
 from coach.paths import BUNDLED_EXTENSION, DATA, EXTENSION, FROZEN, LOGBOOK, NAME, PACKAGE, TEMPLATES
 from coach.patterns import classify
 from coach.review import explain, move_number
@@ -255,6 +255,11 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return self.send(400, "bad json", "text/plain")
         path = self.path.split("?")[0].rstrip("/")
+        if path == "/api/health":  # the extension's self-check: what it found on a chess.com page
+            ok = health.record(str(body.get("check", "")), bool(body.get("ok")), str(body.get("detail", "")))
+            if ok and not body.get("ok"):
+                log.warning("chess.com self-check failed: %s (%s)", body.get("check"), body.get("detail"))
+            return self.send(200 if ok else 400, json.dumps({"ok": ok}), "application/json")
         if path == "/api/practice" and body.get("kind") in ("game", "puzzle", "opening"):
             memory.record_practice(str(body.get("id"))[:200], body["kind"], bool(body.get("right")),
                                    shown=bool(body.get("shown")))
@@ -521,7 +526,7 @@ def status():
     return {"player": player(), "last_update": STATE.get("last_update"), "phase": STATE.get("phase"),
             "done": STATE.get("done", 0), "total": STATE.get("total", 0), "error": STATE.get("error"),
             "review_ready": (DATA / "review.html").exists(), "extension_seen": STATE.get("extension_seen"),
-            "extension_in": STATE.get("extension_in", {}),
+            "extension_in": STATE.get("extension_in", {}), "health": health.summary(),
             "extension_path": str(EXTENSION), "browsers": sorted(browsers()), "listen_install": STATE.get("listen_install")}
 
 
