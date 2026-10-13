@@ -340,7 +340,7 @@ async function progressView() {
     <div class="grid">
       ${s ? `<div class="box story rise" id="story">
         <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>
-          <button class="btn" id="savepic">Save as picture</button></div>
+          <div class="row share"><button class="btn primary" id="sharepic">Share</button><button class="btn" id="savepic">Save as picture</button></div></div>
         <div class="story-grid">
           <div class="story-tile wide"><div class="wdl">
               <div><b class="big good-text">${roll(r.win || 0)}</b><span>won</span></div>
@@ -367,12 +367,46 @@ async function progressView() {
         <div class="badges">${p.badges.filter(b => b.group === gr).map(badgeCard).join("")}</div>`).join("")}`).join("")}</div>
     </div>`;
   countUp($("#page"));
+  if (s) $("#sharepic").onclick = () => sharePanel(p.player, s);
   if (s) $("#savepic").onclick = async () => {
     const b = $("#savepic"); b.disabled = true; b.textContent = "Saving…";
     try { const r2 = await api("/api/save-picture", { png: storyPicture(p.player, s) }); b.textContent = "Saved to Pictures"; Sound.play("done"); }
     catch (e) { b.textContent = "Couldn't save"; }
     setTimeout(() => { b.disabled = false; b.textContent = "Save as picture"; }, 3000);
   };
+}
+
+// Share the week's picture. From a PC, WhatsApp and X can't take a picture through a link, so the picture goes on
+// the clipboard and the app opens with a line ready: paste it there. Instagram can't be posted to from a PC link at
+// all, so it's saved for upload (13 Oct test, point 5.5: "a share option, not only save").
+function sharePanel(player, s) {
+  const r = s.results || {}, line = `${s.title === "Your week" ? "My chess this week" : "My last 10 chess games"}: ${r.win || 0} won, ${r.draw || 0} drawn, ${r.loss || 0} lost. Coached by Knightwise, free.`;
+  const url = "https://github.com/Abhra71/ChessCoach";
+  const old = $(".share-pop"); if (old) old.remove();
+  const pop = document.createElement("div"); pop.className = "share-pop box";
+  pop.innerHTML = `<div class="row spread"><b>Share your week</b><button class="btn ghost" data-x>×</button></div>
+    <p class="small muted" style="margin:6px 0 12px">The picture is copied first: press Ctrl+V where it opens.</p>
+    <div class="share-grid"><button class="btn" data-to="whatsapp">WhatsApp</button><button class="btn" data-to="x">X</button>
+      <button class="btn" data-to="instagram">Instagram</button><button class="btn" data-to="copy">Copy picture</button></div>
+    <p class="small" id="sharemsg" style="margin:10px 0 0"></p>`;
+  document.body.appendChild(pop);
+  $("[data-x]", pop).onclick = () => pop.remove();
+  const msg = t => { $("#sharemsg", pop).textContent = t; };
+  const copy = () => api("/api/copy-picture", { png: storyPicture(player, s) });  // the app copies it: Windows' clipboard
+  pop.querySelectorAll("[data-to]").forEach(b => b.onclick = async () => {
+    const to = b.dataset.to;
+    if (to === "instagram") {  // no way to post from a PC link: save it, then upload it in Instagram
+      try { await api("/api/save-picture", { png: storyPicture(player, s) }); msg("Saved in Pictures, Knightwise. Upload it in Instagram."); Sound.play("done"); }
+      catch (e) { msg("Couldn't save the picture."); }
+      return;
+    }
+    try { await copy(); } catch (e) { msg("Couldn't copy the picture: use Save as picture instead."); return; }
+    if (to === "copy") { msg("Copied. Paste it anywhere with Ctrl+V."); Sound.play("done"); return; }
+    const link = to === "whatsapp" ? `https://wa.me/?text=${encodeURIComponent(`${line} ${url}`)}`
+      : `https://x.com/intent/post?text=${encodeURIComponent(line)}&url=${encodeURIComponent(url)}`;
+    window.open(link, "_blank", "noopener");
+    msg(`Picture copied. In ${to === "x" ? "X" : "WhatsApp"}, press Ctrl+V to add it.`);
+  });
 }
 
 function storyPicture(player, s) {  // the week as a 1080 x 1350 picture, drawn on a canvas

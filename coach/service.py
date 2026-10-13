@@ -255,7 +255,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get("Content-Type") != "application/json":
             return self.send(403, "forbidden", "text/plain")
         try:
-            limit = 4_000_000 if self.path == "/api/save-picture" else 10_000  # a picture of your week is bigger
+            big = ("/api/save-picture", "/api/copy-picture")  # a picture of your week is bigger
+            limit = 4_000_000 if self.path in big else 10_000
             body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), limit)))
         except ValueError:
             return self.send(400, "bad json", "text/plain")
@@ -350,6 +351,9 @@ class Handler(BaseHTTPRequestHandler):
             if os.name == "nt":
                 subprocess.Popen(["explorer", "/select,", str(target)])
             return self.send(200, json.dumps({"path": str(target)}), "application/json")
+        if path == "/api/copy-picture":  # Share: the week's picture on the Windows clipboard, to paste anywhere
+            ok = copy_picture(str(body.get("png", "")))
+            return self.send(200 if ok else 400, json.dumps({"ok": ok}), "application/json")
         if path == "/api/open-folder":
             if os.name == "nt":
                 os.startfile(DATA.parent)
@@ -498,6 +502,23 @@ def game_tag(rows):
     order = sorted(counts, key=lambda p: (p != "stalemated a won game", -counts[p]))[:2]
     words = [TAG_SAY[p][0] if counts[p] == 1 else TAG_SAY[p][1].format(n=counts[p]) for p in order]
     return {"text": " · ".join(words), "tone": "bad"}
+
+
+def copy_picture(data):
+    """Put a PNG (a data: URL) on the Windows clipboard. The page can't: browsers keep pictures off the clipboard
+    unless the page has a permission the app window doesn't give. Windows' own clipboard, through PowerShell."""
+    import base64
+    import tempfile
+    if os.name != "nt" or not data.startswith("data:image/png;base64,"):
+        return False
+    path = os.path.join(tempfile.gettempdir(), "knightwise-share.png")
+    with open(path, "wb") as fh:
+        fh.write(base64.b64decode(data.split(",", 1)[1]))
+    script = ("Add-Type -AssemblyName System.Windows.Forms,System.Drawing; "
+              f"$i=[System.Drawing.Image]::FromFile('{path}'); [System.Windows.Forms.Clipboard]::SetImage($i); $i.Dispose()")
+    done = subprocess.run(["powershell", "-NoProfile", "-STA", "-Command", script], capture_output=True, timeout=20,
+                          creationflags=0x08000000)  # CREATE_NO_WINDOW: no console flashing up
+    return done.returncode == 0
 
 
 def browser_of(agent):

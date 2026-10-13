@@ -406,3 +406,7 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .ring-legend i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid; display: inline-block; }
 .ring-legend i.t1 { border-color: #c98a4b; } .ring-legend i.t2 { border-color: #c7ccd4; } .ring-legend i.t3 { border-color: #f2c94c; }
 .badge-source { margin: 22px 0 0; font-size: 16px; }
+/* sharing the week's picture */
+.share { gap: 8px; }
+.share-pop { position: fixed; right: 32px; top: 120px; width: 340px; z-index: 60; animation: rise .25s ease-out both; }
+.share-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
