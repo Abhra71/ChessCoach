@@ -1,4 +1,4 @@
-from coach.voice import sentences, speakable
+from coach.voice import sentences, speakable, tidy_leftovers
 
 
 def test_moves_are_read_as_words():
@@ -15,3 +15,12 @@ def test_plain_words_untouched():
 def test_sentences():
     assert sentences("Move 4. After c3, their queen can take it! Better: Nf3.") == \
         ["Move 4.", "After c3, their queen can take it!", "Better: Nf3."]
+
+
+def test_tidy_leftovers_only_removes_the_speech_library_copies(tmp_path):
+    for name, files in [("tmpa", ["espeak-ng.dll"]), ("tmpb", ["espeak-ng.dll", "other.txt"]), ("keep", ["espeak-ng.dll"])]:
+        (tmp_path / name).mkdir()
+        for f in files:
+            (tmp_path / name / f).write_text("x")
+    assert tidy_leftovers(tmp_path) == 1
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["keep", "tmpb"]

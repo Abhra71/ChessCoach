@@ -33,9 +33,27 @@ def available():
     return MODEL.exists() and VOICES.exists()
 
 
+def tidy_leftovers(temp=None):
+    """The speech library copies espeak-ng.dll into a new temp folder every start and only deletes it on a clean
+    exit, so closed apps left 144 of them (60 MB) by 14 Oct. Remove the old ones; a copy in use is locked, and kept."""
+    import shutil
+    import tempfile
+    from pathlib import Path
+    removed = 0
+    for d in Path(temp or tempfile.gettempdir()).glob("tmp*"):
+        try:
+            if d.is_dir() and [f.name for f in d.iterdir()] == ["espeak-ng.dll"]:
+                shutil.rmtree(d)
+                removed += 1
+        except OSError:
+            pass
+    return removed
+
+
 def _kokoro():
     global _engine
     if _engine is None:
+        tidy_leftovers()
         from kokoro_onnx import Kokoro
         _engine = Kokoro(str(MODEL), str(VOICES))
     return _engine
