@@ -33,6 +33,19 @@ def _opening(g):
     return g.get("eco", "").rstrip("/").split("/")[-1].replace("-", " ") or None
 
 
+_GAMES = {}  # username -> (time, their games): an hour, shared by prep and sparring
+
+
+def games_of(user):
+    """Their public games of the last three months (kept an hour)."""
+    hit = _GAMES.get(user)
+    if hit and time.time() - hit[0] < 3600:
+        return hit[1]
+    games = _games_of(user)
+    _GAMES[user] = (time.time(), games)
+    return games
+
+
 def _games_of(user):
     archives = fetch.get_json(f"https://api.chess.com/pub/player/{user}/games/archives")["archives"][-MONTHS:]
     games = []
@@ -45,7 +58,7 @@ def scout(user, me=None, games=None, mine=None):
     """{user, games, rating, as_white, as_black, endings, advice}, or None when there are no games to read."""
     user = user.strip().lower()
     me = (me or insights._player() or "").lower()
-    games = games if games is not None else _games_of(user)
+    games = games if games is not None else games_of(user)
     if not games:
         return None
     side = lambda g: "white" if g["white"]["username"].lower() == user else "black"

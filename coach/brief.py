@@ -91,6 +91,10 @@ def brief(d, games=None):
                                          f"In the game you played {d['played']} here, and it cost you. Find a better move."
                                          if d.get("played") else ""] if x)
         return {"title": title, "facts": facts[:4], "situation": situation, "mindset": mindset}
+    if d.get("kind") == "puzzle" and str(d.get("id", "")).startswith("elite:"):  # a strong player's game: the plan
+        return {"title": "Find the strong player's move", "facts": [f"You are {side}", "Players rated 2,400+", phase(pieces).capitalize()],
+                "situation": f"{d.get('where')}. No trick here: the strong player made a quiet move that follows the "
+                             f"structure's plan.", "mindset": d.get("hint")}
     if d.get("kind") == "puzzle":
         themes = d.get("themes") or []
         ph = next((t for t in ("opening", "middlegame", "endgame") if t in themes), phase(pieces))

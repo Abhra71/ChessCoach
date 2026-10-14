@@ -23,17 +23,21 @@ WINDOW = 20  # your last 20 checked games
 MISTAKE = 10  # a move that cost at least 10 points of your chance to win gets a reason
 AFTER = 5  # games played after studying a lesson before it can be passed
 FINE = 0.5  # a lesson's mistake at under half its goal: "you already do this"
+NEEDS_ELITE = "Needs strong players' games (coach/elite.py builds them from the Lichess Elite download)."
+REPERTOIRE_STRUCTURES = {"Italian": "italian", "Caro-Kann": "caro", "Queen's Gambit Declined": "carlsbad",
+                         "Sicilian": "sicilian", "French": "french", "King's Indian": "kid"}
 LEVEL_ORDER = ["safe", "tactics", "club", "precise", "expert"]
 LEVEL_NAME = {"safe": "Safe pieces", "tactics": "Tactics and good starts", "club": "Fewer mistakes",
               "precise": "Precision", "expert": "Expert"}
 
 
-def L(lid, level, title, ideas, goal, teach, habit, themes=(), train=None, coming=None):
+def L(lid, level, title, ideas, goal, teach, habit, themes=(), train=None, coming=None, elite=None):
     """One lesson. ideas: the reasons (coach/why.py) it fixes; goal: at most this many such mistakes a game.
     teach: short paragraphs; habit: the one check to make every move; themes: Lichess puzzle themes to practise;
-    train: (label, app route) of a trainer that goes with it; coming: why it isn't ready yet."""
+    train: (label, app route) of a trainer that goes with it; coming: why it isn't ready yet;
+    elite: pawn structures from strong players' games (coach/elite.py) to practise, or "repertoire" for yours."""
     return {"id": lid, "level": level, "title": title, "ideas": list(ideas), "goal": goal, "teach": teach,
-            "habit": habit, "themes": list(themes), "train": train, "coming": coming}
+            "habit": habit, "themes": list(themes), "train": train, "coming": coming, "elite": elite}
 
 
 LESSONS = [
@@ -216,11 +220,11 @@ LESSONS = [
     L("pre-iqp", "precise", "The isolated queen's pawn", [], 0.0, [
         "A pawn on d4 with no pawns beside it: weak in the endgame, but its owner gets space and attacking chances.",
     ], "Who does this pawn favour: the attacker now, or the defender later?", [],
-      coming="Needs strong players' games (the Lichess Elite download, waiting for your yes)."),
+      coming=NEEDS_ELITE, elite=["iqp", "hanging"]),
     L("pre-structures", "precise", "Your openings' pawn structures", [], 0.0, [
         "Your repertoire leads to the same pawn structures again and again. Knowing their plans is half the game.",
     ], "What does this structure ask me to do?", [],
-      coming="Needs strong players' games (the Lichess Elite download, waiting for your yes)."),
+      coming=NEEDS_ELITE, elite="repertoire"),
 
     # ---------- Expert: 2,000 and above ----------
     L("exp-attack", "expert", "Attacking the king", [], 0.0, [
@@ -235,11 +239,11 @@ LESSONS = [
     L("exp-prophylaxis", "expert", "What do they want?", [], 0.0, [
         "Before your own plan, ask what your opponent wants to do next, and stop it.",
     ], "If it were their move, what would they play?", [],
-      coming="Needs strong players' games (the Lichess Elite download, waiting for your yes)."),
+      coming="Coming later: it needs explanations of quiet plans, which the coach can't check on the board yet."),
     L("exp-plans", "expert", "Plans from strong players' games", [], 0.0, [
         "How 2,400+ players handle the positions your openings give you.",
     ], "What would a strong player do here, and why?", [],
-      coming="Needs strong players' games (the Lichess Elite download, waiting for your yes)."),
+      coming=NEEDS_ELITE, elite=["sicilian", "french", "kid", "italian", "caro", "carlsbad"]),
 ]
 BY_ID = {l["id"]: l for l in LESSONS}
 
@@ -322,7 +326,7 @@ def course(games=None, moves=None, player=None, current=None):
         st = state.get(l["id"], {})
         after = [g for g in checked if st.get("studied") and _end_time(g) > st["studied"]]
         after_rate = sum(rates(after[:WINDOW], tagged).get(i, 0) for i in l["ideas"]) if after and l["ideas"] else None
-        if l["coming"]:
+        if l["coming"] and not _structures(l):
             status = "coming"
         elif st.get("studied") and l["ideas"] and len(after) >= AFTER and after_rate <= l["goal"]:
             status = "passed"
@@ -419,10 +423,34 @@ def lesson(lid, engine, rating=None, rng=None):
         puzzles += plan._puzzles(theme, rating, rng)[:2 if len(l["themes"]) > 1 else 3]
     for p in puzzles:
         p["hint"] = l["habit"] + " " + p.get("hint", "")
+    from coach import elite
+    lib, teach = elite.library(), list(l["teach"])
+    for key in _structures(l):
+        st = lib[key]
+        side = "White" if st["owner"] == "white" else "Black"
+        teach.append(f"{st['name']}. For {side}: {st['plan']['owner']} For the other side: {st['plan']['other']}")
+        puzzles += st["drills"][:4]
     row = next(r for r in course()["lessons"] if r["id"] == lid)
     return {**l, "kind": "course", "coach": "viktor",
             "status": row["status"], "reason": reason(row), "rate": row["rate"],
-            "intro": l["teach"][0], "drills": own + puzzles}
+            "teach": teach, "intro": teach[0], "drills": own + puzzles}
+
+
+def _structures(l):
+    """The pawn structures a lesson practises that the strong players' library has, or []."""
+    if not l.get("elite"):
+        return []
+    from coach import elite
+    lib = elite.library()
+    keys = l["elite"]
+    if keys == "repertoire":
+        try:
+            from coach import repertoire
+            names = [x["name"] for x in json.loads(repertoire.FILE.read_text())]
+        except (OSError, ValueError, KeyError):
+            names = []
+        keys = [k for n in names for word, k in REPERTOIRE_STRUCTURES.items() if word in n] or ["italian", "caro", "carlsbad"]
+    return [k for k in dict.fromkeys(keys) if lib.get(k, {}).get("drills")]
 
 
 def lesson_for(idea):

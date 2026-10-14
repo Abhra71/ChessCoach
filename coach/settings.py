@@ -18,7 +18,7 @@ PROVIDERS = {  # what the player can choose for a slot; "free" means the provide
     "anthropic": {"name": "Anthropic Claude", "free": False, "get_key": "https://console.anthropic.com/settings/keys"},
     "openai": {"name": "OpenAI", "free": False, "get_key": "https://platform.openai.com/api-keys"},
 }
-DEFAULTS = {"theme": "system", "voice": True, "sounds": True, "voice_name": "af_heart",
+DEFAULTS = {"theme": "system", "voice": True, "sounds": True, "voice_name": "af_heart", "human_moves": False,
             "slot1": {"provider": "groq"}, "slot2": {"provider": "gemini"}}  # Groq first: Gemini was often busy in Jarvis
 
 
@@ -32,7 +32,7 @@ def save(changes):
     current = load()
     if changes.get("theme") in ("system", "dark", "light"):
         current["theme"] = changes["theme"]
-    for flag in ("voice", "sounds"):
+    for flag in ("voice", "sounds", "human_moves"):
         if isinstance(changes.get(flag), bool):
             current[flag] = changes[flag]
     from coach.voice import CHOICES
@@ -78,7 +78,9 @@ def public():
         key = get_key(slot)
         slots[slot] = {"provider": s[slot]["provider"], "set": bool(key), "ends": key[-4:] if key else None}
     from coach import hearing, voice
-    return {"theme": s["theme"], "voice": s["voice"], "sounds": s["sounds"], "voice_name": s["voice_name"], "voices": voice.CHOICES,
+    from coach import maia
+    return {"theme": s["theme"], "voice": s["voice"], "sounds": s["sounds"],
+            "human_moves": bool(s.get("human_moves")), "human_ready": maia.available(), "voice_name": s["voice_name"], "voices": voice.CHOICES,
             "voice_ready": voice.available(), "listen_ready": hearing.available(), "slots": slots, "providers": PROVIDERS,
             # talking by voice: a Groq or Gemini key hears you (0.6); Whisper on this PC only if it was installed
             # (a key is always needed to understand you; Groq or Gemini also hear you, any other key needs Whisper here)

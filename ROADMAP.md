@@ -26,9 +26,20 @@ On top of 0.5.0 and the 0.6 AI backend (branch ai-0.6, merged in). Test guide: d
     is passed only when that mistake drops in the 5+ games played after studying it; rare mistakes show "you already
     do this". Practice: the user's own positions plus Lichess puzzles on the idea. 5 lessons wait for the Elite games.
   - The user's next lesson today: "Look at their checks" (0.25 checkmates walked into a game, goal 0.1).
-  - **Proposed next, waiting for the user's yes on the downloads:** Maia (human-like play by rating, GPL; lc0 plus small
-    weight files; runs on the PC, so it's opt-in) and the Lichess Elite Database (2,400+ games, CC0) for plans and pawn
-    structures. Sizes, sources and licences to be shown first; nothing downloaded yet.
+- **0.11 Human-like opponents and strong players' games (user's yes on both downloads, 14 Oct evening):**
+  - **Maia** (coach/maia.py): Leela lc0 v0.32.1 CPU (24 MB, its own network removed) and the nine Maia networks
+    (1,100 to 1,900, 1.3 MB each), in engine/ (python -m coach.get_engine fetches them). Off until switched on in
+    Settings. One Leela process per rating (switching networks in one process returned cached answers). Used by:
+    Rematch (900 to 1,900 opponents; under 900 the weakened Stockfish stays, since the user is 211 and Maia's lowest
+    level is 1,100), the review's "Real players" line, and sparring.
+  - **Spar against them** (coach/spar.py), the user's plan: the opponent's own moves from their public games while
+    they last (a position reached twice or more), then Maia at their rating. "Someone who plays like them", said so.
+  - **Lichess Elite** (coach/elite.py): three months (Sep to Nov 2025, 240 MB zipped, deleted after) sorted into 8
+    pawn structures, 200 games each at 2,400+; kept: 6 model games won by the plan and 10 "find the strong player's
+    move" positions per structure (Stockfish agrees within 40 centipawns; other equal moves are "also good, find the
+    plan move"). coach/library/elite.json, 0.8 MB, bundled. Three course lessons unlocked; prophylaxis still coming.
+  - **Fixed on the way:** any Knightwise process that had used Stockfish never finished exiting (python-chess's
+    thread). Engines now close before Python waits. Also fixed on main for 0.5.0.
 - **Not done:** studying strong players' games (Lichess's masters database now needs an account: a parent's
   decision, or a download to approve). Voice not tried with a real key yet (Round 2 brings the key).
 

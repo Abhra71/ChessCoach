@@ -93,7 +93,7 @@ def moment(r, played=None):
         say += f" In the game they missed it and played {after.san(real)}."
     return {
         "steps": walk(r, mine, best, best_reply, real, after, why, reason.get("better")),
-        "idea": reason["idea"], "lesson": lesson,
+        "idea": reason["idea"], "lesson": lesson, "humans": _humans(r),
         "ply": r["ply"], "move_number": move_number(r), "color": r["color"],
         "placement": r["fen"].split()[0],  # the board just before the player's move
         "after_placement": _after(r["fen"], mine),
@@ -108,6 +108,19 @@ def moment(r, played=None):
         "say": say,
         "loss": r["loss"],
     }
+
+
+def _humans(r):
+    """What players at your level, and stronger, play here (the human-move model, when it's switched on), or None."""
+    from coach import maia
+    if r["move"] == r["best"] or not maia.enabled():
+        return None
+    try:
+        from coach import insights
+        return maia.compare(r["fen"], r["move"], r["best"], insights.home().get("rating"))
+    except Exception:  # never lose the review over it
+        log.exception("maia")
+        return None
 
 
 def _idea_name(idea):
@@ -318,12 +331,24 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/course/"):  # one lesson: the text, your own positions and puzzles on the same idea
             from coach import brief, course, live_engine
             lid = path.rsplit("/", 1)[-1]
-            if lid not in course.BY_ID or course.BY_ID[lid]["coming"]:
+            if lid not in course.BY_ID or (course.BY_ID[lid]["coming"] and not course._structures(course.BY_ID[lid])):
                 return self.send(404, json.dumps({"message": "No such lesson yet."}), "application/json")
             with live_engine.LOCK:
                 item = course.lesson(lid, live_engine.get(), insights.home().get("rating"))
             brief.add(item["drills"])
             return self.send(200, json.dumps(item), "application/json")
+        if path.startswith("/api/spar/"):  # spar against a player: their openings, then human moves (0.11)
+            from coach import spar
+            from urllib.parse import parse_qs, urlsplit
+            user = path.rsplit("/", 1)[-1].lower()
+            side = parse_qs(urlsplit(self.path).query).get("color", ["white"])[0]
+            if not user or len(user) > 30 or not all(c.isalnum() or c in "-_" for c in user) or side not in ("white", "black"):
+                return self.send(400, json.dumps({"message": "That doesn't look like a chess.com username."}), "application/json")
+            try:
+                out = spar.start(user, side)
+            except OSError:
+                return self.send(503, json.dumps({"message": "Couldn't reach chess.com. Are you online?"}), "application/json")
+            return self.send(200 if out else 404, json.dumps(out or {"message": "They have no public games to spar against."}), "application/json")
         if path == "/api/calc":  # the calculation trainer: see the whole line before anything moves (0.9)
             from coach import brief, drills
             items = drills.calculation(insights.home().get("rating"), time.strftime("%Y-%m-%d"))
@@ -438,6 +463,19 @@ class Handler(BaseHTTPRequestHandler):
                                     int(body.get("limit") or 0))
             except (KeyError, ValueError):
                 out = None
+            return self.send(200 if out else 400, json.dumps(out or {"message": "That move isn't legal here."}), "application/json")
+        if path == "/api/spar/move":  # your move when sparring, then theirs
+            from coach import spar
+            try:
+                rating = max(100, min(3000, int(body.get("rating", 800))))
+                side = "white" if body.get("color") == "white" else "black"
+                out = spar.play(str(body["user"]).lower()[:30], str(body["fen"]), str(body["uci"])[:5], side, rating)
+            except (KeyError, ValueError):
+                out = None
+            if out and out["over"]:
+                out["say"] = {"win": "You won! Now you know their openings: play them the same way on chess.com.",
+                              "loss": "They won this one. Try again: you'll meet the same first moves.",
+                              }.get(out["result"], "A draw. Try again and look for the win.")
             return self.send(200 if out else 400, json.dumps(out or {"message": "That move isn't legal here."}), "application/json")
         if path == "/api/rematch/move":  # your move in a rematch, then the opponent's
             from coach import rematch

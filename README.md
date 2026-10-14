@@ -145,7 +145,7 @@ Privacy: [PRIVACY.md](PRIVACY.md). Knightwise is independent and not connected w
 
 ```
 pip install -r requirements.txt
-python -m coach.get_engine                       # downloads Stockfish (~80 MB) into engine/
+python -m coach.get_engine                       # downloads Stockfish (~80 MB), Leela and Maia (~36 MB) into engine/
 python -m coach.get_voice                        # optional: speaking (~120 MB) and listening (~485 MB) into voice/
 python -m coach.get_assets                       # the 3D welcome scene and music (~32 MB) into coach/ui/vendor/
 python -m coach.puzzles                          # optional: Lichess puzzles (reads ~300 MB, keeps ~2.5 MB)
@@ -219,6 +219,9 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 
 - **Stockfish** (the strongest chess engine) scores the position before and after each of your moves.
 - The score is turned into a **winning chance** (0-100). A move that drops it by 25 or more is a big mistake.
+- Every mistake also gets **a reason** (coach/why.py), worked out from the board and the engine's line: a piece put
+  where it's taken, a threat not answered, a guard moved away, a fork, a pin, pieces left at home, and so on. Each
+  reason links to a lesson in **Your course** (coach/course.py), which your games choose and your games pass.
 - Each big mistake is sorted by **what happened next** in the engine's line: you lost a piece straight away
   (hanging: counted after your best reply, so a piece you can take back is not hanging), a couple of moves later
   (fork or trick), you missed a whole piece that was free (a knight, bishop, rook or queen; pawn grabs don't count),
@@ -300,4 +303,6 @@ a small tray window with your logbook, and a local SQLite memory.
 
 GPL-3.0 (see `LICENSE`). Stockfish and python-chess are also GPL-3.0. The voice is Kokoro (Apache-2.0); listening is Whisper via faster-whisper (MIT). The Lichess puzzle database is
 public domain (CC0), from database.lichess.org. The 3D chess set is "Chess Set" by Riley Queen on Poly Haven (CC0);
-Three.js is MIT. Sound effects are from Kenney (kenney.nl, CC0).
+Three.js is MIT. Sound effects are from Kenney (kenney.nl, CC0). The human-move model is Maia (CSSLab, University
+of Toronto, GPL-3.0), run by Leela Chess Zero (lc0, GPL-3.0). Strong players' games by pawn structure come from the
+Lichess Elite Database (database.nikonoel.fr), made of Lichess games (CC0); only moves and ratings are kept.

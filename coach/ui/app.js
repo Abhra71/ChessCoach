@@ -445,6 +445,66 @@ async function tryAgain(gid, ply) {
     [{ label: "Back to the game", app: `games/${gid}` }]), 2200) });
 }
 
+// ---------- spar against a player you'll meet: their openings, then human moves at their rating (0.11) ----------
+async function sparView(user, color) {
+  shell("games", `<p class="muted">Reading their games…</p>`);
+  let s;
+  try { s = await api(`/api/spar/${encodeURIComponent(user)}?color=${color}`); }
+  catch (e) { $("#page").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  const history = [s], played = [];
+  let picked = null, busy = false, last = {};
+  const FROM = { book: "their usual move", human: "like a player of their rating", engine: "the engine, at about their level" };
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/prep/${esc(user)}" class="small muted" style="text-decoration:none">← Prep</a>
+      <h1 style="margin-top:6px">Spar vs ${esc(user)} <span class="faint num">${s.rating}</span></h1>
+      <p class="sub">They open the way they really do, from their games. When their games run out, ${s.human ? "Maia plays on like real players of their rating" : "the engine plays on at about their level"}. It's someone who plays like them, not the person.</p></div></div>
+    <div class="game-layout">
+      <div><div class="board-wrap" id="board"></div></div>
+      <div class="stack"><div class="box stack" style="padding:16px">
+        <h2 style="margin:0">You are ${color === "white" ? "White" : "Black"}</h2>
+        <div class="small muted" id="sfrom"></div>
+        <div class="movelist" id="smoves"></div><div class="err" id="smsg"></div>
+        <div class="row"><button class="btn" id="undo">Take back</button><button class="btn" id="again">New game</button></div></div></div>
+    </div>`;
+  const cur = () => history[history.length - 1];
+  const mineAt = sq => cur().legal.some(u => u.startsWith(sq));
+  if (s.reply) { played.push(s.reply.san); last = { [s.reply.uci.slice(0, 2)]: "hl-last", [s.reply.uci.slice(2, 4)]: "hl-last" }; }
+  function tell(r) { $("#sfrom").textContent = r && r.reply ? `${r.reply.san}: ${FROM[r.reply.from]}${r.reply.games ? `, in ${r.reply.games} of their games` : ""}.` : ""; }
+  function draw() {
+    const targets = picked ? cur().legal.filter(u => u.startsWith(picked)).map(u => u.slice(2, 4)) : [];
+    const hl = { ...last }; if (picked) hl[picked] = "hl-pick";
+    Board.render($("#board"), { fen: cur().fen, flip: s.flip, highlights: hl, targets, onClick: click });
+    let html = "";  // every move in order, two to a line
+    for (let i = 0; i < played.length; i += 2) html += `<span class="n">${i / 2 + 1}.</span><span>${esc(played[i])}</span><span>${esc(played[i + 1] || "")}</span>`;
+    $("#smoves").innerHTML = html || `<span class="small muted" style="grid-column:1/-1">Your move.</span>`;
+  }
+  function click(sq) {
+    if (busy || cur().over) return;
+    if (picked && picked !== sq) { const uci = cur().legal.find(u => u.slice(0, 4) === picked + sq); if (uci) return move(uci); }
+    picked = picked === sq || !mineAt(sq) ? null : sq; draw();
+  }
+  async function move(uci) {
+    busy = true; picked = null;
+    let r;
+    try { r = await api("/api/spar/move", { user, fen: cur().fen, uci, color, rating: s.rating }); }
+    catch (e) { $("#smsg").textContent = e.message; busy = false; draw(); return; }
+    last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
+    Board.render($("#board"), { fen: r.mine.fen, flip: s.flip, highlights: last }); Sound.move(r.mine.san);
+    played.push(r.mine.san);
+    await wait(r.reply ? 550 : 0);
+    if (r.reply) {
+      last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san);
+      played.push(r.reply.san);
+    }
+    history.push(r); tell(r); busy = false; draw();
+    if (r.over) { if (r.result === "win") confetti(); Coach.react("maya", r.result === "win" ? "celebrate" : "explain", r.say, [{ label: "New game", app: `spar/${user}/${color}` }]); }
+  }
+  $("#undo").onclick = () => { if (busy || history.length < 2) return; const r = history.pop(); played.splice(played.length - (r.reply ? 2 : 1)); last = {}; tell(cur()); draw(); };
+  $("#again").onclick = () => sparView(user, color);
+  tell(s); draw();
+  Coach.react("maya", "explain", `${user} opens the way they really do. Play your repertoire against it, and watch what they like to do.`);
+}
+
 // ---------- Rematch your loss (flagship 4): the real game up to where it went wrong, then you play it out ----------
 async function rematchView(gid, ply) {
   shell("games", `<p class="muted">Loading…</p>`);
@@ -462,7 +522,8 @@ async function rematchView(gid, ply) {
       <div class="stack">
         <div class="box stack" style="padding:16px">
           <h2 style="margin:0">Your moves from here</h2>
-          <p class="small muted" style="margin:0">They play at about their level: the engine makes mistakes on purpose, the way a ${s.rating} player might. It's an approximation, not the person.</p>
+          <p class="small muted" style="margin:0">${s.human ? `They play like real ${s.rating} players: Maia, the human-move model, learned from millions of games at that level. It's players like them, not the person.`
+            : `They play at about their level: the engine makes mistakes on purpose, the way a ${s.rating} player might. It's an approximation, not the person.`}</p>
           <div class="movelist" id="rmoves"></div>
           <div class="err" id="rmsg"></div>
           <div class="row"><button class="btn" id="undo">Take back</button><button class="btn" id="again">Start again</button></div>
@@ -766,6 +827,9 @@ async function prepView(user) {
         <div class="box stack" style="padding:16px"><h2 style="margin:0">How their games end</h2>
           ${ends.map(([k, n]) => `<div class="row spread"><span>${esc(cap(k))}</span><b class="num">${n}</b></div>`).join("")}</div>
       </div>`;
+    $("#prep").insertAdjacentHTML("beforeend", `<div class="box row" style="padding:16px;margin-top:16px"><div style="flex:1"><b>Spar against them</b>
+      <div class="small muted">They open the way they really do, then play like players of their rating.</div></div>
+      <a class="btn primary" href="#/spar/${esc(s.user)}/white">As White</a><a class="btn" href="#/spar/${esc(s.user)}/black">As Black</a></div>`);
     Coach.react("maya", "explain", `${s.user}: ${s.advice[0]}`);
   };
   $("#look").onclick = look;
@@ -1140,6 +1204,7 @@ async function gameView(id) {
       ${shown < k.steps.length - 1 ? `<div class="row"><button class="btn primary" id="nextstep">Next: ${esc(k.steps[shown + 1].title)} ▶</button>
           <button class="btn" id="allsteps">Show all steps</button></div>`
         : `${k.habit ? `<div class="small"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
+          ${k.humans ? `<div class="small" title="From Maia, the human-move model"><b>Real players:</b> ${esc(k.humans)}</div>` : ""}
           ${explained[k.ply] ? `<div class="coach-says">${esc(explained[k.ply])}</div>` : ""}
           <div class="row"><a class="btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a>
             ${k.lesson ? `<a class="btn" href="#/course/${k.lesson.id}" title="The course lesson on this idea">Learn it: ${esc(k.lesson.title)}</a>` : ""}
@@ -1322,6 +1387,10 @@ async function settingsView() {
       <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a finished set. No background music.</p></div>
         <div class="row"><button class="switch ${s.sounds ? "on" : ""}" id="sounds" aria-label="Sounds"></button>
           <span class="small muted">${s.sounds ? "On" : "Off"}</span></div></div>
+      ${s.human_ready ? `<div class="settings-row"><div><h3>Human-like opponents</h3><p class="note">Maia, a chess AI from the University of Toronto that plays like real players of a rating (1,100 to 1,900), mistakes included.
+        Your rematch and sparring opponents play like people, and reviews say what players at your level play. It runs on this PC, so it's off until you switch it on.</p></div>
+        <div class="row"><button class="switch ${s.human_moves ? "on" : ""}" id="humanmoves" aria-label="Human-like opponents"></button>
+          <span class="small muted">${s.human_moves ? "On" : "Off"}</span></div></div>` : ""}
       <div class="settings-row"><div><h3>AI: talk with your coaches</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.
         Without one it uses the engine's built-in sentences. Keys are kept in Windows Credential Manager, encrypted for your Windows account,
         and are only sent to the provider you choose.</p>
@@ -1352,6 +1421,7 @@ async function settingsView() {
   $("#theme").querySelectorAll("button").forEach(b => b.onclick = async () => {
     const r = await api("/api/settings", { theme: b.dataset.t }); applyTheme(r.theme); settingsView();
   });
+  const hm = $("#humanmoves"); if (hm) hm.onclick = async () => { await api("/api/settings", { human_moves: !s.human_moves }); settingsView(); };
   $("#sounds").onclick = async () => { await api("/api/settings", { sounds: !s.sounds }); Sound.set(!s.sounds); if (!s.sounds) Sound.play("right"); settingsView(); };
   $("#voice").onclick = async () => { await api("/api/settings", { voice: !s.voice }); Voice.set(!s.voice); settingsView(); };
   const HELLO = { maya: "Hi, I'm Maya. I'll walk you through your games, one moment at a time.",
@@ -1530,6 +1600,7 @@ async function screen(name, arg) {
   if (name === "openings") return await openingTree();
   if (name === "try") return await tryAgain(arg, location.hash.split("/")[3]);
   if (name === "rematch") return await rematchView(arg, location.hash.split("/")[3]);
+  if (name === "spar") return await sparView(decodeURIComponent(arg || ""), location.hash.split("/")[3] === "black" ? "black" : "white");
   if (name === "extension") return await extensionView();
   if (name === "settings") return await settingsView();
   return await home();

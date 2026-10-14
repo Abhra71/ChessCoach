@@ -4,11 +4,13 @@ The board starts just before the move that cost the most, exactly as it stood in
 better; from there Stockfish plays on for your opponent, weakened to about their level: it picks among its best few
 moves with a spread that grows as the rating falls, and now and then plays a loose move, the way club players do.
 That's an approximation of a level, not a copy of the person, and the app says so.
+With the human-move model switched on (coach/maia.py), the opponent plays like real players of their rating instead.
 """
 import math
 import random
 
 import chess
+import chess.engine
 
 from coach import live_engine
 from coach.analyze import score_cp
@@ -28,10 +30,22 @@ def loose(rating):
 
 
 def pick(board, rating, rng=random):
-    """The opponent's move at about this rating."""
+    """The opponent's move at about this rating: Maia's human moves when switched on (1,100 to 1,900; below 1,100
+    with an extra loose move now and then), otherwise Stockfish weakened as below."""
     legal = list(board.legal_moves)
     if len(legal) == 1:
         return legal[0]
+    from coach import maia
+    if _human(rating):
+        extra = max(0.0, loose(rating) - loose(1100))  # under 1,100 people blunder more than Maia's lowest level
+        if rng.random() < extra:
+            return rng.choice(legal)
+        try:
+            move = maia.pick(board, rating, rng)
+            if move:
+                return move
+        except (chess.engine.EngineError, OSError):
+            pass  # Leela failed: fall back to the weakened Stockfish
     if rng.random() < loose(rating):
         return rng.choice(legal)
     with live_engine.LOCK:
@@ -92,6 +106,14 @@ def end_say(result, real):
     return "They won again. Try once more from the same moment: it gets easier."
 
 
+HUMAN_FROM, HUMAN_TO = 900, 2000  # Maia's levels are 1,100 to 1,900: under 900 it would play far too well
+
+
+def _human(rating):
+    from coach import maia
+    return maia.enabled() and HUMAN_FROM <= (rating or 800) < HUMAN_TO
+
+
 def setup(gid, ply):
     """Where a rematch starts: the board just before your move at this ply, in a game you didn't win."""
     from coach import insights
@@ -103,6 +125,6 @@ def setup(gid, ply):
     if board.turn != white:
         return None
     return {**state(board, white), "game": g["id"], "ply": ply, "color": g["color"], "flip": not white,
-            "opponent": g["opponent"], "rating": g["opponent_rating"], "real": g["result"],
+            "opponent": g["opponent"], "rating": g["opponent_rating"], "real": g["result"], "human": _human(g["opponent_rating"]),
             "real_move": g["positions"][ply]["san"], "move_number": (ply + 1) // 2,
             "lead_in": [p["fen"] for p in g["positions"][max(0, ply - 6):ply]]}

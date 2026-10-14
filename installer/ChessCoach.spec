@@ -16,6 +16,7 @@ a = Analysis(
         (str(ROOT / "extension"), "extension"),               # icon for the tray
         (str(ROOT / "coach" / "drills_template.html"), "coach"),
         (str(ROOT / "coach" / "ui"), "coach/ui"),             # the desktop app's screens
+        (str(ROOT / "coach" / "library"), "coach/library"),   # strong players' games by pawn structure (CC0)
         (str(ROOT / "coach" / "openings"), "coach/openings"),  # the opening catalogue (Lichess, CC0)
         (str(ROOT / "voice" / "kokoro-v1.0.int8.onnx"), "voice"),  # the coach's voice (Kokoro); listening downloads later
         (str(ROOT / "voice" / "voices-v1.0.bin"), "voice"),
@@ -24,7 +25,8 @@ a = Analysis(
     hiddenimports=["pystray._win32", "coach.service", "coach.drills", "coach.puzzles", "coach.insights",
                    "coach.settings", "keyring.backends.Windows", "webview.platforms.edgechromium",
                    "coach.voice", "coach.hearing", "coach.get_voice", "coach.ai", "coach.facts", "coach.live_engine", "anthropic",
-                   "coach.daily", "coach.progress", "coach.tree", "coach.brief", "coach.plan", "coach.openings", "coach.coaches"] + [h for v in VOICE for h in v[2]],
+                   "coach.daily", "coach.progress", "coach.tree", "coach.brief", "coach.plan", "coach.openings", "coach.coaches",
+                   "coach.why", "coach.course", "coach.maia", "coach.spar", "coach.elite"] + [h for v in VOICE for h in v[2]],
     excludes=["tkinter", "pytest"],
 )
 pyz = PYZ(a.pure)

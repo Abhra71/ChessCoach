@@ -1,6 +1,6 @@
 # Knightwise 0.6 (with 0.7 to 0.9 inside): what to test
 
-After Round 2 of 0.5.0. About 60 minutes. Claude says each step out loud and in the chat, one at a time. It needs
+After Round 2 of 0.5.0. About 70 minutes. Claude says each step out loud and in the chat, one at a time. It needs
 your free Groq key (Round 2, part 6) for parts 1 and 2.
 
 ## 1. Talk with your coach, in the app, 8 minutes
@@ -53,5 +53,15 @@ your free Groq key (Round 2, part 6) for parts 1 and 2.
 | 6.5 | On chess.com, review a game to the last step | **Learn it** opens the lesson in Knightwise |
 | 6.6 | Is this you? | Say which reasons felt right or wrong. Wrong ones are the most useful |
 
-Not in this version: studying strong players' games. Lichess's database of master games now needs a Lichess account
-(a parent's decision), or a large download; Claude asks first.
+## 7. Human-like opponents and strong players' games, 10 minutes
+| Step | Do | Expect |
+|---|---|---|
+| 7.1 | Settings → **Human-like opponents** → On | The switch stays on |
+| 7.2 | Games → a lost game → a key moment to the end | A **Real players** line: what 1,100 and 1,500 players play there (Maia starts at 1,100, so it says "a level ahead of you") |
+| 7.3 | Prep → type a player you'll meet → **Spar against them: As White** | Your move; they answer with "their usual move, in N of their games" while their games last |
+| 7.4 | Play on past their usual moves | Under 900 the engine plays at about their level; from 900 to 1,900 Maia plays like real players of their rating |
+| 7.5 | Your course → Level 4 → **Your openings' pawn structures** | The plans of your repertoire's structures (Italian, Caro-Kann, Carlsbad), then **find the strong player's move** from 2,400+ games |
+| 7.6 | Close Knightwise from the tray (Quit) | It really closes: nothing called ChessCoach left in Task Manager |
+
+Not in this version: "What do they want?" (prophylaxis) stays "coming": the coach can't check quiet plans on the
+board yet.

@@ -30,7 +30,8 @@ def test_the_next_lesson_is_the_mistake_that_costs_most(setup):
     assert rows["safe-hanging"]["rate"] == 1.0
     assert rows["safe-guard"]["status"] == "fine"  # never happens: "you already do this"
     assert rows["tac-fork"]["status"] == "later"  # above your level
-    assert rows["pre-iqp"]["status"] == "coming"  # needs strong players' games
+    assert rows["exp-prophylaxis"]["status"] == "coming"  # not ready yet
+    assert rows["pre-iqp"]["status"] == "later"  # ready: the strong players' library has the isolated pawn
 
 
 def test_a_lesson_passes_only_when_your_games_after_it_improve(setup):
