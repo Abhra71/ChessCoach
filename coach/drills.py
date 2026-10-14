@@ -171,6 +171,17 @@ def drill(eng, pattern, r):
 
 
 CLUE = {  # what to look for, per Lichess theme
+    "quietMove": "No check, no capture: one calm move that sets up something they can't stop.",
+    "zugzwang": "Every move they have makes things worse. Find the move that leaves them only bad ones.",
+    "intermezzo": "Before the obvious recapture, there's a stronger move in between.",
+    "clearance": "One of your pieces is in the way. Move it, with a threat, to open the line.",
+    "interference": "Put a piece between their defender and what it defends.",
+    "xRayAttack": "Your piece attacks through one of theirs to the piece behind it.",
+    "exposedKing": "Their king has no shelter. Bring pieces in with checks.",
+    "kingsideAttack": "Their castled king is the target. Open lines towards it.",
+    "advancedPawn": "A pawn close to queening is worth more than it looks: push it, or stop it.",
+    "bishopEndgame": "With bishops, the king and the pawns on the right colour decide.",
+    "knightEndgame": "Knight endings are like pawn endings: the active king wins.",
     "hangingPiece": "Look for a piece of theirs that nobody protects.",
     "fork": "Look for a move that attacks two of their pieces at once.",
     "mateIn1": "Look at every check you can give: one of them is checkmate.",
@@ -322,3 +333,23 @@ def warmup(today=None):
                       "board": first["board"], "moves": first["moves"], "last": d.get("last"),
                       "where": d.get("where")})
     return {"items": items}
+
+
+CALC_THEMES = ["fork", "pin", "skewer", "discoveredAttack", "deflection", "attraction", "mateIn2", "backRankMate",
+               "capturingDefender", "doubleCheck", "clearance", "intermezzo", "quietMove", "xRayAttack"]
+
+
+def calculation(rating, seed, n=5):
+    """Puzzles of two moves or more for the calculation trainer: you work out the whole line before anything moves.
+    Near your level (from 150 below to 350 above), easiest first, different every day."""
+    if not PUZZLES.exists():
+        return []
+    stock = json.loads(PUZZLES.read_text())
+    low, high = (rating or 800) - 150, (rating or 800) + 350
+    rng = random.Random(seed)
+    pool = [(t, p) for t in CALC_THEMES for p in stock.get(t, []) if len(p["moves"]) >= 4 and low <= p["rating"] <= high]
+    if len(pool) < n:  # few at this level: the easiest long ones there are
+        every = [(t, p) for t in CALC_THEMES for p in stock.get(t, []) if len(p["moves"]) >= 4]
+        pool = sorted(every, key=lambda tp: tp[1]["rating"])[:n * 4]
+    chosen = sorted(rng.sample(pool, min(n, len(pool))), key=lambda tp: tp[1]["rating"])
+    return [puzzle(p, "", t) for t, p in chosen]

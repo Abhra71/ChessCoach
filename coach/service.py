@@ -281,6 +281,10 @@ class Handler(BaseHTTPRequestHandler):
             except OSError:
                 return self.send(503, json.dumps({"message": "Couldn't reach chess.com. Are you online?"}), "application/json")
             return self.send(200 if out else 404, json.dumps(out or {"message": "They have no public games in the last 3 months."}), "application/json")
+        if path == "/api/calc":  # the calculation trainer: see the whole line before anything moves (0.9)
+            from coach import brief, drills
+            items = drills.calculation(insights.home().get("rating"), time.strftime("%Y-%m-%d"))
+            return self.send(200, json.dumps(brief.add(items)), "application/json")
         if path == "/api/ladder":  # your level: every skill from beginner to 2,000+, on your last 20 games (0.6)
             from coach import ladder
             return self.send(200, json.dumps(ladder.page()), "application/json")

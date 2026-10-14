@@ -43,6 +43,10 @@ THEME_NAME = {
     "smotheredMate": "the smothered mate", "mateIn1": "checkmate in one", "mateIn2": "checkmate in two",
     "attraction": "luring the king", "deflection": "deflection", "promotion": "promoting a pawn",
     "pawnEndgame": "pawn endings", "rookEndgame": "rook endings", "queenEndgame": "winning with the queen",
+    "quietMove": "the quiet move", "zugzwang": "zugzwang: making them move", "intermezzo": "the in-between move",
+    "clearance": "clearing the way", "interference": "cutting the line", "xRayAttack": "the X-ray attack",
+    "exposedKing": "attacking an open king", "kingsideAttack": "the kingside attack", "advancedPawn": "the advanced pawn",
+    "bishopEndgame": "bishop endings", "knightEndgame": "knight endings",
 }
 # Core ways of thinking, each practised on the board: positions from the player's own games ("own": patterns) or
 # Lichess puzzles ("puzzles": themes), with a checklist the player ticks before every move (the habit itself).

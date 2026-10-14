@@ -546,7 +546,7 @@ async function levelView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your level</h1>
       <p class="sub">Five levels from beginner to 2,000+, measured on your last ${p.games} games. A level is done when every skill meets its goal.</p></div>
-      <a class="btn" href="#/endgames">Endgame trainer</a></div>
+      <div class="row"><a class="btn" href="#/calc">See it in your head</a><a class="btn" href="#/endgames">Endgame trainer</a></div></div>
     <div class="stack">${p.levels.map(level).join("")}</div>
     <p class="note">The goals are our first estimate of each level, and we'll tune them on real players' games. They don't promise a rating; your games show the progress.</p>`;
   const next = cur.skills.find(s => s.met === false);
@@ -680,6 +680,88 @@ async function prepView(user) {
   $("#who").onkeydown = e => { if (e.key === "Enter") look(); };
   if (user) look();
   else Coach.react("maya", "explain", "Playing someone soon? Type their chess.com name and I'll show you how they play.");
+}
+
+// ---------- see it in your head: the calculation trainer (0.9) ----------
+// The board stays still. You put in the whole line first, as arrows: your move, their answer, your next move.
+// Only then is it checked and played out. Strong players don't move until they've seen the end.
+async function calcView() {
+  shell("level", `<p class="muted">Loading…</p>`);
+  const items = await api("/api/calc");
+  if (!items.length) { $("#page").innerHTML = `<div class="empty">The calculation puzzles appear once the puzzles are downloaded.</div>`; return; }
+  let i = 0, line = [], picked = null, done = false;
+  const firstTry = {};
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+      <h1 style="margin-top:6px">See it in your head</h1>
+      <p class="sub">The board doesn't move. Put in the whole line as arrows first: your move, their best answer, your next move. Then check it.</p></div>
+      <span class="muted num" id="calccount"></span></div>
+    <div class="game-layout">
+      <div><div class="board-wrap" id="board"></div><p class="small muted" id="calcwhere" style="margin-top:10px"></p></div>
+      <div class="stack">
+        <div class="box stack" style="padding:16px"><h3 style="margin:0" id="calctask"></h3><p class="small muted" style="margin:0" id="calchint"></p></div>
+        <div class="box stack" style="padding:16px"><div class="label">Your line</div><div id="calcline" class="small"></div><div id="calcmsg" class="small"></div>
+          <div class="row"><button class="btn" id="calcundo">Take back</button><button class="btn primary" id="calccheck">Check my line</button>
+            <button class="btn" id="calcnext">Next →</button></div></div>
+      </div>
+    </div>`;
+  const x = () => items[i];
+  const need = () => x().steps.length * 2 - 1;  // your moves and their answers in between
+  const yours = k => k % 2 === 0;
+  function draw(pieces) {
+    const arrows = line.map((u, k) => ({ from: u.slice(0, 2), to: u.slice(2, 4), kind: yours(k) ? "mine" : "real" }));
+    const hl = { ...(x().last ? { [x().last[0]]: "hl-last", [x().last[1]]: "hl-last" } : {}), ...(picked ? { [picked]: "hl-pick" } : {}) };
+    Board.render($("#board"), { pieces: pieces || x().steps[0].board, flip: x().flip, highlights: hl, arrows: done ? [] : arrows, onClick: click });
+    $("#calcline").innerHTML = line.length ? line.map((u, k) => `${yours(k) ? "You" : "They"}: ${u.slice(0, 2)}→${u.slice(2, 4)}`).join(" · ")
+      : `<span class="muted">Click a piece, then where it goes. ${need()} moves in all: yours, theirs${need() > 3 ? ", yours, theirs" : ""}, yours.</span>`;
+    $("#calccount").textContent = `${i + 1} of ${items.length}`;
+  }
+  function show() {
+    line = []; picked = null; done = false;
+    $("#calctask").textContent = x().intro;
+    $("#calchint").textContent = `${x().steps.length} moves of yours to find. ${x().hint}`;
+    $("#calcwhere").textContent = x().where || "";
+    $("#calcmsg").innerHTML = "";
+    draw();
+  }
+  function click(sq) {
+    if (done) return;
+    if (!picked) { picked = sq; return draw(); }
+    if (picked === sq) { picked = null; return draw(); }
+    if (line.length < need()) line.push(picked + sq);
+    picked = null; draw();
+  }
+  async function check() {
+    if (done || line.length < need()) { $("#calcmsg").innerHTML = `<span class="muted">The line needs ${need()} moves; you have ${line.length}.</span>`; return; }
+    done = true;
+    const steps = x().steps;
+    let wrong = -1;
+    for (let k = 0; k < line.length && wrong < 0; k++) {
+      const st = steps[Math.floor(k / 2)];
+      const ok = yours(k) ? Object.entries(st.moves).some(([u, m]) => m.good && u.slice(0, 4) === line[k])
+        : st.reply && st.reply.uci.slice(0, 4) === line[k];
+      if (!ok) wrong = k;
+    }
+    const right = wrong < 0;
+    if (!(x().id in firstTry)) { firstTry[x().id] = right; api("/api/practice", { id: x().id, kind: "puzzle", right }).catch(() => {}); }
+    // play the real line out, so you see what was in it
+    for (let s = 0; s < steps.length; s++) {
+      const good = Object.entries(steps[s].moves).find(([, m]) => m.good);
+      if (good && good[1].after) { Board.render($("#board"), { pieces: good[1].after, flip: x().flip }); Sound.move(good[1].san); await wait(650); }
+      if (steps[s].reply) { Board.render($("#board"), { pieces: steps[s].reply.board, flip: x().flip }); Sound.move(steps[s].reply.san); await wait(650); }
+    }
+    const real = steps.flatMap(st => [Object.values(st.moves).find(m => m.good).san, st.reply ? st.reply.san : null]).filter(Boolean).join(", ");
+    if (right) { confetti(40); Sound.play("right"); }
+    const where = wrong < 0 ? "" : yours(wrong) ? `Your move ${Math.floor(wrong / 2) + 1} wasn't the one.` : `You didn't see their answer: it's not what you expected.`;
+    $("#calcmsg").innerHTML = right ? `<span class="ok-text"><b>You saw it all.</b> ${esc(real)}.</span>`
+      : `<span class="bad-text">${esc(where)}</span> The line: ${esc(real)}.`;
+    Coach.react("viktor", right ? "celebrate" : "explain", right ? "You saw it all before moving. That's calculation." : `${where} The line was ${real}. Try the next one: see the end first.`);
+  }
+  $("#calcundo").onclick = () => { if (!done && line.length) { line.pop(); draw(); } };
+  $("#calccheck").onclick = check;
+  $("#calcnext").onclick = () => { if (i + 1 < items.length) { i++; show(); } else Coach.react("viktor", "celebrate", `All ${items.length} done: ${Object.values(firstTry).filter(Boolean).length} seen all the way first time.`); };
+  show();
+  Coach.react("viktor", "explain", "Don't move yet. See the whole line in your head first: your move, their best answer, your next. Then check.");
 }
 
 // ---------- progress: Viktor's story of your week, and badges from your real games ----------
@@ -1343,6 +1425,7 @@ async function screen(name, arg) {
   if (name === "progress") return await progressView();
   if (name === "level") return await levelView();
   if (name === "endgames") return await endgamesView();
+  if (name === "calc") return await calcView();
   if (name === "prep") return await prepView(arg && decodeURIComponent(arg));
   if (name === "clockdrill") { shell("level", `<p class="muted">Finding your rushed moves…</p>`); return lessonView({ ...(await api("/api/clockdrill")), back: "level" }); }
   if (name === "endgame") return await endgameView(arg);

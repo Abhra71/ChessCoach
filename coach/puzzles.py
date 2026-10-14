@@ -29,13 +29,16 @@ THEMES = {
 # the grandmaster's library: every theme a beginner-to-club player needs, so the coaches can always bring something new
 KEEP_THEMES = {"hangingPiece", "fork", "mateIn1", "mateIn2", "pin", "skewer", "discoveredAttack", "doubleCheck",
                "backRankMate", "smotheredMate", "trappedPiece", "deflection", "attraction", "capturingDefender",
-               "promotion", "defensiveMove", "pawnEndgame", "rookEndgame", "queenEndgame", "opening"}
+               "promotion", "defensiveMove", "pawnEndgame", "rookEndgame", "queenEndgame", "opening",
+               # 0.9, for 1,600 to 2,000+: deeper ideas, and the endings beyond rook and pawn
+               "quietMove", "zugzwang", "intermezzo", "clearance", "interference", "xRayAttack", "exposedKing",
+               "kingsideAttack", "advancedPawn", "bishopEndgame", "knightEndgame"}
 # every level, spread evenly: up to PER_BAND puzzles of each theme in each 100-point band, from the easiest Lichess
 # has (about 400) to the hardest (about 3,000+). Until 14 Oct only 400-1,600 was kept, with 69 puzzles in the 400s,
 # so a 254 player got 1,400s. Real Lichess puzzles only, none made up.
 BAND = 100
 PER_BAND = 40
-VERSION = 3  # bump when KEEP_THEMES or the spread changes: the app downloads again
+VERSION = 4  # bump when KEEP_THEMES or the spread changes: the app downloads again
 
 
 def band(rating):
