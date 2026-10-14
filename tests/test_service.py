@@ -33,6 +33,13 @@ def test_review_tells_the_real_reply_from_the_engine_reply():
     last = moment(HANG, filler)  # the game ended after the player's move
     assert (last["real_reply_uci"], last["reply_missed"]) == (None, False)
     assert moment(HANG)["grade"] == "Blunder"
+    # one step at a time: You played, Better, They replied, and Their better only when they missed it
+    assert [s["kind"] for s in missed["steps"]] == ["mine", "better", "real", "reply"]
+    assert [s["kind"] for s in found["steps"]] == ["mine", "better", "real"]
+    assert "their best answer" in found["steps"][2]["text"]
+    assert [s["kind"] for s in last["steps"]] == ["mine", "better", "reply"]
+    assert last["steps"][2]["text"].startswith("The game ended here.")
+    assert [s["board"] for s in missed["steps"]] == ["before", "before", "after", "after"]
 
 
 def test_at_most_three_moments_in_game_order():
