@@ -27,7 +27,7 @@
 
   function remove() {
     if (box) box.remove();
-    box = null; current = null; clearTimeout(foldTimer);
+    box = null; current = null; clearTimeout(foldTimer); warm = null;
     send({ type: "hush" });
   }
 
@@ -48,7 +48,8 @@
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
         ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => {
           const best = a.best ? ` class="kw-best" title="${esc(a.why || "My pick")}"` : "";  // the coach's pick, said out loud
-          return a.app ? `<button data-app="${esc(a.app)}"${best}>${esc(a.label)}</button>`
+          return a.warmup ? `<button data-warmup${best}>${esc(a.label)}</button>`
+            : a.app ? `<button data-app="${esc(a.app)}"${best}>${esc(a.label)}</button>`
             : a.find && target(a.find) ? `<button data-guide="${i}"${best}>${esc(a.label)}</button>`
             : `<a href="${esc(a.url)}"${best}>${esc(a.label)}</a>`;
         }).join("")}</div>` : ""}
@@ -66,6 +67,7 @@
       render(true); speak();
     });
     box.querySelectorAll("[data-guide]").forEach(b => b.onclick = () => guide(s.actions[Number(b.dataset.guide)]));
+    box.querySelectorAll("[data-warmup]").forEach(b => b.onclick = warmup);
     const form = box.querySelector(".kw-ask");
     if (form) form.onsubmit = e => { e.preventDefault(); const q = form.querySelector("input").value.trim(); if (q) ask(q); };
     const x = box.querySelector(".kw-x");
@@ -117,6 +119,99 @@
     }, 12000);
   }
 
+  // ---- the warm-up before you play: three positions from today's practice, right here on chess.com's home ----
+  // Only on the home page (no game can be running there); leaving the page ends it. Answers count as practice.
+  // the solid shapes for both sides, coloured: the outline shapes looked faint on chess.com (14 Oct)
+  const GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟︎" };
+  let warm = null;
+  async function warmup() {
+    const r = await send({ type: "warmup" });
+    const items = r && r.ok ? r.data.items : [];
+    if (!items.length) {
+      said = { ...said, pose: "pleased", lines: ["You've done today's positions already. Go and play: one move at a time."], actions: [] };
+      return (render(true), speak());
+    }
+    warm = { items, i: 0, picked: null, tries: 0, right: 0, done: false, msg: null };
+    showWarm(true);
+  }
+  function warmSay(text, pose) { said = { ...said, pose, lines: [text] }; speak(); }
+  function showWarm(intro) {
+    if (!box || current !== "home") { warm = null; return; }
+    clearTimeout(foldTimer);
+    const x = warm.items[warm.i], flip = x.flip;
+    const files = flip ? "hgfedcba" : "abcdefgh", ranks = flip ? "12345678" : "87654321";
+    const targets = warm.picked ? Object.keys(x.moves).filter(u => u.startsWith(warm.picked)).map(u => u.slice(2, 4)) : [];
+    const last = x.last || [];
+    let cells = "";
+    for (const r of ranks) for (const f of files) {
+      const sq = f + r, p = x.board[sq], dark = ("abcdefgh".indexOf(f) + Number(r)) % 2 === 1 ? " dark" : "";
+      const cls = `kw-sq${dark}${sq === warm.picked ? " pick" : ""}${last.includes(sq) ? " last" : ""}${targets.includes(sq) ? (p ? " take" : " dot") : ""}`;
+      cells += `<button class="${cls}" data-sq="${sq}">${p ? `<span class="${p === p.toUpperCase() ? "w" : "b"}">${GLYPH[p.toLowerCase()]}</span>` : ""}</button>`;
+    }
+    const face = `<button class="kw-char" title="${esc(said.name)}">${KnightwiseFaces.figure(said.coach, said.pose || "explain")}</button>`;
+    box.className = "kw-coach open";
+    box.innerHTML = `${face}<div class="kw-box kw-warm" role="status">
+      <div class="kw-head"><b>${esc(said.name)}</b><span>Warm-up · ${warm.i + 1} of ${warm.items.length}</span><button class="kw-x" title="Stop the warm-up">–</button></div>
+      <p>${esc(warm.msg || x.intro)}</p>
+      <div class="kw-mini">${cells}</div>
+      <p class="kw-hint">${esc(warm.tries >= 2 ? x.hint : x.where || "")}</p>
+      ${warm.done ? `<div class="kw-actions"><button data-wnext class="kw-best">${warm.i + 1 < warm.items.length ? "Next position" : "Done: go and play"}</button></div>`
+        : warm.tries >= 3 ? `<div class="kw-actions"><button data-wshow>Show me</button></div>` : ""}
+    </div>`;
+    box.querySelector(".kw-x").onclick = () => { warm = null; fold(); };
+    box.querySelector(".kw-char").onclick = () => { warm = null; fold(); };
+    box.querySelectorAll("[data-sq]").forEach(b => b.onclick = () => warmClick(b.dataset.sq));
+    const nx = box.querySelector("[data-wnext]"); if (nx) nx.onclick = warmNext;
+    const sh = box.querySelector("[data-wshow]"); if (sh) sh.onclick = warmShow;
+    if (intro) warmSay(`${x.intro} ${warm.i === 0 ? "Three positions, then you play." : ""}`.trim(), "explain");
+  }
+  function warmClick(sq) {
+    const x = warm.items[warm.i];
+    if (warm.done) return;
+    const mine = p => p && ((p === p.toUpperCase()) === !x.flip);
+    if (warm.picked && warm.picked !== sq) {
+      const uci = Object.keys(x.moves).find(u => u.slice(0, 4) === warm.picked + sq);
+      if (uci) return warmMove(uci);
+    }
+    warm.picked = warm.picked === sq || !mine(x.board[sq]) ? null : sq;
+    showWarm(false);
+  }
+  function warmMove(uci) {
+    const x = warm.items[warm.i], m = x.moves[uci];
+    warm.picked = null;
+    if (m.good) {
+      if (!warm.tries) warm.right++;
+      if (warm.tries === 0) send({ type: "practice", id: x.id, kind: x.kind, right: true });
+      warm.done = true; warm.msg = `${m.san}. That's it.`;
+      if (m.after) x.board = m.after;
+      showWarm(false); warmSay(warm.msg, "celebrate");
+      return;
+    }
+    if (m.close) { warm.msg = `${m.san} is playable, but there's a better move. Look again.`; showWarm(false); return warmSay(warm.msg, "listen"); }
+    if (warm.tries === 0) send({ type: "practice", id: x.id, kind: x.kind, right: false });
+    warm.tries++;
+    warm.msg = `Not ${m.san}. ${m.say || ""}`.trim();
+    showWarm(false); warmSay(warm.msg, "worried");
+  }
+  function warmShow() {
+    const x = warm.items[warm.i], [uci, m] = Object.entries(x.moves).find(([, v]) => v.good);
+    if (m.after) x.board = m.after;
+    warm.done = true; warm.msg = `The move was ${m.san}. It comes back in your practice tomorrow.`;
+    showWarm(false); warmSay(warm.msg, "explain");
+  }
+  function warmNext() {
+    if (warm.i + 1 >= warm.items.length) {
+      const n = warm.right, of = warm.items.length;
+      warm = null;
+      said = { ...said, pose: "celebrate", actions: [],
+               lines: [`Warm-up done: ${n} of ${of} at the first try. Now play, and before every move, ask what they can take.`] };
+      render(true); speak();
+      return;
+    }
+    warm.i++; warm.tries = 0; warm.done = false; warm.msg = null;
+    showWarm(true);
+  }
+
   // ---- talking with the coach (with the player's free AI key; written replies when the AI is busy) ----
   const history = [];
   async function ask(question) {
@@ -144,6 +239,7 @@
   chrome.runtime.onMessage.addListener(msg => {
     if (msg.type !== "speaking" || !box) return;
     box.classList.toggle("talking", !!msg.on);
+    if (warm) return;  // the warm-up's board stays up, and never folds by itself
     if (!msg.on) {
       if (said && said.pose && said.pose !== "point") { said = { ...said, pose: null }; render(true); }  // back to their mood
       clearTimeout(foldTimer); foldTimer = setTimeout(() => render(false), MINUTES_OPEN * 60000);

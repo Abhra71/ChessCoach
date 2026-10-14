@@ -50,6 +50,16 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     json(`${COACH}/api/coach?${q}`, reply);
     return true;
   }
+  if (msg.type === "warmup") {  // chess.com home: three positions before you play
+    json(`${COACH}/api/warmup`, reply);
+    return true;
+  }
+  if (msg.type === "practice" && ["game", "puzzle"].includes(msg.kind)) {  // a warm-up answer counts as practice
+    fetch(`${COACH}/api/practice`, { method: "POST", headers: { "Content-Type": "application/json" },
+                                     body: JSON.stringify({ id: String(msg.id || "").slice(0, 200), kind: msg.kind, right: !!msg.right, shown: !!msg.shown }) })
+      .catch(() => {});
+    return false;
+  }
   if (msg.type === "chat") {
     fetch(`${COACH}/api/chat`, { method: "POST", headers: { "Content-Type": "application/json" },
                                  body: JSON.stringify({ coach: msg.coach, message: msg.message, history: msg.history || [] }) })

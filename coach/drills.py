@@ -299,3 +299,26 @@ def build():
 
 if __name__ == "__main__":
     print(*build())
+
+
+WARMUP = 3
+
+
+def warmup(today=None):
+    """Three positions for a warm-up on chess.com before you play: two from your own games and one puzzle, from
+    today's practice and not answered yet today. Only the first move of each, so it takes about two minutes."""
+    try:
+        stock = json.loads(OUT_JSON.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"items": []}
+    answered = memory.today(day=today)
+    fresh = [d for d in stock if str(d["id"]) not in answered]
+    own = [d for d in fresh if d["kind"] == "game"][:WARMUP - 1]
+    rest = [d for d in fresh if d["kind"] == "puzzle"][:WARMUP - len(own)]
+    items = []
+    for d in own + rest:
+        first = d["steps"][0]
+        items.append({"id": d["id"], "kind": d["kind"], "flip": d["flip"], "intro": d["intro"], "hint": d["hint"],
+                      "board": first["board"], "moves": first["moves"], "last": d.get("last"),
+                      "where": d.get("where")})
+    return {"items": items}

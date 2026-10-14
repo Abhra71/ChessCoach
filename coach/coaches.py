@@ -178,6 +178,9 @@ def week_line(home, coach, rng=random):
 
 
 OPEN_APP = {"label": "Open Knightwise", "app": "home"}
+# chess.com's home, before you play: three positions from your own games in the coach's box (extension/buddy.js)
+WARMUP = {"label": "Warm up here: 3 positions", "warmup": True,
+          "why": "Three positions from your own games, right here, in about two minutes. Then play."}
 
 
 HERE = {"home": "home", "puzzles": "practice", "progress": "progress", "lessons": "plan", "plan": "plan"}  # app pages
@@ -192,11 +195,16 @@ def recommend(section, home, actions=None, now=None, in_app=False):
     focus, daily, last = home.get("focus"), home.get("daily") or {}, home.get("last_game") or {}
     habit = SHORT.get(focus["pattern"], focus["pattern"]) if focus else None
     pick = None
-    if section in ("home", "puzzles") and daily and not daily.get("done_today"):
+    fresh = (last.get("moments") and "/game/" in last.get("url", "")
+             and (now or time.time()) - last.get("end_time", 0) < 86400)  # a game from today
+    if section == "home" and not in_app and daily and not fresh:  # on chess.com, before you play: warm up right there
+        pick = dict(WARMUP)
+        if not daily.get("done_today"):
+            actions.insert(0, {"label": "Today's 5 minutes in Knightwise", "app": "daily"})
+    elif section in ("home", "puzzles") and daily and not daily.get("done_today") and not (section == "home" and fresh and not in_app):
         pick = {"label": "Today's 5 minutes in Knightwise", "app": "daily",
                 "why": "It's built from your own games, so it trains exactly the moves you get wrong."}
-    elif (section == "home" and last.get("moments") and "/game/" in last.get("url", "")
-          and (now or time.time()) - last.get("end_time", 0) < 86400):  # a game from today: review it while it's fresh
+    elif section == "home" and fresh:  # a game from today: review it while it's fresh
         pick = next((a for a in actions if a.get("url") == last["url"]), None)
         if pick and in_app and last.get("id"):  # in Knightwise: its own review, with Try it again
             actions = [a for a in actions if a is not pick]
@@ -218,13 +226,16 @@ def recommend(section, home, actions=None, now=None, in_app=False):
     if pick is None and actions:
         pick = {**actions[0], "why": "A few puzzles on chess.com: a quick warm-up before you play." if in_app
                 else "A few puzzles here first: a quick warm-up before you play."}
+    if section == "home" and not in_app and daily and not (pick and pick.get("warmup")):  # the warm-up is always there
+        actions = [WARMUP] + [a for a in actions if a.get("url") != PUZZLES]
     actions = [a for a in actions if not pick or (a.get("label"), a.get("app")) != (pick.get("label"), pick.get("app"))]
     if pick:
         actions.insert(0, {**pick, "best": True})
+    actions = actions[:3]
     if not in_app and not any(a.get("app") for a in actions):
-        actions.append(OPEN_APP)
+        actions = actions[:2] + [OPEN_APP]  # always the way back into Knightwise
     said = f"My pick: {pick['label']}. {pick['why']}" if pick else None
-    return actions[:3], said
+    return actions, said
 
 
 def suggestions(home):

@@ -223,6 +223,9 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/games/"):
             detail = insights.game_detail(path.rsplit("/", 1)[-1])
             return self.send(200 if detail else 404, json.dumps(detail or {"message": "Game not found."}), "application/json")
+        if path == "/api/warmup":  # chess.com home: three positions from today's practice, before you play
+            from coach import drills
+            return self.send(200, json.dumps(drills.warmup()), "application/json")
         if path == "/api/practice-set":
             from coach import brief
             practice = DATA / "drills.json"

@@ -37,11 +37,13 @@ def test_the_coach_recommends_where_to_practise_and_says_why():
         assert any(a.get("app") for a in actions), "always a way into Knightwise"
         return actions[0], why
     not_done = {**HOME, "daily": {"done_today": False}}
-    best, why = pick("home", not_done)
-    assert best["app"] == "daily" and best["best"] and "your own games" in why
+    best, why = pick("home", not_done)  # chess.com's home, before you play: a warm-up right there
+    assert best["warmup"] and best["best"] and "your own games" in why
+    best, why = coaches.recommend("home", not_done, in_app=True)  # in the app: Today's 5 minutes
+    assert best[0]["app"] == "daily" and "your own games" in why
     fresh = {**HOME, "daily": {"done_today": True}, "last_game": {**HOME["last_game"], "end_time": 1000}}
     assert pick("home", fresh, now=1000 + 3600)[0]["url"] == HOME["last_game"]["url"]  # today's game: review it now
-    assert pick("home", fresh, now=1000 + 3 * 86400)[0]["url"] == coaches.PUZZLES  # an old one: a warm-up instead
+    assert pick("home", fresh, now=1000 + 3 * 86400)[0]["warmup"]  # an old one: a warm-up instead
     best, why = pick("puzzles", {**HOME, "daily": {"done_today": True}})
     assert best["app"] == "practice" and "other people's games" in why
     assert pick("progress", HOME)[0]["app"] == "progress" and pick("lessons", HOME)[0]["app"] == "plan"
