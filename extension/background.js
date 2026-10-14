@@ -26,8 +26,8 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 // The coach's voice plays in a hidden extension page (chess.com's page can't play sound from our app).
 async function player() {
   if (await chrome.offscreen.hasDocument()) return;
-  await chrome.offscreen.createDocument({ url: "offscreen.html", reasons: ["AUDIO_PLAYBACK"],
-                                          justification: "The Knightwise coach speaks its advice." });
+  await chrome.offscreen.createDocument({ url: "offscreen.html", reasons: ["AUDIO_PLAYBACK", "USER_MEDIA"],
+                                          justification: "The Knightwise coach speaks, and hears you when you press Talk." });
 }
 
 const json = (url, reply) => fetch(url).then(r => r.json()).then(data => reply({ ok: true, data }))
@@ -59,6 +59,26 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
                                      body: JSON.stringify({ id: String(msg.id || "").slice(0, 200), kind: msg.kind, right: !!msg.right, shown: !!msg.shown }) })
       .catch(() => {});
     return false;
+  }
+  if (msg.type === "listen") {  // Talk on chess.com: record in the hidden page, the app writes it down (0.6)
+    player().then(() => chrome.runtime.sendMessage({ type: "kw-record", app: COACH })).then(reply)
+      .catch(() => reply({ error: "app" }));
+    return true;
+  }
+  if (msg.type === "listen-stop") {
+    chrome.runtime.sendMessage({ type: "kw-record-stop" }).catch(() => {});
+    return false;
+  }
+  if (msg.type === "mic-setup") {  // the one-time "Allow the microphone" page
+    chrome.tabs.create({ url: chrome.runtime.getURL("mic.html") });
+    return false;
+  }
+  if (msg.type === "talk") {
+    fetch(`${COACH}/api/talk`, { method: "POST", headers: { "Content-Type": "application/json" },
+                                 body: JSON.stringify({ coach: msg.coach, text: String(msg.text || "").slice(0, 500),
+                                                        history: msg.history || [], where: msg.where || {} }) })
+      .then(r => r.json()).then(data => reply({ ok: true, data })).catch(() => reply({ ok: false }));
+    return true;
   }
   if (msg.type === "chat") {
     fetch(`${COACH}/api/chat`, { method: "POST", headers: { "Content-Type": "application/json" },

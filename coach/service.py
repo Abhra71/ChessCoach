@@ -646,6 +646,7 @@ def coach_says(url):
     said["voice_on"] = bool(s.get("voice")) and voice.available()
     said["role"] = coaches.COACHES[said["coach"]]["role"]
     said["ai_ready"] = any(settings.get_key(slot) for slot in settings.SLOTS)
+    said["talk_ready"] = settings.public()["talk_ready"]  # Talk by voice on chess.com (0.6)
     if not said["ai_ready"]:  # tell everyone the conversation feature exists
         said["ai_hint"] = coaches.AI_HINT
     return said

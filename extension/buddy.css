@@ -76,3 +76,7 @@
 .kw-mini .kw-sq.pick { box-shadow: inset 0 0 0 100px rgba(0, 0, 0, .22); }
 .kw-mini .kw-sq.dot::after { content: ""; width: 26%; height: 26%; border-radius: 50%; background: rgba(0, 0, 0, .28); }
 .kw-mini .kw-sq.take { box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .35); }
+/* Talk: a spoken conversation with the coach, on chess.com and in the app (0.6) */
+.kw-head .kw-speak { margin-left: auto; background: #2fb56f; color: #0a0a0a; border: 0; border-radius: 999px; padding: 3px 10px;
+                     font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.kw-head .kw-speak:hover { filter: brightness(1.1); }

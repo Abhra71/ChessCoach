@@ -29,6 +29,7 @@
   function remove() {
     if (box) box.remove();
     box = null; current = null; clearTimeout(foldTimer); warm = null;
+    if (talking) { talking = false; send({ type: "listen-stop" }); }
     send({ type: "hush" });
   }
 
@@ -45,6 +46,7 @@
     box.innerHTML = open ? `${face}
       <div class="kw-box" role="status">
         <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
+          ${s.talk_ready && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(s.name)}: press, then just speak">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
         ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => {
@@ -72,7 +74,86 @@
     const form = box.querySelector(".kw-ask");
     if (form) form.onsubmit = e => { e.preventDefault(); const q = form.querySelector("input").value.trim(); if (q) ask(q); };
     const x = box.querySelector(".kw-x");
-    if (x) x.onclick = fold;
+    if (x) x.onclick = () => { talkStop(); fold(); };
+    const t = box.querySelector(".kw-speak");
+    if (t) t.onclick = talkStart;
+    const allow = box.querySelector("[data-mic]");
+    if (allow) allow.onclick = () => send({ type: "mic-setup" });
+  }
+
+  // ---- Talk (0.6): a spoken conversation with the coach, hands-free, on the pages where the coach appears ----
+  // Leaving the page ends it, so the microphone is never on during a game.
+  let talking = false, talkHistory = [], speakingNow = false;
+  const talkShow = (pose, lines, extra = {}) => {
+    said = { ...said, pose, lines, actions: [], ai_hint: null, note: null, talking: true, ...extra };
+    render(true);
+    const stop = document.createElement("div");
+    stop.className = "kw-actions";
+    stop.innerHTML = `<button data-stop>Stop talking</button>`;
+    box.querySelector(".kw-box").appendChild(stop);
+    stop.querySelector("button").onclick = talkStop;
+  };
+  function speakAndWait(text) {  // say it, and wait until the voice has finished
+    if (!said.voice_on) return Promise.resolve();
+    speakingNow = false;
+    send({ type: "say", text, voice: said.voice });
+    return new Promise(done => {
+      const began = Date.now();
+      const tick = setInterval(() => {
+        const t = Date.now() - began;
+        if ((!speakingNow && t > 4000 && !box?.classList.contains("talking")) || t > 40000 || !talking) { clearInterval(tick); done(); }
+        if (speakingNow === "done") { clearInterval(tick); done(); }
+      }, 200);
+    });
+  }
+  async function talkStart() {
+    if (talking) return talkStop();
+    talking = true; talkHistory = [];
+    send({ type: "hush" });
+    while (talking && box) {
+      talkShow("listen", ["I'm listening…"]);
+      const r = await send({ type: "listen" });
+      if (!talking) return;
+      if (!r || r.error) {
+        talking = false;
+        if (r && r.error === "mic") {
+          said = { ...said, pose: "calm", talking: false, actions: [],
+                   lines: ["To hear you here, Chrome needs your OK once. Press Allow, then Talk again."] };
+          render(true);
+          const b = document.createElement("div"); b.className = "kw-actions";
+          b.innerHTML = `<button data-mic class="kw-best">Allow the microphone</button>`;
+          box.querySelector(".kw-box").appendChild(b);
+          b.querySelector("button").onclick = () => send({ type: "mic-setup" });
+          return;
+        }
+        said = { ...said, pose: "calm", talking: false, lines: [r && r.error && r.error !== "app" ? r.error
+                 : "I can't reach the Knightwise app on this PC, and I hear you through it. Open it from the Start menu."] };
+        return render(true);
+      }
+      if (!r.text) { talking = false; said = { ...said, pose: "calm", talking: false, lines: ["I'll be here. Press Talk when you want to carry on."] }; return render(true); }
+      talkShow("thinking", [`"${r.text}"`, "…"]);
+      const a = await send({ type: "talk", coach: said.coach, text: r.text, history: talkHistory, where: { section: current } });
+      if (!talking) return;
+      const reply = a && a.ok ? a.data : { text: "I can't reach the Knightwise app right now.", mood: "calm" };
+      talkHistory.push(["player", r.text], ["coach", reply.text]);
+      talkShow(reply.mood || "explain", [reply.text]);
+      await speakAndWait(reply.text);
+      const route = reply.action && reply.action.route;
+      if (route) {  // a game's review: on chess.com's own board; anything else: in the Knightwise app
+        talking = false;
+        const game = /^games\/(\d+)$/.exec(route);
+        if (game) location.href = `https://www.chess.com/game/live/${game[1]}`;
+        else send({ type: "open-app", route });
+        return;
+      }
+    }
+  }
+  function talkStop() {
+    if (!talking) return;
+    talking = false;
+    send({ type: "listen-stop" }); send({ type: "hush" });
+    said = { ...said, pose: "calm", talking: false, lines: ["Okay. Press Talk whenever you want to talk again."] };
+    render(true);
   }
 
   // ---- the navigation guide: point at chess.com's own link, the player clicks it, the next coach notices ----
@@ -240,6 +321,7 @@
   chrome.runtime.onMessage.addListener(msg => {
     if (msg.type !== "speaking" || !box) return;
     box.classList.toggle("talking", !!msg.on);
+    if (talking) { speakingNow = msg.on ? true : (speakingNow ? "done" : speakingNow); return; }
     if (warm) return;  // the warm-up's board stays up, and never folds by itself
     if (!msg.on) {
       if (said && said.pose && said.pose !== "point") { said = { ...said, pose: null }; render(true); }  // back to their mood
