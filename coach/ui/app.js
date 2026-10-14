@@ -545,7 +545,8 @@ async function levelView() {
     </div>`;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your level</h1>
-      <p class="sub">Five levels from beginner to 2,000+, measured on your last ${p.games} games. A level is done when every skill meets its goal.</p></div></div>
+      <p class="sub">Five levels from beginner to 2,000+, measured on your last ${p.games} games. A level is done when every skill meets its goal.</p></div>
+      <a class="btn" href="#/endgames">Endgame trainer</a></div>
     <div class="stack">${p.levels.map(level).join("")}</div>
     <p class="note">The goals are our first estimate of each level, and we'll tune them on real players' games. They don't promise a rating; your games show the progress.</p>`;
   const next = cur.skills.find(s => s.met === false);
@@ -560,6 +561,84 @@ async function themeLesson(theme) {
   shell("level", `<p class="muted">Loading…</p>`);
   const item = await api(`/api/lesson/${encodeURIComponent(theme)}`);
   return lessonView({ ...item, back: "level" });
+}
+
+// ---------- the endgame trainer: the endings every player must know, against the best defence (0.7) ----------
+const GOAL = { mate: "Checkmate them", promote: "Make a new queen", draw: "Hold the draw" };
+
+async function endgamesView() {
+  shell("level", `<p class="muted">Loading…</p>`);
+  const list = await api("/api/endgames");
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+      <h1 style="margin-top:6px">Endgame trainer</h1>
+      <p class="sub">The endings every player must know, played out against perfect defence: Lichess's endgame tablebase knows the best move in every one. A new position each time.</p></div></div>
+    <div class="plan-grid">${list.map(e => `<div class="box plan-card">
+      <div class="plan-text"><div class="label">Level ${e.level} · ${esc(GOAL[e.goal])} in ${e.limit} moves</div>
+        <h3>${esc(e.name)}</h3><p class="muted small">${esc(e.idea)}</p>
+        <a class="btn ${e.solved ? "" : "primary"}" href="#/endgame/${e.id}">${e.solved ? `Again · solved ${e.solved}×` : "Start"}</a></div></div>`).join("")}</div>`;
+  Coach.react("viktor", "explain", "Endings. Every won game ends in one of these. Learn them once and they win games for the rest of your life.");
+}
+
+async function endgameView(id) {
+  shell("level", `<p class="muted">Setting up the position…</p>`);
+  let s;
+  try { s = await api(`/api/endgame/${encodeURIComponent(id)}`); } catch (e) { $("#page").innerHTML = `<div class="empty">No such ending.</div>`; return; }
+  const history = [{ ...s, made: 0 }];
+  let picked = null, busy = false, last = {};
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/endgames" class="small muted" style="text-decoration:none">← Endgame trainer</a>
+      <h1 style="margin-top:6px">${esc(s.name)}</h1><p class="sub">${esc(GOAL[s.goal])} within ${s.limit} moves. You are ${s.white ? "White" : "Black"}.</p></div></div>
+    <div class="game-layout">
+      <div><div class="board-wrap" id="board"></div></div>
+      <div class="stack">
+        <div class="box stack" style="padding:16px"><div class="label">The idea</div><p style="margin:0">${esc(s.idea)}</p></div>
+        <div class="box stack" style="padding:16px"><div class="row spread"><h2 style="margin:0">Moves</h2><span class="small muted num" id="count">0 of ${s.limit}</span></div>
+          <div class="movelist" id="emoves"></div><div class="small" id="emsg"></div>
+          <div class="row"><button class="btn" id="undo">Take back</button><button class="btn" id="again">New position</button></div></div>
+      </div>
+    </div>`;
+  const cur = () => history[history.length - 1];
+  const moves = [];
+  function draw() {
+    const targets = picked ? cur().legal.filter(u => u.startsWith(picked)).map(u => u.slice(2, 4)) : [];
+    Board.render($("#board"), { fen: cur().fen, flip: s.flip, highlights: { ...last, ...(picked ? { [picked]: "hl-pick" } : {}) }, targets, onClick: click });
+    $("#emoves").innerHTML = moves.map((m, i) => `<span class="n">${i + 1}.</span><span>${esc(m[0])}</span><span>${esc(m[1] || "")}</span>`).join("")
+      || `<span class="small muted" style="grid-column:1/-1">Your move.</span>`;
+    $("#count").textContent = `${cur().made} of ${s.limit}`;
+  }
+  function click(sq) {
+    if (busy || cur().over) return;
+    if (picked && picked !== sq) {
+      const uci = cur().legal.find(u => u.slice(0, 4) === picked + sq);
+      if (uci) return move(uci);
+    }
+    picked = picked === sq || !cur().legal.some(u => u.startsWith(sq)) ? null : sq;
+    draw();
+  }
+  async function move(uci) {
+    busy = true; picked = null;
+    let r;
+    try { r = await api("/api/endgame/move", { id, fen: cur().fen, uci, made: cur().made, limit: s.limit }); }
+    catch (e) { busy = false; draw(); return; }
+    last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
+    Board.render($("#board"), { fen: r.mine.fen, flip: s.flip, highlights: last });
+    Sound.move(r.mine.san);
+    moves.push([r.mine.san, r.reply ? r.reply.san : null]);
+    if (r.reply) { await wait(450); last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san); }
+    history.push(r);
+    busy = false; draw();
+    $("#emsg").innerHTML = r.warn ? `<span class="bad-text">${esc(r.warn)}</span>` : "";
+    if (r.over) {
+      if (r.result === "win") { confetti(); Sound.play("done"); }
+      Coach.react("viktor", r.result === "win" ? "celebrate" : r.result === "stalemate" ? "worried" : "encourage", r.say,
+        [{ label: r.result === "win" ? "Another one" : "Try again", run: () => endgameView(id) }]);
+    } else if (r.warn) Coach.react("viktor", "warn", r.warn);
+  }
+  $("#undo").onclick = () => { if (busy || history.length < 2) return; history.pop(); moves.pop(); last = {}; picked = null; $("#emsg").innerHTML = ""; draw(); };
+  $("#again").onclick = () => { if (!busy) endgameView(id); };
+  draw();
+  Coach.react("viktor", "explain", `${s.name}. ${s.idea}`);
 }
 
 // ---------- progress: Viktor's story of your week, and badges from your real games ----------
@@ -1221,6 +1300,8 @@ async function screen(name, arg) {
   if (name === "daily") return await daily();
   if (name === "progress") return await progressView();
   if (name === "level") return await levelView();
+  if (name === "endgames") return await endgamesView();
+  if (name === "endgame") return await endgameView(arg);
   if (name === "lesson") return await themeLesson(decodeURIComponent(arg || ""));
   if (name === "openings") return await openingTree();
   if (name === "try") return await tryAgain(arg, location.hash.split("/")[3]);

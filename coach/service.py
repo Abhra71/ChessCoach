@@ -250,6 +250,13 @@ class Handler(BaseHTTPRequestHandler):
                 if item and item.get("drills"):
                     brief.add(item["drills"])
             return self.send(200, json.dumps(out), "application/json")
+        if path == "/api/endgames":  # the endgame trainer: the endings, and how often you've solved each (0.7)
+            from coach import endgames
+            return self.send(200, json.dumps(endgames.listing()), "application/json")
+        if path.startswith("/api/endgame/"):  # a fresh position for one ending, checked by the tablebase
+            from coach import endgames
+            start = endgames.start(path.rsplit("/", 1)[-1])
+            return self.send(200 if start else 404, json.dumps(start or {"message": "No such ending."}), "application/json")
         if path == "/api/ladder":  # your level: every skill from beginner to 2,000+, on your last 20 games (0.6)
             from coach import ladder
             return self.send(200, json.dumps(ladder.page()), "application/json")
@@ -338,6 +345,14 @@ class Handler(BaseHTTPRequestHandler):
             memory.record_verdict(body["answer"])
             note_in_logbook(f"Your verdict on the review (\"is this me?\"): {body['answer']}")
             return self.send(200, "{}", "application/json")
+        if path == "/api/endgame/move":  # your move in the endgame trainer, its check, and the best defence
+            from coach import endgames
+            try:
+                out = endgames.play(str(body["id"]), str(body["fen"]), str(body["uci"])[:5], max(0, min(99, int(body.get("made", 0)))),
+                                    int(body.get("limit") or 0))
+            except (KeyError, ValueError):
+                out = None
+            return self.send(200 if out else 400, json.dumps(out or {"message": "That move isn't legal here."}), "application/json")
         if path == "/api/rematch/move":  # your move in a rematch, then the opponent's
             from coach import rematch
             try:
