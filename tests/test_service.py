@@ -14,7 +14,8 @@ def test_key_moment_has_arrows_and_words():
     assert (m["move_uci"], m["best_uci"], m["reply_uci"]) == ("d4e5", "d4d5", "d6e5")
     assert m["placement"] == "4k3/8/3p4/8/3Q4/8/8/4K3"
     assert m["after_placement"] == "4k3/8/3p4/4Q3/8/8/8/4K3"
-    assert m["say"] == "After Qe5, their pawn on d6 can take your queen on e5."
+    assert m["say"].startswith("You put your queen on e5, where nothing guards it: their pawn just takes it.")
+    assert m["idea"] == "hanging" and m["lesson"]["id"] == "safe-hanging"  # the reason links to its course lesson
     assert m["move_number"] == 16
 
 

@@ -15,6 +15,20 @@ On top of 0.5.0 and the 0.6 AI backend (branch ai-0.6, merged in). Test guide: d
 - **0.8 Prep before a game (flagship 1):** a player's openings and how their games end, from public games; chess.com
   profile pages offer it. **Your repertoire:** three lines, from what you play, the catalogue and Stockfish.
 - **0.9 See it in your head:** calculation, the whole line before anything moves; 11 more Lichess themes.
+- **0.10 The teacher (user's go-ahead, 14 Oct evening: "is this app a teacher or only a tracker?"):**
+  - **The why** (coach/why.py): every mistake gets a reason worked out from the board and the engine's line (about 20
+    ideas: a piece put where it's taken, a threat not answered, a guard moved away, forks, pins, skewers, discovered
+    attacks, back rank, pieces left at home, king safety, pawn weaknesses, passed pawns, the king in the endgame...).
+    On the user's 769 real mistakes: a simple reason for 67%; in a game review the engine's longer line explains about
+    a third of the rest; the remainder is said honestly ("a few moves deep"). Shown in the review, app and chess.com.
+  - **Your course** (coach/course.py): 40 lessons in five levels, written for Knightwise. Each review moment links to
+    its lesson ("Learn it"). The next lesson is the idea that costs most in the last 20 games against its goal; a lesson
+    is passed only when that mistake drops in the 5+ games played after studying it; rare mistakes show "you already
+    do this". Practice: the user's own positions plus Lichess puzzles on the idea. 5 lessons wait for the Elite games.
+  - The user's next lesson today: "Look at their checks" (0.25 checkmates walked into a game, goal 0.1).
+  - **Proposed next, waiting for the user's yes on the downloads:** Maia (human-like play by rating, GPL; lc0 plus small
+    weight files; runs on the PC, so it's opt-in) and the Lichess Elite Database (2,400+ games, CC0) for plans and pawn
+    structures. Sizes, sources and licences to be shown first; nothing downloaded yet.
 - **Not done:** studying strong players' games (Lichess's masters database now needs an account: a parent's
   decision, or a download to approve). Voice not tried with a real key yet (Round 2 brings the key).
 

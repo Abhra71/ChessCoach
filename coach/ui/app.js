@@ -23,6 +23,7 @@ const ICON = {
   draw: '<circle cx="12" cy="12" r="8.5"/><path d="M8 10h8M8 14h8"/>',
   flame: '<path d="M12 22c4 0 7-2.7 7-7 0-3.5-2.2-5.6-3.6-7.5-.5 1.9-1.4 3-2.6 3.5.3-3.4-1-6.6-3.8-9-.3 3.4-2 5.7-3.6 7.6C4.2 11.3 5 13 5 15c0 4.3 3 7 7 7Z"/>',
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  book: '<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5c-.8 0-1.5-.7-1.5-1.5z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z"/>',
   down: '<path d="M12 5v14M6 13l6 6 6-6"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
 };
@@ -241,7 +242,7 @@ function shell(active, body) {
     <div class="shell">
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
-        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
+        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("course", "Your course", "book")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
         <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
         <button class="side-ai" id="aiuse" hidden></button>
         <button class="side-ai" id="feedback" title="Tell us what went wrong or what was confusing">Send feedback</button>
@@ -554,6 +555,79 @@ async function levelView() {
     ? `You're on level ${p.current + 1}, ${cur.name}. The one thing now: ${next.name.toLowerCase()}. ${next.what}: ${skillValue(next)}.`
     : `Every level done. Remarkable. Keep playing: the numbers keep watching.`,
     next ? [{ label: next.train.label, app: next.train.route }] : []);
+}
+
+// ---------- the course: the teacher. Lessons in order, picked by your games, passed by your games (0.10) ----------
+const COURSE_CHIP = { open: ["To do", ""], again: ["Once more", "draw"], watching: ["Watching your games", "draw"],
+  passed: ["Done ✓", "win"], fine: ["You already do this", "win"], later: ["Later", ""], coming: ["Coming", ""] };
+
+async function courseView() {
+  shell("course", `<p class="muted">Loading…</p>`);
+  const c = await api("/api/course");
+  if (!c.player) return go("welcome");
+  const next = c.lessons.find(l => l.next);
+  const row = l => {
+    const [label, cls] = l.next ? ["Next for you", "draw"] : COURSE_CHIP[l.status];
+    const can = l.status !== "coming";
+    return `<div class="course-row ${l.next ? "now" : ""} ${l.status}">
+      <div><b>${esc(l.title)}</b><div class="small muted">${esc(l.reason || l.habit)}</div></div>
+      <div class="row"><span class="chip ${cls}">${esc(label)}</span>
+        ${can ? `<a class="btn small-btn ${l.next ? "primary" : ""}" href="#/course/${l.id}">${l.status === "passed" || l.status === "fine" ? "Again" : "Open"}</a>` : ""}</div></div>`;
+  };
+  const groups = Object.keys(c.levels).map((lv, i) => {
+    const ls = c.lessons.filter(l => l.level === lv);
+    const done = ls.filter(l => l.status === "passed" || l.status === "fine").length;
+    return `<div class="box rise stack" style="padding:16px"><div class="row spread"><div><div class="label">Level ${i + 1}</div>
+        <h2 style="margin:4px 0 0">${esc(c.levels[lv])}</h2></div><span class="small muted num">${done} of ${ls.length} done</span></div>
+      ${ls.map(row).join("")}</div>`;
+  }).join("");
+  $("#page").innerHTML = `
+    <div class="page-head"><div><h1>Your course</h1>
+      <p class="sub">From beginner to 2,000+, one idea at a time. Your games pick the next lesson, and a lesson is done only when that mistake drops in the games you play after it.</p></div></div>
+    ${next ? `<div class="box plan-card new" style="margin-bottom:16px"><div class="plan-face">${KnightwiseFaces.figure("viktor", "pleased")}</div>
+      <div class="plan-text"><div class="label">Next for you</div><h3>${esc(next.title)}</h3><p class="muted small">${esc(next.reason)}</p>
+      <a class="btn primary" href="#/course/${next.id}">Start the lesson</a></div></div>` : ""}
+    <div class="stack">${groups}</div>
+    <p class="note">Lessons written for Knightwise. Positions from your own games and the Lichess puzzle database, checked by Stockfish. "Coming" lessons need strong players' games, a download that waits for your yes.</p>`;
+  Coach.react("viktor", "explain", next ? `Next for you: ${next.title.toLowerCase()}. ${next.reason}` : "Every lesson at your level is done or already fine. Keep playing: your games keep watching.",
+    next ? [{ label: "Start the lesson", app: `course/${next.id}` }] : []);
+}
+
+async function courseLesson(id) {
+  shell("course", `<p class="muted">Setting up your positions…</p>`);
+  let item;
+  try { item = await api(`/api/course/${encodeURIComponent(id)}`); }
+  catch (e) { $("#page").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  const back = `<a href="#/course" class="small muted" style="text-decoration:none">← Your course</a>`;
+  const own = item.drills.filter(d => d.kind === "game" && d.why);
+  const finish = (right, total) => api("/api/course/done", { id: item.id, right, total }).catch(() => {});
+  $("#page").innerHTML = `
+    <div class="page-head"><div>${back}<h1 style="margin-top:6px">${esc(item.title)}</h1>
+      ${item.reason ? `<p class="sub">${esc(item.reason)}</p>` : ""}</div></div>
+    <div class="grid course-learn">
+      <div class="box stack" style="padding:18px"><div class="label">The idea</div>
+        ${item.teach.map(t => `<p style="margin:0 0 4px">${esc(t)}</p>`).join("")}
+        <div class="coach-says"><b>The habit:</b> ${esc(item.habit)}</div></div>
+      ${own.length ? `<div class="box stack" style="padding:18px"><div class="label">In your games</div>
+        ${own.map(d => `<div><div class="small muted">${esc(d.where)}</div><p style="margin:2px 0 0">${esc(d.why)}</p></div>`).join("")}</div>` : ""}
+    </div>
+    <div class="row" style="margin-top:16px">
+      ${item.drills.length ? `<button class="btn primary" id="practise">Practise it: ${item.drills.length} positions</button>` : ""}
+      ${item.train ? `<a class="btn ${item.drills.length ? "" : "primary"}" href="#/${esc(item.train[1])}" id="train">${esc(item.train[0])}</a>` : ""}
+      ${!item.drills.length ? `<button class="btn" id="studied">I've studied it</button>` : ""}</div>`;
+  const tr = $("#train"); if (tr && !item.drills.length) tr.addEventListener("click", () => finish(0, 0));
+  const st = $("#studied"); if (st) st.onclick = async () => { await finish(0, 0); go("course"); };
+  const pr = $("#practise");
+  if (pr) pr.onclick = () => {
+    $("#page").innerHTML = trainerPage(item.title, { back: `<a href="#/course/${esc(item.id)}" class="small muted" style="text-decoration:none">← The lesson</a>`, text: item.habit });
+    trainer(item.drills, { coach: item.coach, record: true, onDone: rightFirst => {
+      finish(rightFirst, item.drills.length);
+      setTimeout(() => Coach.react(item.coach, "celebrate",
+        `${rightFirst} of ${item.drills.length} right first time. Now the real test: your next ${5} games. I'll watch for this mistake and tell you when it's gone.`,
+        [{ label: "Back to your course", app: "course" }]), 2500);
+    } });
+  };
+  Coach.react(item.coach, "explain", `${item.title}. ${item.teach[0]} The habit: ${item.habit}`);
 }
 
 // a lesson on one theme at your level, opened from a skill on Your level
@@ -1068,6 +1142,7 @@ async function gameView(id) {
         : `${k.habit ? `<div class="small"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
           ${explained[k.ply] ? `<div class="coach-says">${esc(explained[k.ply])}</div>` : ""}
           <div class="row"><a class="btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a>
+            ${k.lesson ? `<a class="btn" href="#/course/${k.lesson.id}" title="The course lesson on this idea">Learn it: ${esc(k.lesson.title)}</a>` : ""}
             ${g.result !== "win" ? `<a class="btn" href="#/rematch/${g.id}/${k.ply}" title="Play the game on from here against the engine, at their level">Rematch from here</a>` : ""}
             ${mi < moments.length - 1 ? `<button class="btn" id="nextmoment">Next moment ▶</button>` : ""}
             ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}">Explain like a coach</button>` : ""}</div>`}`;
@@ -1442,6 +1517,8 @@ async function screen(name, arg) {
   if (name === "daily") return await daily();
   if (name === "progress") return await progressView();
   if (name === "level") return await levelView();
+  if (name === "course" && arg) return await courseLesson(decodeURIComponent(arg));
+  if (name === "course") return await courseView();
   if (name === "endgames") return await endgamesView();
   if (name === "calc") return await calcView();
   if (name === "repertoire" && arg) { shell("level", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
@@ -1467,6 +1544,7 @@ const INTRO = {
   daily: ["Today's 5 minutes", "Three positions a day: one from your games, one puzzle on today's idea, and the first moves of your opening. Do it daily and your streak grows; one missed day is forgiven."],
   plan: ["Your plan", "Four things chosen for your habit: one opening, one tactic, one idea and one endgame. Viktor explains each one, then you practise it on the board."],
   level: ["Your level", "Five levels from beginner to 2,000+. Each skill is a number from your own games and a goal; finish every skill and you move up. The button next to a skill trains it."],
+  course: ["Your course", "Lessons from beginner to 2,000+, one idea at a time. Your games choose the next one, and a lesson is done when that mistake drops in your games, not when you've read it."],
   progress: ["Progress", "Your week, your clock and your badges, all from your real games. Badges from chess.com games and from Knightwise practice are counted apart."],
   openings: null, settings: null, extension: null,
 };

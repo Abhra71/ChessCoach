@@ -6,7 +6,7 @@ const COACHES = {
   maya: { name: "Maya", voice: "af_heart", role: "Your games and practice" },
   viktor: { name: "Viktor", voice: "am_michael", role: "Your progress and plan" },
 };
-const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress", level: "plan", endgames: "plan", calc: "plan", repertoire: "plan" };
+const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress", level: "plan", endgames: "plan", calc: "plan", repertoire: "plan", course: "plan" };
 
 const Coach = (() => {
   let box = null, said = null, foldTimer = null, quiet = null;

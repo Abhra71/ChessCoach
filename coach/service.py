@@ -86,12 +86,14 @@ def moment(r, played=None):
     after.push(mine)
     best_reply = chess.Move.from_uci(r["reply_pv"][0]) if r["reply_pv"] else None
     real = played[r["ply"]] if played and len(played) > r["ply"] else None  # their real answer, if the game went on
-    why = explain(pattern, r) if pattern else f"Better was {r['best']}."
+    reason = _reason(r)
+    why, lesson = reason["say"], reason.get("lesson")
     say = why
     if real and best_reply and real != best_reply:
         say += f" In the game they missed it and played {after.san(real)}."
     return {
-        "steps": walk(r, mine, best, best_reply, real, after, why),
+        "steps": walk(r, mine, best, best_reply, real, after, why, reason.get("better")),
+        "idea": reason["idea"], "lesson": lesson,
         "ply": r["ply"], "move_number": move_number(r), "color": r["color"],
         "placement": r["fen"].split()[0],  # the board just before the player's move
         "after_placement": _after(r["fen"], mine),
@@ -102,22 +104,46 @@ def moment(r, played=None):
         "real_reply_uci": real.uci() if real else None,  # what they really played
         "real_reply_san": after.san(real) if real else None,
         "reply_missed": bool(real and best_reply and real != best_reply),
-        "pattern": pattern if pattern != "other" else "a big mistake",
+        "pattern": pattern if pattern not in (None, "other") else _idea_name(reason.get("idea")),
         "say": say,
         "loss": r["loss"],
     }
 
 
-def walk(r, mine, best, best_reply, real, after, why):
+def _idea_name(idea):
+    from coach.why import IDEAS
+    return IDEAS.get(idea) if idea and idea != "deeper" else "a big mistake"
+
+
+def _reason(r):
+    """Why this move was a mistake (coach/why.py, with the engine for reasons a few moves deep) and the course lesson
+    that teaches it. Falls back to the older pattern sentence if anything goes wrong."""
+    from coach import course, live_engine, why as why_
+    try:
+        with live_engine.LOCK:
+            e = why_.explain(r, live_engine.get())
+    except Exception:  # never lose the review over an explanation
+        log.exception("why")
+        pattern = classify(r)
+        return {"idea": None, "say": explain(pattern, r) if pattern else f"Better was {r['best']}.", "better": None}
+    l = course.lesson_for(e["idea"])
+    return {**e, "lesson": {"id": l["id"], "title": l["title"]} if l else None}
+
+
+def walk(r, mine, best, best_reply, real, after, why, better=None):
     """One key moment told one step at a time (debrief points 17, 18, 42): You played, Better, They replied, Their
     better. Each step says which board it's on ("before" or "after" your move) and its arrows."""
     g = grade(r["loss"])
     a = "an" if g[0] in "AEIOU" else "a"
     steps = [{"kind": "mine", "title": "You played", "san": r["move"], "board": "before",
               "text": f"You played {r['move']}, {a} {g.lower()}.", "arrows": [[mine.uci(), "mine"]]}]
+    about_best = why.startswith(f"Better was {r['best']}") or why.startswith(r["best"] + " ")
+    if about_best:  # the reason is what the better move does: say it at the Better step, not after their reply
+        why, better = "", why[len(f"Better was {r['best']}"):].lstrip(":. ") if why.startswith("Better was") else why
     if best != mine:
         steps.append({"kind": "better", "title": "Better", "san": r["best"], "board": "before",
-                      "text": f"Better was {r['best']}. It kept about {round(r['loss'])}% more of your chance to win.",
+                      "text": f"Better was {r['best']}. " + (better[0].upper() + better[1:] if better else
+                              f"It kept about {round(r['loss'])}% more of your chance to win."),
                       "arrows": [[best.uci(), "better"], [mine.uci(), "mine"]]})
     else:
         steps.append({"kind": "better", "title": "Better", "san": None, "board": "before",
@@ -137,6 +163,8 @@ def walk(r, mine, best, best_reply, real, after, why):
         steps.append({"kind": "reply", "title": "Their best reply", "san": after.san(best_reply), "board": "after",
                       "text": f"The game ended here. Their best reply would have been {after.san(best_reply)}. {why}",
                       "arrows": [[best_reply.uci(), "reply"]]})
+    for st in steps:
+        st["text"] = " ".join(st["text"].split())
     return steps
 
 
@@ -281,6 +309,21 @@ class Handler(BaseHTTPRequestHandler):
             except OSError:
                 return self.send(503, json.dumps({"message": "Couldn't reach chess.com. Are you online?"}), "application/json")
             return self.send(200 if out else 404, json.dumps(out or {"message": "They have no public games in the last 3 months."}), "application/json")
+        if path == "/api/course":  # the course: every lesson, its status from your games, and the next one (0.10)
+            from coach import course
+            c = course.course()
+            for row in c["lessons"]:
+                row["reason"] = course.reason(row)
+            return self.send(200, json.dumps(c), "application/json")
+        if path.startswith("/api/course/"):  # one lesson: the text, your own positions and puzzles on the same idea
+            from coach import brief, course, live_engine
+            lid = path.rsplit("/", 1)[-1]
+            if lid not in course.BY_ID or course.BY_ID[lid]["coming"]:
+                return self.send(404, json.dumps({"message": "No such lesson yet."}), "application/json")
+            with live_engine.LOCK:
+                item = course.lesson(lid, live_engine.get(), insights.home().get("rating"))
+            brief.add(item["drills"])
+            return self.send(200, json.dumps(item), "application/json")
         if path == "/api/calc":  # the calculation trainer: see the whole line before anything moves (0.9)
             from coach import brief, drills
             items = drills.calculation(insights.home().get("rating"), time.strftime("%Y-%m-%d"))
@@ -412,6 +455,13 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/daily/done":
             from coach import daily
             return self.send(200, json.dumps(daily.done()), "application/json")
+        if path == "/api/course/done":  # a lesson's practice finished: from now on your games judge it
+            from coach import course
+            lid = str(body.get("id", ""))
+            if lid not in course.BY_ID:
+                return self.send(404, json.dumps({"message": "No such lesson."}), "application/json")
+            course.studied(lid, body.get("right", 0), body.get("total", 0))
+            return self.send(200, "{}", "application/json")
         if path == "/api/plan/mark":  # the player saw or finished a new thing
             from coach import plan
             plan.mark(str(body.get("id", ""))[:200], done=bool(body.get("done")), novelty=bool(body.get("novelty")))

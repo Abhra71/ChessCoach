@@ -1,6 +1,6 @@
 # Knightwise 0.6 (with 0.7 to 0.9 inside): what to test
 
-After Round 2 of 0.5.0. About 50 minutes. Claude says each step out loud and in the chat, one at a time. It needs
+After Round 2 of 0.5.0. About 60 minutes. Claude says each step out loud and in the chat, one at a time. It needs
 your free Groq key (Round 2, part 6) for parts 1 and 2.
 
 ## 1. Talk with your coach, in the app, 8 minutes
@@ -42,6 +42,16 @@ your free Groq key (Round 2, part 6) for parts 1 and 2.
 | 5.1 | Games → **Prep for an opponent**, type a username | Their openings as White and Black, how their games end, and your score against their start |
 | 5.2 | On chess.com, open someone's profile | Maya offers "Prep against them"; on your own profile she isn't there |
 | 5.3 | Sidebar → **Send feedback** | Three questions, saved |
+
+## 6. The teacher: the why and Your course, 10 minutes
+| Step | Do | Expect |
+|---|---|---|
+| 6.1 | Games → open a game you lost → step through a key moment | The last step says *why*, from the board: e.g. "Your rook on a8 was already under attack, and g6 did nothing about it" |
+| 6.2 | At the end of the moment, **Learn it** | That idea's lesson opens |
+| 6.3 | Sidebar → **Your course** | Five levels of lessons; "Next for you" at the top with your number and its goal; some marked "You already do this" |
+| 6.4 | Open the next lesson → **Practise it** | Your own positions with that mistake, then Lichess puzzles on the same idea |
+| 6.5 | On chess.com, review a game to the last step | **Learn it** opens the lesson in Knightwise |
+| 6.6 | Is this you? | Say which reasons felt right or wrong. Wrong ones are the most useful |
 
 Not in this version: studying strong players' games. Lichess's database of master games now needs a Lichess account
 (a parent's decision), or a large download; Claude asks first.

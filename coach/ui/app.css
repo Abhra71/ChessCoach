@@ -459,3 +459,11 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .feedback-pop { position: fixed; left: 230px; bottom: 24px; width: 380px; z-index: 70; padding: 16px; animation: rise .25s ease-out both; }
 .feedback-pop textarea { width: 100%; margin-top: 4px; resize: vertical; font: inherit; }
 .feedback-pop .stars { display: inline-flex; gap: 4px; margin-left: 6px; }
+
+/* ---------- the course (0.10) ---------- */
+.course-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.course-row:first-of-type { border-top: 0; }
+.course-row.later, .course-row.coming { opacity: .6; }
+.course-row .row { flex-wrap: nowrap; }
+.course-learn { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+@media (max-width: 640px) { .course-row { flex-direction: column; align-items: flex-start; } }

@@ -137,6 +137,7 @@
         <ol>${steps}</ol>
         <div class="kw-row">${!last ? `<button class="kw-go" data-next>Next: ${escapeHtml(k.steps[shown + 1].title)} ▶</button>`
           : mi < moments.length - 1 ? `<button class="kw-go" data-nextm>Next moment ▶</button>` : ""}
+          ${last && k.lesson ? `<button class="kw-open" data-lesson title="The Knightwise lesson on this idea">Learn it: ${escapeHtml(k.lesson.title)}</button>` : ""}
           ${last && extra.rematch ? `<button class="kw-open" data-rematch title="Play it on from here in Knightwise, at their level">Rematch from move ${extra.rematch.move_number}</button>` : ""}
           <button class="kw-open" data-open>Open in Knightwise</button></div>` : ""}
       ${clock}</div>`;
@@ -152,6 +153,7 @@
     const on = (sel, f) => panel.querySelectorAll(sel).forEach(el => el.onclick = e => { e.stopPropagation(); f(el); });
     on("[data-open]", () => chrome.runtime.sendMessage({ type: "open-app", route: `games/${gameId}` }));
     on("[data-rematch]", () => chrome.runtime.sendMessage({ type: "open-app", route: `rematch/${gameId}/${extra.rematch.ply}` }));
+    on("[data-lesson]", () => chrome.runtime.sendMessage({ type: "open-app", route: `course/${k.lesson.id}` }));
     on("[data-next]", () => pick(shown + 1));
     on("[data-nextm]", () => { mi++; shown = 0; pick(0); });
     on("[data-m]", el => { mi = Number(el.dataset.m); shown = 0; pick(0); });
