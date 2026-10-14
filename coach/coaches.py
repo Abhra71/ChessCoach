@@ -17,7 +17,7 @@ LESSONS = "https://www.chess.com/lessons"
 
 COACHES = {
     "maya": {"role": "Your games and practice", "name": "Maya", "voice": "af_heart",
-             "about": "Former champion. Calm, patient, clear.", "sections": ["home", "play", "review", "games", "puzzles"]},
+             "about": "Former champion. Calm, patient, clear.", "sections": ["home", "play", "review", "games", "puzzles", "archive"]},
     "viktor": {"role": "Your progress and plan", "name": "Viktor", "voice": "am_michael",
                "about": "Veteran. Wise, dry humour, has seen it all.", "sections": ["progress", "lessons", "plan"]},
 }
@@ -48,8 +48,12 @@ SAY = {
                         "{moments} decided this game. Let's look at them together, calmly."]},
     "review_clean": {"maya": ["A clean game: no big mistakes for me to show you. Well played."]},
     "unknown_game": {"maya": ["I haven't checked this game yet. Once it's finished and saved, I'll go through it with you."]},
-    "puzzles": {"maya": ["Puzzles. Before every move, ask what they can take.",
-                         "Warm-up time. Look for checks, captures and threats, in that order."]},
+    "puzzles": {"maya": ["Puzzles. I won't look at the board while you solve: that's chess.com's rule, and mine. "
+                         "Before every move, ask what they can take.",
+                         "Warm-up time. I stay out of the puzzle itself. Look for checks, captures and threats, in that order."]},
+    "archive": {"maya": ["Every game I've checked has a Knightwise tag under it. Click one and I'll open its review, "
+                         "one moment at a time.",
+                         "Your games, with my tag on each one I've checked. The red ones are where to look first."]},
     "progress": {"viktor": ["You've played {games} games with me watching. Let's see what's changed."]},
     "week_better": {"viktor": ["This week: {this_games} games, {this_pieces} pieces given away. Last week it was {last_pieces} in "
                                "{last_games}. That is how improvement looks."]},
@@ -153,7 +157,7 @@ def _speak(section, home=None, hour=12, moments=None, rng=random, extra=None, in
         elif section == "plan" and extra and extra.get("novelty"):
             n = extra["novelty"]
             lines.append(f"But first, something new: {n['title']}. {n.get('why') or ''}".strip())
-        elif section in ("lessons", "play", "games", "plan"):
+        elif section in ("lessons", "play", "games", "plan", "archive"):
             lines.append(line(section, coach, rng, **facts))
         elif focus:
             lines.append(line("focus", coach, rng, **facts))
@@ -215,6 +219,10 @@ def recommend(section, home, actions=None, now=None, in_app=False):
     elif section == "puzzles" and habit:
         pick = {"label": "Practise your habit in Knightwise", "app": "practice",
                 "why": f"These puzzles come from other people's games. Your own positions train exactly this: {habit}."}
+    elif section == "archive" and last.get("id") and last.get("moments"):  # your games list: the latest one first
+        pick = {"label": f"Review vs {last.get('opponent', 'your last opponent')} in Knightwise", "app": f"games/{last['id']}",
+                "why": "One moment at a time, with your clock" + (", and a rematch from where it went wrong."
+                                                                  if last.get("result") != "win" else ".")}
     elif section == "progress":
         pick = {"label": "Your progress in Knightwise", "app": "progress",
                 "why": "It shows you against yourself, on the habit you're fixing, game by game."}

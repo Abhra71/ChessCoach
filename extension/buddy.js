@@ -12,7 +12,8 @@
     if (/^\/puzzles\/(battle|rush\/battle)/.test(path)) return null;  // against other people
     if (/^\/puzzles(\/|$)/.test(path)) return "puzzles";
     if (/^\/(lessons|learn|courses)(\/|$)/.test(path)) return "lessons";
-    if (/^\/(stats|games\/archive)(\/|$)/.test(path)) return "progress";
+    if (/^\/games\/archive(\/|$)/.test(path)) return "archive";  // the tags on your games: Maya explains them
+    if (/^\/stats(\/|$)/.test(path)) return "progress";
     return null;
   }
 
