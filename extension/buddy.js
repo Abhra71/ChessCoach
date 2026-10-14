@@ -125,7 +125,7 @@
     said = { ...said, mood: "thinking", pose: "listen", lines: [`"${question}"`, "…"], actions: [], note: null };
     render(true);
     const r = await send({ type: "chat", coach: said.coach, message: question, history: history.slice(0, -1) });
-    const reply = r && r.ok ? r.data : { text: "I can't reach the Knightwise app right now. Open it from the Start menu.", mood: "calm" };
+    const reply = r && r.ok ? r.data : { text: "I can't reach the Knightwise app on this PC, and I answer from there. Open it from the Start menu.", mood: "calm" };
     history.push(["coach", reply.text]);
     said = { ...said, mood: reply.mood, pose: "explain", lines: [reply.text], note: reply.note || null };
     render(true); speak();
@@ -167,7 +167,8 @@
     if (current !== here) return;
     said = r && r.ok ? r.data : {
       coach: "maya", name: "Maya", mood: "calm", voice_on: false, actions: [],
-      lines: ["I'm asleep right now. Open Knightwise from the Start menu and I'll coach you here."],
+      lines: ["I'm asleep: the Knightwise app isn't running on this PC.",
+              "Everything I do here, your reviews, my advice and my voice, comes from the app. Open Knightwise from the Start menu and I'll be right back."],
     };
     let guided = null;
     try { guided = sessionStorage.getItem("kw-guided"); sessionStorage.removeItem("kw-guided"); } catch (e) {}

@@ -16,7 +16,8 @@ fetch(`${COACH}/api/status`)
   .catch(() => {
     state.className = "off";
     state.innerHTML = `<span class="dot"></span>The coach is not running`;
-    more.innerHTML = `<p class="muted">Open <b>Knightwise</b> from the Start menu. It then keeps running by the clock.</p>`;
+    more.innerHTML = `<p class="muted">Everything Knightwise does on chess.com, the review, the coach and her voice, comes from the app on this PC.</p>
+      <p class="muted">Open <b>Knightwise</b> from the Start menu. It then keeps running by the clock.</p>`;
   });
 
 // the chess.com self-check, in one line: all working, or what chess.com changed
