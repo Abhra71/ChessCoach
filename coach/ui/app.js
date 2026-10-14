@@ -685,7 +685,8 @@ async function progressView() {
       ${p.clock && p.clock.lines.length ? `<div class="box rise stack" style="padding:16px"><h2 style="margin:0">Your clock</h2>
         <p class="small muted" style="margin:0">Your last ${p.clock.games} games with a clock, from the time chess.com records on every move.</p>
         ${p.clock.lines.map(l => `<p style="margin:0">${esc(l)}</p>`).join("")}
-        ${p.clock.big && p.clock.fast / p.clock.big >= 0.3 ? `<p class="small" style="margin:0"><b>Try this:</b> when they capture or give check, count to five before you answer.</p>` : ""}</div>` : ""}
+        ${p.clock.big && p.clock.fast / p.clock.big >= 0.3 ? `<p class="small" style="margin:0"><b>Try this:</b> when they capture or give check, count to five before you answer.</p>` : ""}
+        ${p.clock.fast ? `<div><a class="btn" href="#/clockdrill">Slow-down drill: your rushed moves</a></div>` : ""}</div>` : ""}
       <div class="box rise"><div class="row spread"><h2 style="margin:0">Badges</h2>
           <div class="ring-legend"><span><i class="t1"></i>Bronze</span><span><i class="t2"></i>Silver</span><span><i class="t3"></i>Gold, complete</span></div></div>
         <p class="small muted" style="margin:6px 0 0">${complete} complete · ${started} on the way · ${p.badges.length - complete - started} not started. A badge is complete at Gold.</p>
@@ -1301,6 +1302,7 @@ async function screen(name, arg) {
   if (name === "progress") return await progressView();
   if (name === "level") return await levelView();
   if (name === "endgames") return await endgamesView();
+  if (name === "clockdrill") { shell("level", `<p class="muted">Finding your rushed moves…</p>`); return lessonView({ ...(await api("/api/clockdrill")), back: "level" }); }
   if (name === "endgame") return await endgameView(arg);
   if (name === "lesson") return await themeLesson(decodeURIComponent(arg || ""));
   if (name === "openings") return await openingTree();

@@ -257,6 +257,17 @@ class Handler(BaseHTTPRequestHandler):
             from coach import endgames
             start = endgames.start(path.rsplit("/", 1)[-1])
             return self.send(200 if start else 404, json.dumps(start or {"message": "No such ending."}), "application/json")
+        if path == "/api/clockdrill":  # the clock coach's drill: your rushed mistakes, with the slow-down checklist
+            from coach import brief, clock, drills, live_engine, plan
+            rows = clock.rushed(insights._games(), insights._moves(), insights._player() or "")
+            with live_engine.LOCK:
+                items = [{**drills.drill(live_engine.get(), r["pattern"], r),
+                          "where": f"From your game: you played this in {clock.say_time(r['seconds'])}"} for r in rows]
+            idea = next(i for i in plan.IDEAS if i["id"] == "idea:slow-down")
+            lesson = {**idea, "id": "idea:rushed", "kind": "idea", "coach": "viktor", "drills": brief.add(items),
+                      "title": "Slow down when it matters",
+                      "intro": "Each of these you played in a rush, and it cost you. This time, tick the checks first: the board waits for you."}
+            return self.send(200, json.dumps(lesson), "application/json")
         if path == "/api/ladder":  # your level: every skill from beginner to 2,000+, on your last 20 games (0.6)
             from coach import ladder
             return self.send(200, json.dumps(ladder.page()), "application/json")

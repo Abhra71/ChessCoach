@@ -119,7 +119,7 @@ LEVELS = [
         ("convert2", "Win won games, nearly always", "winning games you won", _conversion, 80, "min", "%",
          ("Train it", "endgame/queenpawn")),
         ("clock", "Slow down when it matters", "biggest mistakes played in a rush", _rushed, 25, "max", "%",
-         ("Your clock", "progress")),
+         ("Slow-down drill", "clockdrill")),
     ]),
     ("precise", "Precision", "about 1,600 to 2,000", [
         ("blunders3", "Almost no big mistakes", "big mistakes a game", _losses(20), 0.3, "max", "a game",

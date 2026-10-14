@@ -117,3 +117,21 @@ def summary(games, moves, player, n=30):
     if on_time:
         lines.append(f"{on_time} of your {losses} losses were on time.")
     return {"games": timed, "on_time": on_time, "losses": losses, "big": big, "fast": fast, "lines": lines}
+
+
+def rushed(games, moves, player, n=5):
+    """The positions where your biggest mistakes were played in a rush, newest first: for the slow-down drill."""
+    from coach import insights
+    out = []
+    for g in games:
+        if len(out) >= n or g["url"] not in moves:
+            continue
+        me = insights._side(g, player)[0]
+        tc = base_and_increment(g.get("time_control"))
+        times = {ply: s for ply, side, s, _ in spent(g.get("pgn"), g.get("time_control")) if side == me}
+        if not tc or not times:
+            continue
+        for r in biggest(moves[g["url"]]):
+            if r["ply"] in times and times[r["ply"]] < rushed_under(tc[0]) and r.get("pattern"):
+                out.append({**r, "seconds": times[r["ply"]]})
+    return out[:n]

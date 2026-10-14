@@ -81,4 +81,6 @@ def public():
     return {"theme": s["theme"], "voice": s["voice"], "sounds": s["sounds"], "voice_name": s["voice_name"], "voices": voice.CHOICES,
             "voice_ready": voice.available(), "listen_ready": hearing.available(), "slots": slots, "providers": PROVIDERS,
             # talking by voice: a Groq or Gemini key hears you (0.6); Whisper on this PC only if it was installed
-            "talk_ready": hearing.available() or any(v["set"] and v["provider"] in ("groq", "gemini") for v in slots.values())}
+            # (a key is always needed to understand you; Groq or Gemini also hear you, any other key needs Whisper here)
+            "talk_ready": any(v["set"] for v in slots.values())
+            and (hearing.available() or any(v["set"] and v["provider"] in ("groq", "gemini") for v in slots.values()))}
