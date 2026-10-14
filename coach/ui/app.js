@@ -5,6 +5,7 @@ const api = (path, body) => fetch(path, body === undefined ? {} : {
   method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
 }).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || r.status), j); return j; });
 const wait = ms => new Promise(r => setTimeout(r, ms));
+let TALK = false;  // a key that can hear is set: the coaches show Talk (0.6)
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : "";
 
 const ICON = {
@@ -125,21 +126,29 @@ function confetti(n = 70) {
 }
 
 // ---------- microphone ----------
-const Mic = (() => {  // records 16 kHz mono in the window; the coach turns it into text on this computer
-  let ctx = null, stream = null, node = null, chunks = [];
+const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turns it into text (Groq, then Gemini)
+  let ctx = null, stream = null, node = null, chunks = [], level = 0;
   async function start() {
-    fetch("/api/listen/warm").catch(() => {});
     stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
     ctx = new AudioContext({ sampleRate: 16000 });
     const src = ctx.createMediaStreamSource(stream);
     node = ctx.createScriptProcessor(4096, 1, 1);
-    chunks = [];
-    node.onaudioprocess = e => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+    chunks = []; level = 0;
+    node.onaudioprocess = e => {
+      const d = new Float32Array(e.inputBuffer.getChannelData(0));
+      chunks.push(d);
+      let sum = 0; for (const v of d) sum += v * v;
+      level = Math.sqrt(sum / d.length);  // how loud, for knowing when the player has finished
+    };
     src.connect(node); node.connect(ctx.destination);
+  }
+  async function close() {
+    if (!ctx) return;
+    node.disconnect(); stream.getTracks().forEach(t => t.stop()); await ctx.close(); ctx = null;
   }
   async function stop() {
     if (!ctx) return "";
-    node.disconnect(); stream.getTracks().forEach(t => t.stop()); await ctx.close(); ctx = null;
+    await close();
     const n = chunks.reduce((a, c) => a + c.length, 0), pcm = new Int16Array(n);
     let i = 0;
     for (const c of chunks) for (const v of c) pcm[i++] = Math.max(-1, Math.min(1, v)) * 32767;
@@ -148,7 +157,21 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach turns it i
     if (!r.ok) throw new Error(j.message || "Couldn't hear that.");
     return j.text;
   }
-  return { start, stop, get on() { return !!ctx; } };
+  // hands-free: listen until the player has spoken and then been quiet for a moment. "" if they said nothing.
+  async function listen({ wait = 8000, quiet = 1300, longest = 25000, loud = 0.02, cancelled = () => false } = {}) {
+    await start();
+    const began = Date.now();
+    let heard = false, lastLoud = 0;
+    while (true) {
+      await new Promise(r => setTimeout(r, 100));
+      const now = Date.now();
+      if (cancelled()) { await close(); return ""; }
+      if (level > loud) { heard = true; lastLoud = now; }
+      if (!heard && now - began > wait) { await close(); return ""; }
+      if ((heard && now - lastLoud > quiet) || now - began > longest) return stop();
+    }
+  }
+  return { start, stop, listen, close, get on() { return !!ctx; }, get level() { return level; } };
 })();
 
 // a question box with a microphone: onAsk(text) answers it
@@ -668,7 +691,7 @@ async function home() {
     last ? `Your last game, against ${last.opponent}, has ${last.moments} key moment${last.moments === 1 ? "" : "s"} to look at.` : ""].join(" ");
   $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
   api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?", coach: "maya",
-    enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.listen_ready,
+    enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,
     onAsk: q => api("/api/ask", { question: q }) }));
 }
 
@@ -780,7 +803,15 @@ async function gameView(id) {
     if (speak) Coach.react("maya", bad ? "worried" : "explain", st.text);
   }
   function open(i) { mi = i; shown = 0; pick(0); }
-  askBox($("#askbox"), { placeholder: "Why is my bishop in danger here?", coach: "maya", enabled: aiReady, listen: cfg.listen_ready,
+  // "next" by voice: the next step, or the next moment; returns what Maya says
+  window.kwNextStep = () => {
+    if (!moments.length || !location.hash.includes(`games/${g.id}`)) return null;
+    const k = moments[mi];
+    if (shown < k.steps.length - 1) { shown++; pick(shown, false); return k.steps[shown].text; }
+    if (mi < moments.length - 1) { open(mi + 1); return `Key moment ${mi + 1}, move ${moments[mi].move_number}. ${moments[mi].steps[0].text}`; }
+    return "That was the last key moment. You can try it again, or rematch from there.";
+  };
+  askBox($("#askbox"), { placeholder: "Why is my bishop in danger here?", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
     onAsk: q => { const k = moments[mi]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: !free && k ? k.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go, was = ply;
@@ -917,9 +948,12 @@ async function settingsView() {
           <span class="small muted">${s.voice_ready ? (s.voice ? "On" : "Off") : "Voice files not installed"}</span></div>
           <div class="voices">${Object.entries(COACHES).map(([id, c]) => `<button class="btn voice-chip" data-hear="${id}">
             ${KnightwiseFaces.svg(id, "pleased")}<span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span><i>▶</i></button>`).join("")}</div>
-          <div class="row"><span class="small ${s.listen_ready && aiSet ? "ok-text" : "muted"}" id="listenstate">${!s.listen_ready ? "Ask by voice: a one-time 485 MB download."
-            : aiSet ? "Listening is on: use Talk to ask by voice." : "Listening is installed. Asking needs an AI key: add one above."}</span>
-            ${s.listen_ready ? "" : `<button class="btn" id="getlisten">Install listening</button>`}</div></div></div>
+          <div class="row"><span class="small ${s.talk_ready ? "ok-text" : "muted"}" id="listenstate">${s.talk_ready
+            ? "Talking is on: press Talk on a coach and just speak. Your Groq or Gemini key hears you, in about half a second."
+            : "Talking by voice needs a free Groq or Gemini key: add one below."}</span></div>
+          ${!s.listen_ready ? `<details class="small muted"><summary>Hear me on this PC instead (optional)</summary>
+            <p style="margin:6px 0">A one-time 485 MB download. It's slower and mishears more than the key does; use it only if you have no key.</p>
+            <button class="btn" id="getlisten">Install listening on this PC</button></details>` : ""}</div></div>
       <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a finished set. No background music.</p></div>
         <div class="row"><button class="switch ${s.sounds ? "on" : ""}" id="sounds" aria-label="Sounds"></button>
           <span class="small muted">${s.sounds ? "On" : "Off"}</span></div></div>
@@ -1166,7 +1200,7 @@ async function route() {
   }
 }
 window.addEventListener("hashchange", () => { Voice.stop(); route(); });
-api("/api/settings").then(s => { applyTheme(s.theme); Voice.set(s.voice && s.voice_ready); Sound.set(s.sounds !== false); }).catch(() => {});
+api("/api/settings").then(s => { applyTheme(s.theme); Voice.set(s.voice && s.voice_ready); Sound.set(s.sounds !== false); TALK = !!s.talk_ready; }).catch(() => {});
 api("/api/status").then(s => { STATUS = s; if (!s.player && !location.hash.includes("welcome")) go("welcome"); else route(); })
   .catch(() => route());
 pollStatus();

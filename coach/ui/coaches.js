@@ -23,7 +23,9 @@ const Coach = (() => {
     box.className = `kw-coach kw-app ${open ? "open" : "folded"}`;
     const face = `<button class="kw-char" title="${esc(who.name)}">${KnightwiseFaces.figure(s.coach, s.pose || s.mood || "calm")}</button>`;
     box.innerHTML = open ? `${face}<div class="kw-box" role="status">
-        <div class="kw-head"><b>${esc(who.name)}</b><span>${esc(who.role)}</span><button class="kw-x" title="Fold away">–</button></div>
+        <div class="kw-head"><b>${esc(who.name)}</b><span>${esc(who.role)}</span>
+          ${TALK && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(who.name)}: press, then just speak">🎙 Talk</button>` : ""}
+          <button class="kw-x" title="Fold away">–</button></div>
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
         ${(s.actions || []).length ? `<div class="kw-actions">${s.actions.map((a, i) =>
           `<button data-i="${i}">${esc(a.label)}</button>`).join("")}</div>` : ""}
@@ -32,7 +34,9 @@ const Coach = (() => {
     const tab = box.querySelector(".kw-tab");
     if (tab) tab.onclick = () => { render(true); talk(); };
     const x = box.querySelector(".kw-x");
-    if (x) x.onclick = fold;
+    if (x) x.onclick = () => { if (Conv.on) Conv.stop(); fold(); };
+    const t = box.querySelector(".kw-speak");
+    if (t) t.onclick = () => Conv.start(s.coach);
     box.querySelectorAll(".kw-actions button").forEach(b => b.onclick = () => act(s.actions[Number(b.dataset.i)]));
   }
 
@@ -51,7 +55,10 @@ const Coach = (() => {
   });
 
   // say something now (open, with voice)
-  function show(s, { speak = true } = {}) { said = s; clearTimeout(foldTimer); render(true); if (speak) talk(); }
+  function show(s, { speak = true } = {}) {
+    if (Conv.on && !s.talking) return;  // in a conversation, only the conversation speaks
+    said = s; clearTimeout(foldTimer); render(true); if (speak) talk();
+  }
   // a quick reaction on a board: pose (worried, celebrate, explain...) and one line
   // spoken: what the voice says when it differs from the short line in the bubble
   function react(coach, pose, text, actions, spoken) { show({ coach, pose, mood: pose, lines: [text], actions: actions || [], spoken }); }
@@ -59,6 +66,7 @@ const Coach = (() => {
 
   // the tab's coach comes up by themselves: open and speaking once a day, folded after that
   async function arrive(tab) {
+    if (Conv.on) return;  // talking: the coach stays with the conversation
     const section = TAB_SECTION[tab];
     if (!section) return hide();
     const first = remember(`kw-app-greeted-${section}`) !== today();  // the first visit to this section today
@@ -70,6 +78,53 @@ const Coach = (() => {
     else { const now = said; clearTimeout(quiet); quiet = setTimeout(() => { if (said === now) render(false); }, 20000); }
   }
   return { show, react, hide, arrive };
+})();
+
+// ---------- talking with your coach by voice (0.6, flagship 2) ----------
+// Press Talk and just speak: the coach hears you through your Groq or Gemini key, answers out loud, and listens
+// again. Quiet for 8 seconds, or Stop, ends it. The coach can open a page, a game's review or a rematch, or show the
+// next step of the review; the app checks each one first (coach/talk.py).
+const Conv = (() => {
+  let on = false, history = [], coach = "maya";
+  const where = () => {
+    const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
+    return name === "games" && arg ? { section: "review", game: arg } : { section: name || "home" };
+  };
+  const show = (pose, lines) => Coach.show({ coach, pose, mood: pose, lines, talking: true,
+                                              actions: [{ label: "Stop talking", run: stop }] }, { speak: false });
+  async function start(who) {
+    if (on) return stop();
+    on = true; coach = who in COACHES ? who : "maya"; history = [];
+    Voice.stop();
+    loop();
+  }
+  function stop() {
+    if (!on) return;
+    on = false; Mic.close(); Voice.stop();
+    Coach.react(coach, "calm", "Okay. Press Talk whenever you want to talk again.", [], "");
+  }
+  async function loop() {
+    while (on) {
+      show("listen", ["I'm listening…"]);
+      let text;
+      try { text = await Mic.listen({ cancelled: () => !on }); }
+      catch (e) { const m = e.message || "The microphone isn't available."; on = false; Coach.react(coach, "worried", m, [], ""); return; }
+      if (!on) return;
+      if (!text) { on = false; Coach.react(coach, "calm", "I'll be here. Press Talk when you want to carry on.", [], ""); return; }
+      show("thinking", [`"${text}"`, "…"]);
+      let r;
+      try { r = await api("/api/talk", { coach, text, history, where: where() }); }
+      catch (e) { r = { text: "I can't reach the Knightwise app right now.", mood: "calm" }; }
+      if (!on) return;
+      let speech = r.text;
+      if (r.action && r.action.route) { go(r.action.route); await wait(400); }
+      if (r.action && r.action.next && window.kwNextStep) speech = window.kwNextStep() || speech;  // the review's next step
+      history.push(["player", text], ["coach", speech]);
+      show(r.mood || "explain", [speech]);
+      await Voice.speak(speech, true, (COACHES[coach] || {}).voice);
+    }
+  }
+  return { start, stop, get on() { return on; } };
 })();
 
 // ---------- the board trainer: practice, plan lessons, openings ----------

@@ -66,3 +66,33 @@ def test_retired_model_is_picked_again(monkeypatch):
     assert ai._call("gemini", "k", "s", "p", 10) == "ok"
     assert seen == ["gemini-3.5-flash", None] and ai._MODELS["gemini"] == "gemini-flash-latest"
     ai._MODELS.clear()
+
+
+def test_hearing_goes_to_the_keys_that_can_hear_then_the_next(monkeypatch):
+    from coach import ai, settings
+    monkeypatch.setattr(settings, "load", lambda: {"slot1": {"provider": "groq"}, "slot2": {"provider": "gemini"}})
+    monkeypatch.setattr(settings, "get_key", lambda slot: "k-" + slot)
+    monkeypatch.setattr(ai, "_REST", {})
+    calls = []
+
+    def busy(key, audio):
+        calls.append("groq")
+        import urllib.error
+        raise urllib.error.HTTPError("u", 429, "busy", {}, None)
+
+    def gem(key, audio):
+        calls.append("gemini")
+        assert audio[:4] == b"RIFF"
+        return "review my last game"
+    text, by = ai.hear(b"\x00\x00" * 16000, hearers={"groq": busy, "gemini": gem})
+    assert (text, by, calls) == ("review my last game", "gemini", ["groq", "gemini"])
+    assert ai.resting("groq")  # the busy one rests
+
+
+def test_hearing_without_a_key_that_can_hear(monkeypatch):
+    import pytest
+    from coach import ai, settings
+    monkeypatch.setattr(settings, "load", lambda: {"slot1": {"provider": "anthropic"}, "slot2": {"provider": "openai"}})
+    monkeypatch.setattr(settings, "get_key", lambda slot: "k")
+    with pytest.raises(ai.NoKey):
+        ai.hear(b"\x00\x00" * 16000)

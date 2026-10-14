@@ -273,3 +273,85 @@ def ask(question, context, rating):
     prompt = f"Facts (from Stockfish and the board):\n{json.dumps(context, indent=1)}\n\nThe player asks: {question[:500]}"
     text, provider = complete(system, prompt)
     return {"text": text, "provider": provider}
+
+
+# ---------- hearing: the player's voice -> words, through the same keys (0.6, flagship 2) ----------
+# Jarvis's record (jarvis-keep logs): Groq's cloud whisper-large-v3 heard 107 sentences at about 0.5 s each with no
+# failures, where Whisper on the PC misheard often. So: Groq first, Gemini as the backup, nothing on the PC by default.
+HEAR_MODEL = {"groq": "whisper-large-v3"}
+HEAR_HINT = ("A chess player talking to their coach. Words: knight, bishop, rook, queen, king, pawn, castle, check, "
+             "checkmate, fork, pin, e4, d4, Nf3, Bc4, rematch, review, game, puzzle, opening, endgame.")
+
+
+def wav(pcm16, rate=16000):
+    """16-bit mono samples -> a WAV file in memory."""
+    import io
+    import wave as wavefile
+    buf = io.BytesIO()
+    with wavefile.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(pcm16)
+    return buf.getvalue()
+
+
+def _groq_hear(key, audio):
+    import uuid
+    boundary = uuid.uuid4().hex
+    fields = {"model": HEAR_MODEL["groq"], "language": "en", "prompt": HEAR_HINT, "response_format": "json",
+              "temperature": "0"}
+    body = b"".join(f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
+                    for k, v in fields.items())
+    body += (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="speech.wav"\r\n'
+             f"Content-Type: audio/wav\r\n\r\n").encode() + audio + f"\r\n--{boundary}--\r\n".encode()
+    req = urllib.request.Request("https://api.groq.com/openai/v1/audio/transcriptions", data=body,
+                                 headers={"Authorization": f"Bearer {key}", **AGENT,
+                                          "Content-Type": f"multipart/form-data; boundary={boundary}"})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        out = json.load(resp)
+    _count("groq", 0)
+    return (out.get("text") or "").strip()
+
+
+def _gemini_hear(key, audio):
+    import base64
+    head = {"x-goog-api-key": key}
+    if "gemini" not in _MODELS:
+        _gemini(key, "Reply with one word.", "Say: ready", 5)  # picks the model from Google's own list
+    body = {"contents": [{"role": "user", "parts": [
+        {"text": "Write down exactly what is said in this recording, word for word. " + HEAR_HINT +
+                 " Reply with the words only; if nothing is said, reply with nothing."},
+        {"inline_data": {"mime_type": "audio/wav", "data": base64.b64encode(audio).decode()}}]}],
+        "generationConfig": {"temperature": 0, "maxOutputTokens": 200}}
+    out = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{_MODELS['gemini']}:generateContent",
+                body, head, "gemini")
+    _count("gemini", (out.get("usageMetadata") or {}).get("totalTokenCount", 0))
+    parts = ((out.get("candidates") or [{}])[0].get("content") or {}).get("parts") or []
+    return "".join(p.get("text", "") for p in parts).strip()
+
+
+HEARERS = {"groq": _groq_hear, "gemini": _gemini_hear}
+
+
+def hear(pcm16, rate=16000, hearers=None):
+    """The player's words, through key 1 then key 2 (only Groq and Gemini can hear). Returns (text, provider).
+    Raises NoKey when no key that can hear is set."""
+    hearers = hearers or HEARERS
+    audio, s, errors = wav(pcm16, rate), settings.load(), []
+    for slot in settings.SLOTS:
+        key, provider = settings.get_key(slot), s[slot]["provider"]
+        if not key or provider not in hearers:
+            continue
+        if resting(provider):
+            errors.append(f"{provider}: resting")
+            continue
+        try:
+            return hearers[provider](key, audio), provider
+        except Exception as e:
+            if _busy(e):
+                _rest(provider)
+            errors.append(f"{provider}: {getattr(e, 'code', '') or str(e)[:80]}")
+    if not errors:
+        raise NoKey("Talking needs a free Groq or Gemini key. Add one in Settings.")
+    raise RuntimeError("; ".join(errors))

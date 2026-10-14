@@ -79,4 +79,6 @@ def public():
         slots[slot] = {"provider": s[slot]["provider"], "set": bool(key), "ends": key[-4:] if key else None}
     from coach import hearing, voice
     return {"theme": s["theme"], "voice": s["voice"], "sounds": s["sounds"], "voice_name": s["voice_name"], "voices": voice.CHOICES,
-            "voice_ready": voice.available(), "listen_ready": hearing.available(), "slots": slots, "providers": PROVIDERS}
+            "voice_ready": voice.available(), "listen_ready": hearing.available(), "slots": slots, "providers": PROVIDERS,
+            # talking by voice: a Groq or Gemini key hears you (0.6); Whisper on this PC only if it was installed
+            "talk_ready": hearing.available() or any(v["set"] and v["provider"] in ("groq", "gemini") for v in slots.values())}

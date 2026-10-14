@@ -28,7 +28,7 @@ from coach.paths import BUNDLED_EXTENSION, DATA, EXTENSION, FROZEN, LOGBOOK, NAM
 from coach.patterns import classify
 from coach.review import explain, move_number
 
-PORT = 8765
+PORT = int(os.environ.get("KNIGHTWISE_PORT", "8765"))  # another port only for a second copy while developing
 URL = f"http://127.0.0.1:{PORT}"
 EVERY = 600  # seconds between checks for new games
 MOMENTS = 3  # key moments shown per game
@@ -353,6 +353,14 @@ class Handler(BaseHTTPRequestHandler):
             if not reply["ai"] and ai.ready():
                 reply["note"] = "The AI is busy right now, so I'm keeping it short. Ask again in a minute."
             return self.send(200, json.dumps(reply), "application/json")
+        if path == "/api/talk":  # a spoken turn with a coach: the reply, and one checked thing to do (0.6)
+            from coach import talk
+            turns = body.get("history") if isinstance(body.get("history"), list) else []
+            history = [(str(t[0]), str(t[1])) for t in turns[-6:] if isinstance(t, list) and len(t) == 2]
+            where = body.get("where") if isinstance(body.get("where"), dict) else {}
+            where = {k: str(v)[:40] for k, v in where.items() if k in ("section", "game", "step")}
+            return self.send(200, json.dumps(talk.reply(str(body.get("coach", "maya")), str(body.get("text", "")),
+                                                        history, where)), "application/json")
         if path == "/api/check-now":
             WAKE.set()
             return self.send(200, "{}", "application/json")
@@ -427,21 +435,32 @@ class Handler(BaseHTTPRequestHandler):
         self.send(404, "not found", "text/plain")
 
     def listen(self):
-        """The player's spoken question: 16 kHz 16-bit mono samples from the app -> text (Whisper, on this computer)."""
-        from coach import hearing
-        if not hearing.available():
-            return self.send(503, json.dumps({"message": "Listening isn't installed. Settings > Voice."}), "application/json")
+        """The player's voice: 16 kHz 16-bit mono samples from the app -> text. Through the player's own Groq or
+        Gemini key first (fast and accurate, Jarvis's record); Whisper on this computer only if they installed it."""
+        from coach import ai, hearing
         size = int(self.headers.get("Content-Length", 0))
         if not 0 < size <= 60 * hearing.RATE * 2:  # at most a minute of speech
             return self.send(400, json.dumps({"message": "Too long or empty."}), "application/json")
-        import numpy as np
-        samples = np.frombuffer(self.rfile.read(size), dtype="<i2").astype(np.float32) / 32768
+        pcm = self.rfile.read(size)
+        if size < hearing.RATE // 2:  # under a quarter of a second: nothing said
+            return self.send(200, json.dumps({"text": ""}), "application/json")
         try:
-            text = hearing.transcribe(samples)
+            text, provider = ai.hear(pcm, hearing.RATE)
+            return self.send(200, json.dumps({"text": text, "by": provider}), "application/json")
+        except ai.NoKey as e:
+            problem = str(e)
+        except Exception as e:  # both keys busy or down
+            log.warning("cloud hearing failed: %s", e)
+            problem = "I couldn't hear you just now: the AI is busy. Try again in a minute."
+        if not hearing.available():
+            return self.send(503, json.dumps({"message": problem}), "application/json")
+        import numpy as np
+        try:
+            text = hearing.transcribe(np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768)
         except Exception as e:
             log.exception("listening failed")
             return self.send(500, json.dumps({"message": str(e)[:200]}), "application/json")
-        return self.send(200, json.dumps({"text": text}), "application/json")
+        return self.send(200, json.dumps({"text": text, "by": "this PC"}), "application/json")
 
     def coach_ai(self, path, body):
         """AI explanation of a key moment, or an answer to the player's question (needs a key in Settings)."""
