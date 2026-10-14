@@ -280,34 +280,76 @@ async function daily() {
 }
 
 // ---------- your opening tree: every branch of your first moves, with your results ----------
+// A move in plain words: "Nf3" -> "knight to f3", "exd5" -> "pawn takes on d5", "O-O" -> "castles"
+// (13 Oct test, point 21: the tree's notation was confusing for a beginner)
+const PIECE_NAME = { N: "knight", B: "bishop", R: "rook", Q: "queen", K: "king" };
+function plainMove(san) {
+  if (san.startsWith("O-O-O")) return "castles on the queen's side";
+  if (san.startsWith("O-O")) return "castles: the king goes to safety";
+  const m = /^([NBRQK])?[a-h]?[1-8]?(x)?([a-h][1-8])(?:=([NBRQ]))?([+#])?$/.exec(san);
+  if (!m) return san;
+  const piece = PIECE_NAME[m[1]] || "pawn";
+  return `${piece} ${m[2] ? "takes on" : "to"} ${m[3]}${m[4] ? `, becomes a ${PIECE_NAME[m[4]]}` : ""}${m[5] === "#" ? ", checkmate" : m[5] ? ", check" : ""}`;
+}
+
 async function openingTree() {
   shell("games", `<p class="muted">Loading…</p>`);
   const t = (await api("/api/openings")).tree || {};
   if (!t.white && !t.black) { $("#page").innerHTML = `<div class="empty">Your opening tree appears once your games are checked.</div>`; return; }
-  const label = n => `${Math.ceil(n.ply / 2)}${n.ply % 2 ? "." : "..."}${n.san}`;
-  const node = (n, depth) => {
+  const label = n => `${Math.ceil(n.ply / 2)}${n.ply % 2 ? "." : "..."} ${n.san}`;
+  const byFen = {};
+  let picked = null;
+  const node = (n, depth, white) => {
     const kids = n.children.filter(c => c.games >= 2);
-    const good = n.score >= 55, bad = n.score <= 40;
-    const row = `<div class="tree-row"><span class="tree-move num">${esc(label(n))}</span>
-      <span class="tree-name">${esc(n.name || "")}</span>
+    const good = n.score >= 55, bad = n.score <= 40, yours = (n.ply % 2 === 1) === white;
+    const key = (white ? "w " : "b ") + n.fen;  // the same position can be in both trees
+    byFen[key] = { n, white };
+    const row = `<div class="tree-row" data-fen="${esc(key)}"><span class="tree-move num">${esc(label(n))}</span>
+      <span class="tree-name"><b>${yours ? "You" : "They"}:</b> ${esc(plainMove(n.san))}${n.name ? ` <span class="faint">· ${esc(n.name)}</span>` : ""}</span>
       <span class="tree-games small muted num">${n.games} game${n.games > 1 ? "s" : ""}</span>
-      <span class="tree-score ${good ? "good" : bad ? "bad" : ""}"><i style="width:${n.score}%"></i><b class="num">${n.score}%</b></span></div>
+      <span class="tree-score ${good ? "good" : bad ? "bad" : ""}" title="How you did in the games that went this way"><i style="width:${n.score}%"></i><b class="num">${n.score}%</b></span></div>
       ${n.note ? `<div class="tree-note ${bad ? "bad" : "good"}">${esc(n.note)}</div>` : ""}`;
     if (!kids.length) return `<div class="tree-leaf">${row}</div>`;
-    return `<details class="tree-node" ${depth < 2 || n.note ? "open" : ""}><summary>${row}</summary>
-      <div class="tree-kids">${kids.map(c => node(c, depth + 1)).join("")}</div></details>`;
+    return `<details class="tree-node" ${depth < 1 || n.note ? "open" : ""}><summary>${row}</summary>
+      <div class="tree-kids">${kids.map(c => node(c, depth + 1, white)).join("")}</div></details>`;
   };
-  const side = (name, root) => root ? `<div class="box rise"><div class="row spread"><h2 style="margin:0">As ${name}</h2>
+  const side = (name, root, white) => root ? `<div class="box rise"><div class="row spread"><h2 style="margin:0">When you are ${name}</h2>
       <span class="small muted">${root.games} games · you score ${root.score}%</span></div>
-      <div class="tree">${root.children.filter(c => c.games >= 2).map(c => node(c, 0)).join("")}</div></div>` : "";
+      <div class="tree">${root.children.filter(c => c.games >= 2).map(c => node(c, 0, white)).join("")}</div></div>` : "";
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
-      <h1 style="margin-top:6px">Your opening tree</h1><p class="sub">Your first three moves in every game, and how each branch went. Score: a win is 1, a draw is half.</p></div></div>
-    <div class="grid">${side("White", t.white)}${side("Black", t.black)}</div>`;
+      <h1 style="margin-top:6px">How your games start</h1><p class="sub">Your opening tree: the first three moves of every game you played, and how each way went for you.</p></div></div>
+    <div class="game-layout">
+      <div class="stack">
+        <div class="box stack intro-box" style="padding:16px">
+          <h2 style="margin:0">How to read it</h2>
+          <p class="small" style="margin:0">Each row is one move from the start of your games. Click a row to see the board after it, and the moves that came next.</p>
+          <p class="small" style="margin:0"><b>1. e4</b> is White's first move, <b>1... e5</b> is Black's answer. The letter and number are the square: files a to h, rows 1 to 8.
+            A capital letter is the piece: N knight, B bishop, R rook, Q queen, K king. No letter means a pawn.</p>
+          <p class="small" style="margin:0">The bar is your score in the games that went that way: a win counts 1, a draw a half. <span class="good-text">Green</span> is where you do well, <span class="bad-text">red</span> is where you lose more.</p>
+        </div>
+        ${side("White", t.white, true)}${side("Black", t.black, false)}
+      </div>
+      <div class="stack tree-side"><div class="board-wrap" id="treeboard"></div><div class="box" style="padding:14px" id="treesay">
+        <p class="small muted" style="margin:0">Click a move on the left to see it here.</p></div></div>
+    </div>`;
+  Board.render($("#treeboard"), { fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" });
+  document.querySelectorAll(".tree-row[data-fen]").forEach(r => r.addEventListener("click", () => {
+    const x = byFen[r.dataset.fen];
+    if (!x) return;
+    document.querySelectorAll(".tree-row.on").forEach(e => e.classList.remove("on"));
+    r.classList.add("on");
+    picked = x.n;
+    Board.render($("#treeboard"), { fen: x.n.fen, flip: !x.white });
+    const yours = (x.n.ply % 2 === 1) === x.white;
+    $("#treesay").innerHTML = `<b>${esc(label(x.n))}</b>: ${yours ? "you played" : "they played"} ${esc(plainMove(x.n.san))}.
+      <p class="small muted" style="margin:6px 0 0">${x.n.games} of your games went this way. You scored ${x.n.score}%: ${x.n.win} won, ${x.n.draw} drawn, ${x.n.loss} lost.${x.n.name ? ` Its name: ${esc(x.n.name)}.` : ""}</p>`;
+  }));
   const worst = [t.white, t.black].filter(Boolean).flatMap(function all(n) { return [n, ...n.children.flatMap(all)]; })
     .filter(n => n.note && n.score <= 40).sort((a, b) => b.games - a.games)[0];
-  if (worst) Coach.react("maya", "point", `Look at ${label(worst)}${worst.name ? `, the ${worst.name}` : ""}. ${worst.note} Your plan has an opening that fixes this.`,
+  if (worst) Coach.react("maya", "explain", `This is how your games start. Look at ${label(worst)}${worst.name ? `, the ${worst.name}` : ""}: ${worst.note} Your plan has an opening that fixes this.`,
     [{ label: "Your plan", app: "plan" }]);
+  else Coach.react("maya", "explain", "This is how your games start, and how each way went for you. Click a move to see it on the board.");
 }
 
 // ---------- try it again: one key moment of your game, on the board, with Maya ----------

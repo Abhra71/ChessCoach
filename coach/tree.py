@@ -11,7 +11,8 @@ PLIES = 6  # three moves each: enough to see your openings, short enough to read
 MIN_NOTE = 4  # a branch needs this many games before the coach says anything about it
 
 
-def _sans(pgn, plies=PLIES):
+def _sans(pgn, plies=PLIES, fens=None):
+    """The first moves of a game in notation; fens (a list) gets the board after each one, for the page's board."""
     game = chess.pgn.read_game(io.StringIO(pgn))
     board, out = game.board(), []
     for move in game.mainline_moves():
@@ -19,6 +20,8 @@ def _sans(pgn, plies=PLIES):
             break
         out.append(board.san(move))
         board.push(move)
+        if fens is not None:
+            fens.append(board.fen())
     return out
 
 
@@ -35,10 +38,11 @@ def build(games, player, plies=PLIES):
         node, path = root, []
         root["games"] += 1
         root[result] += 1
-        for san in _sans(g["pgn"], plies):
+        fens = []
+        for san, fen in zip(_sans(g["pgn"], plies, fens), fens):
             path.append(san)
             node = node["children"].setdefault(san, {"san": san, "games": 0, "win": 0, "draw": 0, "loss": 0, "children": {},
-                                                     "name": names.get(tuple(path)), "ply": len(path)})
+                                                     "name": names.get(tuple(path)), "ply": len(path), "fen": fen})
             node["games"] += 1
             node[result] += 1
     return {side: _finish(root, root) for side, root in roots.items()}
@@ -53,6 +57,7 @@ def _finish(node, root):
     out["score"] = _score(node)
     out["name"] = node.get("name")
     out["ply"] = node.get("ply", 0)
+    out["fen"] = node.get("fen")
     if node is not root and node["games"] >= MIN_NOTE and root["loss"]:
         share = node["loss"] / root["loss"]
         if share >= 0.25 and out["score"] <= _score(root) - 10:

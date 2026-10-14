@@ -428,3 +428,7 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .share-btn { display: flex; align-items: center; gap: 8px; justify-content: flex-start; }
 .share-btn svg { width: 18px; height: 18px; flex: none; }
 .share-grid .share-btn:last-child { grid-column: span 2; }
+/* the opening tree in plain words, with a board for the move you click (point 21) */
+.tree-row { cursor: pointer; }
+.tree-row.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--text); }
+.tree-side { position: sticky; top: 16px; }
