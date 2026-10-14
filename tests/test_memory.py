@@ -24,8 +24,14 @@ def test_new_positions_come_first_in_given_order():
 
 def test_wrong_answer_comes_back_tomorrow_before_new_ones():
     memory.record_practice("a", "game", False, day=D)
-    assert memory.choose(["a", "b"], 5, today=D) == ["b"]          # not again today
+    assert memory.choose(["a", "b"], 5, today=D) == ["a", "b"]     # today's set stays the same after a rebuild
     assert memory.choose(["a", "b"], 5, today=day(1)) == ["a", "b"]  # tomorrow, first
+
+
+def test_answered_today_stay_in_todays_set_before_new_ones():
+    memory.record_practice("c", "game", True, day=D)
+    assert memory.choose(["a", "b", "c"], 2, today=D) == ["c", "a"]
+    assert memory.choose(["a", "b", "c"], 2, today=day(1)) == ["a", "b"]  # a new day: new positions first
 
 
 def test_right_answers_space_out():

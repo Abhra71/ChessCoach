@@ -5,7 +5,7 @@ import json
 import random
 from datetime import date, timedelta
 
-from coach import plan
+from coach import memory, plan
 from coach.paths import DATA
 
 FILE = DATA / "daily.json"
@@ -53,7 +53,7 @@ def challenge(home, games=None, engine=None, today=None):
     own = _own(focus, rng)
     if own:
         items.append({**own, "intro": "From your own game. " + own["intro"]})
-    puzzle = plan._puzzles(theme, home.get("rating"), rng)[:1]
+    puzzle = plan._puzzles(theme, home.get("rating"), rng, avoid=memory.seen_before(today))[:1]
     if puzzle:
         items.append({**puzzle[0], "intro": f"Today's idea: {plan.THEME_NAME[theme]}. {puzzle[0]['intro']}"})
     if engine is not None and games:

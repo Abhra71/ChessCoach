@@ -60,6 +60,12 @@ def today(ids=None, day=None):
             for e in _first_each_day() if e["day"] == day and (ids is None or e["id"] in ids)}
 
 
+def seen_before(day=None):
+    """Ids answered on an earlier day: a puzzle done before is never shown again as new (debrief points 9 and 15)."""
+    day = (day or date.today()).isoformat()
+    return {e["id"] for e in _first_each_day() if e["day"] < day}
+
+
 def record_verdict(answer, day=None):
     _append(VERDICTS, {"answer": answer, "day": (day or date.today()).isoformat()})
 
@@ -81,18 +87,22 @@ def is_due(box, last, today):
 
 
 def choose(candidate_ids, n, today=None):
-    """Up to n ids to practise today: missed ones that are due, then new ones (in the given order), then due reviews."""
+    """Up to n ids to practise today: the ones already answered today (the set stays the same all day, even when the
+    app restarts and rebuilds it), missed ones that are due, then new ones (in the given order), then due reviews."""
     today = today or date.today()
     state = boxes()
-    missed, new, review = [], [], []
+    done_today, missed, new, review = [], [], [], []
     for cid in candidate_ids:
+        if cid in state and state[cid][1] == today:
+            done_today.append(cid)
+            continue
         if cid not in state:
             new.append(cid)
             continue
         box, last = state[cid]
         if is_due(box, last, today):
             (missed if box == 0 else review).append(cid)
-    return (missed + new + review)[:n]
+    return (done_today + missed + new + review)[:n]
 
 
 def practice_stats():

@@ -260,9 +260,9 @@ def pick_puzzles(by_pattern, top, seed, rating=None):
     stock = json.loads(PUZZLES.read_text())
     rng = random.Random(seed)
     low, high = (rating or 800) - 150, (rating or 800) + 350
-    out = []
+    out, seen = [], memory.seen_before()
     for p in top:
-        every = stock.get(THEMES.get(p, ""), [])
+        every = [x for x in stock.get(THEMES.get(p, ""), []) if x["id"] not in seen] or stock.get(THEMES.get(p, ""), [])
         pool = [x for x in every if low <= x["rating"] <= high]
         if len(pool) < PUZZLES_PER_PATTERN:  # few at this level: the easiest ones there are
             pool = sorted(every, key=lambda x: x["rating"])[:PUZZLES_PER_PATTERN * 5]
