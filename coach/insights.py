@@ -195,4 +195,21 @@ def game_detail(gid):
         m["habit"] = ABOUT[classify(r)][1] if classify(r) in ABOUT else None
         key.append(m)
     return {**game_row(g, rows, player), "positions": positions, "key_moments": key,
-            "move_numbers": [move_number({"ply": i}) for i in range(1, len(positions))]}
+            "move_numbers": [move_number({"ply": i}) for i in range(1, len(positions))], **extras(g, rows, player)}
+
+
+def extras(g, rows, player):
+    """The clock coach's lines for one game, and where a rematch of a game you didn't win would start: the moment
+    that cost the most (flagships 4 and 5)."""
+    from coach import clock
+    me = _side(g, player)[0]
+    worst = max(biggest(rows), key=lambda r: r["loss"], default=None)
+    rematch = ({"ply": worst["ply"], "move_number": move_number(worst)}
+               if worst and _result(g, me) != "win" else None)
+    return {"clock": clock.game_clock(g, me, rows), "rematch": rematch}
+
+
+def extras_for(gid):
+    player, moves = _player(), _moves()
+    g = next((g for g in _games() if game_id(g["url"]) == str(gid)), None)
+    return extras(g, moves.get(g["url"], []), player) if g and player else {"clock": None, "rematch": None}

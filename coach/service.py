@@ -189,6 +189,9 @@ class Handler(BaseHTTPRequestHandler):
             # unknown game = not finished and checked yet: say nothing (fair play)
             body = {"known": rows is not None, "moments": key_moments(rows, path.rsplit("/", 1)[-1]) if rows else [],
                     "players": players_of(path.rsplit("/", 1)[-1]) if rows is not None else []}
+            if rows:  # a finished, checked game only: the clock coach and the rematch
+                from coach import insights
+                body.update(insights.extras_for(path.rsplit("/", 1)[-1]))
             return self.send(200, json.dumps(body), "application/json")
         if path == "/api/status":
             return self.send(200, json.dumps(status()), "application/json")
@@ -238,6 +241,11 @@ class Handler(BaseHTTPRequestHandler):
                 if item and item.get("drills"):
                     brief.add(item["drills"])
             return self.send(200, json.dumps(out), "application/json")
+        if path.startswith("/api/rematch/"):  # Rematch your loss: where it starts (/api/rematch/<game>/<ply>)
+            from coach import rematch
+            parts = path.split("/")
+            start = rematch.setup(parts[3], int(parts[4])) if len(parts) == 5 and parts[4].isdigit() else None
+            return self.send(200 if start else 404, json.dumps(start or {"message": "No rematch for this game."}), "application/json")
         if path.startswith("/api/try/"):  # "Try it again": a key moment of a finished, checked game as a puzzle
             from coach import drills, live_engine
             parts = path.split("/")
@@ -308,6 +316,16 @@ class Handler(BaseHTTPRequestHandler):
             memory.record_verdict(body["answer"])
             note_in_logbook(f"Your verdict on the review (\"is this me?\"): {body['answer']}")
             return self.send(200, "{}", "application/json")
+        if path == "/api/rematch/move":  # your move in a rematch, then the opponent's
+            from coach import rematch
+            try:
+                rating = max(100, min(3000, int(body.get("rating", 800))))
+                out = rematch.play(str(body["fen"]), str(body["uci"])[:5], rating, bool(body.get("white")))
+            except (KeyError, ValueError):
+                out = None
+            if out and out["over"]:
+                out["say"] = rematch.end_say(out["result"], str(body.get("real", "loss")))
+            return self.send(200 if out else 400, json.dumps(out or {"message": "That move isn't legal here."}), "application/json")
         if path == "/api/player":
             ok, message = set_player(str(body.get("username", "")))
             return self.send(200 if ok else 400, json.dumps({"ok": ok, "message": message}), "application/json")

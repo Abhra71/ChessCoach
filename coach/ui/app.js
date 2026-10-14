@@ -321,6 +321,83 @@ async function tryAgain(gid, ply) {
     [{ label: "Back to the game", app: `games/${gid}` }]), 2200) });
 }
 
+// ---------- Rematch your loss (flagship 4): the real game up to where it went wrong, then you play it out ----------
+async function rematchView(gid, ply) {
+  shell("games", `<p class="muted">Loading…</p>`);
+  let s;
+  try { s = await api(`/api/rematch/${gid}/${ply}`); }
+  catch (e) { $("#page").innerHTML = `<div class="empty">There's no rematch for this game: rematches are for games you didn't win.</div>`; return; }
+  const white = s.color === "white", history = [s], played = [];
+  let picked = null, busy = true, last = {};
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/games/${esc(gid)}" class="small muted" style="text-decoration:none">← Back to the game</a>
+      <h1 style="margin-top:6px">Rematch vs ${esc(s.opponent)} <span class="faint num">${s.rating}</span></h1>
+      <p class="sub">From move ${s.move_number}, where it went wrong. In the real game you played ${esc(s.real_move)} and ${s.real === "loss" ? "lost" : "drew"}.</p></div></div>
+    <div class="game-layout">
+      <div><div class="board-wrap" id="board"></div></div>
+      <div class="stack">
+        <div class="box stack" style="padding:16px">
+          <h2 style="margin:0">Your moves from here</h2>
+          <p class="small muted" style="margin:0">They play at about their level: the engine makes mistakes on purpose, the way a ${s.rating} player might. It's an approximation, not the person.</p>
+          <div class="movelist" id="rmoves"></div>
+          <div class="err" id="rmsg"></div>
+          <div class="row"><button class="btn" id="undo">Take back</button><button class="btn" id="again">Start again</button></div>
+        </div>
+      </div>
+    </div>`;
+  const cur = () => history[history.length - 1];
+  const mineAt = (sq) => cur().legal.some(u => u.startsWith(sq));
+  function draw() {
+    const targets = picked ? cur().legal.filter(u => u.startsWith(picked)).map(u => u.slice(2, 4)) : [];
+    const hl = { ...last };
+    if (picked) hl[picked] = "hl-pick";
+    Board.render($("#board"), { fen: cur().fen, flip: s.flip, highlights: hl, targets, onClick: click });
+    let html = "";
+    // numbered from the real game: you, then their answer
+    played.forEach((p, i) => { html += `<span class="n">${s.move_number + i}.</span><span>${esc(p[0])}</span><span>${esc(p[1] || "")}</span>`; });
+    $("#rmoves").innerHTML = html || `<span class="small muted" style="grid-column:1/-1">Your move. Not ${esc(s.real_move)} this time.</span>`;
+  }
+  async function click(sq) {
+    if (busy || cur().over) return;
+    if (picked && picked !== sq) {
+      const uci = cur().legal.find(u => u.slice(0, 4) === picked + sq);
+      if (uci) return move(uci);
+    }
+    picked = picked === sq || !mineAt(sq) ? null : sq;  // a click on the picked piece puts it down again
+    draw();
+  }
+  async function move(uci) {
+    busy = true; picked = null;
+    const before = cur();
+    let r;
+    try { r = await api("/api/rematch/move", { fen: before.fen, uci, rating: s.rating, white, real: s.real }); }
+    catch (e) { $("#rmsg").textContent = e.message; busy = false; draw(); return; }
+    // your move first, then theirs a moment later
+    last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
+    Board.render($("#board"), { fen: r.mine.fen, flip: s.flip, highlights: last });
+    Sound.move(r.mine.san);
+    played.push([r.mine.san, r.reply ? r.reply.san : null]);
+    await wait(r.reply ? 550 : 0);
+    if (r.reply) { last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san); }
+    history.push(r);
+    busy = false; draw();
+    if (played.length === 1) Coach.react("maya", "pleased", `${r.mine.san} instead of ${s.real_move}. Now play it out.`);
+    if (r.over) {
+      if (r.result === "win") confetti();
+      Coach.react("maya", r.result === "win" ? "celebrate" : r.result === "loss" ? "encourage" : "explain", r.say,
+        [{ label: "Start again", run: restart }, { label: "Back to the game", app: `games/${gid}` }]);
+    } else if (r.check) Coach.react("maya", "worried", "Check. Your king first.");
+  }
+  function restart() { history.length = 1; played.length = 0; last = {}; picked = null; draw(); }
+  $("#undo").onclick = () => { if (busy || history.length < 2) return; history.pop(); played.pop(); last = {}; picked = null; draw(); };
+  $("#again").onclick = () => { if (!busy) restart(); };
+  // the real game, its last few moves, so you see how you got here
+  for (const fen of s.lead_in) { Board.render($("#board"), { fen, flip: s.flip }); await wait(420); }
+  busy = false; draw();
+  Coach.react("maya", "explain", `Your game against ${s.opponent}, just before move ${s.move_number}. In the real game you played ${s.real_move}` +
+    ` and ${s.real === "loss" ? "lost" : "drew"}. Play something better this time, then play it out. They'll play at about their level.`);
+}
+
 // ---------- progress: Viktor's story of your week, and badges from your real games ----------
 // chess.com games and Knightwise practice counted apart, never blended (13 Oct test, point 16)
 const BADGE_SOURCES = [["From your chess.com games", ["Habits", "Clean play", "Results"]], ["From your Knightwise practice", ["Practice"]]];
@@ -558,6 +635,9 @@ async function gameView(id) {
         <div style="margin-top:12px">${Board.legend(["mine", "better", "real", "reply"])}</div></div>
       <div class="stack">
         <div class="box stack walk" id="walk"></div>
+        ${g.clock && g.clock.lines.length ? `<div class="box stack clockbox" style="padding:14px"><h2 style="margin:0">Your clock</h2>
+          ${g.clock.lines.map(l => `<p class="small" style="margin:0">${esc(l)}</p>`).join("")}
+          <p class="small faint" style="margin:0">From the clock chess.com recorded on every move. Average: ${g.clock.average} s a move.</p></div>` : ""}
         <div class="box stack" style="padding:14px"><h2 style="margin:0">Ask the coach about this position</h2><div id="askbox"></div></div>
         <details class="box" style="padding:12px"><summary><b>All moves</b> <span class="small muted">click one to see the board there</span></summary>
           <div class="movelist" id="moves" style="margin-top:10px"></div></details>
@@ -599,6 +679,7 @@ async function gameView(id) {
         : `${k.habit ? `<div class="small"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
           ${explained[k.ply] ? `<div class="coach-says">${esc(explained[k.ply])}</div>` : ""}
           <div class="row"><a class="btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a>
+            ${g.result !== "win" ? `<a class="btn" href="#/rematch/${g.id}/${k.ply}" title="Play the game on from here against the engine, at their level">Rematch from here</a>` : ""}
             ${mi < moments.length - 1 ? `<button class="btn" id="nextmoment">Next moment ▶</button>` : ""}
             ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}">Explain like a coach</button>` : ""}</div>`}`;
     w.querySelectorAll("[data-m]").forEach(b => b.onclick = () => open(Number(b.dataset.m)));
@@ -959,6 +1040,7 @@ async function route() {
     if (name === "progress") return await progressView();
     if (name === "openings") return await openingTree();
     if (name === "try") return await tryAgain(arg, location.hash.split("/")[3]);
+    if (name === "rematch") return await rematchView(arg, location.hash.split("/")[3]);
     if (name === "extension") return await extensionView();
     if (name === "settings") return await settingsView();
     return await home();
