@@ -897,7 +897,19 @@ async function settingsView() {
         Without one it uses the engine's built-in sentences. Keys are kept in Windows Credential Manager, encrypted for your Windows account,
         and are only sent to the provider you choose.</p>
         <button class="btn" id="aicompare" style="margin-top:8px">What AI adds</button></div>
-        <div class="grid">${slot("slot1", 1)}${slot("slot2", 2)}<p class="note">Key 2 is used when key 1 fails or runs out.</p></div></div>
+        <div class="grid">${slot("slot1", 1)}${slot("slot2", 2)}<p class="note">Key 2 is used when key 1 fails or runs out.</p>
+          <details class="keyguide"><summary><b>How to get a free key</b> <span class="small muted">about 2 minutes, never shown to anyone else</span></summary>
+            <p class="small"><b>Under 18?</b> Ask a parent or guardian to make the key with you: Groq's and Google's terms are for adults, or need a parent's permission.</p>
+            <ol class="small">
+              <li><b>Groq</b> (recommended, free, no card): press <b>Get a Groq key ↗</b> above. console.groq.com opens in your browser.</li>
+              <li>Sign in with a Google account or an email address. It asks for no card and no payment.</li>
+              <li>On the <b>API Keys</b> page, press <b>Create API Key</b>, give it a name such as Knightwise, and press <b>Submit</b>.</li>
+              <li>Copy the key it shows (it starts with <b>gsk_</b>). It is shown only once.</li>
+              <li>Come back here, paste it into Key 1, and press <b>Save key</b>, then <b>Test key</b>. A green line means it works.</li>
+            </ol>
+            <p class="small muted">For a second key, Google Gemini works the same way at aistudio.google.com: <b>Get API key</b>, then <b>Create API key</b>. Put it in Key 2.
+              Keys stay in Windows Credential Manager on this PC, are sent only to the provider you picked, and never to Knightwise.</p>
+          </details></div></div>
       <div class="settings-row"><div><h3>Arrows on chess.com</h3><p class="note">The browser extension.</p></div>
         <div class="row">${connectedIn(st)}</div></div>
       <div class="settings-row"><div><h3>chess.com check</h3><p class="note">chess.com changes its site now and then. Knightwise checks everything it uses there, each time.</p></div>
