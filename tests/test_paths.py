@@ -48,3 +48,14 @@ def test_try_fresh_uses_its_own_folder(monkeypatch, tmp_path):
     monkeypatch.setenv("KNIGHTWISE_HOME", str(tmp_path))
     assert paths.home_for("Abhra71.Knightwise_x", frozen=True) == tmp_path
     assert paths.home_for(None, frozen=False) == tmp_path
+
+
+def test_an_older_running_copy_is_replaced_never_a_newer_one():
+    from coach.app import _older
+    assert _older("0", "0.5.0") and _older("0.4.1", "0.5.0") and _older("0.5.0", "0.5.1")
+    assert not _older("0.5.0", "0.5.0") and not _older("0.6.0", "0.5.0")
+
+
+def test_version_comes_from_the_extension():
+    from coach.paths import VERSION
+    assert VERSION.count(".") == 2

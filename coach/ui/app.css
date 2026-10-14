@@ -141,6 +141,21 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .moment:hover { border-color: var(--line-strong); }
 .moment.on { border-color: var(--text); border-left: 3px solid var(--red); }
 .moment .what { font-weight: 650; }
+/* the review, one key moment at a time: its steps appear one by one */
+.walk { padding: 16px; }
+.walk .what { font-weight: 650; }
+.walk .dots { display: flex; gap: 6px; }
+.walk .dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--line-strong); background: transparent; padding: 0; cursor: pointer; }
+.walk .dot.on { background: var(--text); border-color: var(--text); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.step { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; background: var(--surface);
+        animation: step-in .35s ease-out; }
+.step:hover { border-color: var(--line-strong); }
+.step.on { border-color: var(--text); }
+.step .tag { display: block; font-weight: 650; margin-bottom: 3px; }
+.step .tag i { display: inline-block; width: 16px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 8px; }
+@keyframes step-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .step { animation: none; } }
 .controls { display: flex; gap: 6px; margin-top: 12px; }
 .controls .btn { padding: 6px 12px; }
 .movelist { max-height: 240px; overflow: auto; font-size: 14.5px; display: grid; grid-template-columns: 34px 1fr 1fr; row-gap: 2px; }

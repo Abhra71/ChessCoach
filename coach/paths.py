@@ -69,6 +69,17 @@ TEMPLATES = Path(__file__).resolve().parent
 ICON = APP / "extension" / "icon128.png"
 
 
+def _version():
+    import json
+    try:
+        return json.loads((BUNDLED_EXTENSION / "manifest.json").read_text(encoding="utf-8"))["version"]
+    except (OSError, ValueError, KeyError):
+        return "0"
+
+
+VERSION = _version()  # the extension and the app always ship together, with one version number
+
+
 def place_extension():
     """Store app: copy the browser extension where Chrome can load it, again whenever the app brings a newer one."""
     if not PACKAGED:

@@ -26,6 +26,36 @@ def ask_running_copy(route):
         return False
 
 
+def _older(running, mine):
+    as_tuple = lambda v: tuple(int(x) for x in str(v).split(".") if x.isdigit()) or (0,)
+    return as_tuple(running) < as_tuple(mine)
+
+
+def replace_older_copy():
+    """An older Knightwise still running (it starts with Windows) would answer for this one: on 14 Oct an installed
+    0.4.1 held the port and the 0.5.0 test copy quietly gave way to it. Close that older copy. True if it closed."""
+    import subprocess
+    from coach import service
+    from coach.paths import VERSION
+    try:
+        running = json.loads(urllib.request.urlopen(f"{service.URL}/api/status", timeout=3).read()).get("version", "0")
+    except (OSError, ValueError):
+        return False
+    if not _older(running, VERSION) or sys.platform != "win32":
+        return False
+    quiet = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    lines = subprocess.run(["netstat", "-ano", "-p", "TCP"], capture_output=True, text=True, creationflags=quiet).stdout
+    pids = {ln.split()[-1] for ln in lines.splitlines() if f"127.0.0.1:{service.PORT} " in ln and "LISTENING" in ln}
+    for pid in pids:
+        image = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True,
+                               creationflags=quiet).stdout.lower()
+        if "chesscoach.exe" in image or "python" in image:  # only ever Knightwise itself
+            subprocess.run(["taskkill", "/PID", pid, "/F"], capture_output=True, creationflags=quiet)
+    import time
+    time.sleep(1.5)
+    return bool(pids)
+
+
 def tray(show, quit_app):
     import pystray
     from PIL import Image
@@ -111,6 +141,8 @@ def main():
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(service.APP_ID)
     server = service.start()
+    if server is None and replace_older_copy():
+        server = service.start()
     if server is None:  # already running: bring that window forward instead
         ask_running_copy(route)
         return

@@ -537,22 +537,15 @@ async function games() {
   document.querySelectorAll("tr.click").forEach(tr => tr.onclick = () => go(`games/${tr.dataset.id}`));
 }
 
-// After your move: what they could have played, and what they really played. Never one passed off as the other.
-function afterLine(k, plain) {
-  const b = s => plain ? s : `<b>${esc(s)}</b>`;
-  if (!k.reply_san) return `You played ${b(k.move)}.`;
-  if (k.reply_missed) return `You played ${b(k.move)}. Their best reply was ${b(k.reply_san)}, but in the game they missed it and played ${b(k.real_reply_san)}.`;
-  if (k.real_reply_san) return `You played ${b(k.move)}, and they found the best reply, ${b(k.reply_san)}.`;
-  return `You played ${b(k.move)}. Their best reply would have been ${b(k.reply_san)}.`;
-}
-
+// Game review, one key moment at a time (debrief points 17, 18 and 42): You played, Better, They replied, Their
+// better, one step at a time with Maya saying each one. All the moments are one click away, and so is every move.
 async function gameView(id) {
   shell("games", `<p class="muted">Loading…</p>`);
   const [g, cfg] = await Promise.all([api(`/api/games/${id}`), api("/api/settings")]);
   const aiReady = Object.values(cfg.slots).some(x => x.set);
-  const explained = {};
-  const flip = g.color === "black", keyPly = new Set(g.key_moments.map(m => m.ply));
-  let ply = g.key_moments.length ? g.key_moments[0].ply - 1 : g.positions.length - 1, view = "before";
+  const explained = {}, moments = g.key_moments, keyPly = new Set(moments.map(m => m.ply));
+  const flip = g.color === "black";
+  let mi = 0, si = 0, shown = 0, free = !moments.length, ply = moments.length ? moments[0].ply - 1 : g.positions.length - 1;
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
       <h1 style="margin-top:6px">vs ${esc(g.opponent)} <span class="faint num">${g.opponent_rating}</span></h1>
@@ -562,50 +555,20 @@ async function gameView(id) {
       <div><div class="board-wrap" id="board"></div>
         <div class="controls"><button class="btn" data-go="0">⏮</button><button class="btn" data-go="-1">◀</button>
           <button class="btn" data-go="1">▶</button><button class="btn" data-go="end">⏭</button></div>
-        <div style="margin-top:12px">${Board.legend(["better", "mine", "reply", "real"])}</div></div>
+        <div style="margin-top:12px">${Board.legend(["mine", "better", "real", "reply"])}</div></div>
       <div class="stack">
-        <h2>${g.key_moments.length ? `${g.key_moments.length} key moments` : "No big mistakes in this game"}</h2>
-        <div class="stack" id="moments"></div>
+        <div class="box stack walk" id="walk"></div>
         <div class="box stack" style="padding:14px"><h2 style="margin:0">Ask the coach about this position</h2><div id="askbox"></div></div>
-        <div class="box" style="padding:12px"><h2>Moves</h2><div class="movelist" id="moves"></div></div>
+        <details class="box" style="padding:12px"><summary><b>All moves</b> <span class="small muted">click one to see the board there</span></summary>
+          <div class="movelist" id="moves" style="margin-top:10px"></div></details>
       </div>
     </div>`;
-  const momentAt = p => g.key_moments.find(m => m.ply === p + 1 && view === "before") || g.key_moments.find(m => m.ply === p && view === "after");
-  function draw() {
-    const pos = g.positions[ply], m = momentAt(ply), hl = {};
-    if (pos.uci && !m) { hl[pos.uci.slice(0, 2)] = "hl-last"; hl[pos.uci.slice(2, 4)] = "hl-last"; }
-    const arrows = !m ? [] : view === "before"
-      ? [{ from: m.best_uci.slice(0, 2), to: m.best_uci.slice(2, 4), kind: "better" }, { from: m.move_uci.slice(0, 2), to: m.move_uci.slice(2, 4), kind: "mine" }]
-      : [{ from: m.move_uci.slice(0, 2), to: m.move_uci.slice(2, 4), kind: "mine" }]
-        .concat(m.reply_uci ? [{ from: m.reply_uci.slice(0, 2), to: m.reply_uci.slice(2, 4), kind: "reply" }] : [])
-        .concat(m.reply_missed ? [{ from: m.real_reply_uci.slice(0, 2), to: m.real_reply_uci.slice(2, 4), kind: "real" }] : []);
+  const stepPly = (k, st) => st.board === "before" ? k.ply - 1 : k.ply;
+  function board() {
+    const k = moments[mi], st = !free && k ? k.steps[si] : null, pos = g.positions[ply], hl = {};
+    if (!st && pos.uci) { hl[pos.uci.slice(0, 2)] = "hl-last"; hl[pos.uci.slice(2, 4)] = "hl-last"; }
+    const arrows = st ? st.arrows.map(([u, kind]) => ({ from: u.slice(0, 2), to: u.slice(2, 4), kind })) : [];
     Board.render($("#board"), { fen: pos.fen, flip, highlights: hl, arrows });
-    $("#moments").innerHTML = g.key_moments.map((k, i) => `<div class="moment ${k === m ? "on" : ""}" data-i="${i}">
-      <div class="row spread"><span class="what">Move ${k.move_number} · ${esc(cap(k.pattern))}</span>
-        <span class="row" style="gap:10px"><span class="small faint" title="How much of your chance to win this move cost">−${Math.round(k.loss)}% win chance</span><a class="btn small-btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a></span></div>
-      <div style="margin-top:4px">${esc(k.say)}</div>
-      ${k === m ? `<div class="small muted" style="margin-top:6px">${view === "before" ? `You played <b>${esc(k.move)}</b>, ${k.grade === "Inaccuracy" ? "an" : "a"} ${esc(k.grade.toLowerCase())} · better was <b>${esc(k.best)}</b>` : afterLine(k)}</div>
-        ${k.habit ? `<div class="small" style="margin-top:6px"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
-        ${explained[k.ply] ? `<div class="coach-says" style="margin-top:10px">${esc(explained[k.ply])}</div>` : ""}
-        ${aiReady && !explained[k.ply] ? `<button class="btn" style="margin-top:10px;margin-right:6px" data-explain="${k.ply}">Explain like a coach</button>` : ""}
-        <button class="btn" style="margin-top:10px" data-view="${view === "before" ? "after" : "before"}">${view === "before" ? "What happened next" : "Show the better move"}</button>` : ""}
-    </div>`).join("");
-    $("#moments").querySelectorAll("[data-explain]").forEach(b => b.onclick = async e => {
-      e.stopPropagation();
-      b.disabled = true; b.textContent = "Thinking…";
-      try {
-        const r = await api("/api/explain", { game: g.id, ply: Number(b.dataset.explain) });
-        explained[Number(b.dataset.explain)] = r.text; draw(); Coach.react("maya", "explain", r.text);
-      } catch (err) { b.textContent = err.message.slice(0, 80); }
-    });
-    $("#moments").querySelectorAll(".moment").forEach(el => el.onclick = e => {
-      const k = g.key_moments[Number(el.dataset.i)];
-      view = e.target.dataset.view || "before";
-      ply = view === "before" ? k.ply - 1 : k.ply; draw();
-      // Maya explains the better move, and looks worried at what your move allowed
-      if (view === "before") Coach.react("maya", "explain", `Move ${k.move_number}. ${cap(k.pattern)}. ${k.say} The better move was ${k.best}.`);
-      else Coach.react("maya", k.reply_missed ? "explain" : "worried", afterLine(k, true));
-    });
     let html = "";
     for (let i = 1; i < g.positions.length; i += 2) {
       html += `<span class="n">${(i + 1) / 2}.</span>`;
@@ -613,22 +576,70 @@ async function gameView(id) {
         ? `<span data-p="${j}" class="${j === ply ? "cur" : ""} ${keyPly.has(j) ? "key" : ""}">${esc(g.positions[j].san)}</span>` : "<span></span>";
     }
     $("#moves").innerHTML = html;
-    $("#moves").querySelectorAll("span[data-p]").forEach(s => s.onclick = () => { ply = Number(s.dataset.p); view = "after"; draw(); });
+    $("#moves").querySelectorAll("span[data-p]").forEach(el => el.onclick = () => { ply = Number(el.dataset.p); free = true; draw(); });
   }
+  function draw() {
+    board();
+    const w = $("#walk");
+    if (!moments.length) {
+      w.innerHTML = `<h2 style="margin:0">No big mistakes in this game</h2><p class="muted">Every move kept your position. Step through it with the arrows under the board.</p>`;
+      return;
+    }
+    const k = moments[mi];
+    w.innerHTML = `
+      <div class="row spread"><h2 style="margin:0">Key moment ${mi + 1} of ${moments.length}</h2>
+        <div class="dots">${moments.map((m, i) => `<button class="dot ${i === mi ? "on" : ""}" data-m="${i}" title="Move ${m.move_number}" aria-label="Key moment ${i + 1}, move ${m.move_number}"></button>`).join("")}</div></div>
+      <div class="row spread"><span class="what">Move ${k.move_number} · ${esc(cap(k.pattern))}</span>
+        <span class="small faint" title="How much of your chance to win this move cost">−${Math.round(k.loss)}% win chance</span></div>
+      <ol class="steps">${k.steps.slice(0, shown + 1).map((st, i) => `<li class="step ${!free && i === si ? "on" : ""}" data-s="${i}">
+        <span class="tag"><i style="background:${Board.KIND[st.kind].color}"></i>${esc(st.title)}${st.san ? ` <b>${esc(st.san)}</b>` : ""}</span>
+        <div class="small">${esc(st.text)}</div></li>`).join("")}</ol>
+      ${shown < k.steps.length - 1 ? `<div class="row"><button class="btn primary" id="nextstep">Next: ${esc(k.steps[shown + 1].title)} ▶</button>
+          <button class="btn" id="allsteps">Show all steps</button></div>`
+        : `${k.habit ? `<div class="small"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
+          ${explained[k.ply] ? `<div class="coach-says">${esc(explained[k.ply])}</div>` : ""}
+          <div class="row"><a class="btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a>
+            ${mi < moments.length - 1 ? `<button class="btn" id="nextmoment">Next moment ▶</button>` : ""}
+            ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}">Explain like a coach</button>` : ""}</div>`}`;
+    w.querySelectorAll("[data-m]").forEach(b => b.onclick = () => open(Number(b.dataset.m)));
+    w.querySelectorAll("[data-s]").forEach(li => li.onclick = () => pick(Number(li.dataset.s)));
+    const ns = $("#nextstep"); if (ns) ns.onclick = () => { shown++; pick(shown); };
+    const all = $("#allsteps"); if (all) all.onclick = () => { shown = k.steps.length - 1; pick(shown, false); };
+    const nm = $("#nextmoment"); if (nm) nm.onclick = () => open(mi + 1);
+    w.querySelectorAll("[data-explain]").forEach(b => b.onclick = async () => {
+      b.disabled = true; b.textContent = "Thinking…";
+      try {
+        const r = await api("/api/explain", { game: g.id, ply: Number(b.dataset.explain) });
+        explained[Number(b.dataset.explain)] = r.text; draw(); Coach.react("maya", "explain", r.text);
+      } catch (err) { b.textContent = err.message.slice(0, 80); }
+    });
+  }
+  // show one step: its board, its arrows, and Maya says it (worried when it went wrong for you)
+  function pick(i, speak = true) {
+    const k = moments[mi], st = k.steps[i];
+    si = i; free = false; ply = stepPly(k, st);
+    draw();
+    const bad = st.kind === "mine" || (st.kind === "real" && !k.reply_missed && k.real_reply_san);
+    if (speak) Coach.react("maya", bad ? "worried" : "explain", st.text);
+  }
+  function open(i) { mi = i; shown = 0; pick(0); }
   askBox($("#askbox"), { placeholder: "Why is my bishop in danger here?", coach: "maya", enabled: aiReady, listen: cfg.listen_ready,
-    onAsk: q => { const m = momentAt(ply); return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: m ? m.ply : null }); } });
+    onAsk: q => { const k = moments[mi]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: !free && k ? k.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
-    const v = b.dataset.go; view = "before";
-    const was = ply;
+    const v = b.dataset.go, was = ply;
     ply = v === "0" ? 0 : v === "end" ? g.positions.length - 1 : Math.max(0, Math.min(g.positions.length - 1, ply + Number(v)));
+    free = true;
     if (ply === was + 1) Sound.move(g.positions[ply].san);
     draw();
   });
   draw();
-  // Maya welcomes you to the review at once (13 Oct test: she only came after a moment was clicked), with her pick
-  const worst = g.key_moments.reduce((a, b) => (b.loss > (a ? a.loss : -1) ? b : a), null);
-  if (worst) Coach.react("maya", "explain", `${g.key_moments.length} key moment${g.key_moments.length === 1 ? "" : "s"} in this game. My pick: start with move ${worst.move_number}, it cost you the most.`,
-    [{ label: `Move ${worst.move_number}`, run: () => { const el = $(`#moments .moment[data-i="${g.key_moments.indexOf(worst)}"]`); if (el) el.click(); } }]);
+  // Maya welcomes you at once (13 Oct test: she only came after a moment was clicked): how many, which cost most
+  const worst = moments.reduce((a, b) => (b.loss > (a ? a.loss : -1) ? b : a), null);
+  if (worst) Coach.react("maya", "explain",
+    `${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game, and we'll take them one at a time. ` +
+    (moments.length < 2 ? `It's move ${worst.move_number}. ` : worst === moments[0] ? `The first one, move ${worst.move_number}, cost you the most. `
+      : `First move ${moments[0].move_number}; move ${worst.move_number} cost you the most. `) + "Press Next when you're ready.",
+    [{ label: `Start with move ${moments[0].move_number}`, run: () => pick(0) }]);
   else Coach.react("maya", "celebrate", "No big mistakes in this game. That's how it's done.");
 }
 

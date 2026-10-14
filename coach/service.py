@@ -24,7 +24,7 @@ import chess
 import chess.pgn
 
 from coach import analyze, drills, fetch, health, memory, puzzles, review, settings
-from coach.paths import BUNDLED_EXTENSION, DATA, EXTENSION, FROZEN, LOGBOOK, NAME, PACKAGE, TEMPLATES
+from coach.paths import BUNDLED_EXTENSION, DATA, EXTENSION, FROZEN, LOGBOOK, NAME, PACKAGE, TEMPLATES, VERSION
 from coach.patterns import classify
 from coach.review import explain, move_number
 
@@ -86,10 +86,12 @@ def moment(r, played=None):
     after.push(mine)
     best_reply = chess.Move.from_uci(r["reply_pv"][0]) if r["reply_pv"] else None
     real = played[r["ply"]] if played and len(played) > r["ply"] else None  # their real answer, if the game went on
-    say = explain(pattern, r) if pattern else f"Better was {r['best']}."
+    why = explain(pattern, r) if pattern else f"Better was {r['best']}."
+    say = why
     if real and best_reply and real != best_reply:
         say += f" In the game they missed it and played {after.san(real)}."
     return {
+        "steps": walk(r, mine, best, best_reply, real, after, why),
         "ply": r["ply"], "move_number": move_number(r), "color": r["color"],
         "placement": r["fen"].split()[0],  # the board just before the player's move
         "after_placement": _after(r["fen"], mine),
@@ -104,6 +106,38 @@ def moment(r, played=None):
         "say": say,
         "loss": r["loss"],
     }
+
+
+def walk(r, mine, best, best_reply, real, after, why):
+    """One key moment told one step at a time (debrief points 17, 18, 42): You played, Better, They replied, Their
+    better. Each step says which board it's on ("before" or "after" your move) and its arrows."""
+    g = grade(r["loss"])
+    a = "an" if g[0] in "AEIOU" else "a"
+    steps = [{"kind": "mine", "title": "You played", "san": r["move"], "board": "before",
+              "text": f"You played {r['move']}, {a} {g.lower()}.", "arrows": [[mine.uci(), "mine"]]}]
+    if best != mine:
+        steps.append({"kind": "better", "title": "Better", "san": r["best"], "board": "before",
+                      "text": f"Better was {r['best']}. It kept about {round(r['loss'])}% more of your chance to win.",
+                      "arrows": [[best.uci(), "better"], [mine.uci(), "mine"]]})
+    else:
+        steps.append({"kind": "better", "title": "Better", "san": None, "board": "before",
+                      "text": "That was already the best move here.", "arrows": [[mine.uci(), "mine"]]})
+    if real and real == best_reply:
+        steps.append({"kind": "real", "title": "They replied", "san": after.san(real), "board": "after",
+                      "text": f"They replied {after.san(real)}, their best answer. {why}", "arrows": [[real.uci(), "real"]]})
+    elif real:
+        steps.append({"kind": "real", "title": "They replied", "san": after.san(real), "board": "after",
+                      "text": f"They replied {after.san(real)}." + (" They missed something better." if best_reply else ""),
+                      "arrows": [[real.uci(), "real"]]})
+        if best_reply:
+            steps.append({"kind": "reply", "title": "Their better", "san": after.san(best_reply), "board": "after",
+                          "text": f"Their best was {after.san(best_reply)}. {why} You got away with it this time.",
+                          "arrows": [[best_reply.uci(), "reply"], [real.uci(), "real"]]})
+    elif best_reply:  # the game ended after your move (they resigned, or time ran out)
+        steps.append({"kind": "reply", "title": "Their best reply", "san": after.san(best_reply), "board": "after",
+                      "text": f"The game ended here. Their best reply would have been {after.san(best_reply)}. {why}",
+                      "arrows": [[best_reply.uci(), "reply"]]})
+    return steps
 
 
 def played_moves(gid):
@@ -577,7 +611,7 @@ def player():
 
 
 def status():
-    return {"player": player(), "last_update": STATE.get("last_update"), "phase": STATE.get("phase"),
+    return {"version": VERSION, "player": player(), "last_update": STATE.get("last_update"), "phase": STATE.get("phase"),
             "done": STATE.get("done", 0), "total": STATE.get("total", 0), "error": STATE.get("error"),
             "review_ready": (DATA / "review.html").exists(), "extension_seen": STATE.get("extension_seen"),
             "extension_in": STATE.get("extension_in", {}), "health": health.summary(),
