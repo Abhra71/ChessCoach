@@ -6,7 +6,7 @@ const COACHES = {
   maya: { name: "Maya", voice: "af_heart", role: "Your games and practice" },
   viktor: { name: "Viktor", voice: "am_michael", role: "Your progress and plan" },
 };
-const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress", level: "plan", endgames: "plan", calc: "plan" };
+const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress", level: "plan", endgames: "plan", calc: "plan", repertoire: "plan" };
 
 const Coach = (() => {
   let box = null, said = null, foldTimer = null, quiet = null;
@@ -360,7 +360,8 @@ async function planView(arg) {
 }
 
 function lessonView(item) {
-  const back = item.back === "level" ? `<a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>`
+  const back = item.back === "repertoire" ? `<a href="#/repertoire" class="small muted" style="text-decoration:none">← Your repertoire</a>`
+    : item.back === "level" ? `<a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>`
     : `<a href="#/plan" class="small muted" style="text-decoration:none">← Your plan</a>`;
   api("/api/plan/mark", { id: item.id }).catch(() => {});
   if (item.kind === "idea") {  // a way of thinking, practised on your own positions with its checklist

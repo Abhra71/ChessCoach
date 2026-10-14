@@ -109,7 +109,7 @@ LEVELS = [
         ("convert1", "Turn winning games into wins", "winning games you won", _conversion, 70, "min", "%",
          ("Train it", "endgame/pawn")),
         ("develop", "Start well", "games with 3 pieces out and castled by move 12", _development, 60, "min", "%",
-         ("Your opening tree", "openings")),
+         ("Your repertoire", "repertoire")),
     ]),
     ("club", "Fewer mistakes", "about 1,200 to 1,600", [
         ("blunders2", "Rarely a big mistake", "big mistakes a game", _losses(20), 0.6, "max", "a game",

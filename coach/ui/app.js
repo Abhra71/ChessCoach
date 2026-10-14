@@ -546,7 +546,7 @@ async function levelView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your level</h1>
       <p class="sub">Five levels from beginner to 2,000+, measured on your last ${p.games} games. A level is done when every skill meets its goal.</p></div>
-      <div class="row"><a class="btn" href="#/calc">See it in your head</a><a class="btn" href="#/endgames">Endgame trainer</a></div></div>
+      <div class="row"><a class="btn" href="#/repertoire">Your repertoire</a><a class="btn" href="#/calc">See it in your head</a><a class="btn" href="#/endgames">Endgame trainer</a></div></div>
     <div class="stack">${p.levels.map(level).join("")}</div>
     <p class="note">The goals are our first estimate of each level, and we'll tune them on real players' games. They don't promise a rating; your games show the progress.</p>`;
   const next = cur.skills.find(s => s.met === false);
@@ -561,6 +561,24 @@ async function themeLesson(theme) {
   shell("level", `<p class="muted">Loading…</p>`);
   const item = await api(`/api/lesson/${encodeURIComponent(theme)}`);
   return lessonView({ ...item, back: "level" });
+}
+
+// ---------- your repertoire: three opening lines to know by heart (0.8) ----------
+async function repertoireView(fresh) {
+  shell("level", `<p class="muted">Choosing your lines…</p>`);
+  const lines = await api(`/api/repertoire${fresh ? "?fresh=1" : ""}`);
+  const slot = l => l.side === "white" ? "As White" : `As Black, against 1. ${l.against}`;
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+      <h1 style="margin-top:6px">Your repertoire</h1>
+      <p class="sub">Three lines to know by heart, chosen from what you already play: from the Lichess opening catalogue, checked by Stockfish. They stay until you ask for new ones.</p></div>
+      <button class="btn" id="newlines">Choose new lines</button></div>
+    <div class="plan-grid">${lines.map((l, i) => `<div class="box plan-card"><div class="plan-text">
+      <div class="label">${esc(slot(l))}${l.kept ? " · you already play this" : ""}</div>
+      <h3>${esc(l.name)}</h3><p class="muted small">${l.kept ? "It works for you: now learn it to move 6." : l.style === "solid" ? "Solid and safe, and hard to get tricked in." : "A clear plan from the first moves."}</p>
+      <a class="btn primary" href="#/repertoire/${i}">Practise it</a></div></div>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
+  $("#newlines").onclick = () => repertoireView(true);
+  Coach.react("viktor", "explain", "Three lines. Know them to move six without thinking, and every game starts on your terms.");
 }
 
 // ---------- the endgame trainer: the endings every player must know, against the best defence (0.7) ----------
@@ -1426,6 +1444,8 @@ async function screen(name, arg) {
   if (name === "level") return await levelView();
   if (name === "endgames") return await endgamesView();
   if (name === "calc") return await calcView();
+  if (name === "repertoire" && arg) { shell("level", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
+  if (name === "repertoire") return await repertoireView();
   if (name === "prep") return await prepView(arg && decodeURIComponent(arg));
   if (name === "clockdrill") { shell("level", `<p class="muted">Finding your rushed moves…</p>`); return lessonView({ ...(await api("/api/clockdrill")), back: "level" }); }
   if (name === "endgame") return await endgameView(arg);

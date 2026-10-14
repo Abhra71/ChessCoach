@@ -285,6 +285,21 @@ class Handler(BaseHTTPRequestHandler):
             from coach import brief, drills
             items = drills.calculation(insights.home().get("rating"), time.strftime("%Y-%m-%d"))
             return self.send(200, json.dumps(brief.add(items)), "application/json")
+        if path == "/api/repertoire" or path.startswith("/api/repertoire/"):  # your three opening lines (0.8)
+            from coach import brief, live_engine, repertoire
+            from urllib.parse import parse_qs, urlsplit
+            fresh = parse_qs(urlsplit(self.path).query).get("fresh") == ["1"]
+            with live_engine.LOCK:
+                lines = repertoire.build(live_engine.get(), fresh=fresh)
+            if path == "/api/repertoire":
+                return self.send(200, json.dumps([{k: l[k] for k in ("id", "name", "side", "against", "style", "kept")}
+                                                  for l in lines]), "application/json")
+            i = path.rsplit("/", 1)[-1]
+            if not i.isdigit() or int(i) >= len(lines):
+                return self.send(404, json.dumps({"message": "No such line."}), "application/json")
+            item = repertoire.lesson(lines[int(i)])
+            brief.add(item["drills"])
+            return self.send(200, json.dumps(item), "application/json")
         if path == "/api/ladder":  # your level: every skill from beginner to 2,000+, on your last 20 games (0.6)
             from coach import ladder
             return self.send(200, json.dumps(ladder.page()), "application/json")
