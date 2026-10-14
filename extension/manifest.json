@@ -19,6 +19,7 @@
       ],
       "js": [
         "contract.js",
+        "pieces.js",
         "faces.js",
         "coach.js",
         "buddy.js"

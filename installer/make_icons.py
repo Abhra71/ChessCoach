@@ -14,7 +14,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 EDGE = Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
-PIECES = ROOT / "coach" / "ui" / "pieces.js"
+PIECES = ROOT / "extension" / "pieces.js"
 ASSETS = ROOT / "installer" / "msix" / "Assets"
 SIZE = 2160  # the Store asks for 2160x2160 box art
 

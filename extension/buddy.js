@@ -121,8 +121,8 @@
 
   // ---- the warm-up before you play: three positions from today's practice, right here on chess.com's home ----
   // Only on the home page (no game can be running there); leaving the page ends it. Answers count as practice.
-  // the solid shapes for both sides, coloured: the outline shapes looked faint on chess.com (14 Oct)
-  const GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟︎" };
+  // the app's own piece drawings (pieces.js): Windows drew the chess symbols as fixed-colour emoji (14 Oct)
+  const piece = p => `<svg viewBox="0 0 45 45">${PIECES[p]}</svg>`;
   let warm = null;
   async function warmup() {
     const r = await send({ type: "warmup" });
@@ -146,7 +146,7 @@
     for (const r of ranks) for (const f of files) {
       const sq = f + r, p = x.board[sq], dark = ("abcdefgh".indexOf(f) + Number(r)) % 2 === 1 ? " dark" : "";
       const cls = `kw-sq${dark}${sq === warm.picked ? " pick" : ""}${last.includes(sq) ? " last" : ""}${targets.includes(sq) ? (p ? " take" : " dot") : ""}`;
-      cells += `<button class="${cls}" data-sq="${sq}">${p ? `<span class="${p === p.toUpperCase() ? "w" : "b"}">${GLYPH[p.toLowerCase()]}</span>` : ""}</button>`;
+      cells += `<button class="${cls}" data-sq="${sq}">${p ? piece(p) : ""}</button>`;
     }
     const face = `<button class="kw-char" title="${esc(said.name)}">${KnightwiseFaces.figure(said.coach, said.pose || "explain")}</button>`;
     box.className = "kw-coach open";
