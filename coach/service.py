@@ -233,6 +233,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(brief.add(stock)), "application/json")
         if path == "/api/settings":
             return self.send(200, json.dumps(settings.public()), "application/json")
+        if path == "/api/ai-usage":  # the usage panel: today's AI use per key, what's left, who is resting
+            from coach import ai
+            cfg, use = settings.load(), ai.usage()
+            slots = [{"slot": s, "provider": cfg[s]["provider"], "name": settings.PROVIDERS[cfg[s]["provider"]]["name"],
+                      **use[cfg[s]["provider"]]} for s in settings.SLOTS if settings.get_key(s)]
+            return self.send(200, json.dumps({"slots": slots}), "application/json")
         if path in ("", "/app", "/welcome"):  # the desktop app (it shows the welcome screen itself when needed)
             return self.send(200, (UI / "index.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/plan":  # "Your plan": one opening, tactic, idea, endgame, and the new thing if it's needed now

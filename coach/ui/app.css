@@ -439,3 +439,10 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .keyguide { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
 .keyguide summary { cursor: pointer; }
 .keyguide ol { margin: 8px 0; padding-left: 20px; display: grid; gap: 4px; }
+
+/* AI usage: a line in the sidebar and a small panel */
+.side-ai { display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 6px 10px; margin-top: 6px;
+  font: inherit; font-size: 13.5px; color: var(--muted); cursor: pointer; border-radius: 8px; text-align: left; }
+.side-ai:hover { background: var(--raised); color: var(--text); }
+.ai-pop { position: fixed; left: 230px; bottom: 24px; width: 340px; z-index: 50; animation: rise .25s ease-out both; }
+.ai-row { margin-top: 14px; } .ai-row .bar { margin: 6px 0 4px; }

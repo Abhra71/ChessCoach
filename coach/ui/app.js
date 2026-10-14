@@ -194,15 +194,45 @@ function shell(active, body) {
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
         <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
         <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
+        <button class="side-ai" id="aiuse" hidden></button>
         <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
       </aside>
       <main><div class="page" id="page">${body}</div></main>
     </div>`;
-  paintStatus();
+  paintStatus(); paintAiUse();
   $("#mute").onclick = () => {
     Voice.set(!Voice.on);
     $("#mute").textContent = Voice.on ? "Voice on" : "Voice off";
     api("/api/settings", { voice: Voice.on }).catch(() => {});
+  };
+}
+
+// the AI usage panel, like Claude's: a bar per key, what's left today, and who is resting
+const FREE_DAY = { groq: 1000, gemini: 250 };  // published free requests a day; Groq's own numbers replace these
+async function paintAiUse() {
+  const b = $("#aiuse");
+  if (!b) return;
+  const u = await api("/api/ai-usage").catch(() => null);
+  if (!u || !u.slots.length) { b.hidden = true; return; }
+  const rows = u.slots.map(x => {
+    const limit = x.requests_limit || FREE_DAY[x.provider], left = x.requests_left ?? (limit ? limit - x.requests : null);
+    const pct = limit ? Math.min(100, Math.round(100 * (limit - left) / limit)) : 0;
+    return { ...x, limit, left, pct };
+  });
+  const top = Math.max(...rows.map(r => r.pct)), rest = rows.some(r => r.resting_minutes);
+  b.hidden = false;
+  b.innerHTML = `<i class="dot ${rest ? "busy" : top > 80 ? "busy" : "ok"}"></i><span>AI · ${top}% used today</span>`;
+  b.onclick = () => {
+    const old = $(".ai-pop"); if (old) { old.remove(); return; }
+    const pop = document.createElement("div"); pop.className = "ai-pop box";
+    pop.innerHTML = `<div class="row spread"><b>AI use today</b><button class="btn ghost" data-x>×</button></div>
+      ${rows.map(r => `<div class="ai-row"><div class="row spread"><span>${esc(r.name)}${r.slot === "slot1" ? " · main" : " · backup"}</span>
+          <span class="muted">${r.resting_minutes ? `resting, ${r.resting_minutes} min` : `${r.pct}%`}</span></div>
+        <div class="bar ${r.pct > 80 || r.resting_minutes ? "red" : ""}"><div style="width:${r.pct}%"></div></div>
+        <div class="small muted">${r.requests} questions${r.tokens ? ` · ${r.tokens.toLocaleString()} tokens` : ""}${r.left != null ? ` · about ${r.left} left` : ""}${r.resets ? ` · resets in ${esc(r.resets)}` : ""}</div></div>`).join("")}
+      <p class="small muted" style="margin:10px 0 0">When one is busy or used up, the other answers. If both are, your coaches use their written sentences.</p>`;
+    document.body.appendChild(pop);
+    $("[data-x]", pop).onclick = () => pop.remove();
   };
 }
 
