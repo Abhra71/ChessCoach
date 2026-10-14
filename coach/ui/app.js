@@ -599,7 +599,7 @@ async function home() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>${hello}, ${esc(h.player)}</h1>
       <p class="sub">${h.games} games checked by Stockfish</p></div>
-      <div class="row"><button class="btn" id="brief">Hear your briefing</button><a class="btn primary" href="#/practice">Start practice</a></div></div>
+      <div class="row"><button class="btn" id="brief" title="Maya says your focus in three sentences">▶ Hear it from Maya</button><a class="btn primary" href="#/practice">Start practice</a></div></div>
     <div class="grid">
       ${dailyCard(h.daily || {})}
       ${f ? `<div class="box focus hero rise">
@@ -631,11 +631,11 @@ async function home() {
       <div class="box rise"><h2>Ask the coach</h2><div id="askbox"></div></div>
     </div>`;
   countUp($("#page"));
+  // three sentences, not six (13 Oct test, point 1: "is it needed?"): your focus, the habit, your last game
   const briefing = [`${hello}, ${h.player}.`,
-    f ? `Your focus is: ${PATTERN_TITLE[f.pattern] || f.pattern}. It happened ${f.times} times, in ${f.games} of your ${h.games} games.` : "",
-    f ? f.meaning : "", f ? f.habit : "",
-    `You give away ${h.pieces_per_game.toFixed(1)} pieces per game, and ${h.pieces_last20.toFixed(1)} in your last 20 games${better ? ", which is better" : ""}.`,
-    last ? `Your last game was a ${last.result} against ${last.opponent}, with ${last.moments} key moments to look at.` : ""].join(" ");
+    f ? `Your focus is ${(PATTERN_TITLE[f.pattern] || f.pattern).toLowerCase()}: ${f.times} times in ${f.games} games.` : "",
+    f ? f.habit : "",
+    last ? `Your last game, against ${last.opponent}, has ${last.moments} key moment${last.moments === 1 ? "" : "s"} to look at.` : ""].join(" ");
   $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
   api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?", coach: "maya",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.listen_ready,
