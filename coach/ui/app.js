@@ -439,6 +439,10 @@ async function progressView() {
         </div>
         ${s.next ? `<div class="story-next"><span class="label">Next week's one thing</span><div>${esc(s.next.habit)}</div></div>` : ""}
       </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
+      ${p.clock && p.clock.lines.length ? `<div class="box rise stack" style="padding:16px"><h2 style="margin:0">Your clock</h2>
+        <p class="small muted" style="margin:0">Your last ${p.clock.games} games with a clock, from the time chess.com records on every move.</p>
+        ${p.clock.lines.map(l => `<p style="margin:0">${esc(l)}</p>`).join("")}
+        ${p.clock.big && p.clock.fast / p.clock.big >= 0.3 ? `<p class="small" style="margin:0"><b>Try this:</b> when they capture or give check, count to five before you answer.</p>` : ""}</div>` : ""}
       <div class="box rise"><div class="row spread"><h2 style="margin:0">Badges</h2>
           <div class="ring-legend"><span><i class="t1"></i>Bronze</span><span><i class="t2"></i>Silver</span><span><i class="t3"></i>Gold, complete</span></div></div>
         <p class="small muted" style="margin:6px 0 0">${complete} complete · ${started} on the way · ${p.badges.length - complete - started} not started. A badge is complete at Gold.</p>

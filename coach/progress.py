@@ -167,5 +167,6 @@ def page():
     from coach import memory, plan
     days = daily._memory().get("days", [])
     lessons = len(plan._memory().get("done", []))
-    return {"player": player, "story": story(checked, moves, player),
+    from coach import clock
+    return {"player": player, "story": story(checked, moves, player), "clock": clock.summary(checked, moves, player),
             "badges": badges(checked, moves, days, player, memory.practice_stats(), lessons)}
