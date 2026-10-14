@@ -6,7 +6,10 @@ A friend who plays on chess.com asked why anyone would use our practice and coac
 
 Before adding anything new, ask: does chess.com already do this?
 
-**Where they stand, 14 Oct:** three of the five are in 0.5.0, on the user's word ("will 0.5.0 have all the fixes?";
+**On branch dev-0.6 (14 Oct, to test after 0.5.0):** all five exist. Flagship 1, prep before a game, and flagship
+2, voice one to one, are built there, and flagship 5's second half (the slow-down drill). See docs/TEST-0.6.md.
+
+**Where they stand in 0.5.0, 14 Oct:** three of the five are in 0.5.0, on the user's word ("will 0.5.0 have all the fixes?";
 then "I agree your plan"): 3 curated training, 4 Rematch your loss, 5 Clock coach. Flagship 2 is 0.6, flagship 1 is
 0.8. With them, 0.5.0 also brings the warm-up before you play on chess.com's home and the review one moment at a time
 on chess.com's own board.

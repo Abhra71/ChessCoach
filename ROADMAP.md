@@ -2,6 +2,22 @@
 
 *Hand-over notes for the next work session (updated 14 Oct 2026). Read this after CLAUDE.md.*
 
+## Branch dev-0.6, 14 Oct 2026 (built while the user was away; worktree C:\Syntax_Assembler\ChessCoach-0.6)
+On top of 0.5.0 and the 0.6 AI backend (branch ai-0.6, merged in). Test guide: docs/TEST-0.6.md. Version 0.6.0.
+- **0.6 Talk by voice (flagship 2):** hands-free, in the app and on chess.com. Hearing: Groq's cloud Whisper with the
+  player's key, Gemini as backup (Jarvis's record: 107 sentences at about 0.5 s); Whisper on the PC only optional.
+  The coach can open a page, a game's review, a rematch, or the review's next step; each action is checked.
+- **0.6 Your level:** the ladder from beginner to 2,000+, five levels, each skill measured on the last 20 games, with
+  its training one click away. Goals are a first estimate, said so; no rating promised.
+- **0.6 Send feedback** for beta testers: saved on the PC; where it goes is the user's choice (not decided).
+- **0.7 Endgame trainer:** six endings against perfect defence from Lichess's tablebase (engine when offline).
+- **0.7 Clock coach part 2:** the slow-down drill on your own rushed mistakes.
+- **0.8 Prep before a game (flagship 1):** a player's openings and how their games end, from public games; chess.com
+  profile pages offer it. **Your repertoire:** three lines, from what you play, the catalogue and Stockfish.
+- **0.9 See it in your head:** calculation, the whole line before anything moves; 11 more Lichess themes.
+- **Not done:** studying strong players' games (Lichess's masters database now needs an account: a parent's
+  decision, or a download to approve). Voice not tried with a real key yet (Round 2 brings the key).
+
 ## Now, 14 Oct 2026
 - **0.5.0 is on main, not uploaded.** Round 1 test on 13 Oct gave 48 points (docs/TEST-FINDINGS-0.5.0.md); the
   user asked for every one of them in 0.5.0, and all are built. Next: **Round 2** (docs/TEST-ROUND-2.md, about 45
