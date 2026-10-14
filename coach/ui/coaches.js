@@ -82,7 +82,7 @@ function trainer(drills, opts) {
   const state = drills.map(() => null), briefed = drills.map(() => false);  // per position: right, missed, shown
   const answered = drills.map(() => false);  // has today's answer: right, missed or shown
   const right = () => state.filter(x => x === "right").length;
-  const counter = () => { $("#count").textContent = `${i + 1} of ${drills.length} · ${right()} right first time`; };
+  const counter = () => { $("#count").textContent = `${i + 1} of ${drills.length} · today: ${right()} right first time`; };
   function save(x, result) {  // the day's first answer to this position; the server ignores later ones
     if (opts.record) api("/api/practice", { id: x.id, kind: x.kind, right: result === "right", shown: result === "shown" })
       .then(stats).catch(() => {});
@@ -242,7 +242,7 @@ function trainer(drills, opts) {
     const pick = (d().kind === "game" && entries.find(([, m]) => m.san === d().best)) || entries[0];
     missed = true; ticked = checklist.length; good(pick[0], pick[1], true);
   }
-  function stats(s) { if (s && s.positions && $("#stats")) $("#stats").textContent = `So far: ${s.right_first} of ${s.positions} positions right first time · ${s.learned} learned for good.`; }
+  function stats(s) { if (s && s.positions && $("#stats")) $("#stats").textContent = `All time: ${s.right_first} of ${s.positions} positions right first time · ${s.learned} learned for good.`; }
   $("#show").onclick = () => { if (!done) answer(); };
   $("#next").onclick = () => {  // from the last one: the next unanswered, or the end of the session, never a silent loop
     if (i === drills.length - 1 && answered.every(Boolean)) { finishedAll = false; return allDone(true); }

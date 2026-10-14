@@ -1068,6 +1068,44 @@ async function welcome() {
 
 // ---------- router ----------
 function go(route) { location.hash = "#/" + route; }
+async function screen(name, arg) {
+  if (name === "plan") return await planView(arg);
+  if (name === "games" && arg) return await gameView(arg);
+  if (name === "games") return await games();
+  if (name === "practice") return await practice(arg && decodeURIComponent(arg));
+  if (name === "daily") return await daily();
+  if (name === "progress") return await progressView();
+  if (name === "openings") return await openingTree();
+  if (name === "try") return await tryAgain(arg, location.hash.split("/")[3]);
+  if (name === "rematch") return await rematchView(arg, location.hash.split("/")[3]);
+  if (name === "extension") return await extensionView();
+  if (name === "settings") return await settingsView();
+  return await home();
+}
+
+// A beginner's introduction at the top of each section, until "Got it" (13 Oct test, point 23: every major
+// section needs one). What it is, and what to do here, in two lines.
+const INTRO = {
+  home: ["Home", "Your coach's summary: the habit you're working on, your last game, and what to do next. Maya's pick has a green \"My pick\" label."],
+  games: ["Games", "Every finished game from chess.com, checked by the engine. Click one: Maya goes through its key moments one at a time, and you can rematch the ones you lost."],
+  practice: ["Practice", "Positions from your own games where you went wrong, then puzzles on the same habit. Find the best move: your first try is what counts. New positions come every day."],
+  daily: ["Today's 5 minutes", "Three positions a day: one from your games, one puzzle on today's idea, and the first moves of your opening. Do it daily and your streak grows; one missed day is forgiven."],
+  plan: ["Your plan", "Four things chosen for your habit: one opening, one tactic, one idea and one endgame. Viktor explains each one, then you practise it on the board."],
+  progress: ["Progress", "Your week, your clock and your badges, all from your real games. Badges from chess.com games and from Knightwise practice are counted apart."],
+  openings: null, settings: null, extension: null,
+};
+function intro(name) {
+  const it = INTRO[name], page = $("#page");
+  if (!it || !page || remember(`kw-intro-${name}`) === "seen" || page.querySelector(".intro")) return;
+  const box = document.createElement("div");
+  box.className = "box intro rise";
+  box.innerHTML = `<div><b>${esc(it[0])}</b><p class="small" style="margin:4px 0 0">${esc(it[1])}</p></div>
+    <button class="btn small-btn">Got it</button>`;
+  box.querySelector("button").onclick = () => { remember(`kw-intro-${name}`, "seen"); box.remove(); };
+  const head = page.querySelector(".page-head");
+  if (head) head.after(box); else page.prepend(box);
+}
+
 async function route() {
   const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
   try {
@@ -1078,18 +1116,8 @@ async function route() {
       if (first) setTimeout(() => Coach.arrive("home"), 2500);  // the first Home: the coach comes once the cards have settled
       else Coach.arrive(name || "home");
     }
-    if (name === "plan") return await planView(arg);
-    if (name === "games" && arg) return await gameView(arg);
-    if (name === "games") return await games();
-    if (name === "practice") return await practice(arg && decodeURIComponent(arg));
-    if (name === "daily") return await daily();
-    if (name === "progress") return await progressView();
-    if (name === "openings") return await openingTree();
-    if (name === "try") return await tryAgain(arg, location.hash.split("/")[3]);
-    if (name === "rematch") return await rematchView(arg, location.hash.split("/")[3]);
-    if (name === "extension") return await extensionView();
-    if (name === "settings") return await settingsView();
-    return await home();
+    await screen(name, arg);
+    if (!arg) intro(name || "home");
   } catch (e) {
     console.error(e);
     if ($("#page")) $("#page").innerHTML = `<div class="empty">Couldn't load this screen: ${esc(e.message)}</div>`;

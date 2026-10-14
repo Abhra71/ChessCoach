@@ -432,3 +432,7 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .tree-row { cursor: pointer; }
 .tree-row.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--text); }
 .tree-side { position: sticky; top: 16px; }
+/* a beginner's introduction at the top of a section, until "Got it" (point 23) */
+.intro { display: flex; gap: 16px; align-items: center; justify-content: space-between; padding: 12px 16px; margin-bottom: 16px;
+         border-left: 3px solid var(--better); }
+.intro p { color: var(--muted); }
