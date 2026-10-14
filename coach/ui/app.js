@@ -207,6 +207,32 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
   };
 }
 
+// ---------- feedback from beta testers: three short questions, saved with the app version ----------
+function feedbackBox() {
+  if ($(".feedback-pop")) return;
+  const page = location.hash.replace(/^#\/?/, "") || "home";
+  const box = document.createElement("div");
+  box.className = "box feedback-pop stack";
+  box.innerHTML = `<div class="row spread"><h2 style="margin:0">Send feedback</h2><button class="btn small-btn" data-close>✕</button></div>
+    <label class="small">What were you doing?<textarea class="field" data-doing rows="2" maxlength="1500" placeholder="For example: going through my last game's review"></textarea></label>
+    <label class="small">What went wrong, or was confusing?<textarea class="field" data-wrong rows="3" maxlength="1500" placeholder="For example: the arrow pointed at the wrong square"></textarea></label>
+    <div class="small">How much did Knightwise help today? <span class="stars">${[1, 2, 3, 4, 5].map(n => `<button class="btn small-btn" data-n="${n}">${n}</button>`).join("")}</span></div>
+    <div class="row"><button class="btn primary" data-send>Save</button><span class="small muted" data-msg>Saved on this PC with the app version and this page (${esc(page)}).</span></div>`;
+  document.body.appendChild(box);
+  let helped = 0;
+  box.querySelector("[data-close]").onclick = () => box.remove();
+  box.querySelectorAll("[data-n]").forEach(b => b.onclick = () => {
+    helped = Number(b.dataset.n); box.querySelectorAll("[data-n]").forEach(x => x.classList.toggle("primary", Number(x.dataset.n) <= helped));
+  });
+  box.querySelector("[data-send]").onclick = async () => {
+    const wrong = box.querySelector("[data-wrong]").value.trim(), doing = box.querySelector("[data-doing]").value.trim();
+    if (!wrong && !doing && !helped) return;
+    await api("/api/feedback", { doing, wrong, helped, page });
+    box.querySelector("[data-msg]").textContent = "Thank you. Saved.";
+    setTimeout(() => box.remove(), 1200);
+  };
+}
+
 // ---------- shell ----------
 function shell(active, body) {
   const item = (route, name, icon) =>
@@ -218,11 +244,13 @@ function shell(active, body) {
         <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
         <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
         <button class="side-ai" id="aiuse" hidden></button>
+        <button class="side-ai" id="feedback" title="Tell us what went wrong or what was confusing">Send feedback</button>
         <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
       </aside>
       <main><div class="page" id="page">${body}</div></main>
     </div>`;
   paintStatus(); paintAiUse();
+  $("#feedback").onclick = feedbackBox;
   $("#mute").onclick = () => {
     Voice.set(!Voice.on);
     $("#mute").textContent = Voice.on ? "Voice on" : "Voice off";

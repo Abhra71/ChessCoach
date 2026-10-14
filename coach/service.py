@@ -366,6 +366,14 @@ class Handler(BaseHTTPRequestHandler):
             if not reply["ai"] and ai.ready():
                 reply["note"] = "The AI is busy right now, so I'm keeping it short. Ask again in a minute."
             return self.send(200, json.dumps(reply), "application/json")
+        if path == "/api/feedback":  # a beta tester's report: kept on this PC (where it's sent is the builder's choice)
+            entry = {k: str(body.get(k, ""))[:1500] for k in ("doing", "wrong", "page")}
+            entry.update(helped=max(0, min(5, int(body.get("helped") or 0))), version=VERSION, at=time.strftime("%Y-%m-%d %H:%M"))
+            DATA.mkdir(parents=True, exist_ok=True)
+            with open(DATA / "feedback.jsonl", "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(entry) + "\n")
+            note_in_logbook(f"Feedback saved ({entry['page']}): {entry['wrong'][:80]}")
+            return self.send(200, json.dumps({"saved": True}), "application/json")
         if path == "/api/talk":  # a spoken turn with a coach: the reply, and one checked thing to do (0.6)
             from coach import talk
             turns = body.get("history") if isinstance(body.get("history"), list) else []

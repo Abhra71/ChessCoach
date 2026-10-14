@@ -10,7 +10,7 @@
 
   <Identity Name="Abhra71.Knightwise"
             Publisher="CN=D43461BE-8C8C-4E7A-A1D9-5573364016D1"
-            Version="0.5.0.0"
+            Version="0.6.0.0"
             ProcessorArchitecture="x64" />
 
   <Properties>
