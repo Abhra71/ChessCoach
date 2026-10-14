@@ -250,6 +250,19 @@ class Handler(BaseHTTPRequestHandler):
                 if item and item.get("drills"):
                     brief.add(item["drills"])
             return self.send(200, json.dumps(out), "application/json")
+        if path == "/api/ladder":  # your level: every skill from beginner to 2,000+, on your last 20 games (0.6)
+            from coach import ladder
+            return self.send(200, json.dumps(ladder.page()), "application/json")
+        if path.startswith("/api/lesson/"):  # a lesson on one Lichess theme at your level, for the ladder's skills
+            from coach import brief, plan, puzzles
+            import random as _random
+            theme = path.rsplit("/", 1)[-1]
+            if theme not in puzzles.KEEP_THEMES or theme not in plan.THEME_NAME:
+                return self.send(404, json.dumps({"message": "No such lesson."}), "application/json")
+            kind = plan.endgame if theme.endswith("Endgame") else plan.tactic
+            item = kind(theme, insights.home().get("rating"), _random.Random(theme + time.strftime("%Y-%m-%d")))
+            brief.add(item["drills"])
+            return self.send(200, json.dumps(item), "application/json")
         if path.startswith("/api/rematch/"):  # Rematch your loss: where it starts (/api/rematch/<game>/<ply>)
             from coach import rematch
             parts = path.split("/")

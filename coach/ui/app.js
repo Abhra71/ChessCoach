@@ -215,7 +215,7 @@ function shell(active, body) {
     <div class="shell">
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
-        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
+        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
         <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
         <button class="side-ai" id="aiuse" hidden></button>
         <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
@@ -491,6 +491,47 @@ async function rematchView(gid, ply) {
   busy = false; draw();
   Coach.react("maya", "explain", `Your game against ${s.opponent}, just before move ${s.move_number}. In the real game you played ${s.real_move}` +
     ` and ${s.real === "loss" ? "lost" : "drew"}. Play something better this time, then play it out. They'll play at about their level.`);
+}
+
+// ---------- your level: the ladder from beginner to 2,000+, measured on your last 20 games (0.6) ----------
+function skillValue(s) {
+  if (s.value === null) return "not enough games yet";
+  const v = s.unit === "%" ? `${Math.round(s.value)}%` : s.unit === "points" ? `${s.value.toFixed(1)}` : `${s.value}`;
+  const t = s.unit === "%" ? `${s.target}%` : `${s.target}`;
+  return `${v} ${s.unit && s.unit !== "%" ? s.unit : ""} · goal: ${s.way === "max" ? "at most" : "at least"} ${t}`.replace(/\s+/g, " ");
+}
+
+async function levelView() {
+  shell("level", `<p class="muted">Loading…</p>`);
+  const p = await api("/api/ladder");
+  if (!p.player) return go("welcome");
+  if (!p.levels || !p.levels.length) { $("#page").innerHTML = `<div class="empty">Your level appears once your games are checked.</div>`; return; }
+  const cur = p.levels[p.current];
+  const level = (l, i) => `<div class="box rise level ${i === p.current ? "now" : l.done ? "done" : "later"}">
+      <div class="row spread"><div><div class="label">Level ${i + 1} · ${esc(l.band)}</div><h2 style="margin:4px 0 0">${esc(l.name)}</h2></div>
+        <span class="chip ${l.done ? "win" : i === p.current ? "draw" : ""}">${l.done ? "Done" : i === p.current ? "Working on it" : "Later"}</span></div>
+      ${i <= p.current || l.done ? `<div class="skills">${l.skills.map(s => `<div class="skill ${s.met ? "met" : s.met === false ? "not" : ""}">
+        <div class="skill-head"><b>${s.met ? "✓ " : ""}${esc(s.name)}</b>${s.met === false && i === p.current ? `<a class="btn small-btn" href="#/${esc(s.train.route)}">${esc(s.train.label)}</a>` : ""}</div>
+        <div class="small muted">${esc(s.what)}: ${esc(skillValue(s))}</div></div>`).join("")}</div>`
+        : `<p class="small muted" style="margin:8px 0 0">${l.skills.map(s => esc(s.name)).join(" · ")}</p>`}
+    </div>`;
+  $("#page").innerHTML = `
+    <div class="page-head"><div><h1>Your level</h1>
+      <p class="sub">Five levels from beginner to 2,000+, measured on your last ${p.games} games. A level is done when every skill meets its goal.</p></div></div>
+    <div class="stack">${p.levels.map(level).join("")}</div>
+    <p class="note">The goals are our first estimate of each level, and we'll tune them on real players' games. They don't promise a rating; your games show the progress.</p>`;
+  const next = cur.skills.find(s => s.met === false);
+  Coach.react("viktor", "explain", next
+    ? `You're on level ${p.current + 1}, ${cur.name}. The one thing now: ${next.name.toLowerCase()}. ${next.what}: ${skillValue(next)}.`
+    : `Every level done. Remarkable. Keep playing: the numbers keep watching.`,
+    next ? [{ label: next.train.label, app: next.train.route }] : []);
+}
+
+// a lesson on one theme at your level, opened from a skill on Your level
+async function themeLesson(theme) {
+  shell("level", `<p class="muted">Loading…</p>`);
+  const item = await api(`/api/lesson/${encodeURIComponent(theme)}`);
+  return lessonView({ ...item, back: "level" });
 }
 
 // ---------- progress: Viktor's story of your week, and badges from your real games ----------
@@ -1151,6 +1192,8 @@ async function screen(name, arg) {
   if (name === "practice") return await practice(arg && decodeURIComponent(arg));
   if (name === "daily") return await daily();
   if (name === "progress") return await progressView();
+  if (name === "level") return await levelView();
+  if (name === "lesson") return await themeLesson(decodeURIComponent(arg || ""));
   if (name === "openings") return await openingTree();
   if (name === "try") return await tryAgain(arg, location.hash.split("/")[3]);
   if (name === "rematch") return await rematchView(arg, location.hash.split("/")[3]);
@@ -1167,6 +1210,7 @@ const INTRO = {
   practice: ["Practice", "Positions from your own games where you went wrong, then puzzles on the same habit. Find the best move: your first try is what counts. New positions come every day."],
   daily: ["Today's 5 minutes", "Three positions a day: one from your games, one puzzle on today's idea, and the first moves of your opening. Do it daily and your streak grows; one missed day is forgiven."],
   plan: ["Your plan", "Four things chosen for your habit: one opening, one tactic, one idea and one endgame. Viktor explains each one, then you practise it on the board."],
+  level: ["Your level", "Five levels from beginner to 2,000+. Each skill is a number from your own games and a goal; finish every skill and you move up. The button next to a skill trains it."],
   progress: ["Progress", "Your week, your clock and your badges, all from your real games. Badges from chess.com games and from Knightwise practice are counted apart."],
   openings: null, settings: null, extension: null,
 };

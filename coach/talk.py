@@ -11,17 +11,18 @@ import json
 from coach import coaches, insights
 
 PAGES = {"home": "home", "games": "games", "practice": "practice", "daily": "daily", "plan": "plan",
-         "progress": "progress", "openings": "openings", "settings": "settings"}
+         "progress": "progress", "openings": "openings", "settings": "settings", "level": "level"}
 RECENT = 20  # the games the coach can find by name ("my game against X")
 
 RULES = (
     " This is a spoken conversation: reply in at most 3 short sentences, easy to say out loud, with no lists and no "
     "symbols. Only talk about chess and this player's games; never give advice about a game being played right now. "
     "The facts are all you know. Reply ONLY with JSON: {\"say\": \"what you say\", \"do\": null} or with \"do\" one of: "
-    "{\"open\": \"<page>\"} (pages: home, games, practice, daily, plan, progress, openings, settings), "
+    "{\"open\": \"<page>\"} (pages: home, games, practice, daily, plan, progress, openings, settings, level: their level and what to work on next), "
     "{\"review\": \"<game id>\"} to open the review of one of the games in the facts, "
     "{\"rematch\": \"<game id>\"} to replay a lost or drawn game from where it went wrong, "
-    "{\"next\": true} to show the next step of the review on screen. Ask for something only when the player wants it. "
+    "{\"next\": true} to show the next step of the review on screen, "
+    "{\"open\": \"level\"} for their level and what to work on. Ask for something only when the player wants it. "
     "If they name an opponent who isn't in the facts, say you can't find that game."
 )
 
@@ -30,6 +31,16 @@ def recent_games(n=RECENT):
     """The player's last games as the coach may name them: id, opponent, result, date, key moments."""
     return [{k: g[k] for k in ("id", "opponent", "result", "date", "time_class", "moments")}
             for g in insights.games_list()[:n] if g.get("checked")]
+
+
+def level_now():
+    """Where the player is on the ladder (coach/ladder.py), so the coach can say what to work on next."""
+    from coach import ladder
+    try:
+        page = ladder.page()
+        return {"level": page["current"] + 1, **(ladder.focus(page) or {})} if page.get("levels") else None
+    except Exception:  # never let the ladder stop a conversation
+        return None
 
 
 def parse(text):
@@ -70,7 +81,8 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     games = games if games is not None else recent_games()
     fallback = coaches.chat(coach, said, history, home=home, ask_ai=lambda *a: (_ for _ in ()).throw(ai.NoKey()))
     fallback["action"] = None
-    facts = {"player": coaches.player_card(home), "recent_games": games, "where_the_player_is": where or {}}
+    facts = {"player": coaches.player_card(home), "recent_games": games, "where_the_player_is": where or {},
+             "level": level_now()}
     facts_text = json.dumps(facts)
     system = (ai.COACH_RULES.format(rating=home.get("rating") or "unknown") + coaches.PERSONA[coach] + RULES)
     name = coaches.COACHES[coach]["name"]

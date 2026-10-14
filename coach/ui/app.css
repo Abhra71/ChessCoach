@@ -446,3 +446,11 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .side-ai:hover { background: var(--raised); color: var(--text); }
 .ai-pop { position: fixed; left: 230px; bottom: 24px; width: 340px; z-index: 50; animation: rise .25s ease-out both; }
 .ai-row { margin-top: 14px; } .ai-row .bar { margin: 6px 0 4px; }
+/* your level: the ladder from beginner to 2,000+ (0.6) */
+.level { padding: 16px; }
+.level.now { border-color: var(--text); }
+.level.later { opacity: .65; }
+.skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-top: 12px; }
+.skill { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; border-left: 3px solid var(--line-strong); }
+.skill.met { border-left-color: var(--better); } .skill.not { border-left-color: var(--mine); }
+.skill-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
