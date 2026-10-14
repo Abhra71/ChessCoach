@@ -24,3 +24,16 @@
 .chess-coach-panel .kw-broken { color: #f0a43a; font-size: 12px; margin: 0 0 8px; }
 .chess-coach-panel .kw-open { background: #f2f2f2; color: #0a0a0a; border: 0; border-radius: 6px; padding: 6px 12px;
   cursor: pointer; font: inherit; font-weight: 600; margin-bottom: 4px; }
+/* one key moment at a time, one step at a time (the same as the app's review) */
+.chess-coach-panel .kw-moment { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: #d6d6d6; }
+.chess-coach-panel .kw-dots { display: inline-flex; gap: 5px; }
+.chess-coach-panel .kw-dots button { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #5a5a5a; background: none; padding: 0; cursor: pointer; }
+.chess-coach-panel .kw-dots button.on { background: #f2f2f2; border-color: #f2f2f2; }
+.chess-coach-panel .kw-step { display: block; font-weight: 650; }
+.chess-coach-panel .kw-step i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 7px; }
+.chess-coach-panel .kw-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chess-coach-panel .kw-go { background: #f2f2f2; color: #0a0a0a; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit; font-weight: 700; }
+.chess-coach-panel .kw-row .kw-open { background: #1f1f1f; color: #f2f2f2; border: 1px solid #3a3a3a; margin: 0; }
+.chess-coach-panel .kw-clock { margin-top: 12px; color: #c8c8c8; font-size: 12px; }
+.chess-coach-panel .kw-clock summary { cursor: pointer; font-weight: 650; color: #f2f2f2; }
+.chess-coach-panel .kw-clock div { margin-top: 5px; }
