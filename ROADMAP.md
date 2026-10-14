@@ -40,6 +40,12 @@ On top of 0.5.0 and the 0.6 AI backend (branch ai-0.6, merged in). Test guide: d
     plan move"). coach/library/elite.json, 0.8 MB, bundled. Three course lessons unlocked; prophylaxis still coming.
   - **Fixed on the way:** any Knightwise process that had used Stockfish never finished exiting (python-chess's
     thread). Engines now close before Python waits. Also fixed on main for 0.5.0.
+- **Renamed to Knightwise everywhere it shows** (user, 14 Oct: "many files still use chess coach"): the program is
+  Knightwise.exe (Task Manager, the Store package), the Startup shortcut Knightwise.lnk (the old one is removed),
+  saved AI keys move from "ChessCoach" to "Knightwise" in Credential Manager on first use, web requests say
+  Knightwise. Kept on purpose, invisible to players: the chesscoach:// link name, CSS class names, the data folder
+  of the old non-Store installer (%LOCALAPPDATA%\ChessCoach) and the old Inno Setup script. The GitHub repository
+  (Abhra71/ChessCoach) and the folders on this PC are the user's to rename.
 - **Not done:** studying strong players' games (Lichess's masters database now needs an account: a parent's
   decision, or a download to approve). Voice not tried with a real key yet (Round 2 brings the key).
 

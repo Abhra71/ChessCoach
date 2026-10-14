@@ -55,7 +55,7 @@ the story of your week, 20 badges, sounds, and a new welcome with quiet piano. A
 - Strict fair play: never active in games against real people
 - Free, open source, no account, no tracking
 
-**Short description:** A chess coach that sits beside you on chess.com: your real mistakes, four coaches with voices, practice at your level.
+**Short description:** A chess coach that sits beside you on chess.com: your real mistakes, two coaches with voices, practice at your level.
 
 **Keywords:** chess, chess coach, chess.com, stockfish, chess puzzles, chess training, game review
 

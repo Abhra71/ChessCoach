@@ -29,7 +29,7 @@
   </Resources>
 
   <Applications>
-    <Application Id="Knightwise" Executable="ChessCoach.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="Knightwise" Executable="Knightwise.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements DisplayName="Knightwise"
                           Description="Your chess coach on chess.com"
                           BackgroundColor="transparent"

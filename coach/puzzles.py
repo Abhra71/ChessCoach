@@ -51,7 +51,7 @@ def wanted(row):
 
 
 def main():
-    req = urllib.request.Request(URL, headers={"User-Agent": "ChessCoach (github.com/Abhra71/ChessCoach)"})
+    req = urllib.request.Request(URL, headers={"User-Agent": "Knightwise (github.com/Abhra71/ChessCoach)"})
     kept = {t: [] for t in KEEP_THEMES}
     full = collections.Counter()  # (theme, band) -> puzzles kept
     seen = 0

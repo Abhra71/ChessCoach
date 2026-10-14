@@ -20,7 +20,7 @@ SMALL = {"groq": "llama-3.1-8b-instant", "gemini": "gemini-flash-lite-latest"}  
 _REST = {}  # provider -> time it may be asked again
 _LAST = {}  # provider -> the rate-limit headers of its last answer
 TIMEOUT = 30
-AGENT = {"User-Agent": "ChessCoach (github.com/Abhra71/ChessCoach)"}  # some providers block unnamed requests (403)
+AGENT = {"User-Agent": "Knightwise (github.com/Abhra71/ChessCoach)"}  # some providers block unnamed requests (403)
 
 COACH_RULES = (
     "You are a warm, clear chess coach for a beginner (chess.com rating about {rating}). "

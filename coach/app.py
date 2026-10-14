@@ -1,8 +1,8 @@
-"""ChessCoach.exe: the coach's own window, plus an icon by the clock.
+"""Knightwise.exe: the coach's own window, plus an icon by the clock.
 
 Starts the background coach (coach.service) and opens the app in its own window (Windows' built-in WebView2).
 Closing the window keeps the coach running by the clock; "Quit" in the icon's menu really stops it.
-Opening ChessCoach.exe again (Start menu, a notification) just brings the running window back.
+Opening Knightwise.exe again (Start menu, a notification) just brings the running window back.
 """
 import json
 import os
@@ -49,7 +49,7 @@ def replace_older_copy():
     for pid in pids:
         image = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True,
                                creationflags=quiet).stdout.lower()
-        if "chesscoach.exe" in image or "python" in image:  # only ever Knightwise itself
+        if "knightwise.exe" in image or "chesscoach.exe" in image or "python" in image:  # only ever Knightwise (its old name too)
             subprocess.run(["taskkill", "/PID", pid, "/F"], capture_output=True, creationflags=quiet)
     import time
     time.sleep(1.5)
@@ -186,5 +186,5 @@ def main():
 
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()  # the game checker uses several processes; needed inside ChessCoach.exe
+    multiprocessing.freeze_support()  # the game checker uses several processes; needed inside Knightwise.exe
     main()

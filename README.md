@@ -194,10 +194,10 @@ Its own log is `logbook/service.log`.
 1. Keep the coach running (`python -m coach.autorun install`, or `python -m coach.service` in a terminal).
 2. In Chrome go to `chrome://extensions` (Edge: `edge://extensions`), switch on **Developer mode**, click
    **Load unpacked** and choose the `extension` folder of this project.
-3. Open one of your finished games on chess.com (`chess.com/game/live/...`). A small **Chess Coach** panel
+3. Open one of your finished games on chess.com (`chess.com/game/live/...`). A small **Knightwise** panel with Maya
    lists the key moments. Click one: the board jumps there and shows the better move (green) and your move
    (red). "What happened next" shows your move and their answer (orange). The – button shrinks the panel.
-4. The Chess Coach button in the browser toolbar says whether the coach is running and links to your review
+4. The Knightwise button in the browser toolbar says whether the coach is running and links to your review
    and practice pages.
 
 **Why no hints in chess.com bot games?** chess.com's fair-play rules forbid any tool that analyses positions during
@@ -243,7 +243,7 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `coach/autorun.py` | start the helper with Windows (Startup folder shortcut) or remove it |
 | `coach/memory.py` | practice answers and spacing (which positions come back when), your "is this you?" answers |
 | `extension/` | the Chrome/Edge extension (arrows and key-moments panel on chess.com) |
-| `coach/app.py` | ChessCoach.exe: the app window (pywebview + WebView2), icon by the clock, the background coach |
+| `coach/app.py` | Knightwise.exe: the app window (pywebview + WebView2), icon by the clock, the background coach |
 | `coach/paths.py` | where files live (project folder; the Store app's own LocalState folder; %LOCALAPPDATA%\ChessCoach for the old installer) |
 | `coach/ui/` | the desktop app's screens (one page: Home, Games, Practice, Settings, Welcome) |
 | `coach/ui/backdrop.js`, `coach/get_assets.py` | the 3D welcome film (Three.js + Poly Haven chess set + depth of field) and its download, with the music |
@@ -271,7 +271,7 @@ pip install pyinstaller -r requirements.txt
 python -m coach.get_engine
 python -m coach.get_voice
 python -m coach.get_assets
-python -m PyInstaller installer/ChessCoach.spec --noconfirm
+python -m PyInstaller installer/Knightwise.spec --noconfirm
 "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\ChessCoach.iss     # Inno Setup 6, free
 ```
 

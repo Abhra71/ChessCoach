@@ -10,7 +10,7 @@ import urllib.request
 
 from coach import health
 from coach.paths import DATA
-HEADERS = {"User-Agent": "ChessCoach (open-source chess coach; github.com/Abhra71/ChessCoach)"}
+HEADERS = {"User-Agent": "Knightwise (open-source chess coach; github.com/Abhra71/ChessCoach)"}
 
 
 def get_json(url):

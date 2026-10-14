@@ -39,7 +39,7 @@ def download_hearing(progress=None):
         if target.exists():
             continue
         part = target.with_suffix(target.suffix + ".part")
-        req = urllib.request.Request(HEARING + name, headers={"User-Agent": "ChessCoach"})
+        req = urllib.request.Request(HEARING + name, headers={"User-Agent": "Knightwise"})
         with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as fh:
             total, done = int(resp.headers.get("Content-Length", 0)), 0
             while chunk := resp.read(1 << 20):

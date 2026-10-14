@@ -1,7 +1,7 @@
 """Where things live.
 
 From the project folder (developers): everything inside the project (data/, logbook/, engine/).
-Installed app (ChessCoach.exe): the program files sit in the install folder; the player's own data and logbooks
+Installed app (Knightwise.exe): the program files sit in the install folder; the player's own data and logbooks
 go in %LOCALAPPDATA%\\ChessCoach, the normal place for a Windows app's per-user data.
 Store app: the data goes in the package's own LocalState folder, so it never sees the old Chess Coach's data and
 uninstalling wipes it (a reinstall starts fresh with the welcome screen; there are no accounts).

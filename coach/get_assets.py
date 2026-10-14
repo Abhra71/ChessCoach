@@ -31,7 +31,7 @@ THREE_FILES = {  # published path in the three package -> local name
 }
 MUSIC = ("https://upload.wikimedia.org/wikipedia/commons/a/a6/Satie_Gymnopedie_No_1_performed_by_Michael_Laucke.flac",
          "music/gymnopedie-1.flac")
-AGENT = {"User-Agent": "ChessCoach (github.com/Abhra71/ChessCoach)"}
+AGENT = {"User-Agent": "Knightwise (github.com/Abhra71/ChessCoach)"}
 
 
 def fetch(url, target):

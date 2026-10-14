@@ -4,6 +4,7 @@ rem   try          with your own games (the project's data folder)
 rem   try fresh    as a brand-new player: the welcome screen, nothing kept afterwards
 rem Only one Knightwise can run at a time, so this first closes the Store copy (start it again from the Start menu).
 cd /d "%~dp0"
+taskkill /im Knightwise.exe /f >nul 2>&1
 taskkill /im ChessCoach.exe /f >nul 2>&1
 set KNIGHTWISE_HOME=
 if /i "%~1"=="fresh" (

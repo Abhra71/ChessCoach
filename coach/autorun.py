@@ -12,7 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 STARTUP = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
-SHORTCUT = STARTUP / "Chess Coach.lnk"
+SHORTCUT = STARTUP / "Knightwise.lnk"
+OLD_SHORTCUT = STARTUP / "Chess Coach.lnk"  # the name before Knightwise
 
 
 def pythonw():
@@ -32,9 +33,10 @@ def running():
 def install():
     ps = ("$s=(New-Object -ComObject WScript.Shell).CreateShortcut($env:LNK);"
           "$s.TargetPath=$env:EXE;$s.Arguments='-m coach.service';$s.WorkingDirectory=$env:DIR;"
-          "$s.Description='Chess Coach: checks your new chess.com games';$s.WindowStyle=7;$s.Save()")
+          "$s.Description='Knightwise: checks your new chess.com games';$s.WindowStyle=7;$s.Save()")
     env = {**os.environ, "LNK": str(SHORTCUT), "EXE": str(pythonw()), "DIR": str(ROOT)}
     subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], env=env, check=True)
+    OLD_SHORTCUT.unlink(missing_ok=True)
     if not running():
         subprocess.Popen([str(pythonw()), "-m", "coach.service"], cwd=ROOT,
                          creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
@@ -43,6 +45,7 @@ def install():
 
 def remove():
     SHORTCUT.unlink(missing_ok=True)
+    OLD_SHORTCUT.unlink(missing_ok=True)
     print("removed from Startup. (If it is running now, it stops when you log off or restart.)")
 
 

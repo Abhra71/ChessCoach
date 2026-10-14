@@ -20,7 +20,7 @@ MAIA = "https://github.com/CSSLab/maia-chess/releases/download/v1.0/maia-{}.pb.g
 
 def main():
     req = urllib.request.Request("https://api.github.com/repos/official-stockfish/Stockfish/releases/latest",
-                                 headers={"User-Agent": "ChessCoach"})
+                                 headers={"User-Agent": "Knightwise"})
     release = json.load(urllib.request.urlopen(req, timeout=30))
     url = next(a["browser_download_url"] for a in release["assets"] if a["name"] == ASSET)
     print(f"downloading Stockfish {release['tag_name']} ...")

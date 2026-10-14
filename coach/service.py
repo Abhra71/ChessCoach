@@ -6,7 +6,7 @@
 - A local web server on http://127.0.0.1:8765 (this computer only) that serves the pages, the guided set-up of the
   browser extension, and tells the extension the key moments of a finished game.
 
-Run:  python -m coach.service   (the installed app, ChessCoach.exe, runs this behind its tray icon)
+Run:  python -m coach.service   (the installed app, Knightwise.exe, runs this behind its tray icon)
 """
 import io
 import json
@@ -33,7 +33,7 @@ URL = f"http://127.0.0.1:{PORT}"
 EVERY = 600  # seconds between checks for new games
 MOMENTS = 3  # key moments shown per game
 # notifications say "Knightwise": the Store app's own id, or the id the installer gives the Start menu shortcut
-APP_ID = f"{PACKAGE}!Knightwise" if PACKAGE else "Abhra71.ChessCoach"
+APP_ID = f"{PACKAGE}!Knightwise" if PACKAGE else "Abhra71.Knightwise"
 
 log = logging.getLogger("coach")
 
@@ -594,7 +594,7 @@ class Handler(BaseHTTPRequestHandler):
             if os.name == "nt":
                 os.startfile(DATA.parent)
             return self.send(200, "{}", "application/json")
-        if path == "/api/show":  # a second ChessCoach.exe (or a notification) asks the running one to show a screen
+        if path == "/api/show":  # a second Knightwise.exe (or a notification) asks the running one to show a screen
             route = str(body.get("route", "home"))[:100]
             if SHOW and all(c.isascii() and (c.isalnum() or c == "/") for c in route):  # it goes into the window's JS
                 SHOW(route)

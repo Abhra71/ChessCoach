@@ -2,7 +2,7 @@
 
 Run:  python installer/make_icons.py
 Needs Microsoft Edge (to turn the drawing into a picture) and Pillow.
-Writes: installer/msix/Assets/*.png (Store), installer/ChessCoach.ico (Windows), extension/icon128.png (browser).
+Writes: installer/msix/Assets/*.png (Store), installer/Knightwise.ico (Windows), extension/icon128.png (browser).
 """
 import json
 import subprocess
@@ -72,7 +72,7 @@ def main():
     for n in (16, 24, 32, 48, 256):  # taskbar icons, no tile plate
         fit(big, n, n).save(ASSETS / f"Square44x44Logo.targetsize-{n}_altform-unplated.png")
     big.resize((128, 128), Image.LANCZOS).save(ROOT / "extension" / "icon128.png")
-    big.save(ROOT / "installer" / "ChessCoach.ico", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+    big.save(ROOT / "installer" / "Knightwise.ico", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
     print("icons written to", ASSETS)
 
 

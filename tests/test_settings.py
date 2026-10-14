@@ -9,7 +9,11 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "FILE", tmp_path / "settings.json")
     monkeypatch.setattr(settings.keyring, "set_password", lambda s, u, p: vault.__setitem__((s, u), p))
     monkeypatch.setattr(settings.keyring, "get_password", lambda s, u: vault.get((s, u)))
-    monkeypatch.setattr(settings.keyring, "delete_password", lambda s, u: vault.pop((s, u)))
+    def delete(s, u):  # like Windows Credential Manager: deleting a missing key is an error
+        if (s, u) not in vault:
+            raise settings.keyring.errors.PasswordDeleteError(u)
+        del vault[(s, u)]
+    monkeypatch.setattr(settings.keyring, "delete_password", delete)
     return vault
 
 
@@ -22,7 +26,7 @@ def test_defaults_and_theme():
 def test_key_goes_to_vault_not_file(isolated):
     settings.set_key("slot1", "gemini", "AIzaSyTESTKEY1234567890abcd")
     assert "AIzaSy" not in settings.FILE.read_text()
-    assert isolated[("ChessCoach", "slot1")] == "AIzaSyTESTKEY1234567890abcd"
+    assert isolated[("Knightwise", "slot1")] == "AIzaSyTESTKEY1234567890abcd"
     pub = settings.public()["slots"]["slot1"]
     assert pub == {"provider": "gemini", "set": True, "ends": "abcd"}
 
@@ -35,3 +39,9 @@ def test_bad_key_refused_and_remove():
     settings.set_key("slot2", "groq", "gsk_" + "x" * 40)
     settings.remove_key("slot2")
     assert settings.public()["slots"]["slot2"]["set"] is False
+
+
+def test_a_key_saved_under_the_old_name_is_moved_over(isolated):
+    isolated[("ChessCoach", "slot1")] = "gsk_" + "y" * 40  # saved by Chess Coach, before the rename
+    assert settings.get_key("slot1") == "gsk_" + "y" * 40
+    assert isolated[("Knightwise", "slot1")] == "gsk_" + "y" * 40 and ("ChessCoach", "slot1") not in isolated

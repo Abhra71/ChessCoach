@@ -1,5 +1,5 @@
-# PyInstaller recipe for ChessCoach.exe (a folder app: faster start than one big file).
-# Build:  python -m PyInstaller installer/ChessCoach.spec --noconfirm   (needs engine/ from python -m coach.get_engine)
+# PyInstaller recipe for Knightwise.exe (a folder app: faster start than one big file).
+# Build:  python -m PyInstaller installer/Knightwise.spec --noconfirm   (needs engine/ from python -m coach.get_engine)
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all
@@ -33,8 +33,8 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz, a.scripts, [],
     exclude_binaries=True,
-    name="ChessCoach",
-    icon=str(ROOT / "installer" / "ChessCoach.ico"),
+    name="Knightwise",
+    icon=str(ROOT / "installer" / "Knightwise.ico"),
     console=False,  # no black window
 )
-coll = COLLECT(exe, a.binaries, a.datas, name="ChessCoach")
+coll = COLLECT(exe, a.binaries, a.datas, name="Knightwise")

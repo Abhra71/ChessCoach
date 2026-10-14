@@ -1,6 +1,6 @@
 """Builds the Microsoft Store package: dist/Knightwise-<version>.msix (the Store signs it on upload).
 
-Run, after PyInstaller has built dist/ChessCoach:
+Run, after PyInstaller has built dist/Knightwise:
     python installer/make_msix.py
 Needs Microsoft's Windows SDK Build Tools (makeappx, makepri) unpacked in build/sdktools
 (nuget.org package Microsoft.Windows.SDK.BuildTools).
@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-APPDIR = ROOT / "dist" / "ChessCoach"
+APPDIR = ROOT / "dist" / "Knightwise"
 MSIX = ROOT / "installer" / "msix"
 STAGE = ROOT / "build" / "msix-stage"
 TOOLS = next((ROOT / "build" / "sdktools" / "pkg" / "bin").glob("*/x64"), None)
@@ -28,8 +28,8 @@ def run(*args):
 def main():
     if TOOLS is None:
         sys.exit("Windows SDK Build Tools not found in build/sdktools")
-    if not (APPDIR / "ChessCoach.exe").exists():
-        sys.exit("Build the app first: python -m PyInstaller installer/ChessCoach.spec")
+    if not (APPDIR / "Knightwise.exe").exists():
+        sys.exit("Build the app first: python -m PyInstaller installer/Knightwise.spec")
     manifest = (MSIX / "AppxManifest.xml").read_text(encoding="utf-8")
     version = re.search(r'<Identity[^>]*Version="([\d.]+)"', manifest).group(1)
 

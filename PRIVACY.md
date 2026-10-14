@@ -38,7 +38,7 @@ Knightwise does not knowingly collect personal information from anyone, includin
 
 ## Deleting your data
 Uninstall Knightwise, then delete the folder `%LOCALAPPDATA%\ChessCoach`. To remove an AI key, use Settings → Remove,
-or delete the "ChessCoach" entries in Windows Credential Manager.
+or delete the "Knightwise" entries (and any older "ChessCoach" ones) in Windows Credential Manager.
 
 ## Contact
 Questions: open an issue at https://github.com/Abhra71/ChessCoach/issues
