@@ -123,3 +123,12 @@ def test_a_profile_page_offers_prep_against_that_player_and_never_your_own():
     said = coaches.speak("member", HOME, extra={"who": "someone"})
     assert said["actions"][0]["app"] == "prep/someone" and "never during" in said["lines"][0]
     assert coaches.speak("member", HOME, extra={"who": HOME["player"]})["lines"] == []
+
+
+def test_inside_the_app_no_way_back_into_the_app():
+    """Full test, 14 Oct: Maya's box in Knightwise offered "Open Knightwise" and "Learn it in Knightwise"."""
+    from coach import coaches
+    said = coaches._for_app({"lines": ["Hi.", "My pick: Your plan in Knightwise. Because."],
+                             "actions": [{"label": "Learn it in Knightwise", "app": "plan"}, coaches.OPEN_APP]})
+    assert [a["label"] for a in said["actions"]] == ["Learn it"]
+    assert said["lines"][1] == "My pick: Your plan. Because."

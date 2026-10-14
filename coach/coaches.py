@@ -99,11 +99,21 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, aga
     """again: a second visit to this section today, so no full welcome again, just where things stand (13 Oct test:
     "welcoming is an art"; the coach was greeting every time, then folding silently)."""
     said = _speak(section, home, hour, moments, rng, extra, in_app)
+    if in_app:
+        said = _for_app(said)
     if again and said.get("lines") and section != "review":
         lines = said["lines"]
         keep = [lines[-1]] if lines[-1].startswith("My pick") else lines[1:2]  # where things stand, in one line
         said = {**said, "lines": [rng.choice(AGAIN)] + keep, "again": True}
     return said
+
+
+def _for_app(said):
+    """Inside Knightwise there's no "Open Knightwise", and no "… in Knightwise" on the buttons (full test, 14 Oct:
+    "Knightwise is already open, why the route in the pop-up?")."""
+    acts = [{**a, "label": a["label"].replace(" in Knightwise", "")} for a in said.get("actions") or [] if a != OPEN_APP]
+    lines = [l.replace(" in Knightwise", "") if l.startswith("My pick") else l for l in said.get("lines") or []]
+    return {**said, "actions": acts, "lines": lines}
 
 
 def _speak(section, home=None, hour=12, moments=None, rng=random, extra=None, in_app=False):
