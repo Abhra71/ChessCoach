@@ -289,7 +289,7 @@ async function planView(arg) {
   const all = [...(p.novelty ? [p.novelty] : []), ...Object.values(p.items).filter(Boolean)];
   if (arg) { const item = all.find(x => x.id === decodeURIComponent(arg)); if (item) return lessonView(item); }
   const card = (x, isNew) => `<div class="box plan-card ${isNew ? "new" : ""}">
-      <div class="plan-face">${KnightwiseFaces.figure(x.coach, isNew ? "point" : "explain")}</div>
+      <div class="plan-face">${KnightwiseFaces.figure(x.coach, isNew ? "pleased" : "explain")}</div>
       <div class="plan-text"><div class="label">${isNew ? "New for you · " : ""}${KIND_LABEL[x.kind]} · with ${COACHES[x.coach].name}</div>
         <h3>${esc(x.title)}</h3><p class="muted small">${esc(x.why || x.intro)}</p>
         <button class="btn ${isNew ? "primary" : ""}" data-id="${esc(x.id)}">${p.done.includes(x.id) ? "Again" : "Start"}</button></div></div>`;
