@@ -1,4 +1,8 @@
-# Knightwise 0.5.0: guided test session
+# Knightwise 0.5.0: guided test session (Round 1, 13 Oct)
+
+**Done. Round 2 is docs/TEST-ROUND-2.md.** Two things below were wrong and are kept only as the record:
+7.5 and 7.7 promised a review of a bot game, but chess.com doesn't share bot games with apps; and the coaches are
+now two, Maya and Viktor (Zara and Arjun were removed on 13 Oct).
 
 About 85 to 100 minutes. Do the steps in order. For each step, read **Do**, then compare with **Expect**.
 If anything is different, wrong, ugly, slow or confusing, write down the **step number** and what you saw.

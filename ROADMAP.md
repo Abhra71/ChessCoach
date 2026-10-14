@@ -1,8 +1,25 @@
 # Knightwise: where we are and what comes next
 
-*Hand-over notes for the next work session (updated 11 Oct 2026). Read this after CLAUDE.md.*
+*Hand-over notes for the next work session (updated 14 Oct 2026). Read this after CLAUDE.md.*
 
-## Where we are
+## Now, 14 Oct 2026
+- **0.5.0 is on main, not uploaded.** Round 1 test on 13 Oct gave 48 points (docs/TEST-FINDINGS-0.5.0.md); the
+  user asked for every one of them in 0.5.0, and all are built. Next: **Round 2** (docs/TEST-ROUND-2.md, about 45
+  minutes, the AI part with a parent), then Round 3 on the installed msix, then the Store upload with a parent.
+- **Coaches:** two, Maya (af_heart: home, games, practice, puzzles, the archive) and Viktor (am_michael at 0.9:
+  progress, plan, lessons).
+- **Flagships in 0.5.0** (docs/FLAGSHIPS.md): 3 curated training, 4 Rematch your loss, 5 Clock coach (first part).
+  On chess.com: the review one moment at a time on its own board, a warm-up on its home page, tags on the archive,
+  and the coach's pick on each page. Then 0.6 voice conversation (flagship 2; branch ai-0.6), 0.8 prep before a game.
+- **The chess.com self-check** (docs/SELF-CHECK.md) runs on every visit and weekly on GitHub; Settings and the
+  pop-up show its state.
+- **Puzzles:** 18,000 Lichess puzzles, 40 per theme in every 100-point band from 300 to about 2,900.
+- **Watch out:** the old Store build 0.4.1 is installed on the builder's PC and starts with Windows; a newer
+  Knightwise now closes an older running copy by itself.
+- Not done, needs the user: GitHub CLI (offered: winget GitHub.cli, MIT, about 35 MB); screenshots of Groq's key pages
+  (Round 2, with a parent); ffmpeg for a README GIF.
+
+## Where we were, 11 Oct
 - **Microsoft Store:** Knightwise **0.4.1** (MSIX, `Abhra71.Knightwise`, Store ID `9NKLGS6K72J2`) submitted for
   certification on 11 Oct 2026 as a **private beta** (group "Knightwise beta", free). Install link once it passes:
   https://apps.microsoft.com/detail/restricted/9NKLGS6K72J2. Store page text: `installer/msix/STORE_LISTING.md`.

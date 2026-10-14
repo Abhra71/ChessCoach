@@ -255,3 +255,31 @@ See [SELF-CHECK.md](SELF-CHECK.md).
 ## Phase 3, chess.com features: done, 13 Oct, commit 4d28830
 - **The coach's pick of where to practise, said with the reason,** on every coach section. Open Knightwise is always there. Fixes points 38 and 47, and finding 2.
 - **Archive tags** on chess.com's games archive, matching the review's key moments. 43 of 50 rows were tagged on the real page; the other 7 are bot games, which chess.com doesn't share.
+
+## 14 Oct: every remaining point, in 0.5.0 (the user: "will 0.5.0 have all the fixes I told you about?")
+- **9, 15 Daily refresh, checked.** Enough new positions: 71, 26 and 22 for the top three habits. Two real bugs fixed:
+  a restart during the day rebuilt the set and dropped what you'd answered; and a puzzle done before could come back
+  as new. Today's set now stays the same all day, and done puzzles never return as new.
+- **34, 35 The chess.com pop-up.** It needs the app running: everything there (reviews, advice, voice) comes from the
+  app, and both the coach and the pop-up now say so. The late voice was ours: the whole message was voiced before
+  playing. Now it's one sentence at a time, the same as the app: 8 s to about 3 s on this PC.
+- **2 Voice picker**, end to end: each coach speaks in their own voice, Viktor slower; an unknown voice falls back.
+- **17, 18, 42 Review one moment at a time**, in the app and on chess.com's board: You played, Better, They replied,
+  Their better, with Maya saying each step. On chess.com the board moves to each step's position.
+- **21 Opening tree for beginners:** plain words for every move, how to read it, a board for the move you click.
+- **23 Introductions** on Home, Games, Practice, Today's 5 minutes, Your plan and Progress, until "Got it".
+- **22 Pointing finger:** removed from the plan cards, where it pointed at nothing in particular. It stays only on
+  chess.com, with the red ring on chess.com's own menu.
+- **1 Hear your briefing:** kept, three sentences instead of six, called "Hear it from Maya".
+- **32 Key guide:** step by step in Settings, with the under-18 rule (Groq's and Google's terms are for adults, or
+  need a parent's permission). Screenshots of Groq's pages in Round 2, with a parent: they need a sign-in.
+- **48 chess.com side:** the review one moment at a time, Your clock and Rematch there; a warm-up on the home page;
+  the archive's tags explained with Maya's pick; on puzzles she says she won't look at the board.
+- **Flagships 4 and 5** are in: Rematch your loss and the Clock coach (first part). See FLAGSHIPS.md.
+- **Found on the way:**
+  - The old Store build 0.4.1 started with Windows and answered for the test copy. A newer Knightwise now closes an
+    older running copy.
+  - The self-check said "chess.com changed how it shows the pieces" on a page still loading. It now waits 20 s.
+  - The speech library left a temp folder at every start (144 by 14 Oct). They're now removed at start.
+  - Two counts on Practice looked like they disagreed: they were today and all time, and now say so.
+  - Puzzles: 40 per theme in every 100-point band from 300 to about 2,900 (until now 400–1,600, with 69 in the 400s).
