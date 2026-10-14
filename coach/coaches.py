@@ -17,7 +17,7 @@ LESSONS = "https://www.chess.com/lessons"
 
 COACHES = {
     "maya": {"role": "Your games and practice", "name": "Maya", "voice": "af_heart",
-             "about": "Former champion. Calm, patient, clear.", "sections": ["home", "play", "review", "games", "puzzles", "archive"]},
+             "about": "Former champion. Calm, patient, clear.", "sections": ["home", "play", "review", "games", "puzzles", "archive", "member"]},
     "viktor": {"role": "Your progress and plan", "name": "Viktor", "voice": "am_michael",
                "about": "Veteran. Wise, dry humour, has seen it all.", "sections": ["progress", "lessons", "plan"]},
 }
@@ -126,6 +126,14 @@ def _speak(section, home=None, hour=12, moments=None, rng=random, extra=None, in
         facts.update(habit=SHORT.get(focus["pattern"], focus["pattern"]), tip=focus["habit"])
     lines = [line("hello", coach, rng, **facts)]
 
+    if section == "member":  # someone's chess.com profile: prep against them, before you play (0.8)
+        who = (extra or {}).get("who")
+        if not who or who == (player or "").lower():
+            return {**out, "lines": []}  # your own profile, or no name: nothing to say
+        out["actions"] = [{"label": f"Prep against {who} in Knightwise", "app": f"prep/{who}", "best": True,
+                           "why": "Their openings and how their games end, from their public games."}, OPEN_APP]
+        return {**out, "mood": "calm", "lines": [f"Playing {who} soon? I can show you how they play: their openings, "
+                                                 "and how their games usually end. Only before the game, never during."]}
     if section == "review":
         if moments is None:
             return {**out, "mood": "thinking", "lines": [line("unknown_game", coach, rng)]}

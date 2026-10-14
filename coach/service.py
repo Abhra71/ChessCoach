@@ -268,6 +268,19 @@ class Handler(BaseHTTPRequestHandler):
                       "title": "Slow down when it matters",
                       "intro": "Each of these you played in a rush, and it cost you. This time, tick the checks first: the board waits for you."}
             return self.send(200, json.dumps(lesson), "application/json")
+        if path.startswith("/api/prep/"):  # prep before a game: how a player plays, from their public games (0.8)
+            from coach import prep
+            user = path.rsplit("/", 1)[-1].lower()
+            if not user or len(user) > 30 or not all(c.isalnum() or c in "-_" for c in user):
+                return self.send(400, json.dumps({"message": "That doesn't look like a chess.com username."}), "application/json")
+            try:
+                out = prep.cached(user)
+            except urllib.error.HTTPError as e:
+                return self.send(404, json.dumps({"message": "No chess.com player with that name." if e.code == 404
+                                                  else "chess.com didn't answer. Try again."}), "application/json")
+            except OSError:
+                return self.send(503, json.dumps({"message": "Couldn't reach chess.com. Are you online?"}), "application/json")
+            return self.send(200 if out else 404, json.dumps(out or {"message": "They have no public games in the last 3 months."}), "application/json")
         if path == "/api/ladder":  # your level: every skill from beginner to 2,000+, on your last 20 games (0.6)
             from coach import ladder
             return self.send(200, json.dumps(ladder.page()), "application/json")
@@ -678,6 +691,9 @@ def coach_says(url):
         rows = MOMENT_CACHE.get(q["game"])
         moments = None if rows is None else len(key_moments(rows)) if rows else 0
     extra = {}
+    if q.get("section") == "member":  # a player's chess.com profile: prep against them (0.8)
+        who = q.get("who", "").lower()
+        extra["who"] = who if who and len(who) <= 30 and all(c.isalnum() or c in "-_" for c in who) else None
     if q.get("section") in ("home", "plan"):
         from coach import insights, live_engine, plan
         try:

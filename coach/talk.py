@@ -11,14 +11,15 @@ import json
 from coach import coaches, insights
 
 PAGES = {"home": "home", "games": "games", "practice": "practice", "daily": "daily", "plan": "plan",
-         "progress": "progress", "openings": "openings", "settings": "settings", "level": "level"}
+         "progress": "progress", "openings": "openings", "settings": "settings", "level": "level",
+         "endgames": "endgames", "prep": "prep"}
 RECENT = 20  # the games the coach can find by name ("my game against X")
 
 RULES = (
     " This is a spoken conversation: reply in at most 3 short sentences, easy to say out loud, with no lists and no "
     "symbols. Only talk about chess and this player's games; never give advice about a game being played right now. "
     "The facts are all you know. Reply ONLY with JSON: {\"say\": \"what you say\", \"do\": null} or with \"do\" one of: "
-    "{\"open\": \"<page>\"} (pages: home, games, practice, daily, plan, progress, openings, settings, level: their level and what to work on next), "
+    "{\"open\": \"<page>\"} (pages: home, games, practice, daily, plan, progress, openings, settings, level: their level and what to work on next, endgames: the endgame trainer, prep: prep against an opponent), "
     "{\"review\": \"<game id>\"} to open the review of one of the games in the facts, "
     "{\"rematch\": \"<game id>\"} to replay a lost or drawn game from where it went wrong, "
     "{\"next\": true} to show the next step of the review on screen, "

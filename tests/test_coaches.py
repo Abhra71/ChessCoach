@@ -117,3 +117,9 @@ def test_second_visit_today_is_short_not_a_new_welcome():
     assert "gushynanda" in first["lines"][0] and "gushynanda" not in again["lines"][0]
     assert again["again"] and len(again["lines"]) == 2 and again["lines"][1].startswith("My pick")
     assert again["actions"] == first["actions"]
+
+
+def test_a_profile_page_offers_prep_against_that_player_and_never_your_own():
+    said = coaches.speak("member", HOME, extra={"who": "someone"})
+    assert said["actions"][0]["app"] == "prep/someone" and "never during" in said["lines"][0]
+    assert coaches.speak("member", HOME, extra={"who": HOME["player"]})["lines"] == []

@@ -641,6 +641,47 @@ async function endgameView(id) {
   Coach.react("viktor", "explain", `${s.name}. ${s.idea}`);
 }
 
+// ---------- prep before a game: how a chess.com player plays, from their public games (0.8, flagship 1) ----------
+async function prepView(user) {
+  shell("games", `<p class="muted">Loading…</p>`);
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
+      <h1 style="margin-top:6px">Prep before a game</h1>
+      <p class="sub">How a chess.com player plays, from their public games of the last three months. Only before a game: Knightwise is never active during one.</p></div></div>
+    <div class="box stack" style="padding:16px"><div class="row"><input class="field" id="who" placeholder="Their chess.com username" value="${esc(user || "")}" spellcheck="false" style="max-width:280px">
+      <button class="btn primary" id="look">Look them up</button></div><div class="err" id="prepmsg"></div></div>
+    <div id="prep"></div>`;
+  const look = async () => {
+    const who = $("#who").value.trim().toLowerCase();
+    if (!who) return;
+    if (location.hash !== `#/prep/${who}`) history.replaceState(null, "", `#/prep/${who}`);
+    $("#prepmsg").textContent = ""; $("#prep").innerHTML = `<p class="muted">Reading their games…</p>`;
+    let s;
+    try { s = await api(`/api/prep/${encodeURIComponent(who)}`); }
+    catch (e) { $("#prep").innerHTML = ""; $("#prepmsg").textContent = e.message; return; }
+    const list = (rows, label) => rows.length ? rows.map(r => `<div class="row spread"><span>${label(r)}</span>
+        <span class="tree-score"><i style="width:${r.share}%"></i><b class="num">${r.share}%</b></span></div>`).join("") : `<p class="small muted">Not enough games.</p>`;
+    const ends = Object.entries(s.endings).sort((a, b) => b[1] - a[1]);
+    $("#prep").innerHTML = `
+      <div class="grid" style="margin-top:16px">
+        <div class="box stack" style="padding:16px"><h2 style="margin:0">${esc(s.user)} <span class="faint num">${s.rating}</span></h2>
+          <p class="small muted" style="margin:0">${s.games} games in three months, mostly ${esc(s.time_class)}.</p>
+          ${s.advice.map(a => `<p style="margin:0">${esc(a)}</p>`).join("")}</div>
+        <div class="box stack" style="padding:16px"><h2 style="margin:0">As White, they start with</h2>
+          ${list(s.as_white, r => `1. ${esc(r.what)} <span class="small muted">· ${esc(plainMove(r.what))}</span>`)}</div>
+        <div class="box stack" style="padding:16px"><h2 style="margin:0">As Black, they answer</h2>
+          ${list(s.as_black, r => { const [a, b] = r.what.split(" "); return `1. ${esc(a)} ${esc(b)} <span class="small muted">· after ${esc(plainMove(a))}: ${esc(plainMove(b))}</span>`; })}</div>
+        <div class="box stack" style="padding:16px"><h2 style="margin:0">How their games end</h2>
+          ${ends.map(([k, n]) => `<div class="row spread"><span>${esc(cap(k))}</span><b class="num">${n}</b></div>`).join("")}</div>
+      </div>`;
+    Coach.react("maya", "explain", `${s.user}: ${s.advice[0]}`);
+  };
+  $("#look").onclick = look;
+  $("#who").onkeydown = e => { if (e.key === "Enter") look(); };
+  if (user) look();
+  else Coach.react("maya", "explain", "Playing someone soon? Type their chess.com name and I'll show you how they play.");
+}
+
 // ---------- progress: Viktor's story of your week, and badges from your real games ----------
 // chess.com games and Knightwise practice counted apart, never blended (13 Oct test, point 16)
 const BADGE_SOURCES = [["From your chess.com games", ["Habits", "Clean play", "Results"]], ["From your Knightwise practice", ["Practice"]]];
@@ -850,7 +891,7 @@ async function games() {
   const list = await api("/api/games");
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Games</h1><p class="sub">${list.length} finished games from chess.com. Click one to see its key moments.</p></div>
-      <a class="btn" href="#/openings">Your opening tree</a></div>
+      <div class="row"><a class="btn" href="#/prep">Prep for an opponent</a><a class="btn" href="#/openings">Your opening tree</a></div></div>
     <div class="box" style="padding:8px 8px 0"><table><thead><tr><th>Date</th><th>Opponent</th><th>Result</th><th>Type</th>
       <th class="num">Pieces given away</th><th class="num">Key moments</th></tr></thead><tbody>
       ${list.map(g => `<tr class="click" data-id="${g.id}"><td class="muted num">${esc(g.date)}</td>
@@ -1302,6 +1343,7 @@ async function screen(name, arg) {
   if (name === "progress") return await progressView();
   if (name === "level") return await levelView();
   if (name === "endgames") return await endgamesView();
+  if (name === "prep") return await prepView(arg && decodeURIComponent(arg));
   if (name === "clockdrill") { shell("level", `<p class="muted">Finding your rushed moves…</p>`); return lessonView({ ...(await api("/api/clockdrill")), back: "level" }); }
   if (name === "endgame") return await endgameView(arg);
   if (name === "lesson") return await themeLesson(decodeURIComponent(arg || ""));

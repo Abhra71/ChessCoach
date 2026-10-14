@@ -14,6 +14,7 @@
     if (/^\/(lessons|learn|courses)(\/|$)/.test(path)) return "lessons";
     if (/^\/games\/archive(\/|$)/.test(path)) return "archive";  // the tags on your games: Maya explains them
     if (/^\/stats(\/|$)/.test(path)) return "progress";
+    if (/^\/member\/[\w-]+\/?$/.test(path)) return "member";  // a player's profile: prep against them (0.8)
     return null;
   }
 
@@ -342,8 +343,10 @@
     current = here;
     const store = (await send({ type: "greeted", section: here })) || {};
     const first = store.day !== today();  // the first visit to this section today: the full welcome
-    const r = await send({ type: "coach", section: here, hour: new Date().getHours(), again: !first });
+    const who = here === "member" ? location.pathname.split("/")[2] : undefined;
+    const r = await send({ type: "coach", section: here, hour: new Date().getHours(), again: !first, who });
     if (current !== here) return;
+    if (r && r.ok && !r.data.lines.length) { remove(); return; }  // nothing to say here (your own profile): no coach
     said = r && r.ok ? r.data : {
       coach: "maya", name: "Maya", mood: "calm", voice_on: false, actions: [],
       lines: ["I'm asleep: the Knightwise app isn't running on this PC.",

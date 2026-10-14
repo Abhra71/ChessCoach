@@ -47,6 +47,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     const q = new URLSearchParams({ section: String(msg.section || "home"), hour: String(msg.hour ?? "") });
     if (/^\d+$/.test(msg.game || "")) q.set("game", msg.game);
     if (msg.again) q.set("again", "1");  // a second visit today: no full welcome again
+    if (/^[\w-]{1,30}$/.test(msg.who || "")) q.set("who", msg.who);  // a profile page: whose
     json(`${COACH}/api/coach?${q}`, reply);
     return true;
   }
