@@ -40,6 +40,15 @@ def test_a_free_piece_not_taken():
     assert e["say"] == "Their knight on d5 was there to take: Qxd5 wins it."
 
 
+def test_a_free_capture_that_also_hits_a_rook():
+    """The user's game vs lmaongabs, move 11 (15 Oct): Bxg7 wins a pawn and then attacks the rook on h8."""
+    e = why.explain(rec("r1bqk1nr/1p1n1ppp/2p1p3/p1bp4/N3P3/3B1N2/PBPP1PPP/1R1QK2R w Kkq - 0 11", "h4", "Bxg7",
+                        ["g8f6", "e4e5", "f6e4", "d3e4"], ply=21))
+    assert e["idea"] == "free"
+    assert e["say"] == ("Their pawn on g7 was there to take: Bxg7 wins it, and then your bishop attacks their "
+                        "rook on h8 too.")
+
+
 def test_back_rank_mate_only_when_the_pawns_shut_the_king_in():
     e = why.explain(rec("3r2k1/5ppp/8/8/8/P7/5PPP/6K1 w - - 0 1", "a4", "h3", ["d8d1"], allows_mate=True))
     assert e["idea"] == "back_rank"

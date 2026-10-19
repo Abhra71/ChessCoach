@@ -490,7 +490,14 @@ def _better(before, best, mine, r):
         sq = best.to_square
         v = before.piece_at(sq)
         if v and _name(before, sq) in loose_pieces(before, not me) and (v.piece_type != chess.PAWN or r.get("loss", 0) >= 10):
-            return "free", f"Their {NAME[v.piece_type]} on {chess.square_name(sq)} was there to take: {bsan} wins it."
+            say = f"Their {NAME[v.piece_type]} on {chess.square_name(sq)} was there to take: {bsan} wins it"
+            # and what the capturing piece hits next (19 Oct: Bxg7 also attacked the rook on h8, and the reason missed it)
+            mover = b.piece_at(sq)
+            hits = [s for s in b.attacks(sq) if (p := b.piece_at(s)) and p.color != me and p.piece_type != chess.KING
+                    and VALUE[p.piece_type] >= 3 and (VALUE[p.piece_type] > VALUE[mover.piece_type] or not b.attackers(not me, s))]
+            if hits and not b.attackers(not me, sq):
+                say += f", and then your {NAME[mover.piece_type]} attacks their {' and '.join(_name(b, s) for s in hits)} too"
+            return "free", say + "."
     fork = _fork(b, best.to_square)
     if fork and len([s for s in fork if b.piece_at(s).piece_type != chess.PAWN]) >= 2:
         return "fork", f"{bsan} forks their {_list(b, fork)}: one piece attacks them all, and they can save only one."
