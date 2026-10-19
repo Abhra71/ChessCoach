@@ -1010,7 +1010,7 @@ def warm_voice():
     from coach import voice
     try:
         if voice.available() and settings.load()["voice"]:
-            voice.say("Ready.")
+            voice.warm()
     except Exception:
         log.exception("voice warm-up failed")
 

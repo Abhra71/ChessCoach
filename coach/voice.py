@@ -59,6 +59,13 @@ def _kokoro():
     return _engine
 
 
+def warm():
+    """Load the model and run it once, without the cache (19 Oct: the start-up "Ready." came from the cache, so the
+    model wasn't loaded and the coach's first new sentence waited about 5 s)."""
+    with _lock:
+        _kokoro().create("Ready.", voice=DEFAULT, speed=SPEED.get(DEFAULT, 1.0), lang="en-us")
+
+
 def sentences(text):
     """Split into short pieces to speak one after another (keeps the first words fast)."""
     parts = re.split(r"(?<=[.!?])\s+", " ".join(text.split()))
