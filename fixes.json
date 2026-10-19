@@ -1,0 +1,10 @@
+{
+  "about": "Knightwise's fix file. Every copy of the app reads it once a day from GitHub (main branch). When chess.com changes its pages, add the new name here first in its list; to pause a broken feature for everyone, add it to off. See docs/MAINTAINING.md.",
+  "version": 1,
+  "boards": [],
+  "archive_rows": [],
+  "archive_slots": [],
+  "game_addresses": [],
+  "nav": {},
+  "off": []
+}

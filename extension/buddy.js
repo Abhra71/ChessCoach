@@ -22,8 +22,22 @@
   let box = null, current = null, foldTimer = null, said = null;
 
   const send = msg => new Promise(resolve => {
-    try { chrome.runtime.sendMessage(msg, r => resolve(chrome.runtime.lastError ? null : r)); } catch (e) { resolve(null); }
+    if (!(chrome.runtime && chrome.runtime.id)) { updated(); return resolve(null); }
+    try { chrome.runtime.sendMessage(msg, r => resolve(chrome.runtime.lastError ? null : r)); } catch (e) { updated(); resolve(null); }
   });
+  // Knightwise updated itself while this page was open: this copy of the coach is the old one and can't reach the
+  // app any more. Say so once, plainly; the player refreshes when they like (never automatic: never mid-game).
+  let staleShown = false;
+  function updated() {
+    if (staleShown || !document.body) return;
+    staleShown = true;
+    const note = document.createElement("div");
+    note.className = "kw-updated";
+    note.innerHTML = `Knightwise was updated. <button>Refresh this page</button> to see the new version.`;
+    note.querySelector("button").onclick = () => location.reload();
+    if (box) box.remove();
+    document.body.appendChild(note);
+  }
   const today = () => new Date().toISOString().slice(0, 10);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -35,7 +49,9 @@
   }
 
   function render(open) {
-    const s = said;
+    const off = KnightwiseContract.off;  // features paused for everyone in fixes.json: their buttons don't show
+    const s = said && { ...said, talk_ready: said.talk_ready && !off("talk"),
+                        actions: (said.actions || []).filter(a => !(a.warmup && off("warmup")) && !(a.find && off("guide"))) };
     if (!s) return;
     if (!box) {
       box = document.createElement("div");
@@ -340,6 +356,7 @@
     unring();
     remove();
     if (!here) return;  // not a coach section: nothing at all
+    if (KnightwiseContract.off("coach") || (here === "member" && KnightwiseContract.off("prep"))) return;  // paused (fixes.json)
     current = here;
     const store = (await send({ type: "greeted", section: here })) || {};
     const first = store.day !== today();  // the first visit to this section today: the full welcome
@@ -369,7 +386,7 @@
   // ---- the archive: a Knightwise tag on each finished game ("clean game", "2 pieces left hanging") ----
   let tagTimer = null, archiveSince = null;
   async function tagArchive() {
-    if (!/^\/games\/archive(\/|$)/.test(location.pathname)) { archiveSince = null; return; }
+    if (!/^\/games\/archive(\/|$)/.test(location.pathname) || KnightwiseContract.off("tags")) { archiveSince = null; return; }
     archiveSince = archiveSince || Date.now();
     const rows = KnightwiseContract.archiveRows(document).filter(r => !r.slot.querySelector(".kw-tag"));
     if (!rows.length) {

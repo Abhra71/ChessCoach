@@ -4,6 +4,30 @@ Agreed with the user on 19 Oct 2026. 1.0 is free forever, with no paywall and no
 users. It's an indie app, so it must keep working for at least a year with nobody changing its code. It is called
 **1.0 only after the user's full hand test passes**; until then it is a beta.
 
+## The 3 days (19 Oct: the user has 3 days of Claude Code left)
+- **Day 1:**
+  - self-healing on chess.com, with the fix file and off switches;
+  - tests on every change;
+  - the self-reloading extension;
+  - typing does actions;
+  - feedback by email;
+  - learning how you speak (small: the kept text and the player's own hearing hint).
+- **Day 2:**
+  - the step-by-step red ring (the places Maya already sends the player);
+  - no line twice, and jokes used once;
+  - the handbook;
+  - the installer rebuilt and the test copy restored;
+  - **evening: the user's full hand test.**
+- **Day 3:**
+  - fixes, then a quick retest;
+  - 1.0 to the Microsoft Store and Edge Add-ons, with a parent;
+  - merge into main and finish the handbook.
+- Also in 1.0 (the user, later on 19 Oct):
+  - the weekly report (B8);
+  - weekly challenges (C10);
+  - a quick design pass on day 2 (C11): every page checked against the rules in C11.
+- **Dropped:** Hindi (B9), by the user's choice. Languages may come back later.
+
 ## Flagship 6: Knightwise looks after itself
 Agreed on 19 Oct as a flagship and for the trailer, worded only as what's true. Each copy learns from its own player
 on their PC; nothing goes to a server.

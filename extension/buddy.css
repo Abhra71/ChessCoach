@@ -82,3 +82,10 @@
 .kw-head .kw-speak { margin-left: auto; background: #2fb56f; color: #0a0a0a; border: 0; border-radius: 999px; padding: 3px 10px;
                      font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .kw-head .kw-speak:hover { filter: brightness(1.1); }
+
+/* Knightwise updated itself while this page was open (flagship 6): a quiet note, the player refreshes when they like */
+.kw-updated { position: fixed; right: 18px; bottom: 18px; z-index: 2147483000; max-width: 300px; padding: 12px 14px;
+              border-radius: 10px; background: #1f1f1f; color: #eee; font: 500 13.5px/1.45 "Segoe UI", system-ui, sans-serif;
+              box-shadow: 0 6px 24px rgba(0, 0, 0, .35); }
+.kw-updated button { font: 600 13px "Segoe UI", system-ui, sans-serif; color: #111; background: #fff; border: 0;
+                     border-radius: 6px; padding: 3px 8px; margin: 0 2px; cursor: pointer; }

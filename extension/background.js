@@ -15,7 +15,12 @@ let speakingTab = null, lastCheck = 0;
 const stamp = () => fetch(`${COACH}/api/extension-stamp`).then(r => r.json()).then(d => d.stamp).catch(() => null);
 chrome.runtime.onInstalled.addListener(async () => { const s = await stamp(); if (s) chrome.storage.local.set({ stamp: s }); });
 chrome.alarms.create("update-check", { periodInMinutes: 1 });
+// the fix file (flagship 6): the app downloads it from GitHub once a day; the pages read it from storage
+const fixes = () => fetch(`${COACH}/api/fixes`).then(r => r.json()).then(f => chrome.storage.local.set({ fixes: f })).catch(() => {});
+fixes();
+chrome.alarms.create("fixes", { periodInMinutes: 60 });
 chrome.alarms.onAlarm.addListener(async alarm => {
+  if (alarm.name === "fixes") return fixes();
   if (alarm.name !== "update-check") return;
   const [now, { stamp: mine }] = await Promise.all([stamp(), chrome.storage.local.get("stamp")]);
   if (!now) return;  // the app isn't running

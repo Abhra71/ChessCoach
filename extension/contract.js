@@ -21,8 +21,18 @@ const KnightwiseContract = (() => {
   const ARCHIVE_ROWS = [".game-history-games-row", "[class*=games-row]", "tr"];
   const ARCHIVE_SLOTS = [".game-history-games-info-footer", "[class*=info-footer]", "td:last-child"];
 
+  // The fix file (flagship 6, coach/fixes.py): new names from GitHub, tried before ours, and features paused for
+  // everyone. The background keeps the latest copy in storage; until it's read, ours alone are used.
+  let FIX = {};
+  try { chrome.storage.local.get("fixes").then(v => { FIX = (v && v.fixes) || {}; }); } catch (e) {}
+  const list = (name, ours) => [...(Array.isArray(FIX[name]) ? FIX[name] : []), ...ours];
+  const off = feature => Array.isArray(FIX.off) && FIX.off.includes(feature);
+  const all = (doc, sel) => { try { return [...doc.querySelectorAll(sel)]; } catch (e) { return []; } };  // a bad name can't break us
+  const one = (root, sel) => { try { return root.querySelector(sel); } catch (e) { return null; } };
+
   function gameId(path) {
-    for (const re of GAME_ADDRESSES) { const m = re.exec(path || ""); if (m) return m[1]; }
+    const extra = list("game_addresses", []).map(s => { try { return new RegExp(s); } catch (e) { return null; } }).filter(Boolean);
+    for (const re of [...extra, ...GAME_ADDRESSES]) { const m = re.exec(path || ""); if (m && /^\d+$/.test(m[1] || "")) return m[1]; }
     return null;
   }
 
@@ -37,8 +47,19 @@ const KnightwiseContract = (() => {
   }
 
   function board(doc) {
-    for (const sel of BOARDS) { const el = doc.querySelector(sel); if (el) return el; }
-    return null;
+    for (const sel of list("boards", BOARDS)) { const el = one(doc, sel); if (el) return el; }
+    return boardByMeaning(doc);
+  }
+
+  // When every name has failed (chess.com renamed the board): the board is the smallest box that holds the pieces,
+  // found by what the pieces are ("wp", "square-52"), not by what chess.com calls the board. Reported, so we learn.
+  function boardByMeaning(doc) {
+    const pieces = all(doc, "[class*='square-']").filter(el => [...el.classList].some(c => PIECE.test(c)));
+    if (pieces.length < 2) return null;
+    let box = pieces[0].parentElement;
+    while (box && !pieces.every(p => box.contains(p))) box = box.parentElement;
+    if (box) report("board-by-meaning", true, box.tagName.toLowerCase() + "." + String(box.className).slice(0, 60));
+    return box || null;
   }
 
   // Piece placement as in a FEN ("rnbqkbnr/pppppppp/8/..."), from each piece's class list. null if none could be read.
@@ -66,17 +87,38 @@ const KnightwiseContract = (() => {
   }
 
   // Each game row of the archive: {id, slot}. Rows without a game link (headers, ads) are skipped.
+  const linkId = link => { try { return gameId(new URL(link.getAttribute("href"), "https://www.chess.com").pathname); } catch (e) { return null; } };
+
   function archiveRows(doc) {
-    for (const sel of ARCHIVE_ROWS) {
-      const rows = [...doc.querySelectorAll(sel)].map(row => {
-        const link = row.querySelector('a[href*="/game/"]');
-        const id = link && gameId(new URL(link.getAttribute("href"), "https://www.chess.com").pathname);
-        const slot = id && ARCHIVE_SLOTS.map(s => row.querySelector(s)).find(Boolean);
+    const slots = list("archive_slots", ARCHIVE_SLOTS);
+    for (const sel of list("archive_rows", ARCHIVE_ROWS)) {
+      const rows = all(doc, sel).map(row => {
+        const link = one(row, 'a[href*="/game/"]');
+        const id = link && linkId(link);
+        const slot = id && slots.map(s => one(row, s)).find(Boolean);
         return id && slot ? { id, slot } : null;
       }).filter(Boolean);
       if (rows.length) return rows;
     }
-    return [];
+    return rowsByMeaning(doc);
+  }
+
+  // When every name has failed: a game's row is the biggest box around its link that holds no other game, and the
+  // tag goes at its end. Found by the links, which chess.com can't rename without breaking its own site.
+  function rowsByMeaning(doc) {
+    const seen = new Set(), rows = [];
+    for (const link of all(doc, 'a[href*="/game/"]')) {
+      const id = linkId(link);
+      if (!id || seen.has(id)) continue;
+      let row = link;
+      while (row.parentElement && row.parentElement !== doc.body &&
+             all(row.parentElement, 'a[href*="/game/"]').every(a => linkId(a) === id)) row = row.parentElement;
+      if (row === link) continue;
+      seen.add(id);
+      rows.push({ id, slot: row });
+    }
+    if (rows.length) report("archive-by-meaning", true, `${rows.length} rows`);
+    return rows;
   }
 
   // both players' names somewhere on the page (chess.com fills them in a few seconds late)
@@ -96,6 +138,6 @@ const KnightwiseContract = (() => {
   }
 
   return { GAME_ADDRESSES, BOARDS, gameId, unknownGameAddress, board, placement, boardPlacement, moveNode,
-           archiveRows, namesOnPage, report };
+           archiveRows, namesOnPage, report, off, fixes: () => FIX };
 })();
 if (typeof module !== "undefined") module.exports = KnightwiseContract;  // for the tests (tests/test_contract.py)

@@ -243,6 +243,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(tags), "application/json")
         if path == "/api/extension-stamp":  # changes whenever the extension's files change (it then reloads itself)
             return self.send(200, json.dumps({"stamp": extension_stamp()}), "application/json")
+        if path == "/api/fixes":  # the fix file from GitHub: new chess.com names, paused features (flagship 6)
+            from coach import fixes
+            return self.send(200, json.dumps(fixes.current()), "application/json")
         if path == "/api/coach":  # what the coach of a chess.com section says (the extension shows it)
             return self.send(200, json.dumps(coach_says(self.path)), "application/json")
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
@@ -921,6 +924,8 @@ def update_once():
     """New games -> check -> pages. Returns (games checked, whether this was the first time)."""
     first = not (DATA / "review.html").exists()
     STATE.update(phase="downloading your games", done=0, total=0, error=None)
+    from coach import fixes
+    fixes.refresh()  # once a day: the fix file from GitHub (never fails; offline keeps the last copy)
     fetch.fetch(player())
     if not puzzles.current():  # first run, or the library grew
         STATE["phase"] = "downloading puzzles"

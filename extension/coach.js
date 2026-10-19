@@ -229,6 +229,7 @@
 
   async function show(id, data) {
     if (!data.moments.length) return;  // a clean game: nothing to show on the board
+    if (KnightwiseContract.off("review")) return;  // paused for everyone in fixes.json: the review is in the app
     let names = false, board = null;
     for (let i = 0; i < 45 && gameId === id; i++) {  // chess.com fills in the names and the board a few seconds late
       names = names || samePlayers(data.players || [], i); board = boardEl();

@@ -33,6 +33,10 @@ CHECKS = {
                      "chess.com's game service changed or is down, so new games can't be downloaded. Your old games are safe."),
     "api-games": ("the details of each game from chess.com",
                   "chess.com changed the details it sends for each game, so new games can't be checked yet."),
+    # healed by themselves (flagship 6): every name failed, and the extension found it by what it is. Kept as ok,
+    # with what was found in the detail: the name to put in fixes.json (docs/MAINTAINING.md)
+    "board-by-meaning": ("chess.com's board, found by its pieces", "chess.com renamed its board."),
+    "archive-by-meaning": ("the archive's rows, found by their game links", "chess.com renamed its archive rows."),
 }
 GAME_FIELDS = ("url", "pgn", "end_time", "time_class", "rules")
 SIDE_FIELDS = ("username", "rating", "result")
