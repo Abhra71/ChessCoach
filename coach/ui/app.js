@@ -128,17 +128,19 @@ function confetti(n = 70) {
 
 // ---------- microphone ----------
 const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turns it into text (Groq, then Gemini)
-  let ctx = null, stream = null, node = null, chunks = [], level = 0;
+  let ctx = null, stream = null, node = null, chunks = [], level = 0, sound = false;
+  // 19 Oct: Bluetooth headphones switched off mid-test and the microphone sent only zeros: say so, not "I'll be here"
+  const DEAD = "Your microphone sends no sound. Check which one Windows is using (Settings, System, Sound), then try again.";
   async function start() {
     stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
     ctx = new AudioContext({ sampleRate: 16000 });
     const src = ctx.createMediaStreamSource(stream);
     node = ctx.createScriptProcessor(4096, 1, 1);
-    chunks = []; level = 0;
+    chunks = []; level = 0; sound = false;
     node.onaudioprocess = e => {
       const d = new Float32Array(e.inputBuffer.getChannelData(0));
       chunks.push(d);
-      let sum = 0; for (const v of d) sum += v * v;
+      let sum = 0; for (const v of d) { sum += v * v; if (v) sound = true; }
       level = Math.sqrt(sum / d.length);  // how loud, for knowing when the player has finished
     };
     src.connect(node); node.connect(ctx.destination);
@@ -156,6 +158,7 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turn
     const r = await fetch("/api/listen", { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: pcm.buffer });
     const j = await r.json();
     if (!r.ok) throw new Error(j.message || "Couldn't hear that.");
+    if (j.silent) throw new Error(DEAD);
     return j.text;
   }
   // hands-free: listen until the player has spoken and then been quiet for a moment. "" if they said nothing.
@@ -168,7 +171,7 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turn
       const now = Date.now();
       if (cancelled()) { await close(); return ""; }
       if (level > loud) { heard = true; lastLoud = now; }
-      if (!heard && now - began > wait) { await close(); return ""; }
+      if (!heard && now - began > wait) { await close(); if (!sound) throw new Error(DEAD); return ""; }
       if ((heard && now - lastLoud > quiet) || now - began > longest) return stop();
     }
   }

@@ -611,6 +611,11 @@ class Handler(BaseHTTPRequestHandler):
         pcm = self.rfile.read(size)
         if size < hearing.RATE // 2:  # under a quarter of a second: nothing said
             return self.send(200, json.dumps({"text": ""}), "application/json")
+        import numpy as np
+        if np.abs(np.frombuffer(pcm[:size // 2 * 2], dtype="<i2")).max(initial=0) < 200:  # silence: a dead microphone
+            # (19 Oct: Bluetooth headphones switched off, the recording was all zeros, and Whisper wrote
+            # "Thanks for watching!" for it). Never sent: the coach would answer words nobody said.
+            return self.send(200, json.dumps({"text": "", "silent": True}), "application/json")
         try:
             text, provider = ai.hear(pcm, hearing.RATE)
             return self.send(200, json.dumps({"text": text, "by": provider}), "application/json")

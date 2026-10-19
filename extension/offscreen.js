@@ -52,10 +52,10 @@ async function record(app) {
   catch (e) { return { error: "mic" }; }  // not allowed yet: the page offers the one-time "Allow"
   const ctx = new AudioContext({ sampleRate: 16000 }), src = ctx.createMediaStreamSource(stream);
   const node = ctx.createScriptProcessor(4096, 1, 1), chunks = [];
-  let level = 0;
+  let level = 0, sound = false;  // sound: anything but zeros (a switched-off headset sends only zeros, 19 Oct)
   node.onaudioprocess = e => {
     const d = new Float32Array(e.inputBuffer.getChannelData(0)); chunks.push(d);
-    let sum = 0; for (const v of d) sum += v * v; level = Math.sqrt(sum / d.length);
+    let sum = 0; for (const v of d) { sum += v * v; if (v) sound = true; } level = Math.sqrt(sum / d.length);
   };
   src.connect(node); node.connect(ctx.destination);
   const me = recording = {};
@@ -70,6 +70,7 @@ async function record(app) {
   }
   node.disconnect(); stream.getTracks().forEach(t => t.stop()); await ctx.close();
   if (recording === me) recording = null;
+  if (!heard && !sound) return { error: "Your microphone sends no sound. Check which one Windows is using, then try again." };
   if (!heard) return { text: "" };
   const n = chunks.reduce((a, c) => a + c.length, 0), pcm = new Int16Array(n);
   let i = 0;
