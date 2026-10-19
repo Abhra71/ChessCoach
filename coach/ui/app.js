@@ -710,7 +710,7 @@ async function repertoireView(fresh) {
       <button class="btn" id="newlines">Choose new lines</button></div>
     <div class="plan-grid">${lines.map((l, i) => `<div class="box plan-card"><div class="plan-text">
       <div class="label">${esc(slot(l))}${l.kept ? " · you already play this" : ""}</div>
-      <h3>${esc(l.name)}</h3><p class="muted small">${l.kept ? "It works for you: now learn it to move 6." : l.style === "solid" ? "Solid and safe, and hard to get tricked in." : "A clear plan from the first moves."}</p>
+      <h3>${esc(l.name)}</h3><p class="muted small">${l.kept ? "It works for you: now learn it to move 6." : esc(l.why)}</p>
       <a class="btn primary" href="#/repertoire/${i}">Practise it</a></div></div>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
   $("#newlines").onclick = () => repertoireView(true);
   Coach.react("viktor", "explain", "Three lines. Know them to move six without thinking, and every game starts on your terms.");

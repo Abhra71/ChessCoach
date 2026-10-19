@@ -26,18 +26,26 @@ def _pick(seen, side, first, loose, engine):
         replies = {k[2]: v for k, v in seen.items() if k[0] == "white" and k[1] == mine and k[2]}
         reply = max(replies, key=lambda m: replies[m][1], default=None)
         fits = lambda sans: sans[0] == mine and (reply is None or (len(sans) > 1 and sans[1] == reply))
-        own = None
-    else:
-        answers = {k[2]: v for k, v in seen.items() if k[0] == "black" and k[1] == first and k[2]}
-        own = max(answers, key=lambda m: answers[m][1], default=None)
-        keep = own and answers[own][1] >= 3 and answers[own][0] / answers[own][1] >= 0.5
-        if keep:  # your own answer works: a sound line with it, or else the best sound answer of all
-            line = _choose(lambda sans: sans[0] == first and len(sans) > 1 and sans[1] == own, side, loose, engine, first, own)
-            if line:
-                return line
-        fits = lambda sans: sans[0] == first and len(sans) > 1
-        own = None
-    return _choose(fits, side, loose, engine, first, own)
+        line = _choose(fits, side, loose, engine, first, None)
+        if line:  # why this one, from your games (19 Oct: every line said the same words)
+            line["because"] = (f"It starts with 1. {mine}, the move you play most as White"
+                               + (f", against 1... {reply}, the answer you meet most." if reply else "."))
+        return line
+    answers = {k[2]: v for k, v in seen.items() if k[0] == "black" and k[1] == first and k[2]}
+    own = max(answers, key=lambda m: answers[m][1], default=None)
+    keep = own and answers[own][1] >= 3 and answers[own][0] / answers[own][1] >= 0.5
+    if keep:  # your own answer works: a sound line with it, or else the best sound answer of all
+        line = _choose(lambda sans: sans[0] == first and len(sans) > 1 and sans[1] == own, side, loose, engine, first, own)
+        if line:
+            return line
+    line = _choose(lambda sans: sans[0] == first and len(sans) > 1, side, loose, engine, first, None)
+    if line and own:
+        wins, played = answers[own]
+        line["because"] = (f"Against 1. {first} you usually play 1... {own}, and you score {round(100 * wins / played)}% "
+                           f"with it in {played} game{'s' if played != 1 else ''}. "
+                           + ("That works, but it has no well-known line to learn, so here is one."
+                              if keep else "This line is a sounder start."))
+    return line
 
 
 def _choose(fits, side, loose, engine, first, own):
@@ -76,10 +84,16 @@ def build(engine, games=None, player=None, fresh=False):
     return lines
 
 
+def why(line):
+    """Why this line, from your games."""
+    style = f"{'Solid and safe' if line['style'] == 'solid' else 'A clear plan'}, and hard to get tricked in."
+    return ("You already play this, and it works for you." if line.get("kept")
+            else f"{line['because']} {style}" if line.get("because") else style)
+
+
 def lesson(line):
     """A line as a board lesson: you play your side, the coach explains each move."""
     side = "White" if line["side"] == "white" else "Black"
-    why = (f"You already play this, and it works for you." if line.get("kept")
-           else f"{'Solid and safe' if line['style'] == 'solid' else 'A clear plan'}, and hard to get tricked in.")
-    return {**line, "coach": "viktor", "title": f"{line['name']} (as {side})", "why": why, "intro": why,
+    reason = why(line)
+    return {**line, "coach": "viktor", "title": f"{line['name']} (as {side})", "why": reason, "intro": reason,
             "drills": [plan.opening_drill(line)]}

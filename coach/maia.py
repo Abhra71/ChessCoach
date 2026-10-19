@@ -128,13 +128,10 @@ def compare(fen, played, best, rating):
         return out + f", and at {strong:,} it's the most played move ({them_pc}%): a natural mistake, so it's worth knowing."
     if you_pc >= 1:
         out += f"; at {strong:,}, {'fewer do' if them_pc < you_pc else 'about as many do' if them_pc == you_pc else 'more do'} ({them_pc}%)"
-    out += f"{',' if you_pc >= 1 else ';'} and the most played {'there ' if you_pc >= 1 else f'at {strong:,} '}is {board.san(top_strong)} ({share(them, top_strong)}%)"
-    if top_strong != bm and share(them, bm):
-        out += f". The best, {best}, is played by {share(them, bm)}%"
-    return out + "."
-    if top_strong == pm:
-        return out + f", and at {strong:,} it's the most played move ({share(them, pm)}%): a natural mistake, so it's worth knowing."
-    out += f"; at {strong:,} only {share(them, pm)}% do, and the most played is {board.san(top_strong)} ({share(them, top_strong)}%)"
+    if you_pc >= 1:
+        out += f", and the most played there is {board.san(top_strong)} ({share(them, top_strong)}%)"
+    else:  # 19 Oct: not "here; and the most played at 1,500 is"
+        out += f". At {strong:,}, the most played move is {board.san(top_strong)} ({share(them, top_strong)}%)"
     if top_strong != bm and share(them, bm):
         out += f". The best, {best}, is played by {share(them, bm)}%"
     return out + "."

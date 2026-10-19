@@ -138,8 +138,9 @@ def story(checked, moves, player, now=None):
     # with a single game there's no "best"; when the best of them is still a loss, it's the closest one, not the best
     # (13 Oct test: a week of one lost game showed it as the "Best game")
     best_row = None
-    if len(week) >= 2:
-        best = max(week, key=score)
+    played = [g for g in week if insights._moves_played(g.get("pgn", "")) >= 10]  # not a game they left after 2 moves (19 Oct)
+    if len(played) >= 2:
+        best = max(played, key=score)
         best_row = insights.game_row(best, moves[best["url"]], player)
         best_row["label"] = "Best game" if best_row["result"] == "win" else "Your closest game"
     improved = None

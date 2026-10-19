@@ -25,7 +25,8 @@ CHECK = chess.engine.Limit(depth=12)
 ENDINGS = [
     ("queen", "Mate with king and queen", 1, "mate", 10, "KQ",
      "Use your queen to box their king in, a knight's jump away, until it's on the edge. Then bring your king close and mate.",
-     "Their king had no move but wasn't in check: stalemate, a draw. Keep the queen a knight's jump away, never closer, until your king is near."),
+     "Their king had no move but wasn't in check: stalemate, a draw. Once their king is on the edge, ask before every "
+     "move, even a king move: will their king still have a square to go to?"),
     ("rook", "Mate with king and rook", 1, "mate", 16, "KR",
      "Cut their king off with your rook, bring your king up opposite theirs, and push it to the edge one row at a time.",
      "Stalemate. When their king has only a couple of squares, make a waiting move with the rook instead of taking the last square."),

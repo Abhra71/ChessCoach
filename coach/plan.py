@@ -66,7 +66,8 @@ IDEAS = [
     {"id": "idea:slow-down", "title": "Slow down on the big moves", "helps": [HANG],
      "text": "Spend your time on captures, checks, and moves where they attack something. Play the easy moves fast.",
      "own": [HANG], "puzzles": ["hangingPiece", "trappedPiece"],
-     "checklist": ["Is this a big moment: a capture, a check, an attack?", "If yes: what can they take after my move?"]},
+     "checklist": ["Is this a big moment: a capture, a check, an attack?",
+                   "If yes: after my move, what can they take, and which checks can they give?"]},  # the drill has mates too (19 Oct)
     {"id": "idea:trade-ahead", "title": "Ahead? Trade pieces", "helps": [STALEMATE, HANG],
      "text": "When you're ahead in material, trade pieces. Fewer pieces means fewer tricks against you.",
      "own": [], "puzzles": ["queenEndgame", "pawnEndgame"],
@@ -175,7 +176,7 @@ def _puzzles(theme, rating, rng, avoid=()):
 def tactic(theme, rating, rng, why=None):
     return {"id": f"tactic:{theme}", "kind": "tactic", "coach": "viktor", "theme": theme,
             "title": THEME_NAME[theme][0].upper() + THEME_NAME[theme][1:], "why": why,
-            "intro": f"{THEME_NAME[theme][0].upper() + THEME_NAME[theme][1:]}. {drills.CLUE[theme]}", "drills": _puzzles(theme, rating, rng)}
+            "intro": drills.CLUE[theme], "drills": _puzzles(theme, rating, rng)}
 
 
 def endgame(theme, rating, rng, why=None):

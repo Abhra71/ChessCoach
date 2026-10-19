@@ -10,7 +10,7 @@ def no_tablebase(monkeypatch):
 def test_a_stalemate_is_caught_with_the_tip(monkeypatch):
     no_tablebase(monkeypatch)
     r = endgames.play("queen", "k7/8/1K6/8/8/8/8/2Q5 w - - 0 1", "c1c7", 3)
-    assert r["over"] and r["result"] == "stalemate" and "knight's jump" in r["say"]
+    assert r["over"] and r["result"] == "stalemate" and "still have a square" in r["say"]
 
 
 def test_checkmate_wins_and_counts(monkeypatch, tmp_path):
