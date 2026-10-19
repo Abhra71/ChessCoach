@@ -1,6 +1,14 @@
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def drills_cache_of_its_own(tmp_path, monkeypatch):
+    """Each test keeps its drills' engine work in its own folder, never in data/ (19 Oct)."""
+    from coach import drills
+    monkeypatch.setattr(drills, "CACHE", tmp_path / "drill-cache.json")
+    monkeypatch.setattr(drills, "_cache", None)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def close_the_shared_engine():
     """Tests that play moves open the app's shared Stockfish (coach/live_engine.py): close it at the end, or the

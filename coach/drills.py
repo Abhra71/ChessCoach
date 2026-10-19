@@ -152,8 +152,38 @@ def their_last_move(r):
     return (before, last) if board.board_fen() == chess.Board(r["fen"]).board_fen() else None
 
 
+CACHE = DATA / "drill-cache.json"  # a position's engine work never changes: kept, not redone (19 Oct)
+CACHE_VERSION, CACHE_MAX = f"{DEPTH}/{CHECK_DEPTH}/{GOOD}/{CLOSE_CP}", 3000
+_cache = None
+
+
 def drill(eng, pattern, r):
-    """A position from the player's own game: every legal move scored by the engine."""
+    """A position from the player's own game: every legal move scored by the engine. Kept on this PC, so a lesson
+    or the slow-down drill opens at once the second time (19 Oct test: 12 s, about 2 s of Stockfish per position)."""
+    global _cache
+    if _cache is None:
+        try:
+            saved = json.loads(CACHE.read_text())
+            _cache = saved["drills"] if saved.get("version") == CACHE_VERSION else {}
+        except (OSError, ValueError, KeyError):
+            _cache = {}
+    key = f"{drill_id(r)}|{r['fen']}|{pattern}"
+    if key not in _cache:
+        _cache[key] = _drill(eng, pattern, r)
+        if len(_cache) > CACHE_MAX:
+            for old in list(_cache)[:len(_cache) - CACHE_MAX]:
+                del _cache[old]
+        try:
+            CACHE.parent.mkdir(parents=True, exist_ok=True)
+            tmp = CACHE.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"version": CACHE_VERSION, "drills": _cache}))
+            tmp.replace(CACHE)
+        except OSError:
+            pass
+    return json.loads(json.dumps(_cache[key]))  # a copy: callers add to it
+
+
+def _drill(eng, pattern, r):
     board = chess.Board(r["fen"])
     prev = their_last_move(r)
     scores = score_moves(eng, r["fen"])

@@ -84,3 +84,15 @@ def test_lesson_puzzles_match_the_lesson_and_the_level():
     assert queen and all(any(t.startswith("mate") for t in d["themes"]) for d in queen)
     ratings = [d["rating"] for d in plan._puzzles("trappedPiece", 254, random.Random(1))]
     assert ratings == sorted(ratings) and max(ratings) < 1000
+
+
+def test_a_position_is_worked_out_once_then_kept(monkeypatch):
+    """19 Oct: a lesson took 12 s, about 2 s of Stockfish per position, every time it opened."""
+    from coach import drills
+    calls = []
+    monkeypatch.setattr(drills, "_drill", lambda eng, pattern, r: calls.append(r["ply"]) or {"id": "x", "steps": []})
+    r = {"url": "u", "ply": 5, "fen": "8/8/8/8/8/8/8/K6k w - - 0 1"}
+    first = drills.drill(None, "p", r)
+    first["where"] = "changed by a caller"
+    drills._cache = None  # as after a restart: read back from the file
+    assert drills.drill(None, "p", r) == {"id": "x", "steps": []} and calls == [5]
