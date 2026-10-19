@@ -930,7 +930,30 @@ def update_once():
         drills.build()
         STATE["practice_day"] = today
     STATE.update(phase="ready", last_update=time.strftime("%Y-%m-%d %H:%M"))
+    if checked or first:
+        warm_up()
     return checked, first
+
+
+def warm_up():
+    """After new games: the slow-down drill and your next lesson worked out now, with an engine of its own, so they
+    open at once instead of after 10 seconds of Stockfish (19 Oct). Never in the way: errors are only logged."""
+    from coach import clock, course, insights
+    try:
+        eng = analyze.open_engine()
+    except Exception:
+        log.exception("warm-up: no engine")
+        return
+    try:
+        for r in clock.rushed(insights._games(), insights._moves(), insights._player() or ""):
+            drills.drill(eng, r["pattern"], r)
+        nxt = course.course().get("next")
+        if nxt:
+            course.lesson(nxt, eng, insights.home().get("rating"))
+    except Exception:
+        log.exception("warm-up failed")
+    finally:
+        eng.quit()
 
 
 def summary_of_new(n):

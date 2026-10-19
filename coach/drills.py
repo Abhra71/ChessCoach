@@ -9,6 +9,7 @@ Every legal move in each position is scored by Stockfish when the page is built,
 """
 import json
 import random
+import threading
 from itertools import zip_longest
 from datetime import date
 
@@ -155,32 +156,36 @@ def their_last_move(r):
 CACHE = DATA / "drill-cache.json"  # a position's engine work never changes: kept, not redone (19 Oct)
 CACHE_VERSION, CACHE_MAX = f"{DEPTH}/{CHECK_DEPTH}/{GOOD}/{CLOSE_CP}", 3000
 _cache = None
+_CACHE_LOCK = threading.Lock()
 
 
 def drill(eng, pattern, r):
     """A position from the player's own game: every legal move scored by the engine. Kept on this PC, so a lesson
     or the slow-down drill opens at once the second time (19 Oct test: 12 s, about 2 s of Stockfish per position)."""
     global _cache
-    if _cache is None:
-        try:
-            saved = json.loads(CACHE.read_text())
-            _cache = saved["drills"] if saved.get("version") == CACHE_VERSION else {}
-        except (OSError, ValueError, KeyError):
-            _cache = {}
     key = f"{drill_id(r)}|{r['fen']}|{pattern}"
-    if key not in _cache:
-        _cache[key] = _drill(eng, pattern, r)
-        if len(_cache) > CACHE_MAX:
-            for old in list(_cache)[:len(_cache) - CACHE_MAX]:
+    with _CACHE_LOCK:  # the warm-up after new games and a page can both be here (coach/service.py)
+        if _cache is None:
+            try:
+                saved = json.loads(CACHE.read_text())
+                _cache = saved["drills"] if saved.get("version") == CACHE_VERSION else {}
+            except (OSError, ValueError, KeyError):
+                _cache = {}
+        hit = _cache.get(key)
+    if hit is None:
+        hit = _drill(eng, pattern, r)
+        with _CACHE_LOCK:
+            _cache[key] = hit
+            for old in list(_cache)[:max(0, len(_cache) - CACHE_MAX)]:
                 del _cache[old]
-        try:
-            CACHE.parent.mkdir(parents=True, exist_ok=True)
-            tmp = CACHE.with_suffix(".tmp")
-            tmp.write_text(json.dumps({"version": CACHE_VERSION, "drills": _cache}))
-            tmp.replace(CACHE)
-        except OSError:
-            pass
-    return json.loads(json.dumps(_cache[key]))  # a copy: callers add to it
+            try:
+                CACHE.parent.mkdir(parents=True, exist_ok=True)
+                tmp = CACHE.with_suffix(".tmp")
+                tmp.write_text(json.dumps({"version": CACHE_VERSION, "drills": _cache}))
+                tmp.replace(CACHE)
+            except OSError:
+                pass
+    return json.loads(json.dumps(hit))  # a copy: callers add to it
 
 
 def _drill(eng, pattern, r):
