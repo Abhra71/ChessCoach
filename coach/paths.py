@@ -58,6 +58,8 @@ HOME = home_for(PACKAGE, FROZEN)
 DATA = HOME / "data"
 LOGBOOK = HOME / "logbook"
 ENGINE = APP / "engine" / "stockfish" / "stockfish-windows-x86-64-universal.exe"
+if os.environ.get("KNIGHTWISE_ENGINE"):  # the tests on GitHub (Linux) use the system's Stockfish
+    ENGINE = Path(os.environ["KNIGHTWISE_ENGINE"])
 BUNDLED_EXTENSION = APP / "extension"
 if PACKAGED:
     EXTENSION = documents() / NAME / "extension"

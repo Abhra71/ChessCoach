@@ -1,0 +1,28 @@
+# Every change: all of Knightwise's tests, on GitHub's own computer, free. When they fail, GitHub emails the owner,
+# so a broken change is noticed even when nobody is working on the app (flagship 6, docs/MAINTAINING.md).
+name: tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: sudo apt-get update && sudo apt-get install -y stockfish
+      - run: pip install chess==1.11.2 pytest numpy keyring
+      - name: All the tests
+        env:
+          KNIGHTWISE_ENGINE: /usr/games/stockfish
+          KNIGHTWISE_HOME: ${{ runner.temp }}/knightwise
+          PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
+        run: python -m pytest -q --ignore=tests/test_live_chesscom.py
