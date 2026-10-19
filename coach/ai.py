@@ -280,7 +280,7 @@ def ask(question, context, rating):
 # failures, where Whisper on the PC misheard often. So: Groq first, Gemini as the backup, nothing on the PC by default.
 HEAR_MODEL = {"groq": "whisper-large-v3"}
 HEAR_HINT = ("A chess player talking to their coach Maya or Viktor. Words: knight, bishop, rook, queen, king, pawn, "
-             "takes, castle, kingside, queenside, check, checkmate, fork, pin, skewer, e4, d4, Nf3, Bc4, Caro-Kann, "
+             "takes, castle, kingside, queenside, check, checkmate, mate, mate in one, fork, pin, skewer, e4, d4, Nf3, Bc4, Caro-Kann, "
              "Sicilian, Italian Game, rematch it, review, next, go back, stop talking, practice, puzzle, opening, endgame.")
 
 
