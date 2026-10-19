@@ -372,6 +372,10 @@ def reason(row):
                 f"One more time.")
     if row["status"] == "passed":
         return "Done: the mistake dropped in the games you played after it."
+    if row["rate"] and row["rate"] <= row["goal"]:  # not "0.15 a game. The goal is 0.15." (19 Oct)
+        where = "right at" if row["rate"] == row["goal"] else "already under"
+        return (f"In your last {WINDOW} games: {row['rate']} a game ({_counted(row)}), {where} the goal of {row['goal']}. "
+                f"Practise it once to make it stick.")
     if row["rate"]:
         return f"In your last {WINDOW} games: {row['rate']} a game ({_counted(row)}). The goal is {row['goal'] or 'none at all'}."
     return ""

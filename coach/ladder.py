@@ -17,16 +17,22 @@ from coach.review import biggest
 
 WINDOW = 20  # the last 20 checked games
 WINNING = 300  # "you were winning": a position at least 3 pawns up, by the engine's count
-HANG, FORK, MATED = "left a piece hanging", "walked into a fork or trick", "walked into checkmate"
-FREE, MISSED_MATE, STALEMATE = "missed a free capture", "missed a checkmate", "stalemated a won game"
+HANG, FORK = "left a piece hanging", "walked into a fork or trick"  # the practice set's sections
+FREE, STALEMATE = "missed a free capture", "stalemated a won game"
 
 
 def _per_game(games, moves, test):
     return sum(1 for g in games for r in moves[g["url"]] if test(r)) / len(games)
 
 
-def _pattern(p):
-    return lambda games, moves, ctx: _per_game(games, moves, lambda r: r["pattern"] == p)
+def _lesson(lid):
+    """A skill that is also a lesson in Your course: the course's own count (the teacher's reasons, every mistake of
+    10 points or more), so the two pages never show two numbers for one skill (19 Oct)."""
+    def measure(games, moves, ctx):
+        from coach import course
+        rates = course.rates(games, course.tags(moves))
+        return sum(rates.get(i, 0) for i in course.BY_ID[lid]["ideas"])
+    return measure
 
 
 def _losses(low, high=101):  # moves that cost between low and high points of your chance to win
@@ -90,21 +96,21 @@ def _stalemates(games, moves, ctx):
 # (id, name, what it means, measure, target, "at most" or "at least", unit, training: (label, app route))
 LEVELS = [
     ("safe", "Safe pieces", "up to about 800", [
-        ("hang", "Keep every piece safe", "pieces left hanging a game", _pattern(HANG), 0.3, "max", "a game",
+        ("hang", "Keep every piece safe", "pieces moved to where they're taken", _lesson("safe-hanging"), 0.3, "max", "a game",
          ("Practise it", "practice/" + HANG)),
-        ("free", "Take what they leave you", "free pieces missed a game", _pattern(FREE), 0.3, "max", "a game",
+        ("free", "Take what they leave you", "free pieces not taken", _lesson("safe-free"), 0.3, "max", "a game",
          ("Practise it", "practice/" + FREE)),
-        ("mated", "Watch for their checks", "games where you walked into checkmate", _pattern(MATED), 0.05, "max", "a game",
-         ("Learn it", "lesson/backRankMate")),
-        ("finish", "Finish with checkmate", "checkmates missed a game", _pattern(MISSED_MATE), 0.1, "max", "a game",
-         ("Learn it", "lesson/mateIn1")),
+        ("mated", "Look at their checks", "checkmates walked into", _lesson("safe-checks"), 0.1, "max", "a game",
+         ("Learn it", "course/safe-checks")),
+        ("finish", "Finish them: checkmate in one", "checkmates missed", _lesson("safe-mate1"), 0.1, "max", "a game",
+         ("Learn it", "course/safe-mate1")),
         ("stalemate", "Win won games", "won games you stalemated, in 20 games", _stalemates, 0, "max", "",
          ("Train it", "endgame/queen")),
     ]),
     ("tactics", "Tactics and good starts", "about 800 to 1,200", [
-        ("forks", "See their forks and tricks", "forks and tricks walked into a game", _pattern(FORK), 0.2, "max", "a game",
+        ("forks", "Forks", "forks walked into or missed", _lesson("tac-fork"), 0.2, "max", "a game",
          ("Practise it", "practice/" + FORK)),
-        ("blunders1", "Fewer big mistakes", "big mistakes a game", _losses(20), 1.0, "max", "a game",
+        ("blunders1", "Fewer big mistakes", "moves that cost 20 points or more", _losses(20), 1.0, "max", "a game",
          ("Learn pins", "lesson/pin")),
         ("convert1", "Turn winning games into wins", "winning games you won", _conversion, 70, "min", "%",
          ("Train it", "endgame/pawn")),
@@ -112,9 +118,9 @@ LEVELS = [
          ("Your repertoire", "repertoire")),
     ]),
     ("club", "Fewer mistakes", "about 1,200 to 1,600", [
-        ("blunders2", "Rarely a big mistake", "big mistakes a game", _losses(20), 0.6, "max", "a game",
+        ("blunders2", "Rarely a big mistake", "moves that cost 20 points or more", _losses(20), 0.6, "max", "a game",
          ("Learn skewers", "lesson/skewer")),
-        ("mistakes2", "Fewer medium mistakes", "medium mistakes a game", _losses(10, 20), 1.5, "max", "a game",
+        ("mistakes2", "Fewer medium mistakes", "moves that cost 10 to 20 points", _losses(10, 20), 1.5, "max", "a game",
          ("Learn discovered attacks", "lesson/discoveredAttack")),
         ("convert2", "Win won games, nearly always", "winning games you won", _conversion, 80, "min", "%",
          ("Train it", "endgame/queenpawn")),
@@ -122,19 +128,19 @@ LEVELS = [
          ("Slow-down drill", "clockdrill")),
     ]),
     ("precise", "Precision", "about 1,600 to 2,000", [
-        ("blunders3", "Almost no big mistakes", "big mistakes a game", _losses(20), 0.3, "max", "a game",
+        ("blunders3", "Almost no big mistakes", "moves that cost 20 points or more", _losses(20), 0.3, "max", "a game",
          ("See it in your head", "calc")),
-        ("mistakes3", "Few medium mistakes", "medium mistakes a game", _losses(10, 20), 1.0, "max", "a game",
+        ("mistakes3", "Few medium mistakes", "moves that cost 10 to 20 points", _losses(10, 20), 1.0, "max", "a game",
          ("Learn it", "lesson/capturingDefender")),
-        ("small3", "Few small slips", "small slips a game", _losses(5, 10), 2.5, "max", "a game",
+        ("small3", "Few small slips", "moves that cost 5 to 10 points", _losses(5, 10), 2.5, "max", "a game",
          ("Learn the quiet move", "lesson/quietMove")),
         ("average3", "Steady play", "of your chance to win lost per move, on average", _average_loss, 2.0, "max", "points",
          ("Learn zugzwang", "lesson/zugzwang")),
     ]),
     ("expert", "Expert", "2,000 and above", [
-        ("blunders4", "Big mistakes are rare", "big mistakes a game", _losses(20), 0.15, "max", "a game",
+        ("blunders4", "Big mistakes are rare", "moves that cost 20 points or more", _losses(20), 0.15, "max", "a game",
          ("See it in your head", "calc")),
-        ("mistakes4", "Medium mistakes are rare", "medium mistakes a game", _losses(10, 20), 0.6, "max", "a game",
+        ("mistakes4", "Medium mistakes are rare", "moves that cost 10 to 20 points", _losses(10, 20), 0.6, "max", "a game",
          ("Learn it", "lesson/promotion")),
         ("average4", "Very steady play", "of your chance to win lost per move, on average", _average_loss, 1.3, "max", "points",
          ("Learn the in-between move", "lesson/intermezzo")),
@@ -156,7 +162,7 @@ def ladder(games, moves, player, window=WINDOW):
         for sid, sname, what, measure, target, way, unit, (label, route) in skills:
             value = measure(checked, moves, ctx)
             met = None if value is None else (value <= target if way == "max" else value >= target)
-            out.append({"id": sid, "name": sname, "what": what, "value": None if value is None else round(value, 2),
+            out.append({"id": sid, "name": sname, "what": what, "value": None if value is None else round(value, 0 if unit == "%" else 2),
                         "target": target, "way": way, "unit": unit, "met": met, "train": {"label": label, "route": route}})
         done = all(s["met"] is not False for s in out)
         if not done and current is None:

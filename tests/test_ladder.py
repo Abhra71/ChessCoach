@@ -15,15 +15,29 @@ def row(pattern=None, loss=1.0, cp=0, ply=1):
     return {"pattern": pattern, "loss": loss, "cp_before": cp, "ply": ply}
 
 
-def test_a_level_is_done_only_when_every_skill_meets_its_goal():
+def test_a_level_is_done_only_when_every_skill_meets_its_goal(monkeypatch):
+    from coach import course
     games = [game(f"g{i}") for i in range(10)]
     clean = {g["url"]: [row()] for g in games}
+    monkeypatch.setattr(course, "tags", lambda moves: {})
     page = ladder.ladder(games, clean, "me")
     assert page["levels"][0]["done"] and page["current"] >= 1
     hanging = {g["url"]: [row(ladder.HANG, 30)] for g in games}
+    monkeypatch.setattr(course, "tags", lambda moves: {u: [(1, "hanging", 30)] for u in moves})
     page = ladder.ladder(games, hanging, "me")
     assert page["current"] == 0 and ladder.focus(page)["id"] == "hang"
     assert ladder.focus(page)["train"]["route"] == "practice/" + ladder.HANG
+
+
+def test_a_skill_that_is_a_lesson_shows_the_course_number(monkeypatch):
+    """The same skill on Your level and Your course: one number, not two (19 Oct)."""
+    from coach import course
+    games = [game(f"g{i}") for i in range(4)]
+    moves = {g["url"]: [row()] for g in games}
+    monkeypatch.setattr(course, "tags", lambda m: {games[0]["url"]: [(1, "free", 20)]})
+    skill = next(s for s in ladder.ladder(games, moves, "me")["levels"][0]["skills"] if s["id"] == "free")
+    lesson = next(l for l in course.course(games, moves, "me", current="safe")["lessons"] if l["id"] == "safe-free")
+    assert skill["value"] == lesson["rate"] == 0.25
 
 
 def test_converting_won_games():

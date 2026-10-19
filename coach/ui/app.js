@@ -344,7 +344,7 @@ function vsCard(v) {  // you now against you before: the only rival that is alwa
       <div class="vs-key small muted"><span><i class="now"></i>${esc(v.now.label)}</span><span><i class="then"></i>${esc(v.then.label)}</span></div></div>
     ${row("Pieces given away a game", v.now.pieces, v.then.pieces, true)}
     ${row("Games won", v.now.wins, v.then.wins, false, "%")}
-    ${row("Big mistakes a game", v.now.moments, v.then.moments, true)}</div>`;
+    ${row("Key moments a game", v.now.moments, v.then.moments, true)}</div>`;
 }
 
 async function daily() {
@@ -1060,6 +1060,15 @@ function wrap(g, t, x, y, width, size) {
   g.fillText(line, x, y);
 }
 
+// what to say about your last game: never "0 key moments", and a game left after 2 moves isn't "a clean game" (19 Oct)
+function lastGameWords(last, who) {
+  if (last.moments) return `${who} ${last.moments} key moment${last.moments === 1 ? "" : "s"} to look at.`;
+  if (last.moves && last.moves < 10) return last.result === "win" && last.how === "abandoned"
+    ? `they left after ${last.moves} move${last.moves === 1 ? "" : "s"}, so there's nothing to learn from it.`
+    : `it ended after ${last.moves} move${last.moves === 1 ? "" : "s"}, too short to learn from.`;
+  return "there was nothing big to fix.";
+}
+
 async function home() {
   shell("home", `<p class="muted">Loading…</p>`);
   const h = await api("/api/home");
@@ -1107,16 +1116,16 @@ async function home() {
       ${last ? `<div class="box row spread rise"><div><div class="label muted-label">Your last game</div>
           <h3 style="margin:6px 0 4px">vs ${esc(last.opponent)} <span class="faint num">${last.opponent_rating}</span>
             <span class="chip ${last.result}">${last.result === "win" ? "W" : last.result === "loss" ? "L" : "D"}</span></h3>
-          <p class="sub">${last.moments ? `Maya found ${last.moments} key moment${last.moments > 1 ? "s" : ""} to look at.` : "A clean game: nothing big to fix."}</p></div>
+          <p class="sub">${cap(lastGameWords(last, "Maya found"))}</p></div>
         <a class="btn" href="#/games/${last.id}">Review game</a></div>` : ""}
       <div class="box rise"><h2>Ask the coach</h2><div id="askbox"></div></div>
     </div>`;
   countUp($("#page"));
   // three sentences, not six (13 Oct test, point 1: "is it needed?"): your focus, the habit, your last game
   const briefing = [`${hello}, ${h.player}.`,
-    f ? `Your focus is ${(PATTERN_TITLE[f.pattern] || f.pattern).toLowerCase()}: ${f.times} times in ${f.games} games.` : "",
+    f ? `Your focus is to ${(PATTERN_TITLE[f.pattern] || f.pattern).toLowerCase()}: ${f.times} times in ${f.games} games.` : "",
     f ? f.habit : "",
-    last ? `Your last game, against ${last.opponent}, has ${last.moments} key moment${last.moments === 1 ? "" : "s"} to look at.` : ""].join(" ");
+    last ? `In your last game, against ${last.opponent}, ${lastGameWords(last, "I found")}` : ""].join(" ");
   $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
   api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?", coach: "maya",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,

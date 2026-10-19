@@ -5,6 +5,7 @@ Everything is computed from data/ (the player's games and the engine's checks); 
 import collections
 import io
 import json
+import re
 from datetime import datetime
 
 import chess
@@ -74,7 +75,14 @@ def game_row(g, rows, player):
         "opening": g.get("eco", "").rstrip("/").split("/")[-1].replace("-", " ") or None,
         "pieces_lost": sum(1 for r in rows if r.get("pattern", classify(r)) in LOSING_MATERIAL),
         "moments": len(biggest(rows)), "checked": bool(rows),
+        "moves": _moves_played(g.get("pgn", "")), "how": g[them if _result(g, me) == "win" else me]["result"],
     }
+
+
+def _moves_played(pgn):
+    """How many moves the game lasted (so a game they left after 2 moves isn't called "a clean game")."""
+    text = pgn.split("\n\n", 1)[-1]
+    return max((int(n) for n in re.findall(r"(?<![\d.])(\d+)\.\s", text)), default=0)
 
 
 def games_list():
