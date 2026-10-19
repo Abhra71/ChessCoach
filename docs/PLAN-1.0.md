@@ -4,6 +4,19 @@ Agreed with the user on 19 Oct 2026. 1.0 is free forever, with no paywall and no
 users. It's an indie app, so it must keep working for at least a year with nobody changing its code. It is called
 **1.0 only after the user's full hand test passes**; until then it is a beta.
 
+## Flagship 6: Knightwise looks after itself
+Agreed on 19 Oct as a flagship and for the trailer, worded only as what's true. Each copy learns from its own player
+on their PC; nothing goes to a server.
+- **Heals around chess.com changes.** When a button moves or is renamed, the extension looks for it in other ways
+  (its words, its shape, its place). Only if it truly can't find it is the feature switched off politely. The fix
+  file (A1) is the backup.
+- **Learns how you speak.** The text of what the coach heard is kept on the PC (never audio; under 1 MB a year).
+  Names, moves and phrases the player uses, and the mishearings that were later resolved, go into that player's own
+  hearing hint automatically. The player can look at it, mark mistakes and delete it.
+- **Learns how you play.** This already exists: habits, level, openings, spaced repetition.
+- **Looks after its own parts.** Engines restart, old files are tidied, and busy AI keys rest and come back.
+- **Never claimed:** that it rewrites its own code or learns from all users at once.
+
 ## A. Protect the future (first)
 1. **The fix file.** Everything the extension finds on chess.com (boards, buttons, tabs), plus an off switch for
    each feature, lives in one small file in the GitHub repo. The app reads it once a day. When chess.com changes, one
@@ -57,5 +70,4 @@ users. It's an indie app, so it must keep working for at least a year with nobod
     - Then 1.0 goes to the Microsoft Store and Edge Add-ons, dev-0.6 merges into main, and Store 0.4.1 is uninstalled.
 
 ## Open
-- Keep the text of what the coach heard on the player's PC (never audio), so they can mark mistakes? Waiting on the user.
 - Firefox: later, if wanted. Its extensions work differently (no offscreen page for the voice), so it needs its own work.
