@@ -9,6 +9,13 @@ what you saw. Your real data stays untouched.
 
 **Have ready:** Chrome logged in to chess.com, volume up a little. For session C, a parent (the free Groq key).
 
+**Before session B:** Chrome must load the 0.6 extension. Until 19 Oct it loaded the 0.5.0 one
+(ChessCoach\extension). In chrome://extensions, remove Knightwise, then Load unpacked and choose ChessCoach-0.6\extension.
+
+**Pre-checked by Claude on 19 Oct:** everything in A except A7.2, the basics of B (B1 to B4), and C3, C4, C10, with
+about 25 fixes. That doesn't count as a pass: this test is yours. The hearing was also measured with generated voices
+(97.5% of words right, about half a second each); your own voice is measured with the 20-sentence recording page.
+
 **Names:** *Maya* is your coach (the face and the voice). *The human-move model* (Maia) is the chess AI that plays
 like real players of a rating. They're different things.
 
