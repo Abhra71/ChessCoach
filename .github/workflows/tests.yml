@@ -17,9 +17,9 @@ jobs:
           python-version: "3.12"
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - run: sudo apt-get update && sudo apt-get install -y stockfish
-      - run: pip install chess==1.11.2 pytest numpy keyring
+      - run: pip install chess==1.11.2 pytest numpy keyring zstandard
       - name: All the tests
         env:
           KNIGHTWISE_ENGINE: /usr/games/stockfish

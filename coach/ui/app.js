@@ -1132,7 +1132,11 @@ async function home() {
   $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
   api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?", coach: "maya",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,
-    onAsk: q => api("/api/ask", { question: q }) }));
+    onAsk: async q => {  // the same brain as Talk (19 Oct): typing "open my last review" opens it
+      const r = await api("/api/talk", { coach: "maya", text: q, history: [], where: { section: "home" } });
+      if (r.action && r.action.route) setTimeout(() => go(r.action.route), 1200);
+      return r;
+    } }));
 }
 
 // ---------- games ----------

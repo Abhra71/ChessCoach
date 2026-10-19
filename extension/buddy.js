@@ -318,11 +318,18 @@
     history.push(["player", question]);
     said = { ...said, mood: "thinking", pose: "listen", lines: [`"${question}"`, "…"], actions: [], note: null };
     render(true);
-    const r = await send({ type: "chat", coach: said.coach, message: question, history: history.slice(0, -1) });
+    // the same brain as Talk (19 Oct): typing "open my last review" opens it, not just words about it
+    const r = await send({ type: "talk", coach: said.coach, text: question, history: history.slice(0, -1), where: { section: current } });
     const reply = r && r.ok ? r.data : { text: "I can't reach the Knightwise app on this PC, and I answer from there. Open it from the Start menu.", mood: "calm" };
     history.push(["coach", reply.text]);
     said = { ...said, mood: reply.mood, pose: "explain", lines: [reply.text], note: reply.note || null };
     render(true); speak();
+    const route = reply.action && reply.action.route;
+    if (route) {  // as with Talk: a game's review on chess.com's own board, anything else in the Knightwise app
+      const game = /^games\/(\d+)$/.exec(route);
+      setTimeout(() => game ? (location.href = `https://www.chess.com/game/live/${game[1]}`) : send({ type: "open-app", route }), 1500);
+      return;
+    }
     const input = box && box.querySelector(".kw-ask input");
     if (input) input.focus();
   }
