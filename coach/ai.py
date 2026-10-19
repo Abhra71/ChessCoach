@@ -284,15 +284,21 @@ HEAR_HINT = ("A chess player talking to their coach Maya or Viktor. Words: knigh
              "Sicilian, Italian Game, rematch it, review, next, go back, stop talking, practice, puzzle, opening, endgame.")
 
 
+_HINT = {"at": 0.0, "text": HEAR_HINT}
+
+
 def hear_hint():
     """The hint plus the names the player is likely to say: their recent opponents (19 Oct hearing test: usernames
-    were the words heard wrong most, "waiyanji" as "Wei Yanji", "lmaongabs" as "El Moungabs")."""
-    try:
-        from coach import insights
-        names = list(dict.fromkeys(g["opponent"] for g in insights.games_list()[:12]))[:8]
-    except Exception:
-        names = []
-    return HEAR_HINT + (f" Opponents: {', '.join(names)}." if names else "")
+    were the words heard wrong most, "waiyanji" as "Wei Yanji", "lmaongabs" as "El Moungabs"). Worked out at most
+    every 5 minutes: reading the games on every sentence made hearing 0.2 s slower."""
+    if time.time() - _HINT["at"] > 300:
+        try:
+            from coach import insights
+            names = list(dict.fromkeys(g["opponent"] for g in insights.games_list()[:12]))[:8]
+        except Exception:
+            names = []
+        _HINT.update(at=time.time(), text=HEAR_HINT + (f" Opponents: {', '.join(names)}." if names else ""))
+    return _HINT["text"]
 
 
 def wav(pcm16, rate=16000):

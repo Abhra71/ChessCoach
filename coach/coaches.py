@@ -303,7 +303,20 @@ def player_card(home):
             "pieces_given_away_per_game": home.get("pieces_per_game"), "lately_last_20_games": home.get("pieces_last20"),
             "other_patterns": home.get("patterns"),
             "last_game": {k: last.get(k) for k in ("date", "result", "opponent", "opponent_rating", "pieces_lost", "moments")}
-            if last else None}
+            if last else None, "repertoire": _repertoire()}
+
+
+def _repertoire():
+    """The player's three opening lines, as saved (19 Oct: "what should I play against e4?" got a general tip,
+    because the answer's squares weren't in the facts). Read from the file only: never runs the engine."""
+    import json
+    from coach import repertoire
+    try:
+        lines = json.loads(repertoire.FILE.read_text())
+    except (OSError, ValueError):
+        return None
+    return [{"as": l["side"], "against": l.get("against"), "name": l["name"],
+             "moves": " ".join(s["san"] for s in l.get("steps", []))} for l in lines] or None
 
 
 def grounded(text, facts_text):
