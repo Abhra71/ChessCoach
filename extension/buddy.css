@@ -89,3 +89,8 @@
               box-shadow: 0 6px 24px rgba(0, 0, 0, .35); }
 .kw-updated button { font: 600 13px "Segoe UI", system-ui, sans-serif; color: #111; background: #fff; border: 0;
                      border-radius: 6px; padding: 3px 8px; margin: 0 2px; cursor: pointer; }
+
+/* Send feedback: always in the same quiet corner of the coach's box, never a pop-up (19 Oct) */
+.kw-feedback { display: block; margin: 10px 0 0 auto; padding: 0; border: 0; background: none; cursor: pointer;
+               color: inherit; opacity: .55; font: 500 11.5px "Segoe UI", system-ui, sans-serif; text-decoration: underline; }
+.kw-feedback:hover { opacity: .9; }

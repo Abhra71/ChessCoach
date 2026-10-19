@@ -32,6 +32,7 @@ PORT = int(os.environ.get("KNIGHTWISE_PORT", "8765"))  # another port only for a
 URL = f"http://127.0.0.1:{PORT}"
 EVERY = 600  # seconds between checks for new games
 MOMENTS = 3  # key moments shown per game
+FEEDBACK_TO = "nanotech.mark.robots@gmail.com"  # where feedback goes (the user's choice, 19 Oct)
 # notifications say "Knightwise": the Store app's own id, or the id the installer gives the Start menu shortcut
 APP_ID = f"{PACKAGE}!Knightwise" if PACKAGE else "Abhra71.Knightwise"
 
@@ -522,7 +523,13 @@ class Handler(BaseHTTPRequestHandler):
             with open(DATA / "feedback.jsonl", "a", encoding="utf-8") as fh:
                 fh.write(json.dumps(entry) + "\n")
             note_in_logbook(f"Feedback saved ({entry['page']}): {entry['wrong'][:80]}")
-            return self.send(200, json.dumps({"saved": True}), "application/json")
+            text = (f"What I was doing: {entry['doing'] or '-'}\nWhat went wrong or was confusing: {entry['wrong'] or '-'}\n"
+                    f"How much Knightwise helped today (1 to 5): {entry['helped'] or '-'}\n\n"
+                    f"Knightwise {VERSION}, page: {entry['page'] or '-'}")
+            if body.get("email"):  # the player's own email app, ready to send (19 Oct: by email, not a GitHub form)
+                from urllib.parse import quote
+                webbrowser.open(f"mailto:{FEEDBACK_TO}?subject={quote(f'Knightwise feedback ({VERSION})')}&body={quote(text[:1800])}")
+            return self.send(200, json.dumps({"saved": True, "text": text}), "application/json")
         if path == "/api/talk":  # a spoken turn with a coach: the reply, and one checked thing to do (0.6)
             from coach import talk
             turns = body.get("history") if isinstance(body.get("history"), list) else []

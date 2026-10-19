@@ -221,20 +221,39 @@ function feedbackBox() {
     <label class="small">What were you doing?<textarea class="field" data-doing rows="2" maxlength="1500" placeholder="For example: going through my last game's review"></textarea></label>
     <label class="small">What went wrong, or was confusing?<textarea class="field" data-wrong rows="3" maxlength="1500" placeholder="For example: the arrow pointed at the wrong square"></textarea></label>
     <div class="small">How much did Knightwise help today? <span class="stars">${[1, 2, 3, 4, 5].map(n => `<button class="btn small-btn" data-n="${n}">${n}</button>`).join("")}</span></div>
-    <div class="row"><button class="btn primary" data-send>Save</button><span class="small muted" data-msg>Saved on this PC with the app version and this page (${esc(page)}).</span></div>`;
+    <div class="row"><button class="btn primary" data-send>Send by email</button><button class="btn" data-copy>Copy text</button></div>
+    <span class="small muted" data-msg>It goes to ${FEEDBACK_TO}, with the app version and this page (${esc(page)}). Nothing else about you.</span>`;
   document.body.appendChild(box);
   let helped = 0;
   box.querySelector("[data-close]").onclick = () => box.remove();
   box.querySelectorAll("[data-n]").forEach(b => b.onclick = () => {
     helped = Number(b.dataset.n); box.querySelectorAll("[data-n]").forEach(x => x.classList.toggle("primary", Number(x.dataset.n) <= helped));
   });
-  box.querySelector("[data-send]").onclick = async () => {
+  // by email (19 Oct: not a GitHub form, most people don't use GitHub); Copy text for those without a mail app
+  const send = async email => {
     const wrong = box.querySelector("[data-wrong]").value.trim(), doing = box.querySelector("[data-doing]").value.trim();
     if (!wrong && !doing && !helped) return;
-    await api("/api/feedback", { doing, wrong, helped, page });
-    box.querySelector("[data-msg]").textContent = "Thank you. Saved.";
-    setTimeout(() => box.remove(), 1200);
+    const r = await api("/api/feedback", { doing, wrong, helped, page, email });
+    const msg = box.querySelector("[data-msg]");
+    if (email) { msg.textContent = "Your email app is opening with it. Press Send there. Thank you!"; setTimeout(() => box.remove(), 4000); return; }
+    try { await navigator.clipboard.writeText(r.text); msg.textContent = `Copied. Paste it into an email to ${FEEDBACK_TO}. Thank you!`; }
+    catch (e) { msg.textContent = `Couldn't copy here. Please write to ${FEEDBACK_TO}.`; }
   };
+  box.querySelector("[data-send]").onclick = () => send(true);
+  box.querySelector("[data-copy]").onclick = () => send(false);
+}
+const FEEDBACK_TO = "nanotech.mark.robots@gmail.com";
+
+// One tap at a natural ending (the end of a review, a finished set): never a pop-up, at most once a day, easy to
+// ignore. 👎 opens the feedback form; 👍 is kept on this PC. (19 Oct: "in the user's mind, never in the way")
+function helpful(el, where) {
+  if (!el) return;
+  const today = new Date().toISOString().slice(0, 10);
+  try { if (localStorage.getItem("kw-helpful") === today) return; localStorage.setItem("kw-helpful", today); } catch (e) { return; }
+  el.className = "row helpful small muted";
+  el.innerHTML = `<span>Was this helpful?</span><button class="btn small-btn" data-up title="Yes">👍</button><button class="btn small-btn" data-down title="Not really: tell us why">👎</button>`;
+  el.querySelector("[data-up]").onclick = () => { api("/api/feedback", { doing: where, wrong: "", helped: 5, page: where }).catch(() => {}); el.textContent = "Thanks!"; };
+  el.querySelector("[data-down]").onclick = () => { el.textContent = ""; feedbackBox(); };
 }
 
 // ---------- shell ----------
@@ -1226,7 +1245,9 @@ async function gameView(id) {
             ${k.lesson ? `<a class="btn" href="#/course/${k.lesson.id}" title="The course lesson on this idea">Learn it: ${esc(k.lesson.title)}</a>` : ""}
             ${g.result !== "win" ? `<a class="btn" href="#/rematch/${g.id}/${k.ply}" title="Play the game on from here against the engine, at their level">Rematch from here</a>` : ""}
             ${mi < moments.length - 1 ? `<button class="btn" id="nextmoment">Next moment ▶</button>` : ""}
-            ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}">Explain like a coach</button>` : ""}</div>`}`;
+            ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}">Explain like a coach</button>` : ""}</div>
+          ${mi === moments.length - 1 && shown === k.steps.length - 1 ? `<div data-helpful></div>` : ""}`}`;
+    helpful(w.querySelector("[data-helpful]"), `review ${g.id}`);
     w.querySelectorAll("[data-m]").forEach(b => b.onclick = () => open(Number(b.dataset.m)));
     w.querySelectorAll("[data-s]").forEach(li => li.onclick = () => pick(Number(li.dataset.s)));
     const ns = $("#nextstep"); if (ns) ns.onclick = () => { shown++; pick(shown); };
@@ -1610,6 +1631,7 @@ async function screen(name, arg) {
   if (name === "repertoire" && arg) { shell("level", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
   if (name === "repertoire") return await repertoireView();
   if (name === "prep") return await prepView(arg && decodeURIComponent(arg));
+  if (name === "feedback") { history.replaceState(null, "", "#/home"); setTimeout(feedbackBox, 400); return await home(); }  // from chess.com
   if (name === "clockdrill") { shell("level", `<p class="muted">Finding your rushed moves…</p>`); return lessonView({ ...(await api("/api/clockdrill")), back: "level" }); }
   if (name === "endgame") return await endgameView(arg);
   if (name === "lesson") return await themeLesson(decodeURIComponent(arg || ""));

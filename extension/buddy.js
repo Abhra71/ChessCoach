@@ -77,7 +77,10 @@
         ${s.ai_ready ? `<form class="kw-ask"><input placeholder="Ask ${esc(s.name)} anything about your chess" maxlength="300">
           <button>Ask</button></form>` : ""}
         ${s.note ? `<p class="kw-hint">${esc(s.note)}</p>` : ""}
+        <button class="kw-feedback" title="Tell us what went wrong or what was confusing">Send feedback</button>
       </div>` : `${face}<button class="kw-tab">${esc(s.name)}</button>`;
+    const fb = box.querySelector(".kw-feedback");  // always in the same quiet place (19 Oct)
+    if (fb) fb.onclick = () => send({ type: "open-app", route: "feedback" });
     const wake = box.querySelector(".kw-tab");
     if (wake) wake.onclick = () => { render(true); speak(); };
     box.querySelector(".kw-char").onclick = () => { if (open) fold(); else { render(true); speak(); } };

@@ -145,7 +145,8 @@ function trainer(drills, opts) {
   function allDone(already) {  // every position answered: say so clearly, once
     if (finishedAll) return;
     finishedAll = true;
-    result("ok-text", `<b>All ${drills.length} done${opts.record ? " for today" : ""}.</b> ${right()} of ${drills.length} right first time.`);
+    result("ok-text", `<b>All ${drills.length} done${opts.record ? " for today" : ""}.</b> ${right()} of ${drills.length} right first time.<div data-helpful></div>`);
+    helpful($("#result [data-helpful]"), `practice ${location.hash.replace(/^#\/?/, "")}`);
     if (!already) setTimeout(() => { Sound.play("done"); confetti(); }, 900);
     if (opts.onDone) opts.onDone(right(), already);
   }

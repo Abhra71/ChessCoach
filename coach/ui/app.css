@@ -467,3 +467,7 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .course-row .row { flex-wrap: nowrap; }
 .course-learn { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 @media (max-width: 640px) { .course-row { flex-direction: column; align-items: flex-start; } }
+
+/* one tap at a natural ending: quiet, ignorable (19 Oct) */
+.helpful { gap: 8px; margin-top: 10px; }
+.helpful .small-btn { padding: 2px 8px; }
