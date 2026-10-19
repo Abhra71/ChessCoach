@@ -91,9 +91,9 @@ def public():
     for slot in SLOTS:
         key = get_key(slot)
         slots[slot] = {"provider": s[slot]["provider"], "set": bool(key), "ends": key[-4:] if key else None}
-    from coach import hearing, voice
+    from coach import heard, hearing, voice
     from coach import maia
-    return {"theme": s["theme"], "voice": s["voice"], "sounds": s["sounds"],
+    return {"theme": s["theme"], "voice": s["voice"], "sounds": s["sounds"], "heard": heard.count(),
             "human_moves": bool(s.get("human_moves")), "human_ready": maia.available(), "voice_name": s["voice_name"], "voices": voice.CHOICES,
             "voice_ready": voice.available(), "listen_ready": hearing.available(), "slots": slots, "providers": PROVIDERS,
             # talking by voice: a Groq or Gemini key hears you (0.6); Whisper on this PC only if it was installed

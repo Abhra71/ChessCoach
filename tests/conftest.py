@@ -7,6 +7,9 @@ def drills_cache_of_its_own(tmp_path, monkeypatch):
     from coach import drills
     monkeypatch.setattr(drills, "CACHE", tmp_path / "drill-cache.json")
     monkeypatch.setattr(drills, "_cache", None)
+    from coach import heard
+    monkeypatch.setattr(heard, "FILE", tmp_path / "heard.jsonl")
+    monkeypatch.setattr(heard, "WORDS", tmp_path / "heard-words.json")
 
 
 @pytest.fixture(scope="session", autouse=True)

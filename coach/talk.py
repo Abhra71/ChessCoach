@@ -119,6 +119,15 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     if not out or not out["say"].strip() or not coaches.grounded(out["say"], facts_text):
         return fallback
     done = action(out.get("do"), games, where)
+    if done and done.get("route"):  # who the player meant: the hearing expects that name next time (flagship 6)
+        from coach import heard
+        route = done["route"]
+        if route.startswith("prep/"):
+            heard.learn(route[5:])
+        elif route.startswith(("games/", "rematch/")):
+            g = next((g for g in games if g["id"] == route.split("/")[1]), None)
+            if g:
+                heard.learn(g["opponent"])
     asked = next((k for k in REFUSED if isinstance(out.get("do"), dict) and k in out["do"]), None)
     say = REFUSED[asked] if asked and done is None else out["say"].strip()[:600]
     return {"text": say, "mood": "pleased" if "!" in say else "calm", "ai": True, "action": done}

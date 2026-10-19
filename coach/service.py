@@ -244,6 +244,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(tags), "application/json")
         if path == "/api/extension-stamp":  # changes whenever the extension's files change (it then reloads itself)
             return self.send(200, json.dumps({"stamp": extension_stamp()}), "application/json")
+        if path == "/api/heard":  # what the coaches heard, as text on this PC (Settings)
+            from coach import heard
+            return self.send(200, json.dumps({"count": heard.count(), "recent": heard.recent()}), "application/json")
         if path == "/api/fixes":  # the fix file from GitHub: new chess.com names, paused features (flagship 6)
             from coach import fixes
             return self.send(200, json.dumps(fixes.current()), "application/json")
@@ -538,6 +541,10 @@ class Handler(BaseHTTPRequestHandler):
             where = {k: str(v)[:40] for k, v in where.items() if k in ("section", "game", "step")}
             return self.send(200, json.dumps(talk.reply(str(body.get("coach", "maya")), str(body.get("text", "")),
                                                         history, where)), "application/json")
+        if path == "/api/heard/forget":
+            from coach import heard
+            heard.forget()
+            return self.send(200, "{}", "application/json")
         if path == "/api/check-now":
             WAKE.set()
             return self.send(200, "{}", "application/json")
@@ -628,6 +635,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps({"text": "", "silent": True}), "application/json")
         try:
             text, provider = ai.hear(pcm, hearing.RATE)
+            from coach import heard
+            heard.note(text, provider)  # text only, on this PC: the hearing learns the player's words (flagship 6)
             return self.send(200, json.dumps({"text": text, "by": provider}), "application/json")
         except ai.NoKey as e:
             problem = str(e)

@@ -293,8 +293,9 @@ def hear_hint():
     every 5 minutes: reading the games on every sentence made hearing 0.2 s slower."""
     if time.time() - _HINT["at"] > 300:
         try:
-            from coach import insights
-            names = list(dict.fromkeys(g["opponent"] for g in insights.games_list()[:12]))[:8]
+            from coach import heard, insights
+            # the names the player has actually asked for first (learned), then their latest opponents
+            names = list(dict.fromkeys(heard.words(6) + [g["opponent"] for g in insights.games_list()[:12]]))[:10]
         except Exception:
             names = []
         _HINT.update(at=time.time(), text=HEAR_HINT + (f" Opponents: {', '.join(names)}." if names else ""))

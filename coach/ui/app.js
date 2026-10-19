@@ -1418,6 +1418,9 @@ async function settingsView() {
           <div class="row"><span class="small ${s.talk_ready ? "ok-text" : "muted"}" id="listenstate">${s.talk_ready
             ? "Talking is on: press Talk on a coach and just speak. Your Groq or Gemini key hears you, in about half a second."
             : "Talking by voice needs a free Groq or Gemini key: add one below."}</span></div>
+          ${s.heard ? `<details class="small muted" id="heard"><summary>What your coaches heard: ${s.heard} line${s.heard === 1 ? "" : "s"}, kept as text on this PC</summary>
+            <p style="margin:6px 0">Never the sound, never sent anywhere. It lets the hearing learn the names you use. If a line is wrong, that's what the coach misheard.</p>
+            <div data-lines class="stack" style="gap:2px"></div><button class="btn small-btn" id="forgetheard">Delete all of it</button></details>` : ""}
           ${!s.listen_ready ? `<details class="small muted"><summary>Hear me on this PC instead (optional)</summary>
             <p style="margin:6px 0">A one-time 485 MB download. It's slower and mishears more than the key does; use it only if you have no key.</p>
             <button class="btn" id="getlisten">Install listening on this PC</button></details>` : ""}</div></div>
@@ -1465,6 +1468,14 @@ async function settingsView() {
     viktor: "Viktor. I keep an eye on your progress. Slowly, but surely." };
   document.querySelectorAll("[data-hear]").forEach(b => b.onclick = () => Voice.speak(HELLO[b.dataset.hear], true, COACHES[b.dataset.hear].voice));
   $("#aicompare").onclick = () => AiCard.open();
+  if ($("#heard")) {  // what was heard, newest first (flagship 6: the hearing learns from it, on this PC)
+    $("#heard").addEventListener("toggle", async () => {
+      if (!$("#heard").open) return;
+      const h = await api("/api/heard");
+      $("#heard [data-lines]").innerHTML = h.recent.map(x => `<div><span class="faint num">${esc(x.at)}</span> ${esc(x.text)}</div>`).join("");
+    });
+    $("#forgetheard").onclick = async () => { await api("/api/heard/forget", {}); settingsView(); };
+  }
   if ($("#getlisten")) $("#getlisten").onclick = async () => {
     $("#getlisten").disabled = true;
     await api("/api/voice/install-listening", {});
