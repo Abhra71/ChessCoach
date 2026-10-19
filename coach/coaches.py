@@ -163,8 +163,9 @@ def _speak(section, home=None, hour=12, moments=None, rng=random, extra=None, in
         if section == "home" and extra and extra.get("novelty"):  # something new, when it's genuinely needed
             n = extra["novelty"]
             lines.append(f"Something new for you: {n['title'].lower() if n['kind'] != 'opening' else n['title']}. {n.get('why') or ''}".strip())
+            warm = [WARMUP] if not in_app and home.get("daily") else suggestions(home)[:1]  # the warm-up stays on chess.com (19 Oct)
             out["actions"] = [{"label": "Learn it in Knightwise", "app": "plan", "best": True,
-                               "why": "It's new for you, and it fits your habit."}] + suggestions(home)[:1] + [OPEN_APP]
+                               "why": "It's new for you, and it fits your habit."}] + warm + [OPEN_APP]
             return {**out, "mood": "pleased", "lines": lines}
         if section == "home" and extra and extra.get("advice"):
             lines.append(extra["advice"])

@@ -744,6 +744,8 @@ def game_tag(rows):
         p = classify(r)
         if p in TAG_SAY:
             counts[p] = counts.get(p, 0) + 1
+    if not counts and max((r["ply"] for r in rows), default=0) < 18:  # left after 2 moves: not "a clean game" (19 Oct)
+        return {"text": "too short to judge", "tone": "plain"}
     if not counts:
         return {"text": "clean game", "tone": "good"}
     order = sorted(counts, key=lambda p: (p != "stalemated a won game", -counts[p]))[:2]
