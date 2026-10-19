@@ -32,6 +32,18 @@ def test_no_rematch_of_a_won_game():
     assert talk.action({"rematch": "222"}, GAMES, None) is None
 
 
+def test_a_refused_action_is_never_promised():
+    """19 Oct: "Rematch it" on Home said "Let's replay that game." and nothing happened."""
+    r = talk.reply("maya", "rematch it", home=HOME, games=GAMES,
+                   ask_ai=ai_says({"say": "Let's replay that game.", "do": {"rematch": "222"}}))
+    assert r["action"] is None and "can't start a rematch from here" in r["text"]
+
+
+def test_prep_against_any_player_but_only_a_real_username():
+    assert talk.action({"prep": "Hemmehra0416"}, GAMES, None) == {"route": "prep/hemmehra0416"}
+    assert talk.action({"prep": "../settings"}, GAMES, None) is None
+
+
 def test_json_wrapped_in_words_is_still_read_and_nonsense_falls_back():
     assert talk.parse('Sure! ```json\n{"say": "Hi.", "do": null}\n```')["say"] == "Hi."
     r = talk.reply("viktor", "hello", home=HOME, games=GAMES, ask_ai=ai_says("not json at all"))

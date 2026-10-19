@@ -23,9 +23,17 @@ RULES = (
     "{\"review\": \"<game id>\"} to open the review of one of the games in the facts, "
     "{\"rematch\": \"<game id>\"} to replay a lost or drawn game from where it went wrong, "
     "{\"next\": true} to show the next step of the review on screen, "
+    "{\"prep\": \"<chess.com username>\"} to prepare against any player before a game (their openings and how their "
+    "games end), using a name from the facts when it sounds like one of them, "
     "{\"open\": \"level\"} for their level and what to work on. Ask for something only when the player wants it. "
-    "If they name an opponent who isn't in the facts, say you can't find that game."
+    "If they name an opponent who isn't in the facts, say you can't find that game. Never say you are opening, "
+    "replaying or showing something unless \"do\" does it; if you can't do it from here, say what to open first."
 )
+REFUSED = {  # an action the coach asked for that isn't possible here: say so, never "let's replay it" and nothing (19 Oct)
+    "rematch": "I can't start a rematch from here. Open a game you lost or drew, then say rematch.",
+    "next": "Open a game's review first, then say next and I'll go through it step by step.",
+    "review": "I can't find that game in your recent games.",
+}
 
 
 def recent_games(n=RECENT):
@@ -82,6 +90,9 @@ def action(do, games, where):
         return {"route": f"rematch/{g['id']}/{detail['ply']}"} if detail else None
     if do.get("next") is True and (where or {}).get("section") == "review":
         return {"next": True}
+    who = str(do.get("prep", "")).strip().lower()  # any chess.com player (19 Oct: "I can't find that game")
+    if who and len(who) <= 30 and all(c.isalnum() or c in "-_" for c in who):
+        return {"route": f"prep/{who}"}
     return None
 
 
@@ -107,5 +118,7 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     out = parse(text or "")
     if not out or not out["say"].strip() or not coaches.grounded(out["say"], facts_text):
         return fallback
-    return {"text": out["say"].strip()[:600], "mood": "pleased" if "!" in out["say"] else "calm", "ai": True,
-            "action": action(out.get("do"), games, where)}
+    done = action(out.get("do"), games, where)
+    asked = next((k for k in REFUSED if isinstance(out.get("do"), dict) and k in out["do"]), None)
+    say = REFUSED[asked] if asked and done is None else out["say"].strip()[:600]
+    return {"text": say, "mood": "pleased" if "!" in say else "calm", "ai": True, "action": done}

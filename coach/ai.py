@@ -279,8 +279,20 @@ def ask(question, context, rating):
 # Jarvis's record (jarvis-keep logs): Groq's cloud whisper-large-v3 heard 107 sentences at about 0.5 s each with no
 # failures, where Whisper on the PC misheard often. So: Groq first, Gemini as the backup, nothing on the PC by default.
 HEAR_MODEL = {"groq": "whisper-large-v3"}
-HEAR_HINT = ("A chess player talking to their coach. Words: knight, bishop, rook, queen, king, pawn, castle, check, "
-             "checkmate, fork, pin, e4, d4, Nf3, Bc4, rematch, review, game, puzzle, opening, endgame.")
+HEAR_HINT = ("A chess player talking to their coach Maya or Viktor. Words: knight, bishop, rook, queen, king, pawn, "
+             "takes, castle, kingside, queenside, check, checkmate, fork, pin, skewer, e4, d4, Nf3, Bc4, Caro-Kann, "
+             "Sicilian, Italian Game, rematch it, review, next, go back, stop talking, practice, puzzle, opening, endgame.")
+
+
+def hear_hint():
+    """The hint plus the names the player is likely to say: their recent opponents (19 Oct hearing test: usernames
+    were the words heard wrong most, "waiyanji" as "Wei Yanji", "lmaongabs" as "El Moungabs")."""
+    try:
+        from coach import insights
+        names = list(dict.fromkeys(g["opponent"] for g in insights.games_list()[:12]))[:8]
+    except Exception:
+        names = []
+    return HEAR_HINT + (f" Opponents: {', '.join(names)}." if names else "")
 
 
 def wav(pcm16, rate=16000):
@@ -299,7 +311,7 @@ def wav(pcm16, rate=16000):
 def _groq_hear(key, audio):
     import uuid
     boundary = uuid.uuid4().hex
-    fields = {"model": HEAR_MODEL["groq"], "language": "en", "prompt": HEAR_HINT, "response_format": "json",
+    fields = {"model": HEAR_MODEL["groq"], "language": "en", "prompt": hear_hint(), "response_format": "json",
               "temperature": "0"}
     body = b"".join(f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
                     for k, v in fields.items())
@@ -320,7 +332,7 @@ def _gemini_hear(key, audio):
     if "gemini" not in _MODELS:
         _gemini(key, "Reply with one word.", "Say: ready", 5)  # picks the model from Google's own list
     body = {"contents": [{"role": "user", "parts": [
-        {"text": "Write down exactly what is said in this recording, word for word. " + HEAR_HINT +
+        {"text": "Write down exactly what is said in this recording, word for word. " + hear_hint() +
                  " Reply with the words only; if nothing is said, reply with nothing."},
         {"inline_data": {"mime_type": "audio/wav", "data": base64.b64encode(audio).decode()}}]}],
         "generationConfig": {"temperature": 0, "maxOutputTokens": 200}}
