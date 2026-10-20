@@ -1,4 +1,7 @@
-"""Your game of the week as a short 3D film (1.0): the script the 3D scene plays (coach/ui/film.js).
+"""Your game of the month as a short 3D film (1.0): the script the 3D scene plays (coach/ui/film.js).
+Any won game can be filmed from its own page; the game of the month is the one Progress and Wrapped offer.
+Month, not week (20 Oct, the owner's choice): rarer, so it feels like an event, and from a month of games it's
+almost always a real win, never "your closest game".
 
 Not the whole game at one speed: quiet moves go by quickly, and the film slows down only for the two or three moves
 that won it, with a caption ("Move 23. Your bishop takes their queen on f7, check."), and the last move. Seen mostly
@@ -53,7 +56,7 @@ def _caption(board, move, ply):
     return f"Move {ply // 2 + 1}. {words}{end}"
 
 
-def script(gid):
+def script(gid, title="Your game, as a film"):
     """{title, you, white, black, result, date, moves: [{from, to, san, capture, rook, promo, slow, caption}], end}
     for one of your games, or None."""
     g = next((g for g in insights._games() if g["url"].rstrip("/").split("/")[-1] == str(gid)), None)
@@ -95,20 +98,31 @@ def script(gid):
            else " They left the game." if "abandon" in how else "")
     end = ("Checkmate. You won." if board.is_checkmate() and result == "win" else
            f"You won.{why}" if result == "win" else "A draw." if result == "draw" else "They won this one.")
-    return {"title": "Your game of the week", "you": color, "white": g["white"]["username"], "black": g["black"]["username"],
+    return {"title": title, "you": color, "white": g["white"]["username"], "black": g["black"]["username"],
             "opponent": g[other]["username"], "result": result, "end": end, "moves": moves, "quiet": min(1.0, max(0.55, QUIET_SECONDS / quiet)),
             "date": datetime.fromtimestamp(g["end_time"]).strftime("%d %b %Y"), "id": str(gid)}
 
 
-def week_game():
-    """The id of this week's best game (coach/progress.py's story), or None."""
-    from coach import progress
-    try:
-        s = progress.page().get("story") or {}
-    except Exception:  # never let the film stop the progress page
+def month_game(now=None, days=30):
+    """The id of your best win of the last 30 days, or None: a checkmate first, then the fewest big mistakes and
+    pieces given away, then the longer game (at least 10 moves: not a game they left at once)."""
+    import time
+    from coach.review import LOSING_MATERIAL, biggest
+    player, moves = insights._player(), insights._moves()
+    if not player:
         return None
-    best = s.get("best") or {}
-    return best.get("id") if best.get("result") == "win" else None
+    since = (now or time.time()) - days * 86400
+    wins = [g for g in insights._games() if g["end_time"] >= since and g["url"] in moves
+            and insights._result(g, insights._side(g, player)[0]) == "win" and insights._moves_played(g.get("pgn", "")) >= 10]
+    if not wins:
+        return None
+
+    def score(g):
+        rows = moves[g["url"]]
+        mate = "checkmated" in (g[insights._side(g, player)[1]].get("result") or "")
+        return (mate, -len(biggest(rows)), -sum(1 for r in rows if r["pattern"] in LOSING_MATERIAL),
+                insights._moves_played(g.get("pgn", "")))
+    return insights.game_id(max(wins, key=score)["url"])
 
 
 def save(data, gid):

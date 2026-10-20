@@ -102,16 +102,17 @@ what did you read, what did you skip, what would you cut? That list is the first
 | A7.2 | **What the coach heard** list | The text of what you said by voice (never audio); **Delete all of it** clears it | ✅ checked in the app today |
 | A7.3 | Sidebar → **Send feedback** → **Send by email** | Your mail app opens a ready email to nanotech.mark.robots@gmail.com; or **Copy text** | ✅ the email is tested (address, subject, text); ❓ your mail app opening it |
 
-## A8. Your game as a film, 5 minutes
+## A8. Your game of the month, as a film, 8 minutes
 | Step | Do | Expect | Mark · Proof |
 |---|---|---|---|
-| A8.1 | Progress → your best game ("Watch it as a film"), **▶ Play** | The antique set from your side, high up; quiet moves quickly | ⚠️ new · ✅ seen in Chrome |
-| A8.2 | The winning moves | It slows down, the camera leans in, a caption: "Move 21. Your queen takes their queen on e5: check!" | ✅ seen |
-| A8.3 | The end | "Checkmate. You won." card | ✅ seen |
-| A8.4 | Is the board the right way round? | Your pieces at the bottom, the a-file on your left | ✅ fixed today: the 3D set itself is a mirror image |
-| A8.5 | **Save as a video** | It plays once, then the file opens in Videos\Knightwise. Does it play in Windows? | ❓ not yet tried |
-| A8.6 | Is it worth watching? | Your honest verdict. If it isn't, it goes | ❓ yours |
-| A8.7 | The music | Comes once you've picked a track | waiting for your pick |
+| A8.1 | Progress → **▶ Your game of the month** | A clean page: a still preview of the board and the title, then **▶ Play**, **Save as a video**, **♪ On** | ⚠️ new today · ✅ seen in Chrome |
+| A8.2 | **▶ Play** | Mostly from above, the whole board, the camera slowly swinging; no bright patch on the board | ✅ seen (the glare fixed today) |
+| A8.3 | Press the picture, or **❚❚ Pause** | It stops, music too; **▶ Carry on** goes on from there | ✅ the buttons checked |
+| A8.4 | The winning moves | Up to three close shots, each from its own angle, with the caption; the music's main part comes in with the first one | ✅ shots seen; ❓ the music by ear (Claude kept it off) |
+| A8.5 | Play it again | A different song this time (three take turns: Time has come, Jalandhar, Vadodora Chill Mix) | ✅ |
+| A8.6 | **Save as a video** | It plays once, then the file is in Videos\Knightwise. Does it play in Windows? | ❓ |
+| A8.7 | Progress → **▶ Your month, Wrapped**, to the last card | Music under Viktor's voice; the last card opens your game of the month | ⚠️ new · ❓ by ear |
+| A8.8 | Worth watching? | Your verdict: pace, camera, music | ❓ yours |
 
 ---
 

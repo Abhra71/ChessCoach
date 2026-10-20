@@ -323,7 +323,9 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/film/"):  # your game as a short 3D film: its script (1.0)
             from coach import film
             gid = path.rsplit("/", 1)[-1]
-            out = film.script(film.week_game() if gid == "week" else gid) if gid else None
+            month = gid in ("month", "week")  # "week" was its first name
+            pick = film.month_game() if month else gid
+            out = film.script(pick, "Your game of the month") if month and pick else film.script(pick) if pick else None
             return self.send(200 if out else 404, json.dumps(out or {"message": "No game to film yet."}), "application/json")
         if path == "/api/report":  # your week or month in facts, for a coach or as Wrapped (1.0)
             from urllib.parse import parse_qs, urlsplit

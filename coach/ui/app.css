@@ -502,3 +502,4 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
   .report .box { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; break-inside: avoid; }
   .report .muted, .report .label { color: #555 !important; }
 }
+.film-controls { margin-top: 12px; align-items: center; }

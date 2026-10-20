@@ -53,8 +53,10 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   scene.environmentIntensity = 0.45;
   const camera = new THREE.PerspectiveCamera(34, W / H, 0.01, 10);
-  const key = new THREE.SpotLight(0xfff1dc, 9, 2.5, Math.PI / 6, 0.55, 1.6);
-  key.position.set(0.3, 0.8, 0.2);
+  // the main light comes in low from the side: its reflection on the polished board then goes away from a camera
+  // above, instead of a bright patch washing out part of the board (20 Oct, the owner); a soft light from above fills
+  const key = new THREE.SpotLight(0xfff1dc, 7, 3, Math.PI / 5, 0.6, 1.4);
+  key.position.set(0.75, 0.42, 0.35);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.bias = -0.0004;
@@ -62,6 +64,7 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
   const rim = new THREE.DirectionalLight(0x9fb4ff, 0.6);
   rim.position.set(-0.6, 0.4, -0.5);
   scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0xfff6ea, 0x202020, 0.55));
 
   // squares that light up: the last move (amber) and a winning move (green)
   const mark = color => {
@@ -76,7 +79,12 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
   const pieces = {}, models = {};
   let ready = false;
   new GLTFLoader().load("/ui/vendor/chess_set/chess_set_2k.gltf", gltf => {
-    gltf.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    gltf.scene.traverse(o => {
+      if (!o.isMesh) return;
+      o.castShadow = true; o.receiveShadow = true;
+      // the board's varnish, a little less of a mirror: the squares stay readable from above
+      if (/board/i.test(o.name) && o.material && "roughness" in o.material) o.material.roughness = Math.max(o.material.roughness, 0.62);
+    });
     scene.add(gltf.scene);
     for (const o of [...gltf.scene.children]) {
       if (!o.name.startsWith("piece_")) continue;
@@ -90,7 +98,14 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
 
   // The camera. From above: the whole board, tilted a little towards your side so the pieces stand up, drifting
   // very slightly. Close: low beside the piece that moved, each close shot from its own angle.
-  const above = t => new THREE.Vector3(Math.sin(t * 0.04) * 0.02, 1.2, -0.24 * you);  // high enough for all eight ranks
+  // From above, the board slowly swings, like a film camera on a crane: never so far that your side leaves the
+  // bottom of the picture. Once the song's main part is in (the first winning move), the swing grows. High enough
+  // for all eight ranks.
+  let swing = 0.32, swingSpeed = 0.11, phaseA = 0;
+  const above = () => {
+    const a = Math.sin(phaseA) * swing;
+    return new THREE.Vector3(Math.sin(a) * 0.26 * you, 1.17 + Math.cos(phaseA * 0.7) * 0.04, -Math.cos(a) * 0.26 * you);
+  };
   const centre = new THREE.Vector3(0, 0, 0);
   const ANGLES = [  // offsets from the piece, in your side's direction; high enough to look over the pieces in front
     t => new THREE.Vector3(0.16, 0.17, -0.18 * you),
@@ -176,6 +191,8 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
   // The music, placed: its main part (music.peak) arrives with the first close shot, the build-up before it. The
   // film may start quiet for up to MUSIC_WAIT seconds for that; for a long game the song starts further in instead.
   let track = null, gain = null, actx = null, toTape = null, musicAt = 0, musicFrom = 0, musicOn = false;
+  const firstKey = [...closeAt].sort((a, b) => a - b)[0];
+  const mainAt = firstKey != null ? starts[firstKey] : 1e9;  // the film's turn: the song's main part, the first close shot
   if (music && music.url) {
     try {
       track = new Audio(music.url); track.loop = true; track.preload = "auto";
@@ -262,7 +279,13 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
     const target = moving && moving.close ? 1 : 0;
     lean += (target - lean) * (1 - Math.exp(-dt * 1.4));
     const close = focus.clone().add(ANGLES[angle](moving ? moving.t : 0));
-    eye.copy(above(total).lerp(close, lean));
+    if (!paused) {
+      const lively = filmT >= mainAt;  // the main part has come in
+      swing += ((lively ? 0.55 : 0.32) - swing) * Math.min(1, dt * 0.5);
+      swingSpeed += ((lively ? 0.19 : 0.11) - swingSpeed) * Math.min(1, dt * 0.5);
+      phaseA += dt * swingSpeed;
+    }
+    eye.copy(above().lerp(close, lean));
     aim.copy(centre.clone().lerp(focus.clone().setY(0.02), lean));
     camera.position.copy(eye);
     camera.lookAt(aim);

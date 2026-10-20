@@ -932,6 +932,7 @@ function wrapped(r) {
   if (pr.answers) cards.push([`${pr.days}`, `day${pr.days === 1 ? "" : "s"} of practice · ${pr.answers} positions`, `You practised on ${pr.days} days.`]);
   if (r.habits.length) cards.push([esc(r.habits[0].pattern), "the habit that costs you most", `The habit that costs most: ${r.habits[0].pattern}.`]);
   if (r.next.habit) cards.push(["Next", esc(r.next.habit), r.next.habit]);
+  if (r.days > 7 && r.results && r.results.win) cards.push(["▶", "Your game of the month, as a film", "And now, your game of the month.", "film/month"]);
   const layer = document.createElement("div");
   layer.className = "wrapped";
   Coach.hide();  // nothing in front of the cards
@@ -959,7 +960,10 @@ function wrapped(r) {
     const s = song; song = null;
     if (s) { const down = setInterval(() => { s.volume = Math.max(0, s.volume - 0.03); if (!s.volume) { s.pause(); clearInterval(down); } }, 80); }
   }
-  function next(step = 1) { k += step; if (k >= cards.length) { confetti(50); return close(); } if (k < 0) k = 0; show(); }
+  function next(step = 1) {
+    if (step > 0 && cards[k][3]) { const to = cards[k][3]; close(); return go(to); }  // the last card opens the film
+    k += step; if (k >= cards.length) { confetti(50); return close(); } if (k < 0) k = 0; show();
+  }
   const keys = e => { if (e.key === "Escape") close(); if (e.key === "ArrowRight" || e.key === " ") next(); if (e.key === "ArrowLeft") next(-1); };
   layer.onclick = () => next();
   addEventListener("keydown", keys);
@@ -983,31 +987,29 @@ const WRAPPED_SONGS = [
 async function filmView(id) {
   shell("progress", `<p class="muted">Setting up the film…</p>`);
   let s;
-  try { s = await api(`/api/film/${encodeURIComponent(id || "week")}`); }
-  catch (e) { $("#page").innerHTML = `<div class="empty">No game to film yet: win a game this week and it's here.</div>`; return; }
+  try { s = await api(`/api/film/${encodeURIComponent(id || "month")}`); }
+  catch (e) { $("#page").innerHTML = `<div class="empty">No win to film yet this month. Win a game and it's here.</div>`; return; }
   const songs = [];
   for (const x of FILM_SONGS) if (await fetch(x.url, { method: "HEAD" }).then(r => r.ok).catch(() => false)) songs.push(x);
-  let pick = songs.length ? (Number(remember("kw-film-song") || -1) + 1) % songs.length : -1;  // the next song this time
-  let musicOn = songs.length > 0 && remember("kw-film-music") !== "off", stop = null, sample = null;
+  // a different song each time: the next one in the list (20 Oct, the owner: rotated, no choosing)
+  const pick = songs.length ? (Number(remember("kw-film-song") || -1) + 1) % songs.length : -1;
+  let musicOn = songs.length > 0 && remember("kw-film-music") !== "off", stop = null;
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/games/${esc(s.id)}" class="small muted" style="text-decoration:none">← The game</a>
+    <div class="page-head"><div><a href="#/progress" class="small muted" style="text-decoration:none">← Progress</a>
       <h1 style="margin-top:6px">${esc(s.title)}</h1>
-      <p class="sub">Against ${esc(s.opponent)}, ${esc(s.date)}.</p></div></div>
+      <p class="sub">Against ${esc(s.opponent)}, ${esc(s.date)}</p></div></div>
     <div class="film-wrap" id="film"></div>
-    <div class="row" style="margin-top:12px"><button class="btn primary" id="filmgo">▶ Play</button>
-      <button class="btn" id="filmsave" title="Plays it once and saves it as a video in Videos\\Knightwise">Save as a video</button>
-      ${songs.length ? `<select class="field" id="filmsong" style="width:auto" title="The music">${songs.map((x, n) => `<option value="${n}" ${n === pick ? "selected" : ""}>♪ ${esc(x.name)}</option>`).join("")}
-        <option value="-1" ${musicOn ? "" : "selected"}>No music</option></select>
-        <button class="btn" id="filmsample" title="Hear the song's main part">Hear it</button>` : ""}
+    <div class="row film-controls"><button class="btn primary" id="filmgo">▶ Play</button>
+      <button class="btn" id="filmsave">Save as a video</button>
+      ${songs.length ? `<button class="btn ghost" id="filmmusic" title="Music on or off">${musicOn ? "♪ On" : "♪ Off"}</button>` : ""}
       <span class="small muted" id="filmmsg"></span></div>`;
   const ready = () => window.Film ? Promise.resolve() : new Promise(r => window.addEventListener("film-ready", r, { once: true }));
   const song = () => (musicOn && pick >= 0 ? songs[pick] : null);
   const go = $("#filmgo");
-  function stopSample() { if (sample) { sample.pause(); sample = null; } const h = $("#filmsample"); if (h) h.textContent = "Hear it"; }
+  const started = () => { remember("kw-film-song", String(pick)); Voice.stop(); Coach.hide(); };  // nothing in front of the film
   async function mount(autoplay, record) {  // the film: a still preview first, or playing (and recording)
     await ready();
     if (stop) stop();
-    stopSample();
     window.kwFilm = stop = window.Film.play($("#film"), s, { record, autoplay, music: song(), onEnd: async r => {
       go.textContent = "▶ Play again"; go.dataset.state = "ended"; $("#filmsave").disabled = false;
       if (r.error) { $("#filmmsg").textContent = r.error; return; }
@@ -1016,43 +1018,31 @@ async function filmView(id) {
       try {
         const res = await fetch(`/api/film/save?game=${encodeURIComponent(s.id)}`, { method: "POST", headers: { "Content-Type": "video/webm" }, body: r.video });
         const j = await res.json();
-        $("#filmmsg").textContent = res.ok ? `Saved: ${j.path}` : (j.message || "Couldn't save it.");
+        $("#filmmsg").textContent = res.ok ? `Saved in Videos\\Knightwise` : (j.message || "Couldn't save it.");
       } catch (e) { $("#filmmsg").textContent = "Couldn't save it."; }
     } });
-    if (autoplay) { remember("kw-film-song", String(pick)); Voice.stop(); Coach.hide(); }  // nothing in front of the film
+    if (autoplay) started();
     go.textContent = autoplay ? "❚❚ Pause" : "▶ Play"; go.dataset.state = autoplay ? "playing" : "preview";
     $("#filmsave").disabled = !!record;
-    $("#filmmsg").textContent = record ? "Recording: let it play to the end…" : "";
+    $("#filmmsg").textContent = record ? "Recording. Let it play to the end." : "";
   }
   go.onclick = () => {  // one button: play, pause, carry on, play again
     const st = go.dataset.state;
-    if (st === "preview") { stop.resume(); remember("kw-film-song", String(pick)); Voice.stop(); Coach.hide(); stopSample(); go.textContent = "❚❚ Pause"; go.dataset.state = "playing"; }
+    if (st === "preview") { stop.resume(); started(); go.textContent = "❚❚ Pause"; go.dataset.state = "playing"; }
     else if (st === "playing") { stop.pause(); go.textContent = "▶ Carry on"; go.dataset.state = "paused"; }
     else if (st === "paused") { stop.resume(); go.textContent = "❚❚ Pause"; go.dataset.state = "playing"; }
     else mount(true, false);
   };
   $("#film").onclick = () => go.click();  // the picture itself plays and pauses too
   $("#filmsave").onclick = () => mount(true, true);
-  const sel = $("#filmsong");
-  if (sel) sel.onchange = () => {
-    const n = Number(sel.value);
-    musicOn = n >= 0; remember("kw-film-music", musicOn ? "on" : "off");
-    if (musicOn) pick = n;
-    if (go.dataset.state === "preview" || go.dataset.state === "ended") mount(false, false);  // the new song from the start
+  const mb = $("#filmmusic");
+  if (mb) mb.onclick = () => {
+    musicOn = !musicOn; remember("kw-film-music", musicOn ? "on" : "off"); mb.textContent = musicOn ? "♪ On" : "♪ Off";
+    if (go.dataset.state === "preview" || go.dataset.state === "ended") mount(false, false);
+    else if (stop) { stop(); mount(false, false); }  // it starts again from the preview, with or without music
   };
-  const hear = $("#filmsample");
-  if (hear) hear.onclick = () => {  // a few seconds from the song's main part, as soft as in the film
-    if (sample) return stopSample();
-    const x = songs[Number(sel.value)] || songs[0];
-    sample = new Audio(x.url); sample.volume = 0.32;
-    sample.currentTime = Math.max(0, x.peak - 3);
-    sample.play().catch(() => {});
-    hear.textContent = "■ Stop";
-    setTimeout(() => { if (sample && sample.src.endsWith(x.url)) stopSample(); }, 15000);
-  };
-  window.addEventListener("hashchange", () => { if (stop) stop(); stop = null; stopSample(); }, { once: true });
+  window.addEventListener("hashchange", () => { if (stop) stop(); stop = null; }, { once: true });
   mount(false, false);  // the preview: the board and the title, waiting
-  Coach.react("viktor", "pleased", s.result === "win" ? "Your game, as a film. Watch the moves that won it." : "Your game, as a film.");
 }
 
 // ---------- blindfold by voice: follow one of your games in your head (1.0) ----------
@@ -1349,7 +1339,8 @@ async function progressView() {
   const complete = p.badges.filter(b => b.tier === 3).length, started = p.badges.filter(b => b.tier && b.tier < 3).length;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Progress</h1><p class="sub">From your real chess.com games, checked by Stockfish.</p></div>
-      <div class="row"><a class="btn" href="#/report/week">Report for your coach</a><a class="btn primary" href="#/report/month">▶ Your month, Wrapped</a></div></div>
+      <div class="row"><a class="btn" href="#/report/week">Report for your coach</a><a class="btn" href="#/film/month">▶ Your game of the month</a>
+        <a class="btn primary" href="#/report/month">▶ Your month, Wrapped</a></div></div>
     <div class="grid">
       ${s ? `<div class="box story rise" id="story">
         <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>
@@ -1366,10 +1357,10 @@ async function progressView() {
           ${s.improved ? `<div class="story-tile good"><div class="habit-icon">${svg((HABIT[s.improved.pattern] || ["hang"])[0])}</div>
             <div class="stat-label">Most improved</div><b>${esc((HABIT[s.improved.pattern] || [s.improved.pattern])[1] || s.improved.pattern)}</b>
             <div class="small muted">${s.improved.before} → ${s.improved.now} a game</div></div>` : ""}
-          ${s.best ? `<a class="story-tile click" href="#/${s.best.result === "win" ? "film" : "games"}/${s.best.id}"><div class="stat-label">${esc(s.best.label)}</div>
+          ${s.best ? `<a class="story-tile click" href="#/games/${s.best.id}"><div class="stat-label">${esc(s.best.label)}</div>
             <b>vs ${esc(s.best.opponent)} <span class="chip ${s.best.result}">${s.best.result === "win" ? "W" : s.best.result === "loss" ? "L" : "D"}</span></b>
             <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div>
-            ${s.best.result === "win" ? `<span class="small" style="margin-top:6px;display:block"><b>▶ Watch it as a film</b></span>` : ""}</a>` : ""}
+</a>` : ""}
         </div>
         ${s.next ? `<div class="story-next"><span class="label">Next week's one thing</span><div>${esc(s.next.habit)}</div></div>` : ""}
       </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
