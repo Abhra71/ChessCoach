@@ -336,7 +336,7 @@ function trainerPage(title, sub) {
         <div class="box checks play-only" id="checks"></div>
         <div class="box play-only" id="result" style="min-height:84px"><span class="muted">Click a piece, then the square to move it to.</span></div>
         <div class="row"><button class="btn" id="prev">← Back</button><button class="btn play-only" id="show">Show answer</button>
-          <button class="btn primary" id="next">Next →</button></div>
+          <button class="btn" id="next">Next →</button></div>
         <p class="note" id="stats"></p></div>
     </div>`;
 }

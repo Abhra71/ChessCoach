@@ -182,7 +182,7 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turn
 function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
   el.innerHTML = `<div class="row"><input class="field" data-q placeholder="${esc(enabled ? placeholder : "Add an AI key in Settings to ask the coach")}" ${enabled ? "" : "disabled"}>
     ${listen && enabled ? `<button class="btn mic" data-mic title="Click to talk, click again to stop">Talk</button>` : ""}
-    <button class="btn primary" data-ask ${enabled ? "" : "disabled"}>Ask</button></div><div data-a class="small" style="margin-top:8px"></div>`;
+    <button class="btn" data-ask ${enabled ? "" : "disabled"}>Ask</button></div><div data-a class="small" style="margin-top:8px"></div>`;
   if (!enabled) {  // the feature is never hidden: say what a free key gives, and where to add it
     el.innerHTML = `<p class="small" style="margin:0 0 10px">Talk with your coaches and get real replies with a free AI key.</p>
       <a class="btn" href="#/settings">Set up now</a>`;
@@ -655,7 +655,7 @@ async function courseView() {
     return `<div class="course-row ${l.next ? "now" : ""} ${l.status}">
       <div><b>${esc(l.title)}</b><div class="small muted">${esc(l.reason || l.habit)}</div></div>
       <div class="row"><span class="chip ${cls}">${esc(label)}</span>
-        ${can ? `<a class="btn small-btn ${l.next ? "primary" : ""}" href="#/course/${l.id}">${l.status === "passed" || l.status === "fine" ? "Again" : "Open"}</a>` : ""}</div></div>`;
+        ${can ? `<a class="btn small-btn" href="#/course/${l.id}">${l.status === "passed" || l.status === "fine" ? "Again" : "Open"}</a>` : ""}</div></div>`;
   };
   const groups = Object.keys(c.levels).map((lv, i) => {
     const ls = c.lessons.filter(l => l.level === lv);
@@ -733,7 +733,7 @@ async function repertoireView(fresh) {
     <div class="plan-grid">${lines.map((l, i) => `<div class="box plan-card"><div class="plan-text">
       <div class="label">${esc(slot(l))}${l.kept ? " · you already play this" : ""}</div>
       <h3>${esc(l.name)}</h3><p class="muted small">${l.kept ? "It works for you: now learn it to move 6." : esc(l.why)}</p>
-      <a class="btn primary" href="#/repertoire/${i}">Practise it</a></div></div>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
+      <a class="btn ${i === 0 ? "primary" : ""}" href="#/repertoire/${i}">Practise it</a></div></div>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
   $("#newlines").onclick = () => repertoireView(true);
   Coach.react("viktor", "explain", "Three lines. Know them to move six without thinking, and every game starts on your terms.");
 }
@@ -1261,7 +1261,7 @@ async function calcView() {
       if (steps[s].reply) { Board.render($("#board"), { pieces: steps[s].reply.board, flip: x().flip }); Sound.move(steps[s].reply.san); await wait(650); }
     }
     const real = steps.flatMap(st => [Object.values(st.moves).find(m => m.good).san, st.reply ? st.reply.san : null]).filter(Boolean).join(", ");
-    if (right) { confetti(40); Sound.play("right"); }
+    if (right) Sound.play("right");  // no confetti for each line: it stays rare (1.0 design rule)
     const where = wrong < 0 ? "" : yours(wrong) ? `Your move ${Math.floor(wrong / 2) + 1} wasn't the one.` : `You didn't see their answer: it's not what you expected.`;
     $("#calcmsg").innerHTML = right ? `<span class="ok-text"><b>You saw it all.</b> ${esc(real)}.</span>`
       : `<span class="bad-text">${esc(where)}</span> The line: ${esc(real)}.`;
@@ -1297,7 +1297,7 @@ async function progressView() {
     <div class="grid">
       ${s ? `<div class="box story rise" id="story">
         <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>
-          <button class="btn primary" id="sharepic">Share</button></div>
+          <button class="btn" id="sharepic">Share</button></div>
         <div class="story-grid">
           <div class="story-tile wide"><div class="wdl">
               <div><b class="big good-text">${roll(r.win || 0)}</b><span>won</span></div>
@@ -1445,14 +1445,14 @@ async function home() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>${hello}, ${esc(h.player)}</h1>
       <p class="sub">${h.games} games checked by Stockfish</p></div>
-      <div class="row"><button class="btn" id="brief" title="Maya says your focus in three sentences">▶ Hear it from Maya</button><a class="btn primary" href="#/practice">Start practice</a></div></div>
+      <div class="row"><button class="btn" id="brief" title="Maya says your focus in three sentences">▶ Hear it from Maya</button></div></div>
     <div class="grid">
       ${dailyCard(h.daily || {})}
       ${f ? `<div class="box focus hero rise">
         <div class="hero-main"><div class="label">Your focus</div>
           <h3 class="hero-title">${esc(PATTERN_TITLE[f.pattern] || cap(f.pattern))}</h3>
           <p class="hero-habit">${esc(f.habit)}</p>
-          <div class="row"><a class="btn primary" href="#/practice/${encodeURIComponent(f.pattern)}">Practise this</a>
+          <div class="row"><a class="btn ${(h.daily || {}).done_today ? "primary" : ""}" href="#/practice/${encodeURIComponent(f.pattern)}">Practise this</a>
             <span class="pill red">${f.times} times · ${f.games} games</span></div></div>
         <div class="hero-side">${spark(h.trend)}
           <div class="hero-num"><span class="faint num">${h.pieces_per_game.toFixed(1)}</span><span class="faint">→</span>${roll(h.pieces_last20, 1)}</div>
