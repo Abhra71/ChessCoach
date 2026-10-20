@@ -168,7 +168,8 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
   background: #050505; color: #f2f2f2; overflow: hidden; }
 .onboard .scene { position: relative; overflow: hidden; }
 .onboard .backdrop { position: absolute; inset: 0; }
-.onboard .backdrop canvas { width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 2s ease; }
+/* flipped left to right: the 3D set is built as a mirror image (queens on the kings' side), 20 Oct; see film.js */
+.onboard .backdrop canvas { width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 2s ease; transform: scaleX(-1); }
 .onboard .backdrop.ready canvas { opacity: 1; }
 .onboard .scene::after { content: ""; position: absolute; inset: 0; pointer-events: none;  /* spotlight edges */
   background: radial-gradient(ellipse 75% 70% at 50% 46%, rgba(5,5,5,0) 40%, rgba(5,5,5,.6) 78%, rgba(5,5,5,.96) 100%); }
