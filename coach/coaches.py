@@ -6,10 +6,13 @@ Maya: home, games and reviews, practice and puzzles. Viktor: your progress, your
 Written sentences work for everyone, offline; with an AI key she replies in conversation.
 Fair play: nothing here looks at a game being played; the extension hides her wherever one could be running.
 """
+import json
 import random
+import threading
 import time
 
 from coach import insights
+from coach.paths import DATA
 
 PUZZLES = "https://www.chess.com/puzzles/rated"
 BOTS = "https://www.chess.com/play/computer"
@@ -22,6 +25,8 @@ COACHES = {
                "about": "Veteran. Wise, dry humour, has seen it all.", "sections": ["progress", "lessons", "plan"]},
 }
 COACH = "maya"  # where no section says otherwise
+SAID = DATA / "said.json"  # which sentences were said lately, and the jokes already told
+_SAID_LOCK = threading.Lock()
 AI_HINT = "Want real replies? Add a free AI key in Knightwise Settings. It takes 2 minutes."
 SECTION_COACH = {s: c for c, info in COACHES.items() for s in info["sections"]}
 
@@ -35,39 +40,145 @@ SHORT = {
     "stalemated a won game": "giving the king a square when you're winning",
 }
 
-# What each coach says, a few ways each; a kind with only Maya's words is said by Maya's words. {name}, {habit}, {lately}, {before}, {moments}... are filled in.
+# What each coach says, many ways each (1.0, "no line twice"); a kind with only Maya's words is said by Maya's words.
+# {name}, {habit}, {lately}, {before}, {moments}... are filled in. line() remembers what was said lately and picks
+# something else; JOKES are told once, ever, then retired.
 SAY = {
-    "hello": {"maya": ["{greet}, {name}. Good to see you.", "{greet}, {name}. Let's take it one move at a time today."],
-              "viktor": ["Ah, {name}. {greet}.", "{greet}, {name}. Sit down, let's look at how you're doing."]},
-    "better": {"maya": ["You're giving away fewer pieces: {lately} a game, down from {before}. That's real progress."],
-               "viktor": ["{lately} pieces a game, down from {before}. I've seen worse progress from grandmasters."]},
-    "worse": {"maya": ["You've lost a few more pieces lately, {lately} a game, up from {before}. No worry, we'll slow down and fix it."],
-              "viktor": ["{lately} pieces a game lately. Everyone has a bad week. Even me, once, in 1987."]},
-    "focus": {"maya": ["Today, let's work on {habit}. {tip}"], "viktor": ["The lesson for today is {habit}. {tip}"]},
+    "hello": {"maya": ["{greet}, {name}. Good to see you.", "{greet}, {name}. Let's take it one move at a time today.",
+                       "{greet}, {name}. Nice to have you back.", "Hi {name}. {greet}. Ready when you are.",
+                       "{greet}, {name}. Let's make today count, calmly.", "{greet}, {name}. I've been looking at your games.",
+                       "Hey {name}. {greet}. Shall we?", "{greet}, {name}. One good habit at a time."],
+              "viktor": ["Ah, {name}. {greet}.", "{greet}, {name}. Sit down, let's look at how you're doing.",
+                         "{greet}, {name}. Let's see what the numbers say.", "{name}. {greet}. Tea first, then chess.",
+                         "{greet}, {name}. I have your games here. Let's talk.", "{greet}, {name}. Good, you came."]},
+    "better": {"maya": ["You're giving away fewer pieces: {lately} a game, down from {before}. That's real progress.",
+                        "{lately} pieces a game now, down from {before}. Your habit is working.",
+                        "Fewer pieces given away: {lately} a game, it used to be {before}. Keep it going.",
+                        "Down from {before} to {lately} pieces a game. That's you getting more careful."],
+               "viktor": ["{lately} pieces a game, down from {before}. That is how improvement looks.",
+                          "From {before} pieces a game to {lately}. Steady work pays.",
+                          "{lately} a game now, {before} before. Good. Don't get comfortable."]},
+    "worse": {"maya": ["You've lost a few more pieces lately, {lately} a game, up from {before}. No worry, we'll slow down and fix it.",
+                       "{lately} pieces a game lately, up from {before}. A slower move or two will fix that.",
+                       "A few more pieces slipped lately: {lately} a game, it was {before}. Let's take a breath and look again.",
+                       "Up to {lately} pieces a game from {before}. It happens. We'll get it back."],
+              "viktor": ["{lately} pieces a game lately. Everyone has a bad week.",
+                         "{lately} a game, up from {before}. A dip, not a trend. Not yet.",
+                         "Up from {before} to {lately}. Fine. Now we work."]},
+    "focus": {"maya": ["Today, let's work on {habit}. {tip}", "Our one thing today: {habit}. {tip}",
+                       "Let's keep going with {habit}. {tip}", "The habit to build: {habit}. {tip}"],
+              "viktor": ["The lesson for today is {habit}. {tip}", "Today's work: {habit}. {tip}",
+                         "One thing, done well: {habit}. {tip}"]},
     "review": {"maya": ["I found {moments} in this game. Click one and I'll show you on the board.",
-                        "{moments} decided this game. Let's look at them together, calmly."]},
-    "review_clean": {"maya": ["A clean game: no big mistakes for me to show you. Well played."]},
-    "unknown_game": {"maya": ["I haven't checked this game yet. Once it's finished and saved, I'll go through it with you."]},
+                        "{moments} decided this game. Let's look at them together, calmly.",
+                        "This game had {moments}. Pick one and we'll go through it.",
+                        "{moments} in this one. Let's see what happened, one at a time.",
+                        "I've gone through it: {moments}. Start wherever you like."]},
+    "review_clean": {"maya": ["A clean game: no big mistakes for me to show you. Well played.",
+                              "Nothing big to fix here. A clean game, nicely done.",
+                              "No big mistakes in this one. That's the kind of game we want."]},
+    "unknown_game": {"maya": ["I haven't checked this game yet. Once it's finished and saved, I'll go through it with you.",
+                              "This one isn't checked yet. Once chess.com saves it, I'll be ready.",
+                              "I don't know this game yet. Give me a moment after it's saved."]},
     "puzzles": {"maya": ["Puzzles. I won't look at the board while you solve: that's chess.com's rule, and mine. "
                          "Before every move, ask what they can take.",
-                         "Warm-up time. I stay out of the puzzle itself. Look for checks, captures and threats, in that order."]},
+                         "Warm-up time. I stay out of the puzzle itself. Look for checks, captures and threats, in that order.",
+                         "Puzzles: I'll stay quiet while you solve. Checks first, then captures, then threats.",
+                         "Your puzzles. I don't peek, that's the rule. Ask what each move attacks.",
+                         "Puzzle time. You solve, I stay out of it. What does their last move attack?"]},
     "archive": {"maya": ["Every game I've checked has a Knightwise tag under it. Click one and I'll open its review, "
                          "one moment at a time.",
-                         "Your games, with my tag on each one I've checked. The red ones are where to look first."]},
-    "progress": {"viktor": ["You've played {games} games with me watching. Let's see what's changed."]},
+                         "Your games, with my tag on each one I've checked. The red ones are where to look first.",
+                         "Each checked game has my tag. Pick one and I'll take you through it.",
+                         "My tags are under your games. The red ones have the most to teach."]},
+    "progress": {"viktor": ["You've played {games} games with me watching. Let's see what's changed.",
+                            "{games} games so far. Let's see what they tell us.",
+                            "{games} games checked. Here's the story they tell."]},
     "week_better": {"viktor": ["This week: {this_games} games, {this_pieces} pieces given away. Last week it was {last_pieces} in "
-                               "{last_games}. That is how improvement looks."]},
+                               "{last_games}. That is how improvement looks.",
+                               "{this_games} games this week, {this_pieces} pieces given away. Last week: {last_pieces} in "
+                               "{last_games}. Better. Good.",
+                               "This week {this_pieces} pieces in {this_games} games, against {last_pieces} in {last_games} "
+                               "last week. Keep doing what you're doing."]},
     "week_same": {"viktor": ["This week: {this_games} games, {this_pieces} pieces given away; last week {last_pieces} in "
-                             "{last_games}. Steady. Now let's make it better."]},
-    "week_none": {"viktor": ["No games this week yet. A game a day keeps the rust away, as I always say. Well, I say it now."]},
-    "lessons": {"viktor": ["Lessons are good. But the best teacher is your own last game. Remember that."]},
+                             "{last_games}. Steady. Now let's make it better.",
+                             "{this_games} games this week, {this_pieces} pieces given away. Last week {last_pieces} in "
+                             "{last_games}. Not worse. Let's make it better.",
+                             "This week {this_pieces} pieces in {this_games} games; last week {last_pieces} in {last_games}. "
+                             "The habit needs a bit more work."]},
+    "week_none": {"viktor": ["No games this week yet. One game is enough to start.",
+                             "Nothing played this week yet. One calm game, then we look at it.",
+                             "A quiet week so far. Play one, and I'll have something to tell you."]},
+    "lessons": {"viktor": ["Lessons are good. But the best teacher is your own last game. Remember that.",
+                           "Learn the idea here, then use it in your next game. That's when it sticks.",
+                           "A lesson is a start. Your games are where it becomes yours."]},
     "games": {"maya": ["Pick a game and I'll show you the moments that decided it.",
-                       "Every game has one or two moments that matter. Choose one and let's find them."]},
+                       "Every game has one or two moments that matter. Choose one and let's find them.",
+                       "Your games. Choose one and we'll find what mattered.",
+                       "Pick any game. I'll show you where it turned."]},
     "plan": {"viktor": ["Here's your plan: one opening, one tactic, one idea, one endgame. Pick one and we start.",
-                      "Not a pile of homework. Four things, chosen for you. Start with whichever you like."]},
-    "play": {"maya": ["Pick a bot near your level and play it like a real game. I'll stay quiet until it's over."]},
+                        "Not a pile of homework. Four things, chosen for you. Start with whichever you like.",
+                        "Four things, picked from your games. Any order you like.",
+                        "Your plan. Small, on purpose. Pick one."]},
+    "play": {"maya": ["Pick a bot near your level and play it like a real game. I'll stay quiet until it's over.",
+                      "Play a bot near your level, slowly, like it matters. I'll be quiet until the end.",
+                      "A game against a bot: treat it as real. I'll see you after."]},
     "no_player": {"maya": ["Hi, I'm Maya, your Knightwise coach. Open the Knightwise app and tell me your chess.com name."]},
 }
+# Told once, ever, then retired (19 Oct: "jokes stay, casual and chill, never repeated"). Same facts as SAY.
+JOKES = {
+    "better": {"viktor": ["{lately} pieces a game, down from {before}. I've seen worse progress from grandmasters.",
+                          "{lately} a game, down from {before}. If you keep this up, I'll have to retire."],
+               "maya": ["{lately} pieces a game, down from {before}. Your pieces are starting to trust you."]},
+    "worse": {"viktor": ["{lately} pieces a game lately. Everyone has a bad week. Even me, once, in 1987.",
+                         "{lately} a game, up from {before}. Your pieces have been sneaking off. We'll fetch them back."],
+              "maya": ["{lately} pieces a game, up from {before}. Your knights went on holiday. Let's call them home."]},
+    "week_none": {"viktor": ["No games this week yet. A game a day keeps the rust away, as I always say. Well, I say it now."]},
+    "hello": {"viktor": ["{greet}, {name}. I was just explaining the Sicilian to my cat. She wasn't listening either."],
+              "maya": ["{greet}, {name}. The pieces missed you. Well, the pawns did."]},
+    "review_clean": {"maya": ["A clean game. I had my red pen ready for nothing. Well played."]},
+    "lessons": {"viktor": ["Lessons are good. In my day we learned from books so heavy they counted as exercise."]},
+}
+JOKE_CHANCE = 0.25  # how often a joke is told when one is left for that kind
+
+
+def _said():
+    try:
+        return json.loads(SAID.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def line(kind, coach, rng=random, **facts):
+    """One sentence of this kind in this coach's words (any coach's if they have none of their own): never one said
+    lately, and a joke at most once, ever (data/said.json remembers)."""
+    who = coach if SAY[kind].get(coach) else next(iter(SAY[kind]))
+    options = SAY[kind][who]
+    with _SAID_LOCK:
+        said = _said()
+        told = set(said.get("jokes", []))
+        jokes = [j for j in (JOKES.get(kind) or {}).get(who, []) if j not in told]
+        if jokes and rng.random() < JOKE_CHANCE:
+            pick = rng.choice(jokes)
+            said["jokes"] = sorted(told | {pick})
+        else:
+            key = f"{kind}/{who}"
+            recent = said.get(key, [])
+            fresh = [i for i in range(len(options)) if i not in recent] or [0]
+            i = rng.choice(fresh)
+            pick = options[i]
+            said[key] = (recent + [i])[-(len(options) - 1):] if len(options) > 1 else []
+        try:
+            SAID.parent.mkdir(parents=True, exist_ok=True)
+            SAID.write_text(json.dumps(said))
+        except OSError:
+            pass
+    return pick.format(**facts)
+
+
+AGAIN = ["Back again. Here's where we are.", "Good, you're back.", "Picking up where we were.", "Welcome back.",
+         "There you are. Where were we?", "Back for more. Good."]
+SAY["again"] = {"maya": AGAIN}
 
 
 def mood(home):
@@ -86,15 +197,6 @@ def part_of_day(hour):
     return "Good morning" if 5 <= hour < 12 else "Good afternoon" if 12 <= hour < 18 else "Good evening"
 
 
-def line(kind, coach, rng=random, **facts):
-    """One sentence of this kind in this coach's words (any coach's if they have none of their own)."""
-    options = SAY[kind].get(coach) or next(iter(SAY[kind].values()))
-    return rng.choice(options).format(**facts)
-
-
-AGAIN = ["Back again. Here's where we are.", "Good, you're back.", "Picking up where we were."]
-
-
 def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, again=False, in_app=False):
     """again: a second visit to this section today, so no full welcome again, just where things stand (13 Oct test:
     "welcoming is an art"; the coach was greeting every time, then folding silently)."""
@@ -104,7 +206,7 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, aga
     if again and said.get("lines") and section != "review":
         lines = said["lines"]
         keep = [lines[-1]] if lines[-1].startswith("My pick") else lines[1:2]  # where things stand, in one line
-        said = {**said, "lines": [rng.choice(AGAIN)] + keep, "again": True}
+        said = {**said, "lines": [line("again", said["coach"], rng)] + keep, "again": True}
     return said
 
 

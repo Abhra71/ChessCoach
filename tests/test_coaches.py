@@ -56,7 +56,7 @@ def test_slipping_makes_the_coach_worried():
 
 def test_review_of_an_unknown_game_says_nothing_about_the_board():
     said = coaches.speak("review", HOME, moments=None)
-    assert said["mood"] == "thinking" and "haven't checked" in said["lines"][0] and not said["actions"]
+    assert said["mood"] == "thinking" and said["lines"][0] in coaches.SAY["unknown_game"]["maya"] and not said["actions"]
 
 
 def test_no_player_yet_points_to_the_app():
@@ -71,6 +71,29 @@ def test_every_sentence_fills_in():
         for options in by_coach.values():
             for s in options:
                 assert "{" not in s.format(**facts), (kind, s)
+
+
+def test_every_joke_fills_in_and_belongs_to_a_kind():
+    facts = dict(name="x", greet="Hi", lately=1, before=2, games=3)
+    for kind, by_coach in coaches.JOKES.items():
+        assert kind in coaches.SAY
+        for jokes in by_coach.values():
+            for j in jokes:
+                assert "{" not in j.format(**facts), (kind, j)
+
+
+def test_no_line_twice_in_a_row_and_each_joke_told_once(monkeypatch):
+    """1.0, "no line twice": every version is said before any comes back; a joke is told once, ever."""
+    monkeypatch.setattr(coaches, "JOKE_CHANCE", 0)
+    n = len(coaches.SAY["hello"]["maya"])
+    rng = random.Random(3)
+    first = [coaches.line("hello", "maya", rng, greet="Hi", name="x") for _ in range(n)]
+    assert len(set(first)) == n
+    monkeypatch.setattr(coaches, "JOKE_CHANCE", 1)
+    jokes = [coaches.line("worse", "viktor", rng, lately=1, before=2) for _ in range(6)]
+    told = set(coaches.JOKES["worse"]["viktor"]).__len__()
+    assert len({j for j in jokes if j in {s.format(lately=1, before=2) for s in coaches.JOKES["worse"]["viktor"]}}) == told
+    assert sum(j in {s.format(lately=1, before=2) for s in coaches.JOKES["worse"]["viktor"]} for j in jokes) == told
 
 
 def test_chat_replies_in_character_with_the_ai():
@@ -98,9 +121,11 @@ def test_chat_drops_an_ai_answer_that_invents_a_square():
 def test_progress_coach_remembers_this_week_against_last_week():
     home = {**HOME, "week": {"this": {"games": 5, "pieces": 2}, "last": {"games": 4, "pieces": 6}}}
     text = " ".join(coaches.speak("progress", home, rng=random.Random(0))["lines"])
-    assert "5 games, 2 pieces" in text and "6 in 4" in text and "improvement" in text
+    week = dict(this_games=5, this_pieces=2, last_games=4, last_pieces=6)
+    assert any(v.format(**week) in text for v in coaches.SAY["week_better"]["viktor"])
     quiet = {**HOME, "week": {"this": {"games": 0, "pieces": 0}, "last": {"games": 3, "pieces": 1}}}
-    assert "No games this week" in " ".join(coaches.speak("progress", quiet)["lines"])
+    said = " ".join(coaches.speak("progress", quiet)["lines"])
+    assert any(v in said for v in coaches.SAY["week_none"]["viktor"] + coaches.JOKES["week_none"]["viktor"])
 
 
 def test_a_daily_or_bot_game_link_goes_to_the_archive_instead():

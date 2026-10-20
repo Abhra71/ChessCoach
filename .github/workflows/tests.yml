@@ -25,4 +25,11 @@ jobs:
           KNIGHTWISE_ENGINE: /usr/games/stockfish
           KNIGHTWISE_HOME: ${{ runner.temp }}/knightwise
           PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
-        run: python -m pytest -q --ignore=tests/test_live_chesscom.py
+        # each failure also becomes a note on the run, readable without signing in to GitHub
+        run: |
+          set +e
+          python -m pytest -q -rfE --ignore=tests/test_live_chesscom.py > pytest.txt 2>&1
+          status=$?
+          tail -40 pytest.txt
+          grep -E "^(FAILED|ERROR) " pytest.txt | head -20 | while read -r l; do echo "::error::$l"; done
+          exit $status

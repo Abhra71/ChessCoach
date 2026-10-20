@@ -82,7 +82,7 @@ def test_coach_says_nothing_about_a_game_it_does_not_know(monkeypatch):
     unknown = service.coach_says("/api/coach?section=review&hour=20&game=999")
     assert unknown["coach"] == "maya" and unknown["mood"] == "thinking" and not unknown["actions"]
     known = service.coach_says("/api/coach?section=review&hour=20&game=42")
-    assert "1 key moment " in known["lines"][0] + " " and "moments" not in known["lines"][0]
+    assert "1 key moment" in known["lines"][0] and "moments" not in known["lines"][0]
 
 
 def test_only_knightwise_and_its_extension_may_talk_to_it():
