@@ -312,6 +312,9 @@ class Handler(BaseHTTPRequestHandler):
                 if item and item.get("drills"):
                     brief.add(item["drills"])
             return self.send(200, json.dumps(out), "application/json")
+        if path == "/api/guess":  # Guess the human move, the weekly challenge (1.0)
+            from coach import guess
+            return self.send(200, json.dumps(guess.challenge()), "application/json")
         if path == "/api/endgames":  # the endgame trainer: the endings, and how often you've solved each (0.7)
             from coach import endgames
             return self.send(200, json.dumps(endgames.listing()), "application/json")
@@ -477,6 +480,13 @@ class Handler(BaseHTTPRequestHandler):
             memory.record_verdict(body["answer"])
             note_in_logbook(f"Your verdict on the review (\"is this me?\"): {body['answer']}")
             return self.send(200, "{}", "application/json")
+        if path == "/api/guess/done":  # a finished try at this week's challenge: the best so far
+            from coach import guess
+            try:
+                total = max(0, min(guess.COUNT * 100, int(body.get("total", 0))))
+            except (TypeError, ValueError):
+                total = 0
+            return self.send(200, json.dumps(guess.done(total)), "application/json")
         if path == "/api/endgame/move":  # your move in the endgame trainer, its check, and the best defence
             from coach import endgames
             try:

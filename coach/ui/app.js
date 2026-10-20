@@ -630,7 +630,7 @@ async function levelView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your level</h1>
       <p class="sub">Five levels from beginner to 2,000+, measured on your last ${p.games} games. A level is done when every skill meets its goal.</p></div>
-      <div class="row"><a class="btn" href="#/repertoire">Your repertoire</a><a class="btn" href="#/calc">See it in your head</a><a class="btn" href="#/endgames">Endgame trainer</a></div></div>
+      <div class="row"><a class="btn" href="#/repertoire">Your repertoire</a><a class="btn" href="#/calc">See it in your head</a><a class="btn" href="#/guess">Weekly challenge: guess the human move</a><a class="btn" href="#/endgames">Endgame trainer</a></div></div>
     <div class="stack">${p.levels.map(level).join("")}</div>
     <p class="note">The goals are our first estimate of each level, and we'll tune them on real players' games. They don't promise a rating; your games show the progress.</p>`;
   const next = cur.skills.find(s => s.met === false);
@@ -858,6 +858,101 @@ async function prepView(user) {
   $("#who").onkeydown = e => { if (e.key === "Enter") look(); };
   if (user) look();
   else Coach.react("maya", "explain", "Playing someone soon? Type their chess.com name and I'll show you how they play.");
+}
+
+// ---------- Guess the human move: the weekly challenge (1.0) ----------
+// Five real positions from strong players' games, the same all week. What would a player of this rating play? The
+// human-move model says how many of them play each move; your guess scores by that. Then the three most played
+// moves, and what the engine prefers: where people and the engine differ is the lesson.
+async function guessView() {
+  shell("level", `<p class="muted">Setting up this week's challenge…</p>`);
+  const c = await api("/api/guess");
+  if (!c.positions.length) {
+    $("#page").innerHTML = `<div class="empty">The weekly challenge needs the human-move model. Switch on "Human-like opponents" in Settings.</div>`;
+    return;
+  }
+  let i = 0, picked = null, total = 0, answered = false;
+  const scores = [];
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+      <h1 style="margin-top:6px">Guess the human move</h1>
+      <p class="sub">This week's challenge: five positions from real games. What would a player of that rating play? The closer to what most of them play, the more points.
+        ${c.best != null ? ` Your best this week: <b>${c.best}</b> of ${c.positions.length * 100}.` : ""}</p></div>
+      <span class="muted num" id="gcount"></span></div>
+    <div class="game-layout">
+      <div><div class="board-wrap" id="board"></div></div>
+      <div class="stack">
+        <div class="box stack" style="padding:16px"><h3 style="margin:0" id="gtask"></h3>
+          <p class="small muted" style="margin:0">Click a piece, then where it goes. Ratings here are online (Lichess) ratings.</p></div>
+        <div class="box stack" style="padding:16px" id="gresult" hidden></div>
+        <div class="row"><span class="num" id="gtotal"></span><button class="btn primary" id="gnext" hidden>Next →</button></div>
+      </div>
+    </div>`;
+  const x = () => c.positions[i];
+  const name = p => p.white ? "White" : "Black";
+  function draw(extra = {}) {
+    const p = x(), targets = picked ? p.legal.filter(u => u.startsWith(picked)).map(u => u.slice(2, 4)) : [];
+    Board.render($("#board"), { fen: extra.fen || p.fen, flip: !p.white, targets: answered ? [] : targets, arrows: extra.arrows || [],
+      highlights: { [p.last[0]]: "hl-last", [p.last[1]]: "hl-last", ...(picked ? { [picked]: "hl-pick" } : {}) }, onClick: click });
+    $("#gcount").textContent = `${i + 1} of ${c.positions.length}`;
+    $("#gtotal").textContent = `${total} points`;
+  }
+  function show() {
+    picked = null; answered = false;
+    $("#gtask").textContent = `${name(x())} to move. What would a ${x().rating.toLocaleString()} player play?`;
+    $("#gresult").hidden = true; $("#gnext").hidden = true;
+    draw();
+  }
+  function click(sq) {
+    if (answered) return;
+    const p = x();
+    if (picked && picked !== sq) {
+      const uci = p.legal.find(u => u.slice(0, 4) === picked + sq);
+      if (uci) return guess(uci.length > 4 && p.legal.includes(picked + sq + "q") ? picked + sq + "q" : uci);
+    }
+    picked = picked === sq || !p.legal.some(u => u.startsWith(sq)) ? null : sq;
+    draw();
+  }
+  function guess(uci) {
+    const p = x();
+    answered = true; picked = null;
+    const pct = p.chances[uci] || 0, top = p.top[0];
+    const pts = uci === top.uci ? 100 : Math.min(100, Math.round(100 * pct / (p.chances[top.uci] || top.pct || 1)));
+    scores.push(pts); total += pts;
+    const mine = p.top.find(t => t.uci === uci);
+    const arrows = [{ from: uci.slice(0, 2), to: uci.slice(2, 4), kind: "mine", label: "Your guess" },
+      ...(top.uci !== uci ? [{ from: top.uci.slice(0, 2), to: top.uci.slice(2, 4), kind: "real", label: "Most played" }] : [])];
+    const eng = p.engine;
+    const engLine = !eng ? "" : eng.uci === top.uci ? `The engine agrees: ${esc(eng.san)} is its best move too.`
+      : `The engine prefers <b>${esc(eng.san)}</b>${p.chances[eng.uci] != null ? `, played by ${Math.round(p.chances[eng.uci])}% at this level` : ", which almost no one plays here"}: people and engines see different things.`;
+    $("#gresult").innerHTML = `<div class="row spread"><h2 style="margin:0">${pts} points</h2><span class="small muted">${pct < 1 ? "almost no one plays it" : `${Math.round(pct)}% play your move`}</span></div>
+      <div class="label">At ${p.rating.toLocaleString()}, players play</div>
+      ${p.top.map(t => `<div class="small"><div class="row spread"><span><b>${esc(t.san)}</b>${t.uci === uci ? " · your guess" : ""}</span><span class="num">${t.pct}%</span></div>
+        <div class="bar"><div style="width:${t.pct}%"></div></div></div>`).join("")}
+      <p class="small" style="margin:6px 0 0">${engLine}</p>`;
+    $("#gresult").hidden = false;
+    $("#gnext").hidden = false;
+    $("#gnext").textContent = i + 1 < c.positions.length ? "Next →" : "See your score";
+    draw({ arrows });
+    Sound.play(pts >= 60 ? "right" : "move", 0.6);
+    const said = pts === 100 ? `Yes. ${top.san} is what most ${p.rating.toLocaleString()} players play here.`
+      : mine ? `${mine.san} is a human move: ${mine.pct}% play it. The favourite is ${top.san}.`
+      : `Few players at ${p.rating.toLocaleString()} play that. Most of them play ${top.san}.`;
+    Coach.react("viktor", pts >= 60 ? "celebrate" : "explain", said);
+  }
+  $("#gnext").onclick = async () => {
+    if (i + 1 < c.positions.length) { i++; return show(); }
+    const r = await api("/api/guess/done", { total }).catch(() => ({ best: total, record: false }));
+    if (r.record) { confetti(); Sound.play("done"); }
+    $("#gresult").innerHTML = `<h2 style="margin:0">${total} of ${c.positions.length * 100}</h2>
+      <p class="small" style="margin:6px 0 0">${scores.map((s, k) => `${k + 1}: ${s}`).join(" · ")}</p>
+      <p class="small muted" style="margin:6px 0 0">${r.record ? "Your best this week." : `Your best this week: ${r.best}.`} The same five stay until Monday, then five new ones.</p>`;
+    $("#gnext").hidden = true;
+    Coach.react("viktor", r.record ? "celebrate" : "calm", r.record ? `${total} points: your best this week. Knowing what people play is how you predict your opponents.`
+      : `${total} points. Your best is ${r.best}. Try again: now you know what people play.`, [{ label: "Try again", run: () => guessView() }]);
+  };
+  show();
+  Coach.react("viktor", "explain", "A different kind of puzzle. Not the best move: the human move. Guess what most players of that rating play.");
 }
 
 // ---------- see it in your head: the calculation trainer (0.9) ----------
@@ -1640,6 +1735,7 @@ async function screen(name, arg) {
   if (name === "course") return await courseView();
   if (name === "endgames") return await endgamesView();
   if (name === "calc") return await calcView();
+  if (name === "guess") return await guessView();
   if (name === "repertoire" && arg) { shell("level", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
   if (name === "repertoire") return await repertoireView();
   if (name === "prep") return await prepView(arg && decodeURIComponent(arg));
