@@ -16,10 +16,14 @@ from coach.paths import DATA
 CACHE = DATA / "explanations.json"
 USAGE = DATA / "ai-usage.json"
 REST_MINUTES = 10  # a provider that says it's busy gets this long to rest before we ask it again
-SMALL = {"groq": "llama-3.1-8b-instant", "gemini": "gemini-flash-lite-latest"}  # bigger free limits, used when the main one is busy
+# the smaller model, used when the main one is busy: picked from the provider's own list, like the main one, because
+# fixed names get retired (20 Oct 2026: Groq's llama-3.1-8b-instant and llama-3.3-70b were gone, and every fallback
+# answered 404)
+SMALL = {"groq": ["gpt-oss-20b", "qwen3", "llama"], "gemini": ["flash-lite-latest", "flash-lite"]}
+THINK_ROOM = 1024  # reasoning models think before answering, and that counts against the length: room for it
 _REST = {}  # provider -> time it may be asked again
 _LAST = {}  # provider -> the rate-limit headers of its last answer
-TIMEOUT = 30
+TIMEOUT = 20  # a spoken reply that takes longer is no use: the next key, or the written sentences
 AGENT = {"User-Agent": "Knightwise (github.com/Abhra71/ChessCoach)"}  # some providers block unnamed requests (403)
 
 COACH_RULES = (
@@ -61,6 +65,7 @@ def _pick(names, prefer, avoid=()):
 
 
 _MODELS = {}  # provider -> model chosen from the provider's own list (once per run)
+_LISTED = {}  # provider -> its list of models, for choosing the smaller one too
 
 
 def _gemini(key, system, prompt, max_tokens, model=None):
@@ -68,24 +73,33 @@ def _gemini(key, system, prompt, max_tokens, model=None):
     if "gemini" not in _MODELS:
         listed = [m["name"].split("/", 1)[1] for m in _get("https://generativelanguage.googleapis.com/v1beta/models", head)["models"]
                   if "generateContent" in m.get("supportedGenerationMethods", [])]
-        # "gemini-flash-latest" is Google's own pointer to its current Flash model, so retired versions never stick
-        _MODELS["gemini"] = _pick(listed, ["flash-latest", "3.5-flash", "3-flash", "2.5-flash", "flash"],
-                                  avoid=("lite", "image", "tts", "live", "audio", "embedding", "thinking"))
+        _LISTED["gemini"] = listed
+        # Google's own pointer to its current Flash-Lite model, so retired versions never stick. Lite, not Flash: on
+        # 20 Oct the full Flash took over 30 seconds or timed out, Lite answered in 1.6 s, and a coach's spoken reply
+        # is three short sentences
+        _MODELS["gemini"] = _pick(listed, ["flash-lite-latest", "flash-latest", "flash-lite", "flash"],
+                                  avoid=("image", "tts", "live", "audio", "embedding", "thinking", "preview"))
     body = {"systemInstruction": {"parts": [{"text": system}]}, "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.4}}
+            "generationConfig": {"maxOutputTokens": max_tokens + THINK_ROOM, "temperature": 0.4}}
     out = _post(f"https://generativelanguage.googleapis.com/v1beta/models/{model or _MODELS['gemini']}:generateContent",
                 body, head, "gemini")
     _count("gemini", (out.get("usageMetadata") or {}).get("totalTokenCount", 0))
     return "".join(p.get("text", "") for p in out["candidates"][0]["content"]["parts"]).strip()
 
 
+AVOID = ("whisper", "tts", "embed", "guard", "image", "audio", "realtime", "dall", "orpheus", "allam")
+
+
 def _openai_style(name, base, key, system, prompt, max_tokens, prefer, model=None):
     head = {"Authorization": f"Bearer {key}"}
     if name not in _MODELS:
-        listed = sorted(m["id"] for m in _get(f"{base}/models", head)["data"])
-        _MODELS[name] = _pick(listed, prefer, avoid=("whisper", "tts", "embed", "guard", "image", "audio", "realtime", "dall"))
-    body = {"model": model or _MODELS[name], "max_completion_tokens": max_tokens,
+        _LISTED[name] = sorted(m["id"] for m in _get(f"{base}/models", head)["data"])
+        _MODELS[name] = _pick(_LISTED[name], prefer, avoid=AVOID)
+    use = model or _MODELS[name]
+    body = {"model": use, "max_completion_tokens": max_tokens,
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}]}
+    if "gpt-oss" in use:  # it thinks first: briefly, with room for it, or the answer came back cut off or empty (20 Oct)
+        body.update(reasoning_effort="low", max_completion_tokens=max_tokens + THINK_ROOM)
     out = _post(f"{base}/chat/completions", body, head, name)
     _count(name, (out.get("usage") or {}).get("total_tokens", 0))
     return out["choices"][0]["message"]["content"].strip()
@@ -139,8 +153,12 @@ def _call(provider, key, system, prompt, max_tokens):
         if provider not in SMALL:
             _rest(provider)
             raise
+    small = _pick(_LISTED.get(provider, []), SMALL[provider], avoid=AVOID + (_MODELS.get(provider) or "~",))
+    if not small:
+        _rest(provider)
+        raise
     try:
-        return _call_once(provider, key, system, prompt, max_tokens, model=SMALL[provider])
+        return _call_once(provider, key, system, prompt, max_tokens, model=small)
     except Exception as e:
         if _busy(e):
             _rest(provider)

@@ -63,7 +63,7 @@
     box.innerHTML = open ? `${face}
       <div class="kw-box" role="status">
         <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
-          ${s.talk_ready && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(s.name)}: press, then just speak">🎙 Talk</button>` : ""}
+          ${s.talk_ready && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(s.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
         ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => {
@@ -103,79 +103,68 @@
     if (allow) allow.onclick = () => send({ type: "mic-setup" });
   }
 
-  // ---- Talk (0.6): a spoken conversation with the coach, hands-free, on the pages where the coach appears ----
-  // Leaving the page ends it, so the microphone is never on during a game.
-  let talking = false, talkHistory = [], speakingNow = false;
-  const talkShow = (pose, lines, extra = {}) => {
-    said = { ...said, pose, lines, actions: [], ai_hint: null, note: null, talking: true, ...extra };
+  // ---- Talk (0.6): a spoken conversation with the coach, on the pages where the coach appears ----
+  // Click Talk to speak, click Stop when you've finished (20 Oct, the user: not hold-to-talk, not stopping by itself).
+  // Leaving the page ends it without sending, so the microphone is never on during a game.
+  let talking = false, talkHistory = [];
+  const talkShow = (pose, lines, button) => {  // button: "Stop" while recording; none while she thinks
+    said = { ...said, pose, lines, actions: [], ai_hint: null, note: null, talking: true };
     render(true);
+    if (!button) return;
     const stop = document.createElement("div");
     stop.className = "kw-actions";
-    stop.innerHTML = `<button data-stop>Stop talking</button>`;
+    stop.innerHTML = `<button data-stop class="kw-best">■ ${button}</button>`;
     box.querySelector(".kw-box").appendChild(stop);
-    stop.querySelector("button").onclick = talkStop;
+    stop.querySelector("button").onclick = talkSend;
   };
-  function speakAndWait(text) {  // say it, and wait until the voice has finished
-    if (!said.voice_on) return Promise.resolve();
-    speakingNow = false;
-    send({ type: "say", text, voice: said.voice });
-    return new Promise(done => {
-      const began = Date.now();
-      const tick = setInterval(() => {
-        const t = Date.now() - began;
-        if ((!speakingNow && t > 4000 && !box?.classList.contains("talking")) || t > 40000 || !talking) { clearInterval(tick); done(); }
-        if (speakingNow === "done") { clearInterval(tick); done(); }
-      }, 200);
-    });
-  }
+  function talkSend() { send({ type: "listen-stop", send: true }); }  // Stop: what was said goes to the coach
   async function talkStart() {
-    if (talking) return talkStop();
-    talking = true; talkHistory = [];
+    if (talking) return talkSend();
+    talking = true;
     send({ type: "hush" });
-    while (talking && box) {
-      talkShow("listen", ["I'm listening…"]);
-      const r = await send({ type: "listen" });
-      if (!talking) return;
-      if (!r || r.error) {
-        talking = false;
-        if (r && r.error === "mic") {
-          said = { ...said, pose: "calm", talking: false, actions: [],
-                   lines: ["To hear you here, Chrome needs your OK once. Press Allow, then Talk again."] };
-          render(true);
-          const b = document.createElement("div"); b.className = "kw-actions";
-          b.innerHTML = `<button data-mic class="kw-best">Allow the microphone</button>`;
-          box.querySelector(".kw-box").appendChild(b);
-          b.querySelector("button").onclick = () => send({ type: "mic-setup" });
-          return;
-        }
-        said = { ...said, pose: "calm", talking: false, lines: [r && r.error && r.error !== "app" ? r.error
-                 : "I can't reach the Knightwise app on this PC, and I hear you through it. Open it from the Start menu."] };
-        return render(true);
-      }
-      if (!r.text) { talking = false; said = { ...said, pose: "calm", talking: false, lines: ["I'll be here. Press Talk when you want to carry on."] }; return render(true); }
-      talkShow("thinking", [`"${r.text}"`, "…"]);
-      const a = await send({ type: "talk", coach: said.coach, text: r.text, history: talkHistory, where: { section: current, chesscom: true } });
-      if (!talking) return;
-      const reply = a && a.ok ? a.data : { text: "I can't reach the Knightwise app right now.", mood: "calm" };
-      talkHistory.push(["player", r.text], ["coach", reply.text]);
-      talkShow(reply.mood || "explain", [reply.text]);
-      await speakAndWait(reply.text);
-      if (reply.action && reply.action.guide) { talking = false; guideStart(reply.action.guide); return; }  // the red ring
-      const route = reply.action && reply.action.route;
-      if (route) {  // a game's review: on chess.com's own board; anything else: in the Knightwise app
-        talking = false;
-        const game = /^games\/(\d+)$/.exec(route);
-        if (game) location.href = `https://www.chess.com/game/live/${game[1]}`;
-        else send({ type: "open-app", route });
+    talkShow("listen", ["I'm listening. Click Stop when you've finished."], "Stop");
+    const r = await send({ type: "listen" });
+    if (!talking || (r && r.cancelled)) return;
+    if (!r || r.error) {
+      talking = false;
+      if (r && r.error === "mic") {
+        said = { ...said, pose: "calm", talking: false, actions: [],
+                 lines: ["To hear you here, Chrome needs your OK once. Press Allow, then Talk again."] };
+        render(true);
+        const b = document.createElement("div"); b.className = "kw-actions";
+        b.innerHTML = `<button data-mic class="kw-best">Allow the microphone</button>`;
+        box.querySelector(".kw-box").appendChild(b);
+        b.querySelector("button").onclick = () => send({ type: "mic-setup" });
         return;
       }
+      said = { ...said, pose: "calm", talking: false, lines: [r && r.error && r.error !== "app" ? r.error
+               : "I can't reach the Knightwise app on this PC, and I hear you through it. Open it from the Start menu."] };
+      return render(true);
+    }
+    if (!r.text) { talking = false; said = { ...said, pose: "calm", talking: false, lines: ["I didn't catch that. Click Talk and try again."] }; return render(true); }
+    talkShow("thinking", [`"${r.text}"`, "…"]);
+    const a = await send({ type: "talk", coach: said.coach, text: r.text, history: talkHistory, where: { section: current, chesscom: true } });
+    if (!talking) return;
+    const reply = a && a.ok ? a.data : { text: "I can't reach the Knightwise app right now.", mood: "calm" };
+    talkHistory.push(["player", r.text], ["coach", reply.text]);
+    talking = false;  // her answer, then Talk again when you want to say more
+    said = { ...said, pose: reply.mood || "explain", talking: false, lines: [reply.text] };
+    render(true); speak();
+    if (reply.action && reply.action.guide) { talking = false; guideStart(reply.action.guide); return; }  // the red ring
+    const route = reply.action && reply.action.route;
+    if (route) {  // a game's review: on chess.com's own board; anything else: in the Knightwise app
+      talking = false;
+      const game = /^games\/(\d+)$/.exec(route);
+      if (game) location.href = `https://www.chess.com/game/live/${game[1]}`;
+      else send({ type: "open-app", route });
+      return;
     }
   }
-  function talkStop() {
+  function talkStop() {  // folding the box or leaving: stop listening, send nothing
     if (!talking) return;
     talking = false;
-    send({ type: "listen-stop" }); send({ type: "hush" });
-    said = { ...said, pose: "calm", talking: false, lines: ["Okay. Press Talk whenever you want to talk again."] };
+    send({ type: "listen-stop", send: false }); send({ type: "hush" });
+    said = { ...said, pose: "calm", talking: false, lines: ["Okay. Click Talk whenever you want to talk again."] };
     render(true);
   }
 
@@ -441,7 +430,7 @@
   chrome.runtime.onMessage.addListener(msg => {
     if (msg.type !== "speaking" || !box) return;
     box.classList.toggle("talking", !!msg.on);
-    if (talking) { speakingNow = msg.on ? true : (speakingNow ? "done" : speakingNow); return; }
+    if (talking) return;
     if (warm) return;  // the warm-up's board stays up, and never folds by itself
     if (!msg.on) {
       if (said && said.pose && said.pose !== "point") { said = { ...said, pose: null }; render(true); }  // back to their mood

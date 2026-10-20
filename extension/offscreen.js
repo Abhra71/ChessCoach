@@ -44,7 +44,8 @@ chrome.runtime.onMessage.addListener(msg => {
 });
 
 // ---- Talk on chess.com (0.6): record the player's voice here, then the Knightwise app writes it down ----
-// Listens until they've spoken and then been quiet for a moment; nothing at all if they say nothing in 8 seconds.
+// Click to talk, click again to stop (20 Oct, the user: "click to talk, click again to stop is better"): it records
+// until the player clicks Stop (sent) or leaves (nothing is sent), and stops by itself only after a minute.
 let recording = null;
 async function record(app) {
   let stream;
@@ -58,18 +59,17 @@ async function record(app) {
     let sum = 0; for (const v of d) { sum += v * v; if (v) sound = true; } level = Math.sqrt(sum / d.length);
   };
   src.connect(node); node.connect(ctx.destination);
-  const me = recording = {};
+  const me = recording = { send: false };
   const began = Date.now();
-  let heard = false, lastLoud = 0;
-  while (true) {
+  let heard = false;
+  while (recording === me) {
     await new Promise(r => setTimeout(r, 100));
-    const now = Date.now();
-    if (level > 0.02) { heard = true; lastLoud = now; }
-    if (recording !== me || (!heard && now - began > 8000)) { heard = heard && recording === me; break; }
-    if ((heard && now - lastLoud > 1300) || now - began > 25000) break;
+    if (level > 0.02) heard = true;
+    if (Date.now() - began > 60000) { me.send = true; break; }  // a minute: stop by itself, and send it
   }
   node.disconnect(); stream.getTracks().forEach(t => t.stop()); await ctx.close();
   if (recording === me) recording = null;
+  if (!me.send) return { text: "", cancelled: true };
   if (!heard && !sound) return { error: "Your microphone sends no sound. Check which one Windows is using, then try again." };
   if (!heard) return { text: "" };
   const n = chunks.reduce((a, c) => a + c.length, 0), pcm = new Int16Array(n);
@@ -83,6 +83,6 @@ async function record(app) {
 }
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "kw-record") { record(msg.app).then(reply); return true; }
-  if (msg.type === "kw-record-stop") recording = null;
+  if (msg.type === "kw-record-stop" && recording) { recording.send = !!msg.send; recording = null; }
   return false;
 });

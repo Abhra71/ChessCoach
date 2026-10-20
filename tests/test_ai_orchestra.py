@@ -13,6 +13,10 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "get_key", lambda slot: keys.get(slot))
     monkeypatch.setattr(ai, "USAGE", tmp_path / "ai-usage.json")
     monkeypatch.setattr(ai, "_REST", {})
+    # the providers' own lists, as on 20 Oct 2026 (the small model is chosen from them, never a fixed name)
+    monkeypatch.setattr(ai, "_LISTED", {"groq": ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "whisper-large-v3"],
+                                        "gemini": ["gemini-flash-lite-latest", "gemini-3.1-flash-lite"]})
+    monkeypatch.setattr(ai, "_MODELS", {"groq": "openai/gpt-oss-120b", "gemini": "gemini-flash-lite-latest"})
     return keys
 
 
@@ -30,7 +34,7 @@ def test_busy_main_model_falls_back_to_the_small_one(monkeypatch):
         return "Short answer."
     monkeypatch.setattr(ai, "_call_once", once)
     assert ai.complete("s", "p") == ("Short answer.", "groq")
-    assert seen == [("groq", None), ("groq", "llama-3.1-8b-instant")]
+    assert seen == [("groq", None), ("groq", "openai/gpt-oss-20b")]
     assert not ai.resting("groq")
 
 

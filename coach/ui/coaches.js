@@ -24,7 +24,7 @@ const Coach = (() => {
     const face = `<button class="kw-char" title="${esc(who.name)}">${KnightwiseFaces.figure(s.coach, s.pose || s.mood || "calm")}</button>`;
     box.innerHTML = open ? `${face}<div class="kw-box" role="status">
         <div class="kw-head"><b>${esc(who.name)}</b><span>${esc(who.role)}</span>
-          ${TALK && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(who.name)}: press, then just speak">🎙 Talk</button>` : ""}
+          ${TALK && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(who.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
         ${(s.actions || []).length ? `<div class="kw-actions">${s.actions.map((a, i) =>
@@ -81,48 +81,54 @@ const Coach = (() => {
 })();
 
 // ---------- talking with your coach by voice (0.6, flagship 2) ----------
-// Press Talk and just speak: the coach hears you through your Groq or Gemini key, answers out loud, and listens
-// again. Quiet for 8 seconds, or Stop, ends it. The coach can open a page, a game's review or a rematch, or show the
-// next step of the review; the app checks each one first (coach/talk.py).
+// Talk with your coach: click Talk, speak, click Stop (20 Oct, the user: "click to talk, click again to stop is
+// better", not hold-to-talk and not stopping by itself; it stops by itself only after a minute). The coach hears you
+// through your Groq or Gemini key and answers out loud; click Talk again to say more. The coach can open a page, a
+// game's review or a rematch, or show the next step of the review; the app checks each one first (coach/talk.py).
 const Conv = (() => {
-  let on = false, history = [], coach = "maya";
+  let on = false, rec = false, history = [], coach = "maya", limit = null;
   const where = () => {
     const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
     return name === "games" && arg ? { section: "review", game: arg } : { section: name || "home" };
   };
-  const show = (pose, lines) => Coach.show({ coach, pose, mood: pose, lines, talking: true,
-                                              actions: [{ label: "Stop talking", run: stop }] }, { speak: false });
+  const show = (pose, lines, actions = []) => Coach.show({ coach, pose, mood: pose, lines, talking: true, actions }, { speak: false });
   async function start(who) {
-    if (on) return stop();
-    on = true; coach = who in COACHES ? who : "maya"; history = [];
+    if (rec) return finish();
+    if (on) return;  // still answering the last thing you said
+    on = true; coach = who in COACHES ? who : "maya";
     Voice.stop();
-    loop();
+    try { await Mic.start(); } catch (e) { on = false; Coach.react(coach, "worried", "The microphone isn't available.", [], ""); return; }
+    rec = true;
+    show("listen", ["I'm listening. Click Stop when you've finished."], [{ label: "■ Stop", best: true, run: finish }]);
+    limit = setTimeout(finish, 60000);
   }
-  function stop() {
+  async function finish() {  // Stop: what you said goes to the coach
+    if (!rec) return;
+    rec = false; clearTimeout(limit);
+    show("thinking", ["…"]);
+    let text;
+    try { text = await Mic.stop(); }
+    catch (e) { on = false; Coach.react(coach, "worried", e.message || "I couldn't hear that.", [], ""); return; }
     if (!on) return;
-    on = false; Mic.close(); Voice.stop();
-    Coach.react(coach, "calm", "Okay. Press Talk whenever you want to talk again.", [], "");
+    if (!text) { on = false; Coach.react(coach, "calm", "I didn't catch that. Click Talk and try again.", [], ""); return; }
+    show("thinking", [`"${text}"`, "…"]);
+    let r;
+    try { r = await api("/api/talk", { coach, text, history, where: where() }); }
+    catch (e) { r = { text: "I can't reach the Knightwise app right now.", mood: "calm" }; }
+    if (!on) return;
+    let speech = r.text;
+    if (r.action && r.action.route) { go(r.action.route); await wait(400); }
+    if (r.action && r.action.next && window.kwNextStep) speech = window.kwNextStep() || speech;  // the review's next step
+    history.push(["player", text], ["coach", speech]);
+    on = false;  // her answer; Talk again to say more
+    Coach.show({ coach, pose: r.mood || "explain", mood: r.mood || "explain", lines: [speech], actions: [] }, { speak: false });
+    Voice.speak(speech, true, (COACHES[coach] || {}).voice);
   }
-  async function loop() {
-    while (on) {
-      show("listen", ["I'm listening…"]);
-      let text;
-      try { text = await Mic.listen({ cancelled: () => !on }); }
-      catch (e) { const m = e.message || "The microphone isn't available."; on = false; Coach.react(coach, "worried", m, [], ""); return; }
-      if (!on) return;
-      if (!text) { on = false; Coach.react(coach, "calm", "I'll be here. Press Talk when you want to carry on.", [], ""); return; }
-      show("thinking", [`"${text}"`, "…"]);
-      let r;
-      try { r = await api("/api/talk", { coach, text, history, where: where() }); }
-      catch (e) { r = { text: "I can't reach the Knightwise app right now.", mood: "calm" }; }
-      if (!on) return;
-      let speech = r.text;
-      if (r.action && r.action.route) { go(r.action.route); await wait(400); }
-      if (r.action && r.action.next && window.kwNextStep) speech = window.kwNextStep() || speech;  // the review's next step
-      history.push(["player", text], ["coach", speech]);
-      show(r.mood || "explain", [speech]);
-      await Voice.speak(speech, true, (COACHES[coach] || {}).voice);
-    }
+  function stop() {  // closing the box or leaving: stop listening, nothing is sent
+    clearTimeout(limit);
+    if (!on) return;
+    on = false; rec = false; Mic.close(); Voice.stop();
+    Coach.react(coach, "calm", "Okay. Click Talk whenever you want to talk again.", [], "");
   }
   return { start, stop, get on() { return on; } };
 })();

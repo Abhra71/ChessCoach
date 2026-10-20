@@ -181,7 +181,7 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turn
 // a question box with a microphone: onAsk(text) answers it
 function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
   el.innerHTML = `<div class="row"><input class="field" data-q placeholder="${esc(enabled ? placeholder : "Add an AI key in Settings to ask the coach")}" ${enabled ? "" : "disabled"}>
-    ${listen && enabled ? `<button class="btn mic" data-mic title="Hold to talk, or click to start and stop">Talk</button>` : ""}
+    ${listen && enabled ? `<button class="btn mic" data-mic title="Click to talk, click again to stop">Talk</button>` : ""}
     <button class="btn primary" data-ask ${enabled ? "" : "disabled"}>Ask</button></div><div data-a class="small" style="margin-top:8px"></div>`;
   if (!enabled) {  // the feature is never hidden: say what a free key gives, and where to add it
     el.innerHTML = `<p class="small" style="margin:0 0 10px">Talk with your coaches and get real replies with a free AI key.</p>

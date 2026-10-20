@@ -72,7 +72,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     return true;
   }
   if (msg.type === "listen-stop") {
-    chrome.runtime.sendMessage({ type: "kw-record-stop" }).catch(() => {});
+    chrome.runtime.sendMessage({ type: "kw-record-stop", send: !!msg.send }).catch(() => {});
     return false;
   }
   if (msg.type === "mic-setup") {  // the one-time "Allow the microphone" page

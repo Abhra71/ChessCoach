@@ -22,7 +22,7 @@ RULES = (
     "{\"open\": \"<page>\"} (pages: home, games, practice, daily, plan, progress, openings, settings, level: their level and what to work on next, endgames: the endgame trainer, prep: prep against an opponent, course: their course and the next lesson), "
     "{\"review\": \"<game id>\"} to open the review of one of the games in the facts, "
     "{\"rematch\": \"<game id>\"} to replay a lost or drawn game from where it went wrong, "
-    "{\"next\": true} to show the next step of the review on screen, "
+    "{\"next\": true} to show the next step of the review on screen (only when where_the_player_is says review), "
     "{\"prep\": \"<chess.com username>\"} to prepare against any player before a game (their openings and how their "
     "games end), using a name from the facts when it sounds like one of them, "
     "{\"open\": \"level\"} for their level and what to work on, "
