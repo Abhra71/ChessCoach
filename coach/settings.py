@@ -4,14 +4,17 @@ Plain settings live in data/settings.json. API keys are never written there: the
 (through keyring), encrypted for this Windows user, and the app only ever shows the last 4 characters.
 """
 import json
+import os
 
 import keyring
 
 from coach.paths import DATA
 
 FILE = DATA / "settings.json"
-VAULT = "Knightwise"  # the name the keys are stored under in Windows Credential Manager
-OLD_VAULT = "ChessCoach"  # the name before Knightwise: keys saved there are moved over on first use
+# the name the keys are stored under in Windows Credential Manager. KNIGHTWISE_VAULT gives a test copy keys of its
+# own (try test), so it starts with none, like a new player's
+VAULT = os.environ.get("KNIGHTWISE_VAULT") or "Knightwise"
+OLD_VAULT = None if os.environ.get("KNIGHTWISE_VAULT") else "ChessCoach"  # keys from before Knightwise move over once
 SLOTS = ("slot1", "slot2")
 PROVIDERS = {  # what the player can choose for a slot; "free" means the provider has a free tier
     "gemini": {"name": "Google Gemini", "free": True, "get_key": "https://aistudio.google.com/apikey"},
@@ -64,16 +67,17 @@ def remove_key(slot):
         keyring.delete_password(VAULT, slot)
     except keyring.errors.PasswordDeleteError:
         pass
-    try:
-        keyring.delete_password(OLD_VAULT, slot)
-    except keyring.errors.PasswordDeleteError:
-        pass
+    if OLD_VAULT:
+        try:
+            keyring.delete_password(OLD_VAULT, slot)
+        except keyring.errors.PasswordDeleteError:
+            pass
 
 
 def get_key(slot):
     """The key itself, for the AI client only. Never send it to the pages."""
     key = keyring.get_password(VAULT, slot)
-    if key is None:  # saved under the old name: move it, so nobody has to type their key again
+    if key is None and OLD_VAULT:  # saved under the old name: move it, so nobody has to type their key again
         key = keyring.get_password(OLD_VAULT, slot)
         if key is not None:
             keyring.set_password(VAULT, slot, key)

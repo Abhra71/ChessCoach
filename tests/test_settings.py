@@ -45,3 +45,16 @@ def test_a_key_saved_under_the_old_name_is_moved_over(isolated):
     isolated[("ChessCoach", "slot1")] = "gsk_" + "y" * 40  # saved by Chess Coach, before the rename
     assert settings.get_key("slot1") == "gsk_" + "y" * 40
     assert isolated[("Knightwise", "slot1")] == "gsk_" + "y" * 40 and ("ChessCoach", "slot1") not in isolated
+
+
+def test_a_test_copy_has_keys_of_its_own(monkeypatch):
+    """try test: KNIGHTWISE_VAULT gives the copy its own keys, and never moves the player's old ones into it."""
+    import importlib
+    from coach import settings
+    monkeypatch.setenv("KNIGHTWISE_VAULT", "Knightwise-test")
+    fresh = importlib.reload(settings)
+    try:
+        assert fresh.VAULT == "Knightwise-test" and fresh.OLD_VAULT is None
+    finally:
+        monkeypatch.delenv("KNIGHTWISE_VAULT")
+        importlib.reload(settings)
