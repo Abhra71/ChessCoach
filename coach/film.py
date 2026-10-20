@@ -125,9 +125,9 @@ def month_game(now=None, days=30):
     return insights.game_id(max(wins, key=score)["url"])
 
 
-def save(data, gid):
-    """Keep a recorded film (webm) in Videos/Knightwise; returns the file's path."""
+def save(data, gid, ext="webm"):
+    """Keep a recorded film (webm; the trailer is an mp4) in Videos/Knightwise; returns the file's path."""
     SAVED.mkdir(parents=True, exist_ok=True)
-    out = SAVED / f"knightwise-game-{''.join(c for c in str(gid) if c.isalnum())[:20]}.webm"
+    out = SAVED / f"knightwise-game-{''.join(c for c in str(gid) if c.isalnum())[:20]}.{'mp4' if ext == 'mp4' else 'webm'}"
     out.write_bytes(data)
     return out

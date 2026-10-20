@@ -482,7 +482,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, "forbidden", "text/plain")
         if self.path.startswith("/api/listen") and self.headers.get("Content-Type") == "application/octet-stream":
             return self.listen()
-        if self.path.startswith("/api/film/save") and self.headers.get("Content-Type") == "video/webm":
+        if self.path.startswith("/api/film/save") and self.headers.get("Content-Type") in ("video/webm", "video/mp4"):
             return self.save_film()
         if self.headers.get("Content-Type") != "application/json":
             return self.send(403, "forbidden", "text/plain")
@@ -674,14 +674,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send(404, "not found", "text/plain")
 
     def save_film(self):
-        """A recorded film (webm, at most 80 MB) into Videos\\Knightwise, shown in Explorer (1.0)."""
+        """A recorded film (webm, at most 80 MB; the trailer is an MP4, larger) into Videos\\Knightwise, shown in Explorer (1.0)."""
         from urllib.parse import parse_qs, urlsplit
         from coach import film
         size = int(self.headers.get("Content-Length", 0))
-        if not 0 < size <= 80_000_000:
+        if not 0 < size <= (150_000_000 if self.headers.get("Content-Type") == "video/mp4" else 80_000_000):
             return self.send(400, json.dumps({"message": "Too big or empty."}), "application/json")
         gid = (parse_qs(urlsplit(self.path).query).get("game") or [""])[0]
-        target = film.save(self.rfile.read(size), gid)
+        target = film.save(self.rfile.read(size), gid, "mp4" if self.headers.get("Content-Type") == "video/mp4" else "webm")
         if os.name == "nt":
             subprocess.Popen(["explorer", "/select,", str(target)])
         return self.send(200, json.dumps({"path": str(target)}), "application/json")
@@ -778,7 +778,7 @@ class Handler(BaseHTTPRequestHandler):
         types = {".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg",
                  ".svg": "image/svg+xml", ".glb": "model/gltf-binary", ".gltf": "model/gltf+json",
                  ".bin": "application/octet-stream", ".wav": "audio/wav", ".flac": "audio/flac", ".ogg": "audio/ogg", ".mp3": "audio/mpeg",
-                 ".json": "application/json"}
+                 ".json": "application/json", ".html": "text/html; charset=utf-8"}
         ctype = types.get(target.suffix, "application/octet-stream")
         data = target.read_bytes()
         self.send_response(200)

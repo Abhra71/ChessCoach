@@ -1,4 +1,28 @@
-# The Knightwise trailer: script and shot list
+# The Knightwise trailer
+
+**Made by Knightwise itself (20 Oct):** `Videos\Knightwise\Knightwise trailer.mp4`, 76 seconds, 1920×1080, H.264 + AAC
+(what the Microsoft Store and YouTube take). Cut like an Indian action-film trailer, the owner's brief: slow and tense,
+then fast, then slow again, so there's time to take in each move.
+
+- **Songs, each where it fits** (Kevin MacLeod, CC BY 4.0): "Hitman" for the slow, tense opening (0–27 s) and the last
+  hit (66 s); "Ready Aim Fire" for the rock, from the title drop (27.2 s, its riff at 2.3 s); "Jalandhar" for the slow
+  motion into the checkmate, then silence on the king. Every cut is on a beat (172 a minute in the rock).
+- **Credits inside the film**, each at the moment its part pays off: Stockfish when the better move's arrow lands, Maia-3
+  on "How hard was it?", Lichess on practice, and so on. "Abhra Chakraborty presents" at the start, "Developed by Abhra
+  Chakraborty" at the end.
+- **Opponents' names never appear** ("Opponent").
+
+**To make it again** (after the app changes):
+1. `python -m coach.get_assets --trailer` (the two songs and mp4-muxer, once).
+2. Record the clips: the app running on port 8766, then, from `installer/trailer`,
+   `node rec.mjs scenes.json ../../coach/ui/vendor/trailer` (it drives a hidden Edge over its DevTools port: real pages,
+   scripted clicks, opponents' names hidden). The cut itself is in `coach/ui/trailer.html`.
+3. Open `http://127.0.0.1:8766/ui/trailer.html`: **▶ Play** to watch, **Make the video (MP4)** to save it. It's made
+   frame by frame, never live, so a slow or hidden window can't drop frames.
+
+---
+
+## The first plan: the script and shot list for recording by hand
 
 About 80 seconds. One shot per flagship, real screens with your real games, nothing staged that the app doesn't do.
 Every claim is true and checkable: no rating promises.

@@ -9,6 +9,7 @@ owner's two Indian picks, Kevin MacLeod's "Jalandhar" and "Vadodora Chill Mix" (
 Run:  python -m coach.get_assets      (files go to coach/ui/vendor/, kept out of git; the installer bundles them)
 """
 import json
+import sys
 import urllib.request
 
 from coach.paths import TEMPLATES
@@ -46,6 +47,15 @@ FILM_SONGS = [
     ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Jalandhar.mp3", "film/jalandhar.mp3", None),
     ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Vadodora%20Chill%20Mix.mp3", "film/vadodora-chill-mix.mp3", None),
 ]
+# Only for making the trailer (coach/ui/trailer.html, `python -m coach.get_assets --trailer`), never in the app:
+# Kevin MacLeod's "Hitman" (the slow, tense parts) and "Ready Aim Fire" (the rock), CC BY 4.0, 8 and 7 MB; and
+# mp4-muxer (Vanilagy, MIT, 73 KB), which puts the browser's own H.264 and AAC into an MP4.
+TRAILER = [
+    ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Hitman.mp3", "film/hitman.mp3", None),
+    ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Ready%20Aim%20Fire.mp3", "film/ready-aim-fire.mp3", None),
+    ("https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js", "mp4-muxer/mp4-muxer.js", None),
+    ("https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/LICENSE", "mp4-muxer/LICENSE", None),
+]
 
 
 def fetch(url, target, page=None):
@@ -70,7 +80,7 @@ def main():
     for rel, info in files["include"].items():
         fetch(info["url"], folder / rel)
     fetch(MUSIC[0], VENDOR / MUSIC[1])
-    for url, dst, page in FILM_SONGS:
+    for url, dst, page in FILM_SONGS + (TRAILER if "--trailer" in sys.argv else []):
         fetch(url, VENDOR / dst, page)
     print(f"3D scene ready in {VENDOR}")
 

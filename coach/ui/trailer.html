@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Knightwise trailer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script type="importmap">{"imports": {"three": "/ui/vendor/three/three.module.min.js", "three/addons/": "/ui/vendor/three/addons/"}}</script>
+<style>
+  body { margin: 0; background: #000; color: #ddd; font: 14px "Segoe UI", system-ui, sans-serif; }
+  #wrap { max-width: 1280px; margin: 0 auto; padding: 16px; }
+  canvas#out { width: 100%; height: auto; display: block; background: #000; border-radius: 8px; }
+  .row { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  button { font: inherit; padding: 8px 16px; border-radius: 8px; border: 1px solid #444; background: #1a1a1a; color: #fff; cursor: pointer; }
+  button.primary { background: #36c27a; border-color: #36c27a; color: #000; font-weight: 600; }
+  #film { position: absolute; left: -99999px; width: 1280px; }
+</style></head>
+<body><div id="wrap">
+  <canvas id="out" width="1920" height="1080"></canvas>
+  <div class="row"><button class="primary" id="play">▶ Play</button><button id="save">Make the video (MP4)</button>
+    <span id="msg">Loading the clips…</span></div>
+</div>
+<div id="film"></div>
+<script src="/ui/vendor/mp4-muxer/mp4-muxer.js"></script>
+<script type="module" src="/ui/film.js"></script>
+<script type="module">
+// The Knightwise trailer (1.0), cut like an Indian action-film trailer: slow and tense, then fast, then slow again,
+// so there's time to take in each move. Built only from the app's real pages (clips recorded from the real app with
+// the owner's real games: docs/TRAILER.md says how) and its own 3D film. Three songs, each where it fits: "Hitman"
+// for the slow, tense parts, "Ready Aim Fire" for the rock, "Jalandhar" for the slow motion; every cut is on a beat.
+// The credits come inside the film, each at the moment its part pays off. Opponents' names never appear.
+// Remake it after any change: record the clips again, open /ui/trailer.html, press "Make the video".
+const W = 1920, H = 1080, FPS_CLIP = 15;
+const P = new URLSearchParams(location.search);
+const CREATOR = P.get("creator") || "Abhra Chakraborty";  // the owner's name, as they asked (20 Oct)
+const cv = document.getElementById("out"), ctx = cv.getContext("2d");
+const BEAT = 60 / 172, BAR = 4 * BEAT;  // "Ready Aim Fire": 172 beats a minute
+const DROP = 27.2;  // the rock comes in: the title slams
+const F = { a: 48.4, mate: 59.5, b: 61.0 };  // the film, its checkmate, and the rock back
+
+// ---------- the clips: frames recorded from the app, each with when it was shown and where things are ----------
+const CLIPS = {};
+async function loadClip(name) {
+  const meta = await (await fetch(`/ui/vendor/trailer/${name}/frames.json`)).json();
+  const keep = []; let last = -1;
+  meta.frames.forEach((t, n) => { if (t - last >= 1 / FPS_CLIP) { keep.push({ t, n }); last = t; } });
+  await Promise.all(keep.map(k => new Promise(r => { k.img = new Image(); k.img.onload = k.img.onerror = r; k.img.src = `/ui/vendor/trailer/${name}/${k.n}.jpg`; })));
+  CLIPS[name] = { ...meta, keep };
+}
+function frameAt(name, t) {  // the frame on screen t seconds into the clip
+  const c = CLIPS[name]; if (!c) return null;
+  let lo = 0, hi = c.keep.length - 1;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (c.keep[m].t <= t) lo = m; else hi = m - 1; }
+  return c.keep[lo].img;
+}
+const mark = (name, key, end = true) => { const m = CLIPS[name] && CLIPS[name].marks && CLIPS[name].marks[key]; return m && m.length ? m[end ? m.length - 1 : 0].r : null; };
+function around(r, pad = 1.15) {  // a 16:9 window around a box, with some room
+  if (!r) return [0, 0, W, H];
+  let [x, y, w, h] = r; const cx = x + w / 2, cy = y + h / 2;
+  w *= pad; h *= pad; if (w / h > 16 / 9) h = w * 9 / 16; else w = h * 16 / 9;
+  w = Math.min(w, W); h = Math.min(h, H);
+  return [Math.max(0, Math.min(W - w, cx - w / 2)), Math.max(0, Math.min(H - h, cy - h / 2)), w, h];
+}
+const lerpBox = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
+const ease = k => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const out3 = k => 1 - Math.pow(1 - k, 3);
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const zoomIn = (b, f = 0.82) => { const [x, y, w, h] = b; return [x + w * (1 - f) / 2, y + h * (1 - f) / 2, w * f, h * f]; };
+const FULL = [0, 0, W, H];
+const GRADE = "saturate(.55) contrast(1.2) brightness(.9) sepia(.14)";  // the film look: drained colour, warm light
+function drawClip(name, t, from, to, k) {
+  const img = frameAt(name, t); if (!img) return;
+  const [x, y, w, h] = lerpBox(from, to, ease(clamp(k)));
+  const z = (img.naturalWidth || W) / W;  // the frames may be smaller than the picture (1536 wide): where things are is in 1920
+  ctx.save(); ctx.filter = GRADE; ctx.drawImage(img, x * z, y * z, w * z, h * z, 0, 0, W, H); ctx.restore();
+}
+
+// ---------- the film: the game of the month, stepped frame by frame from here ----------
+let film = null, filmT = 0;
+async function loadFilm() {
+  const s = await (await fetch("/api/film/month")).json();
+  s.white = s.you === "white" ? s.white : "Opponent"; s.black = s.you === "black" ? s.black : "Opponent";
+  s.opponent = "Opponent"; s.title = "Your game of the month";
+  await new Promise(r => window.Film ? r() : addEventListener("film-ready", r, { once: true }));
+  if (film) film();
+  filmT = 0;
+  film = window.Film.play(document.getElementById("film"), s, { autoplay: false, music: null, onEnd: () => {} });
+  film.at = window.Film.timeline(s);
+  await new Promise(r => setTimeout(r, 4000));  // the 3D set loads
+}
+function filmTo(t) { if (film && t > filmT) { film.step(t - filmT); filmT = t; } }
+function drawFilm(t, dark = 0) {
+  filmTo(t); const c = document.querySelector("#film canvas"); if (!c) return;
+  ctx.save(); ctx.filter = "saturate(.7) contrast(1.15) sepia(.1)"; ctx.drawImage(c, 0, 0, W, H); ctx.restore();
+  if (dark) { ctx.fillStyle = `rgba(0,0,0,${dark})`; ctx.fillRect(0, 0, W, H); }
+}
+const mateAt = () => film ? film.at[film.at.length - 1] : 40;  // when the last winning move starts, in film time
+
+// ---------- the look: embers, grain, a vignette, cinema bars ----------
+const grain = (() => { const g = document.createElement("canvas"); g.width = g.height = 256; const c = g.getContext("2d"), d = c.createImageData(256, 256);
+  for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 20; }
+  c.putImageData(d, 0, 0); return g; })();
+const rnd = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+function embers(T, amount) {  // drifting sparks, like the fire in the film's trailer
+  if (amount <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = "lighter";
+  const n = Math.round(70 * amount);
+  for (let i = 0; i < n; i++) {
+    const sp = 40 + rnd(i) * 90, life = (H + 200) / sp, ph = ((T + rnd(i + 9) * life) % life) / life;
+    const x = rnd(i + 3) * W + Math.sin(T * (0.4 + rnd(i + 5)) + i) * 40, y = H + 60 - ph * (H + 200);
+    const r = 1.2 + rnd(i + 7) * 3.2, a = (0.35 + 0.65 * Math.abs(Math.sin(T * 3 + i))) * Math.sin(Math.PI * ph);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 5);
+    g.addColorStop(0, `rgba(255,190,110,${0.9 * a})`); g.addColorStop(0.3, `rgba(255,110,30,${0.45 * a})`); g.addColorStop(1, "rgba(255,60,0,0)");
+    ctx.fillStyle = g; ctx.fillRect(x - r * 5, y - r * 5, r * 10, r * 10);
+  }
+  ctx.restore();
+}
+function finish(T, c) {
+  const glow = ctx.createLinearGradient(0, H, 0, H * 0.4);  // warm light from below
+  glow.addColorStop(0, "rgba(255,110,40,.10)"); glow.addColorStop(1, "rgba(255,110,40,0)");
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+  embers(T, c.embers ?? 0.5);
+  const v = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.95);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.6)");
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = ctx.createPattern(grain, "repeat");
+  ctx.translate((T * 997) % 256, (T * 613) % 256); ctx.fillRect(-256, -256, W + 512, H + 512); ctx.restore();
+  const bars = c.bars ?? 1;
+  if (bars) { ctx.fillStyle = "#000"; const b = 110 * bars; ctx.fillRect(0, 0, W, b); ctx.fillRect(0, H - b, W, b); }
+}
+function flash(a, color = "255,255,255") { if (a <= 0) return; ctx.fillStyle = `rgba(${color},${Math.min(1, a)})`; ctx.fillRect(0, 0, W, H); }
+function shake(T, amount) { if (amount > 0) ctx.translate((Math.sin(T * 91) + Math.sin(T * 37)) * amount, (Math.cos(T * 73) + Math.sin(T * 53)) * amount); }
+
+// words that slam in (big to their size, fast), hold, and go; never wider than the picture
+function slam(text, u, { size = 110, y = H / 2, color = "#fff", sub = null, dur = 99, weight = 900, accent = null, glow = null, slow = false } = {}) {
+  if (u < 0 || u > dur) return;
+  const k = out3(clamp(u / (slow ? 0.9 : 0.22))), fade = clamp((dur - u) / 0.2);
+  ctx.save(); ctx.globalAlpha = clamp(k * 1.4) * fade; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const font = s => `${weight} ${s}px "Segoe UI Black", "Segoe UI", system-ui, sans-serif`;
+  ctx.font = font(size); if (ctx.letterSpacing !== undefined) ctx.letterSpacing = `${Math.round(size * 0.05)}px`;
+  let wid = ctx.measureText(text).width; if (wid > W - 220) { size = Math.floor(size * (W - 220) / wid); ctx.font = font(size); wid = ctx.measureText(text).width; }
+  ctx.translate(W / 2, y); const s = 1 + (1 - k) * (slow ? 0.12 : 0.6) + u * 0.012; ctx.scale(s, s);
+  ctx.shadowColor = glow || "rgba(0,0,0,.85)"; ctx.shadowBlur = glow ? 50 : 30;
+  ctx.fillStyle = color; ctx.fillText(text, 0, 0);
+  if (accent) { ctx.shadowBlur = 0; ctx.fillStyle = accent; ctx.fillRect(-wid / 2, size * 0.62, wid * clamp(u / 0.5), 9); }
+  if (sub) { ctx.shadowColor = "rgba(0,0,0,.85)"; ctx.shadowBlur = 20; ctx.font = `600 ${Math.round(size * 0.3)}px "Segoe UI", system-ui, sans-serif`;
+    if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "3px"; ctx.fillStyle = "#d6dcd8"; ctx.fillText(sub, 0, size * 0.98); }
+  ctx.restore();
+}
+function subtitle(text, u, dur) {  // a line spoken in the film, as a subtitle
+  if (u < 0 || u > dur) return;
+  ctx.save(); ctx.globalAlpha = clamp(u / 0.2) * clamp((dur - u) / 0.2);
+  ctx.font = '500 38px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.shadowColor = "#000"; ctx.shadowBlur = 12; ctx.fillStyle = "#fff"; ctx.fillText(text, W / 2, H - 170); ctx.restore();
+}
+function credit(role, name, u, dur = 1.8, y = 200) {  // a film credit: each one who gave the app something, at their moment
+  if (u < 0 || u > dur) return;
+  const k = out3(clamp(u / 0.3)), f = clamp((dur - u) / 0.3), x = 130;
+  ctx.save();
+  const bg = ctx.createLinearGradient(0, 0, 900, 0); bg.addColorStop(0, `rgba(0,0,0,${0.62 * k * f})`); bg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = bg; ctx.fillRect(0, y - 50, 1000, 170);
+  ctx.globalAlpha = k * f; ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+  ctx.shadowColor = "rgba(0,0,0,.9)"; ctx.shadowBlur = 20;
+  if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "8px";
+  ctx.font = '700 26px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = "#e0b25a"; ctx.fillText(role, x + (1 - k) * 40, y);
+  if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "2px";
+  ctx.font = '900 66px "Segoe UI Black", "Segoe UI", system-ui, sans-serif';
+  if (u < 0.12) { ctx.fillStyle = "rgba(255,40,60,.8)"; ctx.fillText(name, x + 6, y + 72); ctx.fillStyle = "rgba(40,220,255,.8)"; ctx.fillText(name, x - 6, y + 72); }
+  ctx.fillStyle = "#fff"; ctx.fillText(name, x, y + 72);
+  ctx.fillStyle = "#c8102e"; ctx.fillRect(x, y + 94, clamp(u / 0.6) * 90, 5);
+  ctx.restore();
+}
+
+// ---------- the cut: [start, end, draw(u, T)] in seconds ----------
+const CUT = [];
+const at = (a, b, f, o = {}) => CUT.push({ a, b, f, ...o });
+const box = n => around(mark(n, "board"), 1.08), page = n => around(mark(n, "page"), 1.0);
+const RED = "#e0283c", GOLD = "#ffcf6e", GREEN = "#36c27a";
+
+// 0 – 6.5: slow and dark. The board in the dark, embers; who presents it; the question
+at(0, 6.5, (u, T) => {
+  drawFilm(2.6 + u * 0.35, 0.45 + 0.4 * (1 - clamp(u / 2)));
+  slam(CREATOR.toUpperCase() + " PRESENTS", u - 0.6, { size: 40, weight: 600, dur: 2.6, color: "#d8d2c4", slow: true });
+  slam("EVERY GAME YOU LOSE…", u - 3.7, { size: 78, dur: 2.8, slow: true });
+}, { embers: 1 });
+// 6.5: the first hit
+at(6.5, 9.0, (u, T) => {
+  drawFilm(4.9 + u * 0.4, 0.5);
+  ctx.save(); shake(T, 6 * clamp(1 - u / 0.4)); slam("HAS A LESSON IN IT.", u, { size: 96, dur: 2.5, color: GOLD }); ctx.restore();
+}, { embers: 1, flash: 0.35, punch: true });
+// 9.0 – 13.0: quiet. Your game, slowly; Maya speaks
+at(9.0, 13.0, (u) => {
+  drawClip("review", 0.2 + u * 0.35, box("review"), zoomIn(box("review"), 0.8), u / 4);
+  subtitle("“I go through your games with you, one moment at a time.”", u - 0.3, 3.4);
+}, { embers: 0.6 });
+// 13.0: the hit: the better move, an arrow across the board
+at(13.0, 16.16, (u, T) => {
+  drawClip("review", 1.9 + u * 0.55, zoomIn(box("review"), 0.86), zoomIn(box("review"), 0.72), u / 3.16);
+  ctx.save(); shake(T, 8 * clamp(1 - u / 0.35)); slam("YOUR MISTAKES.", u, { size: 104, y: H - 230, dur: 1.5, color: RED }); ctx.restore();
+  slam("FOUND.", u - 1.55, { size: 104, y: H - 230, dur: 1.55, color: GREEN });
+  credit("THE ENGINE", "STOCKFISH", u - 0.7, 2.3);
+}, { flash: 0.6, punch: true, embers: 0.3 });
+// 16.16: what they could have done: slower, to read
+at(16.16, 19.32, (u) => {
+  drawClip("review", 6.2 + u * 0.4, around(mark("review", "walk"), 1.0), zoomIn(around(mark("review", "walk"), 1.0), 0.85), u / 3.16);
+  slam("SHOWN. EXPLAINED.", u - 0.2, { size: 92, y: H - 220, dur: 2.9 });
+}, { punch: true, flash: 0.25, embers: 0.3 });
+// 19.32: how hard was it? Held, so it can be read
+at(19.32, 22.48, (u) => {
+  const b = around(mark("review", "hard"), 1.2);
+  drawClip("review", 10, b, zoomIn(b, 0.88), u / 3.16);
+  slam("HOW HARD WAS IT, REALLY?", u - 0.25, { size: 84, y: 200, dur: 2.9, color: GOLD });
+  credit("THE HUMAN MIND", "MAIA-3 · UNIVERSITY OF TORONTO", u - 1.0, 2.1, H - 330);
+}, { punch: true, flash: 0.3, embers: 0.4 });
+// 22.48 – 26.8: the montage: everything, quicker and quicker
+{
+  const M = [["practice", 3], ["rematch", 3], ["guess", 3.5], ["prep", 3], ["ask", 8.5], ["wrapped", 2.9], ["practice", 6], ["guess", 5.5], ["rematch", 5], ["wrapped", 5.1]];
+  let t = 22.48; const n = M.length, span = 26.8 - 22.48;
+  M.forEach(([c, ct], i) => { const d = span * (n - i) / ((n * (n + 1)) / 2), a = t; t += d;
+    at(a, t, (u) => drawClip(c, ct, page(c), zoomIn(page(c), 0.68), u / d), { punch: true, flash: 0.45, embers: 0.4 }); });
+}
+// 26.8 – 27.2: black, silence
+at(26.8, DROP, () => {}, { embers: 0 });
+// DROP: the rock, the title
+at(DROP, DROP + 2 * BAR, (u, T) => {
+  drawFilm(30 + u * 1.5, 0.55);
+  ctx.save(); shake(T, 16 * clamp(1 - u / 0.6));
+  slam("KNIGHTWISE", u, { size: 220, dur: 2 * BAR, accent: RED, glow: "rgba(224,40,60,.55)", sub: "THE CHESS COACH THAT SITS BEHIND YOU" }); ctx.restore();
+  credit("MUSIC", "KEVIN MACLEOD", u - 1.2, 1.5, H - 330);
+}, { flash: 1.2, embers: 1 });
+// after the drop: each part, two bars: a fast hit, then slower so the words can be read
+const PART = (i, clip, from, to, title, sub, key, who = null, bars = 2) => {
+  const a = DROP + (2 + 2 * i) * BAR, d = bars * BAR;
+  at(a, a + d, (u, T) => {
+    const ct = key - 0.5 + (u < 0.5 ? u * 1.6 : 0.8 + (u - 0.5) * 0.55);  // quick into the moment, then slow on it
+    drawClip(clip, ct, typeof from === "function" ? from() : from, typeof to === "function" ? to() : to, u / d);
+    ctx.save(); shake(T, 7 * clamp(1 - u / 0.25)); slam(title, u - 0.1, { size: 92, y: H - 215, dur: d - 0.15, sub }); ctx.restore();
+    if (who) credit(who[0], who[1], u - 1.0, d - 1.1);
+  }, { punch: true, flash: 0.4, embers: 0.35 });
+};
+PART(0, "practice", () => box("practice"), () => zoomIn(page("practice"), 0.92), "PRACTICE FROM YOUR OWN GAMES", "the positions you got wrong, again", 4.2, ["THE PUZZLES", "LICHESS"]);
+PART(1, "rematch", () => box("rematch"), () => zoomIn(page("rematch"), 0.9), "REPLAY THE MOMENT IT WENT WRONG", "against a human-like opponent at their level", 2.3, ["THE RULES OF CHESS", "PYTHON-CHESS"]);
+PART(2, "guess", () => page("guess"), () => zoomIn(page("guess"), 0.82), "GUESS THE HUMAN MOVE", "what would a 1,000 player play?", 2.3, ["REAL GAMES", "LICHESS ELITE DATABASE"]);
+PART(3, "prep", () => page("prep"), () => zoomIn(page("prep"), 0.8), "KNOW THEM BEFORE YOU PLAY", "their openings, from their public games", 1.7, ["THEIR GAMES", "CHESS.COM PUBLIC API"]);
+PART(4, "ask", () => around(mark("ask", "ask"), 1.7), () => around(mark("ask", "ask"), 1.3), "ASK YOUR COACH. OUT LOUD.", "Maya and Viktor answer by voice", 8.9, ["THE VOICES · THE EARS", "KOKORO · WHISPER · GROQ"], 3);
+PART(5.5, "wrapped", zoomIn(FULL, 0.62), zoomIn(FULL, 0.5), "YOUR MONTH, WRAPPED", null, 2.9);
+// the film: Jalandhar's sitar, slow motion into the checkmate, then silence
+at(F.a, F.b, (u, T) => {
+  const m = mateAt(), lands = m + 1.9;  // the winning piece lands 1.9 s into its move
+  const k = T < 56.5 ? lands - 9.5 + (T - F.a) * (8.0 / 8.1) : T < F.mate ? lands - 1.5 + (T - 56.5) * 0.5 : lands + (T - F.mate) * 0.2;
+  drawFilm(k);
+  slam("YOUR BEST WIN.", u - 0.4, { size: 100, y: 210, dur: 2.6, slow: true });
+  slam("AS A FILM.", u - 3.0, { size: 100, y: 210, dur: 2.0, color: GOLD, slow: true });
+  credit("THE 3D WORLD", "THREE.JS · POLY HAVEN", u - 5.2, 2.6, H - 330);
+}, { flash: 0.5, embers: 0.6 });
+// the rock back: the promise, hard and slow
+at(F.b, F.b + 2 * BAR, (u, T) => {
+  ctx.fillStyle = "#050404"; ctx.fillRect(0, 0, W, H);
+  ctx.save(); shake(T, 10 * clamp(1 - u / 0.4));
+  slam("NEVER ON IN A GAME", u, { size: 100, y: H / 2 - 64, dur: 2 * BAR }); slam("AGAINST A REAL PERSON.", u - BAR, { size: 100, y: H / 2 + 64, dur: BAR, color: GREEN });
+  ctx.restore();
+}, { flash: 1, embers: 0.8 });
+["FREE.", "NO ACCOUNT.", "NO ADS."].forEach((w, i) => { const a = F.b + 2 * BAR + i * 2 * BEAT;
+  at(a, a + 2 * BEAT, (u, T) => { drawClip(["review", "guess", "practice"][i], 6, FULL, FULL, 0); ctx.fillStyle = "rgba(0,0,0,.75)"; ctx.fillRect(0, 0, W, H);
+    ctx.save(); shake(T, 10 * clamp(1 - u / 0.3)); slam(w, u, { size: 180, dur: 2 * BEAT, color: i === 2 ? RED : "#fff" }); ctx.restore(); }, { flash: 0.8, embers: 0.6 }); });
+const END = F.b + 2 * BAR + 6 * BEAT;  // Hitman's last great hit lands here
+at(END, END + 3.7, (u, T) => {
+  drawFilm(mateAt() + 4.6, 0.68);
+  ctx.save(); shake(T, 12 * clamp(1 - u / 0.5));
+  slam("KNIGHTWISE", u, { size: 200, dur: 3.7, accent: RED, glow: "rgba(224,40,60,.5)", sub: "FREE ON THE MICROSOFT STORE" }); ctx.restore();
+}, { flash: 1, embers: 1 });
+// the end: who developed it, the way a film ends
+at(END + 3.7, END + 7.7, (u) => {
+  ctx.fillStyle = "#030303"; ctx.fillRect(0, 0, W, H);
+  slam("DEVELOPED BY", u - 0.1, { size: 34, weight: 700, y: H / 2 - 125, dur: 3.9, color: "#e0b25a", slow: true });
+  slam(CREATOR.toUpperCase(), u - 0.3, { size: 160, dur: 3.7, glow: "rgba(224,40,60,.4)", slow: true });
+  slam("built with Claude, by Anthropic", u - 1.4, { size: 30, weight: 500, y: H / 2 + 140, dur: 2.5, color: "#9aa59f", slow: true });
+}, { flash: 0.3, embers: 0.8 });
+at(END + 7.7, END + 10.4, (u) => { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = clamp((2.7 - u) / 0.9); slam("Free, and fair.", u, { size: 70, weight: 600, dur: 2.7, slow: true }); ctx.globalAlpha = 1; }, { embers: 0.3 });
+const LENGTH = END + 10.4;
+
+// ---------- the music: each song where it fits, every switch on a hit; Maya's voice above it ----------
+const S = "/ui/vendor/film/";
+const MUSIC = [  // [song, when in the trailer, from where in the song, how long, loudness, fade out]
+  ["hitman.mp3", 0, 0, 26.8, 0.85, 0.2],
+  ["ready-aim-fire.mp3", DROP, 2.3, F.a - DROP, 0.8, 0.12],
+  ["jalandhar.mp3", F.a, 51.0, F.mate + 0.1 - F.a, 0.85, 0.08],
+  ["ready-aim-fire.mp3", F.b, 2.3 + 8 * BAR, END - F.b, 0.8, 0.05],
+  ["hitman.mp3", END, 190.8, 7.4, 0.95, 1.5],
+];
+const VOICE = [[9.3, "01"], [DROP + 8 * BAR + 0.3, "05"], [END + 7.85, "08"]];
+
+let actx, master, start = 0, playing = false;
+const bufs = {};
+async function audio(into = null) {  // into: an offline context, for making the video
+  if (into) actx = into; else { actx = new AudioContext(); master = actx.createGain(); master.connect(actx.destination); }
+  const load = async u => { if (bufs[u] !== undefined) return; try { bufs[u] = await actx.decodeAudioData(await (await fetch(u)).arrayBuffer()); } catch (e) { bufs[u] = null; } };
+  for (const m of MUSIC) await load(S + m[0]);
+  for (const [, n] of VOICE) await load(`/ui/vendor/trailer/voice/${n}.wav`);
+}
+function schedule(actx, master, now) {  // the songs and the voice, on a live context or an offline one
+  const music = actx.createGain(); music.connect(master);
+  for (const [song, when, from, dur, loud, fade] of MUSIC) {
+    const b = bufs[S + song]; if (!b) continue;
+    const src = actx.createBufferSource(), g = actx.createGain(); src.buffer = b; src.connect(g); g.connect(music);
+    g.gain.setValueAtTime(loud, now + when); g.gain.setValueAtTime(loud, now + when + dur - fade); g.gain.linearRampToValueAtTime(0, now + when + dur);
+    src.start(now + when, from, dur + 0.05);
+  }
+  for (const [t, n] of VOICE) {
+    const b = bufs[`/ui/vendor/trailer/voice/${n}.wav`]; if (!b) continue;
+    const src = actx.createBufferSource(), g = actx.createGain(); g.gain.value = 1.5; src.buffer = b; src.connect(g); g.connect(master); src.start(now + t);
+    music.gain.setTargetAtTime(0.4, now + t - 0.25, 0.08); music.gain.setTargetAtTime(1, now + t + b.duration, 0.3);  // the music steps back for her
+  }
+}
+function startAudio() { const now = actx.currentTime + 0.2; start = now; schedule(actx, master, now); }
+function render(T) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = "none"; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+  const c = CUT.find(x => T >= x.a && T < x.b); if (!c) return;
+  const u = T - c.a;
+  ctx.save();
+  if (c.punch) { const p = 1 + 0.1 * clamp(1 - u / 0.3); ctx.translate(W / 2, H / 2); ctx.scale(p, p); ctx.translate(-W / 2, -H / 2); }
+  c.f(u, T);
+  ctx.restore();
+  finish(T, c);
+  if (c.flash) flash(c.flash * clamp(1 - u / 0.16));
+}
+function loop() {
+  if (!playing) return;
+  const T = actx.currentTime - start;
+  if (T >= LENGTH) { playing = false; render(LENGTH - 0.01); document.getElementById("msg").textContent = "The end."; return; }
+  render(Math.max(0, T)); requestAnimationFrame(loop);
+}
+async function play() {
+  document.getElementById("play").disabled = true;
+  document.getElementById("msg").textContent = "Setting up…";
+  await loadFilm(); await audio();
+  playing = true; startAudio(); document.getElementById("msg").textContent = "Playing…"; loop();
+}
+// The video, frame by frame: never live, so a slow or hidden window can't drop frames (a window behind others gets
+// about one frame a second). H.264 and AAC in an MP4, what the Microsoft Store and YouTube take, with the browser's
+// own encoders and mp4-muxer (MIT) to put them together.
+async function make() {
+  const msg = t => { document.getElementById("msg").textContent = t; };
+  document.getElementById("play").disabled = document.getElementById("save").disabled = true;
+  msg("Setting up…"); await loadFilm();
+  const RATE = 48000, FPS = 30;
+  const off = new OfflineAudioContext(2, Math.ceil(RATE * LENGTH), RATE), mix = off.createGain(); mix.connect(off.destination);
+  await audio(off); schedule(off, mix, 0);
+  msg("Mixing the sound…"); const sound = await off.startRendering();
+  const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), fastStart: "in-memory",
+    video: { codec: "avc", width: W, height: H, frameRate: FPS }, audio: { codec: "aac", sampleRate: RATE, numberOfChannels: 2 } });
+  let failed = null;
+  const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: e => { failed = e; } });
+  let vc = { codec: "avc1.640028", width: W, height: H, bitrate: 8_000_000, framerate: FPS };
+  if (!(await VideoEncoder.isConfigSupported(vc)).supported) vc = { ...vc, codec: "avc1.4d0028" };
+  venc.configure(vc);
+  const aenc = new AudioEncoder({ output: (c, m) => muxer.addAudioChunk(c, m), error: e => { failed = e; } });
+  aenc.configure({ codec: "mp4a.40.2", sampleRate: RATE, numberOfChannels: 2, bitrate: 192000 });
+  const L = sound.getChannelData(0), Rt = sound.getChannelData(1), STEP = 4800;
+  for (let i = 0; i < L.length; i += STEP) {
+    const n = Math.min(STEP, L.length - i), d = new Float32Array(n * 2); d.set(L.subarray(i, i + n), 0); d.set(Rt.subarray(i, i + n), n);
+    const ad = new AudioData({ format: "f32-planar", sampleRate: RATE, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / RATE * 1e6), data: d });
+    aenc.encode(ad); ad.close();
+  }
+  const N = Math.round(LENGTH * FPS);
+  for (let n = 0; n < N; n++) {
+    if (failed) break;
+    render(n / FPS);
+    const bmp = await createImageBitmap(cv);  // a copy of this frame (a frame taken straight from the canvas can repeat an old one)
+    const f = new VideoFrame(bmp, { timestamp: Math.round(n * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
+    venc.encode(f, { keyFrame: n % (2 * FPS) === 0 }); f.close(); bmp.close();
+    while (venc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 2));
+    if (n % FPS === 0) { msg(`Making the video: ${Math.round(100 * n / N)}%`); await new Promise(r => setTimeout(r, 0)); }
+  }
+  await venc.flush(); await aenc.flush();
+  if (failed) { window.trailerDone = "failed: " + failed.message; return msg("Couldn't make it: " + failed.message); }
+  muxer.finalize();
+  msg("Saving…");
+  const res = await fetch("/api/film/save?game=trailer", { method: "POST", headers: { "Content-Type": "video/mp4" }, body: muxer.target.buffer });
+  const j = await res.json().catch(() => ({}));
+  msg(res.ok ? `Saved: ${j.path}` : (j.message || "Couldn't save it."));
+  window.trailerDone = res.ok ? j.path : "failed";
+}
+window.trailer = { render, LENGTH, CUT, loadFilm, make };
+(async () => {
+  for (const n of ["review", "ask", "practice", "rematch", "prep", "guess", "wrapped"]) await loadClip(n).catch(() => {});
+  document.getElementById("msg").textContent = `Ready: ${Math.round(LENGTH)} seconds.`;
+  render(DROP + 0.5);
+})();
+document.getElementById("play").onclick = () => play();
+document.getElementById("save").onclick = () => make();
+</script>
+</body></html>

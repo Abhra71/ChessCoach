@@ -325,7 +325,7 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
   Object.defineProperty(stop, "paused", { get: () => paused });
   Object.defineProperty(stop, "shot", { get: () => (lean > 0.5 ? "close" : CUTS[cut % CUTS.length]) });  // which shot is on, for checks
   // step(seconds): jump the film on, for screenshots and checks (a hidden window draws almost no frames)
-  stop.step = seconds => { started = true; for (let k = 0; k < seconds / 0.05; k++) tick(0.05); };
+  stop.step = seconds => { started = true; for (let left = seconds; left > 1e-6; left -= 0.05) tick(Math.min(0.05, left)); };  // exactly that long (the trailer steps a frame at a time)
   return stop;
 }
 
