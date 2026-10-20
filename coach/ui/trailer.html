@@ -340,18 +340,21 @@ async function make() {
   document.getElementById("play").disabled = document.getElementById("save").disabled = true;
   msg("Setting up…"); await loadFilm();
   const RATE = 48000, FPS = 30;
+  // ?phone: 1280x720 at 2.7 Mbps, small enough (about 27 MB) to send to a phone
+  const PHONE = P.has("phone"), VW = PHONE ? 1280 : W, VH = PHONE ? 720 : H;
+  const small = PHONE ? Object.assign(document.createElement("canvas"), { width: VW, height: VH }) : null;
   const off = new OfflineAudioContext(2, Math.ceil(RATE * LENGTH), RATE), mix = off.createGain(); mix.connect(off.destination);
   await audio(off); schedule(off, mix, 0);
   msg("Mixing the sound…"); const sound = await off.startRendering();
   const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), fastStart: "in-memory",
-    video: { codec: "avc", width: W, height: H, frameRate: FPS }, audio: { codec: "aac", sampleRate: RATE, numberOfChannels: 2 } });
+    video: { codec: "avc", width: VW, height: VH, frameRate: FPS }, audio: { codec: "aac", sampleRate: RATE, numberOfChannels: 2 } });
   let failed = null;
   const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: e => { failed = e; } });
-  let vc = { codec: "avc1.640028", width: W, height: H, bitrate: 8_000_000, framerate: FPS };
+  let vc = { codec: "avc1.640028", width: VW, height: VH, bitrate: PHONE ? 2_700_000 : 8_000_000, framerate: FPS };
   if (!(await VideoEncoder.isConfigSupported(vc)).supported) vc = { ...vc, codec: "avc1.4d0028" };
   venc.configure(vc);
   const aenc = new AudioEncoder({ output: (c, m) => muxer.addAudioChunk(c, m), error: e => { failed = e; } });
-  aenc.configure({ codec: "mp4a.40.2", sampleRate: RATE, numberOfChannels: 2, bitrate: 192000 });
+  aenc.configure({ codec: "mp4a.40.2", sampleRate: RATE, numberOfChannels: 2, bitrate: PHONE ? 128000 : 192000 });
   const L = sound.getChannelData(0), Rt = sound.getChannelData(1), STEP = 4800;
   for (let i = 0; i < L.length; i += STEP) {
     const n = Math.min(STEP, L.length - i), d = new Float32Array(n * 2); d.set(L.subarray(i, i + n), 0); d.set(Rt.subarray(i, i + n), n);
@@ -362,7 +365,8 @@ async function make() {
   for (let n = 0; n < N; n++) {
     if (failed) break;
     render(n / FPS);
-    const bmp = await createImageBitmap(cv);  // a copy of this frame (a frame taken straight from the canvas can repeat an old one)
+    if (small) small.getContext("2d").drawImage(cv, 0, 0, VW, VH);
+    const bmp = await createImageBitmap(small || cv);  // a copy of this frame (a frame taken straight from the canvas can repeat an old one)
     const f = new VideoFrame(bmp, { timestamp: Math.round(n * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
     venc.encode(f, { keyFrame: n % (2 * FPS) === 0 }); f.close(); bmp.close();
     while (venc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 2));
@@ -372,7 +376,7 @@ async function make() {
   if (failed) { window.trailerDone = "failed: " + failed.message; return msg("Couldn't make it: " + failed.message); }
   muxer.finalize();
   msg("Saving…");
-  const res = await fetch("/api/film/save?game=trailer", { method: "POST", headers: { "Content-Type": "video/mp4" }, body: muxer.target.buffer });
+  const res = await fetch("/api/film/save?game=" + (PHONE ? "trailerphone" : "trailer"), { method: "POST", headers: { "Content-Type": "video/mp4" }, body: muxer.target.buffer });
   const j = await res.json().catch(() => ({}));
   msg(res.ok ? `Saved: ${j.path}` : (j.message || "Couldn't save it."));
   window.trailerDone = res.ok ? j.path : "failed";
