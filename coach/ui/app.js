@@ -954,39 +954,43 @@ function wrapped(r) {
 }
 
 // ---------- your game as a short 3D film (1.0): coach/film.py writes it, coach/ui/film.js plays it ----------
-// the two songs the owner picked by ear (20 Oct), one per film in turn; both CC BY 3.0, credited in Settings
+// The film's songs, picked by the owner by ear (20 Oct), all CC BY 3.0, credited in Settings. peak: the second
+// the song's main part starts (measured from its loudness, 20 Oct), so the film can bring it in on the first
+// winning move. A different song each time: the next one in the list, remembered.
 const FILM_SONGS = [
-  { url: "/ui/vendor/film/time-has-come.mp3", name: "Time has come, by Reiswerk feat. SackJo22" },
-  { url: "/ui/vendor/film/trio-cultural-mix.mp3", name: "A Trio Cultural Mix, by CSoul" },
+  { url: "/ui/vendor/film/time-has-come.mp3", name: "Time has come, by Reiswerk feat. SackJo22", peak: 19 },
+  { url: "/ui/vendor/film/trio-cultural-mix.mp3", name: "A Trio Cultural Mix, by CSoul", peak: 31 },
 ];
 async function filmView(id) {
   shell("progress", `<p class="muted">Setting up the film…</p>`);
   let s;
   try { s = await api(`/api/film/${encodeURIComponent(id || "week")}`); }
   catch (e) { $("#page").innerHTML = `<div class="empty">No game to film yet: win a game this week and it's here.</div>`; return; }
-  const song = FILM_SONGS[Number(String(s.id).slice(-1)) % FILM_SONGS.length];  // the same game, the same song
-  const FILM_MUSIC = song.url;
-  const hasMusic = await fetch(FILM_MUSIC, { method: "HEAD" }).then(r => r.ok).catch(() => false);
-  let musicOn = hasMusic && remember("kw-film-music") !== "off", stop = null;
+  const songs = [];
+  for (const x of FILM_SONGS) if (await fetch(x.url, { method: "HEAD" }).then(r => r.ok).catch(() => false)) songs.push(x);
+  let pick = songs.length ? (Number(remember("kw-film-song") || -1) + 1) % songs.length : -1;  // the next song this time
+  let musicOn = songs.length > 0 && remember("kw-film-music") !== "off", stop = null, sample = null;
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games/${esc(s.id)}" class="small muted" style="text-decoration:none">← The game</a>
       <h1 style="margin-top:6px">${esc(s.title)}</h1>
-      <p class="sub">Against ${esc(s.opponent)}, ${esc(s.date)}. Quiet moves go by quickly; it slows down for the moves that won it.</p></div></div>
-    <div class="film-wrap" id="film"><button class="film-play" id="filmplay" aria-label="Play the film">▶</button></div>
+      <p class="sub">Against ${esc(s.opponent)}, ${esc(s.date)}.</p></div></div>
+    <div class="film-wrap" id="film"></div>
     <div class="row" style="margin-top:12px"><button class="btn primary" id="filmgo">▶ Play</button>
       <button class="btn" id="filmsave" title="Plays it once and saves it as a video in Videos\\Knightwise">Save as a video</button>
-      ${hasMusic ? `<button class="btn" id="filmmusic">${musicOn ? "Music on" : "Music off"}</button>` : ""}
-      ${hasMusic ? `<span class="small muted">♪ ${esc(song.name)}</span>` : ""}
+      ${songs.length ? `<select class="field" id="filmsong" style="width:auto" title="The music">${songs.map((x, n) => `<option value="${n}" ${n === pick ? "selected" : ""}>♪ ${esc(x.name)}</option>`).join("")}
+        <option value="-1" ${musicOn ? "" : "selected"}>No music</option></select>
+        <button class="btn" id="filmsample" title="Hear the song's main part">Hear it</button>` : ""}
       <span class="small muted" id="filmmsg"></span></div>`;
   const ready = () => window.Film ? Promise.resolve() : new Promise(r => window.addEventListener("film-ready", r, { once: true }));
-  async function run(record) {
+  const song = () => (musicOn && pick >= 0 ? songs[pick] : null);
+  const go = $("#filmgo");
+  function stopSample() { if (sample) { sample.pause(); sample = null; } const h = $("#filmsample"); if (h) h.textContent = "Hear it"; }
+  async function mount(autoplay, record) {  // the film: a still preview first, or playing (and recording)
     await ready();
     if (stop) stop();
-    Voice.stop(); Coach.hide();  // nothing in front of the film
-    $("#filmmsg").textContent = record ? "Recording: let it play to the end…" : "";
-    $("#filmsave").disabled = true; $("#filmgo").disabled = true;
-    window.kwFilm = stop = window.Film.play($("#film"), s, { record, music: musicOn ? FILM_MUSIC : null, onEnd: async r => {
-      $("#filmsave").disabled = false; $("#filmgo").disabled = false; $("#filmgo").textContent = "▶ Play again";
+    stopSample();
+    window.kwFilm = stop = window.Film.play($("#film"), s, { record, autoplay, music: song(), onEnd: async r => {
+      go.textContent = "▶ Play again"; go.dataset.state = "ended"; $("#filmsave").disabled = false;
       if (r.error) { $("#filmmsg").textContent = r.error; return; }
       if (!r.video) return;
       $("#filmmsg").textContent = "Saving…";
@@ -996,14 +1000,40 @@ async function filmView(id) {
         $("#filmmsg").textContent = res.ok ? `Saved: ${j.path}` : (j.message || "Couldn't save it.");
       } catch (e) { $("#filmmsg").textContent = "Couldn't save it."; }
     } });
+    if (autoplay) { remember("kw-film-song", String(pick)); Voice.stop(); Coach.hide(); }  // nothing in front of the film
+    go.textContent = autoplay ? "❚❚ Pause" : "▶ Play"; go.dataset.state = autoplay ? "playing" : "preview";
+    $("#filmsave").disabled = !!record;
+    $("#filmmsg").textContent = record ? "Recording: let it play to the end…" : "";
   }
-  $("#filmplay").onclick = () => run(false);
-  $("#filmgo").onclick = () => run(false);
-  $("#filmsave").onclick = () => run(true);
-  const mb = $("#filmmusic");
-  if (mb) mb.onclick = () => { musicOn = !musicOn; remember("kw-film-music", musicOn ? "on" : "off"); mb.textContent = musicOn ? "Music on" : "Music off"; };
-  window.addEventListener("hashchange", () => { if (stop) stop(); stop = null; }, { once: true });
-  Coach.react("viktor", "pleased", s.result === "win" ? "Your game, as a film. Watch the moves that won it: that's what we're building." : "Your game, as a film.");
+  go.onclick = () => {  // one button: play, pause, carry on, play again
+    const st = go.dataset.state;
+    if (st === "preview") { stop.resume(); remember("kw-film-song", String(pick)); Voice.stop(); Coach.hide(); stopSample(); go.textContent = "❚❚ Pause"; go.dataset.state = "playing"; }
+    else if (st === "playing") { stop.pause(); go.textContent = "▶ Carry on"; go.dataset.state = "paused"; }
+    else if (st === "paused") { stop.resume(); go.textContent = "❚❚ Pause"; go.dataset.state = "playing"; }
+    else mount(true, false);
+  };
+  $("#film").onclick = () => go.click();  // the picture itself plays and pauses too
+  $("#filmsave").onclick = () => mount(true, true);
+  const sel = $("#filmsong");
+  if (sel) sel.onchange = () => {
+    const n = Number(sel.value);
+    musicOn = n >= 0; remember("kw-film-music", musicOn ? "on" : "off");
+    if (musicOn) pick = n;
+    if (go.dataset.state === "preview" || go.dataset.state === "ended") mount(false, false);  // the new song from the start
+  };
+  const hear = $("#filmsample");
+  if (hear) hear.onclick = () => {  // a few seconds from the song's main part, as soft as in the film
+    if (sample) return stopSample();
+    const x = songs[Number(sel.value)] || songs[0];
+    sample = new Audio(x.url); sample.volume = 0.32;
+    sample.currentTime = Math.max(0, x.peak - 3);
+    sample.play().catch(() => {});
+    hear.textContent = "■ Stop";
+    setTimeout(() => { if (sample && sample.src.endsWith(x.url)) stopSample(); }, 15000);
+  };
+  window.addEventListener("hashchange", () => { if (stop) stop(); stop = null; stopSample(); }, { once: true });
+  mount(false, false);  // the preview: the board and the title, waiting
+  Coach.react("viktor", "pleased", s.result === "win" ? "Your game, as a film. Watch the moves that won it." : "Your game, as a film.");
 }
 
 // ---------- blindfold by voice: follow one of your games in your head (1.0) ----------

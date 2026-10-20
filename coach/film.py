@@ -16,7 +16,7 @@ from coach import insights
 from coach.blindfold import NAME
 
 HIGHLIGHTS = 3  # moments that win the game, at most, besides the last move
-QUIET_SECONDS = 24  # all the quiet moves together take about this long, whatever the game's length
+QUIET_SECONDS = 34  # all the quiet moves together take about this long (20 Oct, the owner: "slightly slower")
 SAVED = Path.home() / "Videos" / "Knightwise"  # next to the week's picture in Pictures\Knightwise
 
 
@@ -96,7 +96,7 @@ def script(gid):
     end = ("Checkmate. You won." if board.is_checkmate() and result == "win" else
            f"You won.{why}" if result == "win" else "A draw." if result == "draw" else "They won this one.")
     return {"title": "Your game of the week", "you": color, "white": g["white"]["username"], "black": g["black"]["username"],
-            "opponent": g[other]["username"], "result": result, "end": end, "moves": moves, "quiet": min(0.8, max(0.35, QUIET_SECONDS / quiet)),
+            "opponent": g[other]["username"], "result": result, "end": end, "moves": moves, "quiet": min(1.0, max(0.55, QUIET_SECONDS / quiet)),
             "date": datetime.fromtimestamp(g["end_time"]).strftime("%d %b %Y"), "id": str(gid)}
 
 

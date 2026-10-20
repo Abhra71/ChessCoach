@@ -17,7 +17,7 @@ def test_the_film_follows_the_real_game_and_ends_on_the_win(monkeypatch):
     last = s["moves"][-1]
     assert last["slow"] and last["capture"] == "f7" and last["caption"] == "Move 4. Your queen takes their pawn on f7: checkmate!"
     assert not any(m.get("slow") for m in s["moves"][:-1])  # no turning points known: only the last move slows down
-    assert s["end"] == "Checkmate. You won." and s["you"] == "white" and 0.35 <= s["quiet"] <= 0.8
+    assert s["end"] == "Checkmate. You won." and s["you"] == "white" and 0.55 <= s["quiet"] <= 1.0
 
 
 def test_castling_moves_the_rook_and_a_promotion_says_so():
