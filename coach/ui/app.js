@@ -630,7 +630,7 @@ async function levelView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your level</h1>
       <p class="sub">Five levels from beginner to 2,000+, measured on your last ${p.games} games. A level is done when every skill meets its goal.</p></div>
-      <div class="row"><a class="btn" href="#/repertoire">Your repertoire</a><a class="btn" href="#/calc">See it in your head</a><a class="btn" href="#/guess">Weekly challenge: guess the human move</a><a class="btn" href="#/endgames">Endgame trainer</a></div></div>
+      <div class="row"><a class="btn" href="#/repertoire">Your repertoire</a><a class="btn" href="#/calc">See it in your head</a><a class="btn" href="#/blindfold">Blindfold</a><a class="btn" href="#/guess">Weekly challenge: guess the human move</a><a class="btn" href="#/endgames">Endgame trainer</a></div></div>
     <div class="stack">${p.levels.map(level).join("")}</div>
     <p class="note">The goals are our first estimate of each level, and we'll tune them on real players' games. They don't promise a rating; your games show the progress.</p>`;
   const next = cur.skills.find(s => s.met === false);
@@ -858,6 +858,104 @@ async function prepView(user) {
   $("#who").onkeydown = e => { if (e.key === "Enter") look(); };
   if (user) look();
   else Coach.react("maya", "explain", "Playing someone soon? Type their chess.com name and I'll show you how they play.");
+}
+
+// ---------- blindfold by voice: follow one of your games in your head (1.0) ----------
+// Maya reads out the first moves of one of your own games; the board stays empty. Then one question, answered by
+// clicking a square (or saying it, with an AI key). Right: the next one is a move longer. With the voice off, the
+// moves show one at a time instead, then disappear.
+const each = plies => { const n = Math.ceil(plies / 2); return `${n} move${n === 1 ? "" : "s"} each`; };
+async function blindfoldView() {
+  shell("level", `<p class="muted">Finding one of your games…</p>`);
+  let x;
+  try { x = await api("/api/blindfold"); } catch (e) { $("#page").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  let ready = false, done = false, peeked = false, reading = 0;
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+      <h1 style="margin-top:6px">Blindfold</h1>
+      <p class="sub">Maya reads out the start of one of your games. Follow it in your head: the board stays empty. Then answer on the board.
+        Each right answer makes the next one a move longer.</p></div>
+      <span class="muted num">${each(x.plies)}${x.best ? ` · your record: ${each(x.best)}` : ""}</span></div>
+    <div class="game-layout">
+      <div><div class="board-wrap" id="board"></div></div>
+      <div class="stack">
+        <div class="box stack" style="padding:16px"><div class="label">Your game against ${esc(x.game.opponent || "an opponent")}</div>
+          <div id="bfmoves" class="small" style="min-height:44px"></div>
+          <div class="row"><button class="btn primary" id="bfplay">${Voice.on ? "Listen" : "Show the moves"}</button>
+            <button class="btn" id="bfpeek" hidden>Show the moves</button></div></div>
+        <div class="box stack" style="padding:16px" id="bfq" hidden><h3 style="margin:0" id="bfask"></h3>
+          <div class="row">${TALK ? `<button class="btn" id="bfsay">Say the square</button>` : ""}<span class="small muted" id="bfheard"></span></div>
+          <div class="small" id="bfmsg"></div>
+          <div class="row"><button class="btn primary" id="bfnext" hidden>Next →</button></div></div>
+      </div>
+    </div>`;
+  const board = (opts = {}) => Board.render($("#board"), { ...(opts.fen ? { fen: opts.fen } : { pieces: {} }), highlights: opts.hl || {}, onClick: answer });
+  board();
+  function ask() {
+    ready = true;
+    $("#bfq").hidden = false; $("#bfask").textContent = x.question;
+    $("#bfpeek").hidden = false;
+    Coach.react("maya", "listen", x.question);
+  }
+  async function play() {
+    const mine = ++reading;
+    $("#bfplay").disabled = true;
+    if (Voice.on) {
+      $("#bfmoves").innerHTML = `<span class="muted">Listening… ${x.plies} half-moves.</span>`;
+      await Voice.speak(x.say, false, COACHES.maya.voice);
+    } else {  // no voice: one move at a time, then gone
+      for (let k = 0; k < x.moves.length && mine === reading; k++) {
+        $("#bfmoves").innerHTML = `<span class="num">${Math.floor(k / 2) + 1}${k % 2 ? "…" : "."} <b>${esc(x.moves[k])}</b></span>`;
+        await wait(1300);
+      }
+      $("#bfmoves").innerHTML = `<span class="muted">That's all of it. Now picture the board.</span>`;
+    }
+    if (mine !== reading) return;
+    $("#bfplay").disabled = false; $("#bfplay").textContent = Voice.on ? "Hear it again" : "Show them again";
+    if (!ready) ask();
+  }
+  function peek() {
+    peeked = true;
+    $("#bfmoves").innerHTML = x.moves.map((m, k) => `${k % 2 ? "" : `<span class="muted">${k / 2 + 1}.</span> `}${esc(m)}`).join(" ");
+    $("#bfpeek").hidden = true;
+  }
+  async function answer(sq) {
+    if (!ready || done) return;
+    done = true; reading++; Voice.stop();
+    const looked = peeked;  // read the moves before answering: no longer move for it
+    const right = x.answers.includes(sq);
+    const hl = Object.fromEntries(x.answers.map(a => [a, "hl-ok"]));
+    if (!right) hl[sq] = "hl-no";
+    board({ fen: x.fen, hl });
+    peek();
+    Sound.play(right ? "right" : "wrong", 0.6);
+    const r = await api("/api/blindfold/done", { right, peeked: looked }).catch(() => ({}));
+    const more = r.plies ? ` Next one: ${each(r.plies)}.` : "";
+    const where = x.answers.length > 1 ? `The answers: ${x.answers.join(", ")}.` : `It's on ${x.answers[0]}.`;
+    $("#bfmsg").innerHTML = right ? `<span class="ok-text"><b>Right.</b> You saw it without the board.</span>${esc(more)}`
+      : `<span class="bad-text">Not ${esc(sq)}.</span> ${esc(where)}${esc(more)}`;
+    if (r.record) confetti(40);
+    $("#bfnext").hidden = false;
+    Coach.react("maya", right ? "celebrate" : "encourage", right ? `Right, without seeing a thing.${r.record ? " That's your record." : ""}${more}`
+      : `${where} This is hard for everyone at first: it gets easier every day.${more}`);
+  }
+  $("#bfplay").onclick = play;
+  $("#bfpeek").onclick = peek;
+  $("#bfnext").onclick = () => blindfoldView();
+  const say = $("#bfsay");
+  if (say) say.onclick = async () => {
+    if (!ready || done) return;
+    say.disabled = true; $("#bfheard").textContent = "Listening…";
+    try {
+      const text = await Mic.listen({ wait: 6000 });
+      if (!text) { $("#bfheard").textContent = "I didn't hear a square. Say it again, or click it."; return; }
+      const r = await api("/api/blindfold/heard", { text });
+      if (r.square) { $("#bfheard").textContent = `"${text}": ${r.square}`; answer(r.square); }
+      else $("#bfheard").textContent = `"${text}": which square was that? Click it.`;
+    } catch (e) { $("#bfheard").textContent = e.message || "The microphone isn't available. Click the square."; }
+    finally { say.disabled = false; }
+  };
+  Coach.react("maya", "explain", "Blindfold. I'll read out the start of one of your games. Keep the board in your head: no pieces to look at.");
 }
 
 // ---------- Guess the human move: the weekly challenge (1.0) ----------
@@ -1736,6 +1834,7 @@ async function screen(name, arg) {
   if (name === "endgames") return await endgamesView();
   if (name === "calc") return await calcView();
   if (name === "guess") return await guessView();
+  if (name === "blindfold") return await blindfoldView();
   if (name === "repertoire" && arg) { shell("level", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
   if (name === "repertoire") return await repertoireView();
   if (name === "prep") return await prepView(arg && decodeURIComponent(arg));

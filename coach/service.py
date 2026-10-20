@@ -312,6 +312,10 @@ class Handler(BaseHTTPRequestHandler):
                 if item and item.get("drills"):
                     brief.add(item["drills"])
             return self.send(200, json.dumps(out), "application/json")
+        if path == "/api/blindfold":  # blindfold by voice: the next game to follow in your head (1.0)
+            from coach import blindfold
+            out = blindfold.item()
+            return self.send(200 if out else 404, json.dumps(out or {"message": "Blindfold needs a few of your games first."}), "application/json")
         if path == "/api/guess":  # Guess the human move, the weekly challenge (1.0)
             from coach import guess
             return self.send(200, json.dumps(guess.challenge()), "application/json")
@@ -480,6 +484,12 @@ class Handler(BaseHTTPRequestHandler):
             memory.record_verdict(body["answer"])
             note_in_logbook(f"Your verdict on the review (\"is this me?\"): {body['answer']}")
             return self.send(200, "{}", "application/json")
+        if path == "/api/blindfold/done":  # your blindfold answer: the next one longer or shorter
+            from coach import blindfold
+            return self.send(200, json.dumps(blindfold.done(body.get("right") is True, body.get("peeked") is True)), "application/json")
+        if path == "/api/blindfold/heard":  # the square you said out loud, worked out by the AI
+            from coach import blindfold
+            return self.send(200, json.dumps({"square": blindfold.heard_square(str(body.get("text", "")))}), "application/json")
         if path == "/api/guess/done":  # a finished try at this week's challenge: the best so far
             from coach import guess
             try:
