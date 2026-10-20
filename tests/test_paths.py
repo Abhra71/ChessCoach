@@ -1,3 +1,7 @@
+import sys
+
+import pytest
+
 from coach import paths
 
 
@@ -7,6 +11,7 @@ def test_source_run_is_not_the_store_app():
     paths.place_extension()  # does nothing outside the Store app
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows finds Documents; GitHub's Linux computer has none")
 def test_documents_folder_exists():
     assert paths.documents().is_dir()
 
