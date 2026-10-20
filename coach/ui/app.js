@@ -1790,9 +1790,18 @@ async function settingsView() {
         <div>${healthRow(st.health)}</div></div>
       <div class="settings-row"><div><h3>Your data</h3><p class="note">Games, checks, practice and your logbook.</p></div>
         <div class="row"><button class="btn" id="folder">Open data folder</button></div></div>
-      <div class="settings-row"><div><h3>About</h3></div>
-        <div class="muted small">Knightwise · beta · open source, GPL-3.0 · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a><br>
-          Engine: Stockfish 19 · Puzzles: Lichess · Fair play: never active in games against real people.</div></div>
+      <div class="settings-row"><div><h3>About and credits</h3><p class="note">Free and open source. Fair play: never active in games against real people.</p></div>
+        <div class="muted small">Knightwise ${esc((STATUS && STATUS.version) || "")} · open source, GPL-3.0 · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a>
+          <details style="margin-top:6px"><summary>Made with the work of others, all free</summary><ul style="margin:6px 0 0;padding-left:18px">
+            <li><b>Stockfish 19</b>, the move checker: the Stockfish team, GPL-3.0</li>
+            <li><b>The human-move model</b> is Maia-3, by the CSSLab at the University of Toronto, AGPL-3.0: run by Knightwise itself</li>
+            <li><b>python-chess</b>: Niklas Fiekas, GPL-3.0</li>
+            <li><b>Puzzles, opening names, the endgame tablebase and strong players' games</b>: Lichess and the Lichess Elite Database, CC0</li>
+            <li><b>The voices</b>: Kokoro, Apache-2.0, on this PC. <b>Hearing</b>: Whisper (MIT) on Groq, or Google Gemini, with your own key</li>
+            <li><b>The 3D chess set</b>: "Chess Set" by Riley Queen, Poly Haven, CC0. <b>3D</b>: Three.js, MIT</li>
+            <li><b>Sounds</b>: Kenney, CC0. <b>Welcome music</b>: Satie, Gymnopédie No. 1, played by Michael Laucke, public domain</li>
+            <li><b>Your games</b>: chess.com's public API. Knightwise is independent and not connected with chess.com</li>
+          </ul></details></div></div>
     </div>`;
   $("#theme").querySelectorAll("button").forEach(b => b.onclick = async () => {
     const r = await api("/api/settings", { theme: b.dataset.t }); applyTheme(r.theme); settingsView();
