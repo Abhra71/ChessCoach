@@ -1,5 +1,7 @@
 # Knightwise: the full test (everything since the 13 Oct debrief)
 
+**Replaced on 20 Oct by [TEST-1.0.md](TEST-1.0.md),** which adds everything built since and marks what Claude proved.
+
 One test on the 0.6 copy, which has all of 0.5.0 (the 48 debrief points) and everything built after it (0.6 to
 0.11). About 2 hours, in three sessions; do them on different days if you like. Claude starts the test copy, reads
 each step out loud and in the chat, one at a time, and waits for "done" or "next".
