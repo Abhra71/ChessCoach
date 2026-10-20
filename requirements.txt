@@ -1,9 +1,13 @@
+# Exact versions Knightwise was tested with (20 Oct 2026). Never loosen these: a newer version is tried on purpose,
+# following docs/MAINTAINING.md ("Upgrading a part"), then the number here is changed in the same commit.
 chess==1.11.2
-zstandard
-pystray
-pywebview
-keyring
-kokoro-onnx
-faster-whisper
-anthropic
-pytest
+zstandard==0.25.0
+pystray==0.19.5
+pywebview==6.2.1
+keyring==25.7.0
+kokoro-onnx==0.6.1
+onnxruntime==1.31.0
+numpy==2.5.3
+faster-whisper==1.2.1
+anthropic==1.13.0
+pytest==9.1.1
