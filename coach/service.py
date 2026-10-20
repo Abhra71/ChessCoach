@@ -318,6 +318,11 @@ class Handler(BaseHTTPRequestHandler):
             gid = path.rsplit("/", 1)[-1]
             out = film.script(film.week_game() if gid == "week" else gid) if gid else None
             return self.send(200 if out else 404, json.dumps(out or {"message": "No game to film yet."}), "application/json")
+        if path == "/api/report":  # your week or month in facts, for a coach or as Wrapped (1.0)
+            from urllib.parse import parse_qs, urlsplit
+            from coach import report
+            days = 30 if (parse_qs(urlsplit(self.path).query).get("days") or ["7"])[0] == "30" else 7
+            return self.send(200, json.dumps(report.report(days)), "application/json")
         if path == "/api/blindfold":  # blindfold by voice: the next game to follow in your head (1.0)
             from coach import blindfold
             out = blindfold.item()

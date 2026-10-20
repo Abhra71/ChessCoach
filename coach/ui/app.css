@@ -477,3 +477,28 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .film-play { position: absolute; inset: 0; margin: auto; width: 84px; height: 84px; border-radius: 50%; border: 0;
   background: rgba(255,255,255,.92); color: #0a0a0a; font-size: 32px; cursor: pointer; padding-left: 6px; }
 .film-play:hover { background: #fff; }
+
+/* the report for a coach and Wrapped (1.0) */
+.report { display: flex; flex-direction: column; gap: 14px; max-width: 980px; }
+.report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.report .big { font-size: 34px; line-height: 1; }
+.report-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.report-table th { text-align: left; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.report-table td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.report-foot { margin: 4px 0 0; }
+.wrapped { position: fixed; inset: 0; z-index: 2147483600; background: radial-gradient(circle at 30% 20%, #1f3b2c, #050505 70%);
+  color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.wrapped-card { text-align: center; padding: 0 24px; max-width: 900px; }
+.wrapped-big { font: 800 clamp(48px, 11vw, 140px)/1.05 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; letter-spacing: -.02em; }
+.wrapped-small { margin-top: 18px; font-size: clamp(18px, 2.4vw, 28px); color: #cfe9d9; }
+.wrapped-dots { position: absolute; top: 22px; left: 0; right: 0; display: flex; gap: 6px; justify-content: center; }
+.wrapped-dots i { width: 28px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.25); }
+.wrapped-dots i.on { background: #36c27a; }
+.wrapped-x { position: absolute; top: 14px; right: 18px; background: none; border: 0; color: #fff; font-size: 22px; cursor: pointer; }
+.wrapped-foot { position: absolute; bottom: 22px; font-size: 13px; color: rgba(255,255,255,.55); }
+@media print {
+  .side, .no-print, .kw-coach, .intro { display: none !important; }
+  body, .shell, .main, #page { background: #fff !important; color: #111 !important; }
+  .report .box { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; break-inside: avoid; }
+  .report .muted, .report .label { color: #555 !important; }
+}

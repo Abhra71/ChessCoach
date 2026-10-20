@@ -860,6 +860,99 @@ async function prepView(user) {
   else Coach.react("maya", "explain", "Playing someone soon? Type their chess.com name and I'll show you how they play.");
 }
 
+// ---------- the report for a human coach, and Knightwise Wrapped (1.0): coach/report.py ----------
+// The week (or month) in facts: to read, to print or save as a PDF for a coach, or to play as cards, one at a time.
+async function reportView(arg) {
+  const days = arg === "month" ? 30 : 7;
+  shell("progress", `<p class="muted">Putting your ${days === 7 ? "week" : "month"} together…</p>`);
+  const r = await api(`/api/report?days=${days}`);
+  if (!r.player) return go("welcome");
+  const res = r.results || {}, rt = r.rating || {}, pr = r.practice || {};
+  const per = v => v == null ? "–" : v.toFixed(v < 1 && v > 0 ? 2 : 1);
+  const change = (now, before, lowerIsBetter = true) => before == null ? "" : now === before ? `<span class="muted">same</span>`
+    : `<span class="delta ${(now < before) === lowerIsBetter ? "good" : "bad"}">${now < before ? "▼" : "▲"} from ${per(before)}</span>`;
+  $("#page").innerHTML = `
+    <div class="page-head no-print"><div><a href="#/progress" class="small muted" style="text-decoration:none">← Progress</a>
+      <h1 style="margin-top:6px">${esc(r.title)} in facts</h1>
+      <p class="sub">For you, or for your chess coach: from your real chess.com games, checked by Stockfish, and your practice in Knightwise.</p></div>
+      <div class="row"><a class="btn ${days === 7 ? "primary" : ""}" href="#/report/week">Week</a><a class="btn ${days === 30 ? "primary" : ""}" href="#/report/month">Month</a></div></div>
+    <div class="row no-print" style="margin-bottom:14px"><button class="btn primary" id="wrapped">▶ Play it as Wrapped</button>
+      <button class="btn" id="print">Print or save as PDF</button></div>
+    <div class="report" id="report">
+      <div class="report-head"><div><div class="label">Knightwise report</div><h2 style="margin:2px 0 0">${esc(r.player)} · ${esc(r.title)}</h2>
+        <div class="small muted">${esc(r.from)} to ${esc(r.to)}</div></div></div>
+      <div class="box stack report-sum">${r.lines.map(l => `<p style="margin:0">${esc(l)}</p>`).join("")}</div>
+      <div class="report-grid">
+        <div class="box stack"><div class="label">Games</div>
+          <div class="row"><b class="big">${r.games}</b><span class="small">${res.win || 0} won · ${res.draw || 0} drawn · ${res.loss || 0} lost</span></div>
+          ${rt.from ? `<div class="small">Rating ${rt.from} → ${rt.to} <span class="delta ${rt.to >= rt.from ? "good" : "bad"}">${rt.to - rt.from >= 0 ? "+" : ""}${rt.to - rt.from}</span></div>` : ""}
+          <div class="small muted">${Object.entries(r.kinds || {}).map(([k, n]) => `${n} ${esc(k)}`).join(" · ")}</div></div>
+        <div class="box stack"><div class="label">Mistakes a game</div>
+          <div class="small"><b>${per(r.pieces.now)}</b> pieces given away ${change(r.pieces.now, r.pieces.before)}</div>
+          <div class="small"><b>${per(r.big)}</b> big mistakes (a game's three costliest)</div>
+          ${r.clock && r.clock.lines.length ? r.clock.lines.map(l => `<div class="small muted">${esc(l)}</div>`).join("") : ""}</div>
+        <div class="box stack"><div class="label">Practice in Knightwise</div>
+          <div class="small"><b>${pr.days || 0}</b> day${pr.days === 1 ? "" : "s"} practised</div>
+          <div class="small"><b>${pr.answers || 0}</b> positions, <b>${pr.right || 0}</b> right first time</div>
+          <div class="small"><b>${r.lessons || 0}</b> lesson${r.lessons === 1 ? "" : "s"} studied</div></div>
+      </div>
+      ${r.habits.length ? `<div class="box stack"><div class="label">Habits, a game</div>
+        <table class="report-table"><tr><th>What happens</th><th>Now</th><th>Before</th><th>The habit that fixes it</th></tr>
+        ${r.habits.map(h => `<tr><td>${esc(h.pattern)}</td><td class="num">${per(h.now)}</td><td class="num">${per(h.before)}</td><td class="small">${esc(h.habit)}</td></tr>`).join("")}</table></div>` : ""}
+      <div class="report-grid">
+        ${r.best ? `<a class="box stack click" href="#/games/${r.best.id}" style="text-decoration:none;color:inherit"><div class="label">Best game</div>
+          <b>vs ${esc(r.best.opponent)} <span class="chip ${r.best.result}">${r.best.result === "win" ? "W" : r.best.result === "loss" ? "L" : "D"}</span></b>
+          <div class="small muted">${esc(r.best.date)} · ${r.best.moments ? `${r.best.moments} big mistake${r.best.moments > 1 ? "s" : ""}` : "no big mistakes"}</div></a>` : ""}
+        ${r.worst ? `<a class="box stack click" href="#/games/${r.worst.id}" style="text-decoration:none;color:inherit"><div class="label">The costliest move</div>
+          <b>Move ${r.worst.move_number}: ${esc(r.worst.move)}, against ${esc(r.worst.opponent)}</b>
+          <div class="small">Better was <b>${esc(r.worst.best)}</b>. ${esc(cap(r.worst.pattern || ""))}.</div></a>` : ""}
+        <div class="box stack"><div class="label">Next</div>
+          ${r.next.habit ? `<div class="small">${esc(r.next.habit)}</div>` : ""}
+          ${r.next.lesson ? `<div class="small muted">Next lesson: ${esc(r.next.lesson)}</div>` : ""}</div>
+      </div>
+      <p class="small muted report-foot">Made with Knightwise, a free chess coach. Every number is from real games checked by Stockfish; nothing is estimated.</p>
+    </div>`;
+  $("#print").onclick = () => window.print();
+  $("#wrapped").onclick = () => wrapped(r);
+  Coach.react("viktor", "explain", r.lines.slice(0, 2).join(" "));
+}
+
+// Wrapped: the same facts as big cards, one at a time, with Viktor saying each. Click, or the arrow keys, to move on.
+function wrapped(r) {
+  const res = r.results || {}, rt = r.rating || {}, pr = r.practice || {};
+  const cards = [
+    [r.title, `${esc(r.from)} to ${esc(r.to)}`, `${r.title}, ${r.player}. Let's look at it.`],
+    [`${r.games}`, `game${r.games === 1 ? "" : "s"} played`, `${r.games} games.`],
+    [`${res.win || 0}`, `won · ${res.draw || 0} drawn · ${res.loss || 0} lost`, `${res.win || 0} of them won.`],
+  ];
+  if (rt.from && rt.to !== rt.from) cards.push([`${rt.to - rt.from > 0 ? "+" : ""}${rt.to - rt.from}`, `rating: ${rt.from} to ${rt.to}`, `Your rating went from ${rt.from} to ${rt.to}.`]);
+  if (r.pieces.before != null) cards.push([`${r.pieces.now}`, `pieces given away a game, ${r.pieces.now < r.pieces.before ? "down" : r.pieces.now > r.pieces.before ? "up" : "the same"} from ${r.pieces.before}`,
+    r.pieces.now < r.pieces.before ? "Fewer pieces given away. That is the habit working." : "Pieces given away: that's our work for next time."]);
+  if (r.best) cards.push([`vs ${esc(r.best.opponent)}`, `your best game · ${esc(r.best.date)}`, `Your best game: against ${r.best.opponent}.`]);
+  if (pr.answers) cards.push([`${pr.days}`, `day${pr.days === 1 ? "" : "s"} of practice · ${pr.answers} positions`, `You practised on ${pr.days} days.`]);
+  if (r.habits.length) cards.push([esc(r.habits[0].pattern), "the habit that costs you most", `The habit that costs most: ${r.habits[0].pattern}.`]);
+  if (r.next.habit) cards.push(["Next", esc(r.next.habit), r.next.habit]);
+  const layer = document.createElement("div");
+  layer.className = "wrapped";
+  Coach.hide();  // nothing in front of the cards
+  document.body.appendChild(layer);
+  let k = 0;
+  function show() {
+    const [big, small, say] = cards[k];
+    layer.innerHTML = `<div class="wrapped-card rise"><div class="wrapped-big">${big}</div><div class="wrapped-small">${small}</div></div>
+      <div class="wrapped-dots">${cards.map((_, n) => `<i class="${n === k ? "on" : ""}"></i>`).join("")}</div>
+      <button class="wrapped-x" title="Close">✕</button><div class="wrapped-foot">Knightwise Wrapped · click to go on</div>`;
+    layer.querySelector(".wrapped-x").onclick = e => { e.stopPropagation(); close(); };
+    Voice.speak(say, false, COACHES.viktor.voice);
+  }
+  function close() { Voice.stop(); layer.remove(); removeEventListener("keydown", keys); }
+  function next(step = 1) { k += step; if (k >= cards.length) { confetti(50); return close(); } if (k < 0) k = 0; show(); }
+  const keys = e => { if (e.key === "Escape") close(); if (e.key === "ArrowRight" || e.key === " ") next(); if (e.key === "ArrowLeft") next(-1); };
+  layer.onclick = () => next();
+  addEventListener("keydown", keys);
+  show();
+}
+
 // ---------- your game as a short 3D film (1.0): coach/film.py writes it, coach/ui/film.js plays it ----------
 const FILM_MUSIC = "/ui/vendor/film-music.mp3";  // the track the player picked (python -m coach.get_assets)
 async function filmView(id) {
@@ -1199,7 +1292,8 @@ async function progressView() {
   const s = p.story, r = (s && s.results) || {};
   const complete = p.badges.filter(b => b.tier === 3).length, started = p.badges.filter(b => b.tier && b.tier < 3).length;
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Progress</h1><p class="sub">From your real chess.com games, checked by Stockfish.</p></div></div>
+    <div class="page-head"><div><h1>Progress</h1><p class="sub">From your real chess.com games, checked by Stockfish.</p></div>
+      <div class="row"><a class="btn" href="#/report/week">Report for your coach</a><a class="btn primary" href="#/report/month">▶ Your month, Wrapped</a></div></div>
     <div class="grid">
       ${s ? `<div class="box story rise" id="story">
         <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>
@@ -1883,6 +1977,7 @@ async function screen(name, arg) {
   if (name === "calc") return await calcView();
   if (name === "guess") return await guessView();
   if (name === "film") return await filmView(arg && decodeURIComponent(arg));
+  if (name === "report") return await reportView(arg);
   if (name === "blindfold") return await blindfoldView();
   if (name === "repertoire" && arg) { shell("level", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
   if (name === "repertoire") return await repertoireView();
@@ -1943,7 +2038,10 @@ async function route() {
   }
 }
 window.addEventListener("hashchange", () => { Voice.stop(); route(); });
-api("/api/settings").then(s => { applyTheme(s.theme); Voice.set(s.voice && s.voice_ready); Sound.set(s.sounds !== false); TALK = !!s.talk_ready; }).catch(() => {});
+api("/api/settings").then(s => {
+  applyTheme(s.theme); Voice.set(s.voice && s.voice_ready); Sound.set(s.sounds !== false); TALK = !!s.talk_ready;
+  const m = $("#mute"); if (m) m.textContent = Voice.on ? "Voice on" : "Voice off";  // drawn before the settings came (20 Oct)
+}).catch(() => {});
 api("/api/status").then(s => { STATUS = s; if (!s.player && !location.hash.includes("welcome")) go("welcome"); else route(); })
   .catch(() => route());
 pollStatus();
