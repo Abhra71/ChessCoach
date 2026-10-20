@@ -60,3 +60,11 @@ def test_without_a_key_the_conversation_goes_on():
 def test_a_square_the_facts_dont_have_is_not_said():
     r = talk.reply("maya", "what now", home=HOME, games=GAMES, ask_ai=ai_says({"say": "Move your knight to f5.", "do": None}))
     assert not r["ai"]
+
+
+def test_the_red_ring_only_on_chess_com_and_only_to_known_places():
+    """"Take me to the bots": the ring on chess.com; in the app it says where to ask; an unknown place does nothing."""
+    g = talk.action({"guide": "bots"}, GAMES, {"section": "home", "chesscom": "True"})
+    assert g["guide"]["to"] == "/play/computer" and g["guide"]["steps"][0]["path"] == "/play"
+    assert talk.action({"guide": "bots"}, GAMES, {"section": "home"}) is None
+    assert talk.action({"guide": "the moon"}, GAMES, {"section": "home", "chesscom": "True"}) is None

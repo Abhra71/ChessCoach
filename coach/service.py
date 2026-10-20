@@ -538,7 +538,7 @@ class Handler(BaseHTTPRequestHandler):
             turns = body.get("history") if isinstance(body.get("history"), list) else []
             history = [(str(t[0]), str(t[1])) for t in turns[-6:] if isinstance(t, list) and len(t) == 2]
             where = body.get("where") if isinstance(body.get("where"), dict) else {}
-            where = {k: str(v)[:40] for k, v in where.items() if k in ("section", "game", "step")}
+            where = {k: str(v)[:40] for k, v in where.items() if k in ("section", "game", "step", "chesscom")}
             return self.send(200, json.dumps(talk.reply(str(body.get("coach", "maya")), str(body.get("text", "")),
                                                         history, where)), "application/json")
         if path == "/api/heard/forget":

@@ -51,7 +51,7 @@
   function render(open) {
     const off = KnightwiseContract.off;  // features paused for everyone in fixes.json: their buttons don't show
     const s = said && { ...said, talk_ready: said.talk_ready && !off("talk"),
-                        actions: (said.actions || []).filter(a => !(a.warmup && off("warmup")) && !(a.find && off("guide"))) };
+                        actions: (said.actions || []).filter(a => !(a.warmup && off("warmup"))) };
     if (!s) return;
     if (!box) {
       box = document.createElement("div");
@@ -70,7 +70,8 @@
           const best = a.best ? ` class="kw-best" title="${esc(a.why || "My pick")}"` : "";  // the coach's pick, said out loud
           return a.warmup ? `<button data-warmup${best}>${esc(a.label)}</button>`
             : a.app ? `<button data-app="${esc(a.app)}"${best}>${esc(a.label)}</button>`
-            : a.find && target(a.find) ? `<button data-guide="${i}"${best}>${esc(a.label)}</button>`
+            : a.stopGuide ? `<button data-stopguide>${esc(a.label)}</button>`
+            : a.guide && !off("guide") ? `<button data-guide="${i}"${best}>${esc(a.label)}</button>`
             : `<a href="${esc(a.url)}"${best}>${esc(a.label)}</a>`;
         }).join("")}</div>` : ""}
         ${s.ai_hint ? `<p class="kw-hint">${esc(s.ai_hint)}</p>` : ""}
@@ -89,7 +90,8 @@
       said = { ...said, pose: "pleased", lines: ["Opening Knightwise for you. See you there."], actions: [] };
       render(true); speak();
     });
-    box.querySelectorAll("[data-guide]").forEach(b => b.onclick = () => guide(s.actions[Number(b.dataset.guide)]));
+    box.querySelectorAll("[data-guide]").forEach(b => b.onclick = () => guideStart(s.actions[Number(b.dataset.guide)].guide));
+    box.querySelectorAll("[data-stopguide]").forEach(b => b.onclick = () => stopGuide("Okay, I'll stop. Ask me again whenever you like."));
     box.querySelectorAll("[data-warmup]").forEach(b => b.onclick = warmup);
     const form = box.querySelector(".kw-ask");
     if (form) form.onsubmit = e => { e.preventDefault(); const q = form.querySelector("input").value.trim(); if (q) ask(q); };
@@ -152,12 +154,13 @@
       }
       if (!r.text) { talking = false; said = { ...said, pose: "calm", talking: false, lines: ["I'll be here. Press Talk when you want to carry on."] }; return render(true); }
       talkShow("thinking", [`"${r.text}"`, "…"]);
-      const a = await send({ type: "talk", coach: said.coach, text: r.text, history: talkHistory, where: { section: current } });
+      const a = await send({ type: "talk", coach: said.coach, text: r.text, history: talkHistory, where: { section: current, chesscom: true } });
       if (!talking) return;
       const reply = a && a.ok ? a.data : { text: "I can't reach the Knightwise app right now.", mood: "calm" };
       talkHistory.push(["player", r.text], ["coach", reply.text]);
       talkShow(reply.mood || "explain", [reply.text]);
       await speakAndWait(reply.text);
+      if (reply.action && reply.action.guide) { talking = false; guideStart(reply.action.guide); return; }  // the red ring
       const route = reply.action && reply.action.route;
       if (route) {  // a game's review: on chess.com's own board; anything else: in the Knightwise app
         talking = false;
@@ -176,15 +179,36 @@
     render(true);
   }
 
-  // ---- the navigation guide: point at chess.com's own link, the player clicks it, the next coach notices ----
-  let ring = null, ringFor = null, nudge = null;
+  // ---- the red ring (1.0): step by step to the exact chess.com page; it never clicks, the player does ----
+  // The route (coach/coaches.py ROUTES) is kept in this tab's sessionStorage, so it carries on across pages. On each
+  // page it rings the furthest step it can see. Fair play: it only runs where the coach may appear, plus chess.com's
+  // Play menu page when no board is on it; it reads links and buttons, never a board.
+  const GUIDE_KEY = "kw-guide", GUIDE_MINUTES = 10;
+  let ring = null, ringFor = null, nudge = null, guiding = null;
 
-  function target(find) {  // chess.com's visible link to that section, preferring the menu on the left
-    const links = [...document.querySelectorAll("a[href]")].filter(a => {
-      try { return new URL(a.href, location.href).pathname.startsWith(find.path) && a.getClientRects().length; } catch (e) { return false; }
-    });
-    return links.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0] || null;
+  const pathOf = el => { try { return new URL(el.href, location.href).pathname.replace(/\/$/, "") || "/"; } catch (e) { return null; } };
+  const shown = el => el.getClientRects().length && getComputedStyle(el).visibility !== "hidden" && !el.closest(".kw-coach");
+  const words = el => (el.textContent || el.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").toLowerCase();
+  function matches(step, el) {  // a link to the step's address, or a button with its words
+    const p = el.href && pathOf(el);
+    if (p && (step.exact ? p === step.path : p === step.path || p.startsWith(step.path + "/"))) return true;
+    return !!(step.text && !el.href && words(el).includes(step.text.toLowerCase()));
   }
+  function find(step) {  // chess.com's own link or button for this step, preferring the menu on the left
+    const els = [...document.querySelectorAll(step.text ? "a[href],button,[role=button]" : "a[href]")]
+      .filter(el => shown(el) && matches(step, el));
+    return els.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0] || null;
+  }
+  function steps(route) {  // fixes.json can replace a route for everyone: "path" or "path|Button words"
+    const fix = (KnightwiseContract.fixes().nav || {})[route.id];
+    if (!Array.isArray(fix) || !fix.length) return route.steps;
+    return fix.map((s, i) => {
+      const [path, text] = String(s).split("|");
+      return { path, text: text || null, name: text || (route.steps[i] || {}).name || path, exact: i < fix.length - 1 };
+    });
+  }
+  const here = () => location.pathname.replace(/\/$/, "") || "/";
+  const arrived = route => here() === route.to || here().startsWith(route.to + "/");
 
   function placeRing() {
     if (!ring || !ringFor || !ringFor.isConnected) return unring();
@@ -192,34 +216,102 @@
     const left = Math.max(2, r.left - 6), top = Math.max(2, r.top - 6);  // never cut off at the edge
     Object.assign(ring.style, { left: `${left}px`, top: `${top}px`, width: `${r.right + 6 - left}px`, height: `${r.bottom + 6 - top}px` });
   }
-
   function unring() {
     if (ring) ring.remove();
     ring = null; ringFor = null; clearTimeout(nudge);
     removeEventListener("scroll", placeRing, true); removeEventListener("resize", placeRing);
   }
-
-  function guide(action) {
-    const el = target(action.find);
-    if (!el) { location.href = action.url; return; }  // their menu moved: plain link (the player asked to go there)
+  function saveGuide() {
+    try { guiding ? sessionStorage.setItem(GUIDE_KEY, JSON.stringify(guiding)) : sessionStorage.removeItem(GUIDE_KEY); } catch (e) {}
+  }
+  function loadGuide() {
+    try {
+      const g = JSON.parse(sessionStorage.getItem(GUIDE_KEY) || "null");
+      return g && Date.now() - g.at < GUIDE_MINUTES * 60000 ? g : null;
+    } catch (e) { return null; }
+  }
+  function stopGuide(line) {
+    unring(); guiding = null; saveGuide();
+    if (line && box) { said = { ...said, pose: "calm", actions: [], lines: [line] }; render(true); speak(); }
+  }
+  function overlapsBox(el) {  // the coach's own box must never cover what the ring points at
+    if (!box) return false;
+    const a = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  }
+  function guideSay(lines) {
+    if (!box || !said) return;
+    said = { ...said, mood: "calm", pose: "point", ai_hint: null, note: null, lines,
+             actions: [{ label: "Stop showing me", stopGuide: true }] };
+    render(true); speak();
+    if (ringFor && overlapsBox(ringFor)) render(false);  // fold to the face: the ring stays in view, her voice carries on
+  }
+  function guideStart(route) {
+    guiding = { id: route.id, to: route.to, name: route.name, url: route.url, steps: steps(route), wrong: 0,
+                at: Date.now(), last: here() };
+    saveGuide();
+    guideStep(true);
+  }
+  function guideStep(first) {  // ring the furthest step that can be seen on this page
+    if (!guiding) return;
+    if (arrived(guiding)) {
+      const name = guiding.name;
+      stopGuide();
+      if (box && said) { said = { ...said, mood: "pleased", pose: "celebrate", actions: [], lines: [`Nice, you found ${name}.`] }; render(true); speak(); }
+      return;
+    }
+    const all = guiding.steps;
+    let i = all.length - 1, el = null;
+    for (; i >= 0; i--) { el = find(all[i]); if (el) break; }
     unring();
+    if (!el) {  // nothing of the route on this page (chess.com changed it, or a page we don't know)
+      KnightwiseContract.report("guide", false, `no step of ${guiding.id} on ${here().replace(/\d{6,}/g, "<id>")}`);
+      const url = guiding.url;
+      guiding = null; saveGuide();
+      if (box && said) {
+        said = { ...said, pose: "calm", lines: ["I can't find the way from this page. This link goes straight there."],
+                 actions: [{ label: "Take me there", url }] };
+        render(true); speak();
+      }
+      return;
+    }
+    KnightwiseContract.report("guide", true);
     ringFor = el;
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom > innerHeight || rect.top < 0) el.scrollIntoView({ block: "center", behavior: "smooth" });
     ring = document.createElement("div");
     ring.className = "kw-ring";
     document.body.appendChild(ring);
     placeRing();
+    setTimeout(placeRing, 600);  // after the smooth scroll
     addEventListener("scroll", placeRing, true); addEventListener("resize", placeRing);
-    try { sessionStorage.setItem("kw-guided", action.find.path); } catch (e) {}
-    said = { ...said, mood: "calm", pose: "point", actions: [], ai_hint: null,
-             lines: [`Click "${action.find.name}" where the red ring is. I'll wait.`] };
-    render(true); speak();
+    // the words on chess.com's own button, so Maya says what the player sees ("View All Games", not our name for it)
+    const label = (el.innerText || "").split(/\n/).map(t => t.trim()).filter(t => /[a-z]/i.test(t)).pop() || "";
+    const name = label.length >= 2 && label.length <= 30 ? label : all[i].name, last = i === all.length - 1;
+    guideSay([first ? `Click "${name}" where the red ring is.${last ? "" : " I'll show you the next step there."}`
+      : guiding.wrong ? `That's not it, no problem. Click "${name}" in the red ring.`
+      : `Good. Now click "${name}".`]);
     nudge = setTimeout(() => {  // still here: point again, a little bigger
       if (!ring) return;
       ring.classList.add("again");
-      said = { ...said, lines: [`It's right there, in the red ring: "${action.find.name}".`] };
-      render(true); speak();
+      guideSay([`It's right there, in the red ring: "${name}".`]);
     }, 12000);
   }
+  function guideArrive() {  // a new page while guiding: on the way, arrived, or a wrong turn
+    guiding = loadGuide();
+    if (!guiding) return;
+    const p = here();
+    if (p !== guiding.last) {
+      const onRoute = arrived(guiding) || guiding.steps.some(s => p === s.path || (!s.exact && p.startsWith(s.path + "/")));
+      if (!onRoute) guiding.wrong++;
+      guiding.last = p; guiding.at = Date.now(); saveGuide();
+      if (guiding.wrong > 2) { stopGuide("We took a few wrong turns. Ask me again whenever you like."); return; }
+    }
+    setTimeout(guideStep, 900);  // chess.com builds its menus a moment after the address changes
+  }
+  // chess.com's Play menu page (/play, exactly): the ring may carry on there, with no coach box and nothing read but
+  // links. Its board is only a picture (20 Oct: no game board element, no clock); a game clock on it means no ring.
+  const playHub = () => here() === "/play" && !document.querySelector('[class*="clock"]');
 
   // ---- the warm-up before you play: three positions from today's practice, right here on chess.com's home ----
   // Only on the home page (no game can be running there); leaving the page ends it. Answers count as practice.
@@ -322,11 +414,12 @@
     said = { ...said, mood: "thinking", pose: "listen", lines: [`"${question}"`, "…"], actions: [], note: null };
     render(true);
     // the same brain as Talk (19 Oct): typing "open my last review" opens it, not just words about it
-    const r = await send({ type: "talk", coach: said.coach, text: question, history: history.slice(0, -1), where: { section: current } });
+    const r = await send({ type: "talk", coach: said.coach, text: question, history: history.slice(0, -1), where: { section: current, chesscom: true } });
     const reply = r && r.ok ? r.data : { text: "I can't reach the Knightwise app on this PC, and I answer from there. Open it from the Start menu.", mood: "calm" };
     history.push(["coach", reply.text]);
     said = { ...said, mood: reply.mood, pose: "explain", lines: [reply.text], note: reply.note || null };
     render(true); speak();
+    if (reply.action && reply.action.guide) { setTimeout(() => guideStart(reply.action.guide), 1200); return; }  // the red ring
     const route = reply.action && reply.action.route;
     if (route) {  // as with Talk: a game's review on chess.com's own board, anything else in the Knightwise app
       const game = /^games\/(\d+)$/.exec(route);
@@ -362,10 +455,14 @@
       if (location.pathname === path && KnightwiseContract.unknownGameAddress(path, !!KnightwiseContract.board(document)))
         KnightwiseContract.report("game-address", false, `unknown: ${path.replace(/\d{6,}/g, "<id>")}`);
     }, 4000);
-    if (here === current) return;
+    if (here === current) { if (loadGuide()) guideArrive(); return; }
     unring();
     remove();
-    if (!here) return;  // not a coach section: nothing at all
+    if (!here) {  // not a coach section: nothing at all, except the ring's next step on chess.com's Play menu page
+      if (loadGuide() && playHub()) guideArrive();
+      else if (loadGuide()) { guiding = null; saveGuide(); }  // arrived (a bots page), or somewhere a game can run: done
+      return;
+    }
     if (KnightwiseContract.off("coach") || (here === "member" && KnightwiseContract.off("prep"))) return;  // paused (fixes.json)
     current = here;
     const store = (await send({ type: "greeted", section: here })) || {};
@@ -379,13 +476,7 @@
       lines: ["I'm asleep: the Knightwise app isn't running on this PC.",
               "Everything I do here, your reviews, my advice and my voice, comes from the app. Open Knightwise from the Start menu and I'll be right back."],
     };
-    let guided = null;
-    try { guided = sessionStorage.getItem("kw-guided"); sessionStorage.removeItem("kw-guided"); } catch (e) {}
-    if (guided && location.pathname.startsWith(guided) && r && r.ok) {  // they followed the guide: say so, warmly
-      said = { ...said, mood: "pleased", pose: "celebrate", lines: ["Nice, you found it.", ...said.lines.slice(1)] };
-      render(true); speak();
-      return;
-    }
+    if (r && r.ok && loadGuide()) { render(true); guideArrive(); return; }  // on the way with the red ring
     if (current !== here) return;
     if (first && r && r.ok) said = { ...said, pose: "greet" };
     render(true);  // never silent: the full welcome first, later in the day just where things stand

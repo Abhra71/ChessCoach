@@ -37,6 +37,8 @@ CHECKS = {
     # with what was found in the detail: the name to put in fixes.json (docs/MAINTAINING.md)
     "board-by-meaning": ("chess.com's board, found by its pieces", "chess.com renamed its board."),
     "archive-by-meaning": ("the archive's rows, found by their game links", "chess.com renamed its archive rows."),
+    "guide": ("chess.com's menu links the red ring points at", "chess.com moved a menu link: the red ring gives a "
+              "plain link there instead."),
 }
 GAME_FIELDS = ("url", "pgn", "end_time", "time_class", "rules")
 SIDE_FIELDS = ("username", "rating", "result")

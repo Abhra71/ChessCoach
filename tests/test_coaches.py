@@ -157,3 +157,11 @@ def test_inside_the_app_no_way_back_into_the_app():
                              "actions": [{"label": "Learn it in Knightwise", "app": "plan"}, coaches.OPEN_APP]})
     assert [a["label"] for a in said["actions"]] == ["Learn it"]
     assert said["lines"][1] == "My pick: Your plan. Because."
+
+
+def test_every_red_ring_route_ends_where_it_says():
+    """Each route's last step is its destination, and every step is a chess.com address (coach/coaches.py ROUTES)."""
+    for rid, r in coaches.ROUTES.items():
+        assert r["steps"][-1]["path"] == r["to"] and r["url"].startswith("https://www.chess.com" + r["to"]), rid
+        assert all(s["path"].startswith("/") and s["name"] for s in r["steps"]), rid
+        assert coaches.guide(rid)["guide"]["id"] == rid

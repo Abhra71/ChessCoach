@@ -25,7 +25,9 @@ RULES = (
     "{\"next\": true} to show the next step of the review on screen, "
     "{\"prep\": \"<chess.com username>\"} to prepare against any player before a game (their openings and how their "
     "games end), using a name from the facts when it sounds like one of them, "
-    "{\"open\": \"level\"} for their level and what to work on. Ask for something only when the player wants it. "
+    "{\"open\": \"level\"} for their level and what to work on, "
+    "{\"guide\": \"<place>\"} to show them the way on chess.com with a red ring, step by step (places: puzzles, bots, "
+    "archive: their game history on chess.com, lessons). Ask for something only when the player wants it. "
     "If they name an opponent who isn't in the facts, say you can't find that game. Never say you are opening, "
     "replaying or showing something unless \"do\" does it; if you can't do it from here, say what to open first."
 )
@@ -33,6 +35,7 @@ REFUSED = {  # an action the coach asked for that isn't possible here: say so, n
     "rematch": "I can't start a rematch from here. Open a game you lost or drew, then say rematch.",
     "next": "Open a game's review first, then say next and I'll go through it step by step.",
     "review": "I can't find that game in your recent games.",
+    "guide": "I show the way on chess.com itself. Open chess.com, ask me there, and I'll ring it for you.",
 }
 
 
@@ -90,6 +93,8 @@ def action(do, games, where):
         return {"route": f"rematch/{g['id']}/{detail['ply']}"} if detail else None
     if do.get("next") is True and (where or {}).get("section") == "review":
         return {"next": True}
+    if do.get("guide") in coaches.ROUTES and (where or {}).get("chesscom"):  # the red ring, on chess.com only
+        return {"guide": coaches.guide(do["guide"])["guide"]}
     who = str(do.get("prep", "")).strip().lower()  # any chess.com player (19 Oct: "I can't find that game")
     if who and len(who) <= 30 and all(c.isalnum() or c in "-_" for c in who):
         return {"route": f"prep/{who}"}

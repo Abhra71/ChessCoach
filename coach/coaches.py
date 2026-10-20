@@ -17,6 +17,30 @@ from coach.paths import DATA
 PUZZLES = "https://www.chess.com/puzzles/rated"
 BOTS = "https://www.chess.com/play/computer"
 LESSONS = "https://www.chess.com/lessons"
+# The red ring's routes (1.0): from any coach page, step by step to the exact chess.com page; the extension rings
+# the furthest step it can see on the page you're on (extension/buddy.js). Mapped on chess.com on 20 Oct 2026.
+# A step is a link to that address, or a button with those words ("text"); "exact": that address only.
+# fixes.json "nav" can replace a route's steps for everyone: {"puzzles": ["/puzzles", "/puzzles/rated|Solve Puzzles"]}.
+ROUTES = {
+    "puzzles": {"to": "/puzzles/rated", "name": "rated puzzles", "url": "https://www.chess.com/puzzles/rated",
+                "steps": [{"path": "/puzzles", "name": "Puzzles", "exact": True},
+                          {"path": "/puzzles/rated", "name": "Solve Puzzles", "text": "Solve Puzzles"}]},
+    "bots": {"to": "/play/computer", "name": "the bots", "url": "https://www.chess.com/play/computer",
+             "steps": [{"path": "/play", "name": "Play", "exact": True},
+                       {"path": "/play/computer", "name": "Play Bots"}]},
+    "archive": {"to": "/games/archive", "name": "your game history", "url": "https://www.chess.com/games/archive",
+                "steps": [{"path": "/play", "name": "Play", "exact": True},
+                          {"path": "/games/archive", "name": "Game History"}]},
+    "lessons": {"to": "/lessons", "name": "the lessons", "url": "https://www.chess.com/lessons",
+                "steps": [{"path": "/learn", "name": "Learn", "exact": True},
+                          {"path": "/lessons", "name": "Next Lesson"}]},
+}
+
+
+def guide(route_id, label=None):
+    """A coach button that guides the player there with the red ring (on chess.com; a plain link elsewhere)."""
+    r = ROUTES[route_id]
+    return {"label": label or f"Show me the way to {r['name']}", "url": r["url"], "guide": {"id": route_id, **r}}
 
 COACHES = {
     "maya": {"role": "Your games and practice", "name": "Maya", "voice": "af_heart",
@@ -370,14 +394,14 @@ def recommend(section, home, actions=None, now=None, in_app=False):
 def suggestions(home):
     """One or two things to do next, as links on chess.com (the player clicks; we never click for them)."""
     # find: the coach can point at chess.com's own link (red ring) and check the player clicked it
-    actions = [{"label": "Warm up with puzzles", "url": PUZZLES, "find": {"path": "/puzzles", "name": "Puzzles"}}]
+    actions = [guide("puzzles", "Warm up with puzzles")]
     last = home.get("last_game")
     if last and last.get("moments") and "/game/live/" in last["url"]:  # daily/bot addresses can point elsewhere
         actions.append({"label": f"Review your game vs {last['opponent']}", "url": last["url"]})
     elif last and last.get("moments") and home.get("player"):
-        actions.append({"label": "Review your recent games", "url": f"https://www.chess.com/games/archive/{home['player']}"})
+        actions.append({**guide("archive", "Review your recent games"), "url": f"https://www.chess.com/games/archive/{home['player']}"})
     else:
-        actions.append({"label": "Play a bot at your level", "url": BOTS})
+        actions.append(guide("bots", "Play a bot at your level"))
     return actions
 
 
