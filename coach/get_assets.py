@@ -2,7 +2,9 @@
 and its music: Satie's Gymnopedie No. 1 played by Michael Laucke (public domain, Wikimedia Commons, ~10 MB).
 The film of your game (1.0) plays one of two songs the owner picked by ear on 20 Oct 2026, both CC BY 3.0 from
 ccMixter (credited in Settings → About and credits): "Time has come" by Reiswerk feat. SackJo22 (with parts by
-SackJo22 and Apoxode, 9 MB) and "A Trio Cultural Mix (instrumental)" by CSoul (samples by debbizo, 2 MB).
+SackJo22 and Apoxode, 9 MB) and "A Trio Cultural Mix (instrumental)" by CSoul (samples by debbizo, 2 MB); then the
+owner's two Indian picks, Kevin MacLeod's "Jalandhar" and "Vadodora Chill Mix" (incompetech.com, CC BY 4.0, 8 MB and
+7 MB). Wrapped plays Trio and Vadodora.
 
 Run:  python -m coach.get_assets      (files go to coach/ui/vendor/, kept out of git; the installer bundles them)
 """
@@ -41,6 +43,8 @@ FILM_SONGS = [
      "https://ccmixter.org/files/Reiswerk/51212"),
     ("https://ccmixter.org/content/CSoul/CSoul_-_A_Trio_Cultural_Mix_Instrumental_Version.mp3", "film/trio-cultural-mix.mp3",
      "https://ccmixter.org/files/CSoul/32315"),
+    ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Jalandhar.mp3", "film/jalandhar.mp3", None),
+    ("https://incompetech.com/music/royalty-free/mp3-royaltyfree/Vadodora%20Chill%20Mix.mp3", "film/vadodora-chill-mix.mp3", None),
 ]
 
 

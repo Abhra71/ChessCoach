@@ -935,6 +935,15 @@ function wrapped(r) {
   const layer = document.createElement("div");
   layer.className = "wrapped";
   Coach.hide();  // nothing in front of the cards
+  let song = null;
+  if (Sound.on) {  // the sounds switch in Settings covers the music too
+    const n = (Number(remember("kw-wrapped-song") || -1) + 1) % WRAPPED_SONGS.length, x = WRAPPED_SONGS[n];
+    remember("kw-wrapped-song", String(n));
+    song = new Audio(x.url); song.loop = true; song.volume = 0;
+    song.currentTime = Math.max(0, x.peak - 6);  // the build-up's last seconds, then the main part
+    song.play().catch(() => {});
+    const up = setInterval(() => { if (!song || song.volume >= 0.22) return clearInterval(up); song.volume = Math.min(0.22, song.volume + 0.02); }, 120);
+  }
   document.body.appendChild(layer);
   let k = 0;
   function show() {
@@ -945,7 +954,11 @@ function wrapped(r) {
     layer.querySelector(".wrapped-x").onclick = e => { e.stopPropagation(); close(); };
     Voice.speak(say, false, COACHES.viktor.voice);
   }
-  function close() { Voice.stop(); layer.remove(); removeEventListener("keydown", keys); }
+  function close() {
+    Voice.stop(); layer.remove(); removeEventListener("keydown", keys);
+    const s = song; song = null;
+    if (s) { const down = setInterval(() => { s.volume = Math.max(0, s.volume - 0.03); if (!s.volume) { s.pause(); clearInterval(down); } }, 80); }
+  }
   function next(step = 1) { k += step; if (k >= cards.length) { confetti(50); return close(); } if (k < 0) k = 0; show(); }
   const keys = e => { if (e.key === "Escape") close(); if (e.key === "ArrowRight" || e.key === " ") next(); if (e.key === "ArrowLeft") next(-1); };
   layer.onclick = () => next();
@@ -959,7 +972,13 @@ function wrapped(r) {
 // winning move. A different song each time: the next one in the list, remembered.
 const FILM_SONGS = [
   { url: "/ui/vendor/film/time-has-come.mp3", name: "Time has come, by Reiswerk feat. SackJo22", peak: 19 },
-  { url: "/ui/vendor/film/trio-cultural-mix.mp3", name: "A Trio Cultural Mix, by CSoul", peak: 31 },
+  { url: "/ui/vendor/film/jalandhar.mp3", name: "Jalandhar, by Kevin MacLeod", peak: 83 },
+  { url: "/ui/vendor/film/vadodora-chill-mix.mp3", name: "Vadodora Chill Mix, by Kevin MacLeod", peak: 37 },
+];
+// Wrapped's songs: livelier, started a little before their main part, under Viktor's voice
+const WRAPPED_SONGS = [
+  { url: "/ui/vendor/film/trio-cultural-mix.mp3", peak: 31 },
+  { url: "/ui/vendor/film/vadodora-chill-mix.mp3", peak: 37 },
 ];
 async function filmView(id) {
   shell("progress", `<p class="muted">Setting up the film…</p>`);
@@ -1837,8 +1856,9 @@ async function settingsView() {
             <li><b>The voices</b>: Kokoro, Apache-2.0, on this PC. <b>Hearing</b>: Whisper (MIT) on Groq, or Google Gemini, with your own key</li>
             <li><b>The 3D chess set</b>: "Chess Set" by Riley Queen, Poly Haven, CC0. <b>3D</b>: Three.js, MIT</li>
             <li><b>Sounds</b>: Kenney, CC0. <b>Welcome music</b>: Satie, Gymnopédie No. 1, played by Michael Laucke, public domain</li>
-            <li><b>The film's music</b>, from ccMixter, CC BY 3.0: "Time has come" by Reiswerk feat. SackJo22 (with SackJo22 and Apoxode),
-              and "A Trio Cultural Mix (instrumental)" by CSoul (samples by debbizo)</li>
+            <li><b>The film's and Wrapped's music</b>, from ccMixter, CC BY 3.0: "Time has come" by Reiswerk feat. SackJo22 (with SackJo22 and Apoxode),
+              and "A Trio Cultural Mix (instrumental)" by CSoul (samples by debbizo); and "Jalandhar" and "Vadodora Chill Mix" by
+              Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0</li>
             <li><b>Your games</b>: chess.com's public API. Knightwise is independent and not connected with chess.com</li>
           </ul></details></div></div>
     </div>`;
