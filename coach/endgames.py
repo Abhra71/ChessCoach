@@ -239,7 +239,9 @@ def play(eid, fen, uci, made, limit=None):
             out["warn"] = "That move loses: their pawn gets through now. Take it back and look again."
     else:
         after = _value(board, you)
-        if goal in ("mate", "promote") and before >= 600 and after < 300:
+        # Stockfish at this depth calls king and queen against king anything from +6 to mate (20 Oct: 645 once, so
+        # a fixed +6 missed the warning): a won position (+4 or more) that falls to equal or worse is thrown away
+        if goal in ("mate", "promote") and before >= 400 and after < 200:
             out["warn"] = "Careful: that move throws the win away. Take it back and look again."
         if goal == "draw" and before > -200 and after < -500:
             out["warn"] = "That move loses: their pawn gets through now. Take it back and look again."

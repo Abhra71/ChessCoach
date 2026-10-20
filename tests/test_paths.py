@@ -37,6 +37,7 @@ def test_first_start_always_shows_the_window(monkeypatch):
 
 
 def test_store_app_keeps_its_own_data_apart_from_the_old_chess_coach(monkeypatch):
+    monkeypatch.delenv("KNIGHTWISE_HOME", raising=False)  # set for the whole run on GitHub
     monkeypatch.setenv("LOCALAPPDATA", str(paths.PROJECT / "Local"))
     store = paths.home_for("Abhra71.Knightwise_2zqxgm1k7h82j", frozen=True)
     assert store.parts[-3:] == ("Packages", "Abhra71.Knightwise_2zqxgm1k7h82j", "LocalState")
