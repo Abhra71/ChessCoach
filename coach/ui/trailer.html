@@ -20,19 +20,32 @@
 <script src="/ui/vendor/mp4-muxer/mp4-muxer.js"></script>
 <script type="module" src="/ui/film.js"></script>
 <script type="module">
-// The Knightwise trailer (1.0), cut like an Indian action-film trailer: slow and tense, then fast, then slow again,
-// so there's time to take in each move. Built only from the app's real pages (clips recorded from the real app with
-// the owner's real games: docs/TRAILER.md says how) and its own 3D film. Three songs, each where it fits: "Hitman"
-// for the slow, tense parts, "Ready Aim Fire" for the rock, "Jalandhar" for the slow motion; every cut is on a beat.
-// The credits come inside the film, each at the moment its part pays off. Opponents' names never appear.
-// Remake it after any change: record the clips again, open /ui/trailer.html, press "Make the video".
+// The Knightwise trailer (1.0), cut like an action-film trailer: slow and tense, then fast, then slow again.
+// Two songs and one switch: Kevin MacLeod's "Hitman" (tense) until the title, then "Ready Aim Fire" (rock) to the end,
+// where it stops dead on a bar and rings out. Every cut is on a beat measured from the songs themselves (not a
+// tempo guessed from a number: the beats below came from the audio, docs/TRAILER.md says how).
+// The narrator is Viktor's voice, slowed; Maya and Viktor each introduce themselves on screen, in their own voices.
+// The app is shown full screen and sharp, as it is; the film look (grain, embers, bars) is only for the title cards.
+// Every feature gets its title, and every credit comes at the moment its part pays off. Opponents' names never appear.
 const W = 1920, H = 1080, FPS_CLIP = 15;
 const P = new URLSearchParams(location.search);
 const CREATOR = P.get("creator") || "Abhra Chakraborty";  // the owner's name, as they asked (20 Oct)
 const cv = document.getElementById("out"), ctx = cv.getContext("2d");
-const BEAT = 60 / 172, BAR = 4 * BEAT;  // "Ready Aim Fire": 172 beats a minute
-const DROP = 27.2;  // the rock comes in: the title slams
-const F = { a: 48.4, mate: 59.5, b: 61.0 };  // the film, its checkmate, and the rock back
+
+// ---------- the beats, measured (beat tracking on each song's onsets) ----------
+const HB = [0.84, 1.63, 2.48, 3.29, 4.11, 4.95, 5.79, 6.58, 7.4, 8.23, 9.05, 9.86, 10.69, 11.52, 12.33, 13.16, 13.99, 14.81, 15.63, 16.45, 17.27, 18.1, 18.91, 19.71, 20.4, 21.18, 21.95, 22.74, 23.43, 24.25, 24.99, 25.78, 26.55];  // Hitman, from the start
+const RB = [0.38, 0.72, 1.06, 1.4, 1.72, 2.06, 2.4, 2.74, 3.08, 3.41, 3.75, 4.1, 4.46, 4.81, 5.15, 5.51, 5.86, 6.2, 6.56, 6.9, 7.25, 7.6, 7.94, 8.31, 8.64, 9.0, 9.35, 9.7, 10.04, 10.39, 10.74, 11.09, 11.46, 11.81, 12.16, 12.48, 12.83, 13.17, 13.52, 13.88, 14.24, 14.57, 14.92, 15.28, 15.64, 15.97, 16.32, 16.67, 17.05, 17.37, 17.76, 18.1, 18.42, 18.76, 19.11, 19.46, 19.83, 20.18, 20.54, 20.85, 21.2, 21.52, 21.9, 22.26, 22.62, 22.98, 23.32, 23.64, 24.02, 24.35, 24.69, 25.04, 25.4, 25.74, 26.08, 26.43, 26.78, 27.14, 27.49, 27.83, 28.18, 28.56, 28.91, 29.23, 29.58, 29.92, 30.27, 30.62, 30.97, 31.31, 31.67, 32.02, 32.37, 32.71, 33.07, 33.42, 33.77, 34.13, 34.46, 34.81, 35.17, 35.5, 35.86, 36.2, 36.55, 36.88, 37.24, 37.6, 37.94, 38.3, 38.64, 39.0, 39.35, 39.68, 40.03, 40.39, 40.74, 41.09, 41.47, 41.84, 42.19, 42.53, 42.88, 43.18, 43.53, 43.88, 44.23, 44.58, 44.96, 45.28, 45.61, 45.97, 46.32, 46.67, 47.03, 47.37, 47.74, 48.09, 48.43, 48.78, 49.14, 49.46, 49.8, 50.16, 50.52, 50.89, 51.22, 51.55, 51.89, 52.24, 52.6, 52.97, 53.34, 53.67, 54.03, 54.34, 54.68, 55.04, 55.38, 55.74, 56.11, 56.46, 56.81, 57.14, 57.49, 57.83, 58.19, 58.53, 58.89, 59.22];  // Ready Aim Fire
+// the rock is played to a click: one straight line through its beats takes out the few milliseconds of measuring noise
+const [R0, BEAT] = (() => { const xs = [], ys = []; for (let i = 9; i < RB.length; i++) { xs.push(i); ys.push(RB[i]); }
+  const n = xs.length, mx = xs.reduce((a, b) => a + b) / n, my = ys.reduce((a, b) => a + b) / n;
+  let sxy = 0, sxx = 0; xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; }); const b = sxy / sxx; return [my - b * mx, b]; })();
+const rbeat = i => R0 + i * BEAT;  // Ready Aim Fire's beat i, in the song
+const BAR = 4 * BEAT;
+const DROP_IN_SONG = rbeat(9);  // the crash where the rock comes in (beat 9)
+const TD = 30.1;                // ...and where that lands in the trailer: the title
+const tb = n => TD + n * BAR;   // bar n after the title
+const STOP = tb(34);            // the rock stops dead here, and rings out
+const RAF_AT = TD - (DROP_IN_SONG - rbeat(5));  // the bar before the crash, its run-up, follows the silence
 
 // ---------- the clips: frames recorded from the app, each with when it was shown and where things are ----------
 const CLIPS = {};
@@ -43,7 +56,7 @@ async function loadClip(name) {
   await Promise.all(keep.map(k => new Promise(r => { k.img = new Image(); k.img.onload = k.img.onerror = r; k.img.src = `/ui/vendor/trailer/${name}/${k.n}.jpg`; })));
   CLIPS[name] = { ...meta, keep };
 }
-function frameAt(name, t) {  // the frame on screen t seconds into the clip
+function frameAt(name, t) {
   const c = CLIPS[name]; if (!c) return null;
   let lo = 0, hi = c.keep.length - 1;
   while (lo < hi) { const m = (lo + hi + 1) >> 1; if (c.keep[m].t <= t) lo = m; else hi = m - 1; }
@@ -54,21 +67,20 @@ function around(r, pad = 1.15) {  // a 16:9 window around a box, with some room
   if (!r) return [0, 0, W, H];
   let [x, y, w, h] = r; const cx = x + w / 2, cy = y + h / 2;
   w *= pad; h *= pad; if (w / h > 16 / 9) h = w * 9 / 16; else w = h * 16 / 9;
-  w = Math.min(w, W); h = Math.min(h, H);
+  w = Math.max(Math.min(w, W), W / 2.2); h = w * 9 / 16;  // never closer than 2.2x: the frames stay sharp
   return [Math.max(0, Math.min(W - w, cx - w / 2)), Math.max(0, Math.min(H - h, cy - h / 2)), w, h];
 }
 const lerpBox = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
-const ease = k => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const easeS = k => k * k * (3 - 2 * k);
 const out3 = k => 1 - Math.pow(1 - k, 3);
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
-const zoomIn = (b, f = 0.82) => { const [x, y, w, h] = b; return [x + w * (1 - f) / 2, y + h * (1 - f) / 2, w * f, h * f]; };
+const zoomIn = (b, f = 0.9) => { const [x, y, w, h] = b; return [x + w * (1 - f) / 2, y + h * (1 - f) / 2, w * f, h * f]; };
 const FULL = [0, 0, W, H];
-const GRADE = "saturate(.55) contrast(1.2) brightness(.9) sepia(.14)";  // the film look: drained colour, warm light
-function drawClip(name, t, from, to, k) {
+function drawClip(name, t, from, to, k) {  // the app as it is: no colour grading
   const img = frameAt(name, t); if (!img) return;
-  const [x, y, w, h] = lerpBox(from, to, ease(clamp(k)));
-  const z = (img.naturalWidth || W) / W;  // the frames may be smaller than the picture (1536 wide): where things are is in 1920
-  ctx.save(); ctx.filter = GRADE; ctx.drawImage(img, x * z, y * z, w * z, h * z, 0, 0, W, H); ctx.restore();
+  const [x, y, w, h] = lerpBox(from, to, easeS(clamp(k)));
+  const z = (img.naturalWidth || W) / W;
+  ctx.drawImage(img, x * z, y * z, w * z, h * z, 0, 0, W, H);
 }
 
 // ---------- the film: the game of the month, stepped frame by frame from here ----------
@@ -87,17 +99,17 @@ async function loadFilm() {
 function filmTo(t) { if (film && t > filmT) { film.step(t - filmT); filmT = t; } }
 function drawFilm(t, dark = 0) {
   filmTo(t); const c = document.querySelector("#film canvas"); if (!c) return;
-  ctx.save(); ctx.filter = "saturate(.7) contrast(1.15) sepia(.1)"; ctx.drawImage(c, 0, 0, W, H); ctx.restore();
+  ctx.save(); ctx.filter = "saturate(.8) contrast(1.12)"; ctx.drawImage(c, 0, 0, W, H); ctx.restore();
   if (dark) { ctx.fillStyle = `rgba(0,0,0,${dark})`; ctx.fillRect(0, 0, W, H); }
 }
 const mateAt = () => film ? film.at[film.at.length - 1] : 40;  // when the last winning move starts, in film time
 
-// ---------- the look: embers, grain, a vignette, cinema bars ----------
+// ---------- the look, for the title cards and the film: embers, grain, a vignette, cinema bars ----------
 const grain = (() => { const g = document.createElement("canvas"); g.width = g.height = 256; const c = g.getContext("2d"), d = c.createImageData(256, 256);
-  for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 20; }
+  for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 18; }
   c.putImageData(d, 0, 0); return g; })();
 const rnd = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
-function embers(T, amount) {  // drifting sparks, like the fire in the film's trailer
+function embers(T, amount) {
   if (amount <= 0) return;
   ctx.save(); ctx.globalCompositeOperation = "lighter";
   const n = Math.round(70 * amount);
@@ -112,200 +124,264 @@ function embers(T, amount) {  // drifting sparks, like the fire in the film's tr
   ctx.restore();
 }
 function finish(T, c) {
-  const glow = ctx.createLinearGradient(0, H, 0, H * 0.4);  // warm light from below
-  glow.addColorStop(0, "rgba(255,110,40,.10)"); glow.addColorStop(1, "rgba(255,110,40,0)");
-  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
   embers(T, c.embers ?? 0.5);
-  const v = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.95);
-  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.6)");
+  const v = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95);
+  v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.5)");
   ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
-  ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = ctx.createPattern(grain, "repeat");
+  ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = ctx.createPattern(grain, "repeat");
   ctx.translate((T * 997) % 256, (T * 613) % 256); ctx.fillRect(-256, -256, W + 512, H + 512); ctx.restore();
-  const bars = c.bars ?? 1;
-  if (bars) { ctx.fillStyle = "#000"; const b = 110 * bars; ctx.fillRect(0, 0, W, b); ctx.fillRect(0, H - b, W, b); }
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, 90); ctx.fillRect(0, H - 90, W, 90);
 }
 function flash(a, color = "255,255,255") { if (a <= 0) return; ctx.fillStyle = `rgba(${color},${Math.min(1, a)})`; ctx.fillRect(0, 0, W, H); }
 function shake(T, amount) { if (amount > 0) ctx.translate((Math.sin(T * 91) + Math.sin(T * 37)) * amount, (Math.cos(T * 73) + Math.sin(T * 53)) * amount); }
+const font = (s, w = 900) => `${w} ${s}px "Segoe UI Black", "Segoe UI", system-ui, sans-serif`;
 
-// words that slam in (big to their size, fast), hold, and go; never wider than the picture
+// big words in the middle (title cards): slam in, hold, go
 function slam(text, u, { size = 110, y = H / 2, color = "#fff", sub = null, dur = 99, weight = 900, accent = null, glow = null, slow = false } = {}) {
   if (u < 0 || u > dur) return;
-  const k = out3(clamp(u / (slow ? 0.9 : 0.22))), fade = clamp((dur - u) / 0.2);
+  const k = out3(clamp(u / (slow ? 0.9 : 0.2))), fade = clamp((dur - u) / 0.18);
   ctx.save(); ctx.globalAlpha = clamp(k * 1.4) * fade; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const font = s => `${weight} ${s}px "Segoe UI Black", "Segoe UI", system-ui, sans-serif`;
-  ctx.font = font(size); if (ctx.letterSpacing !== undefined) ctx.letterSpacing = `${Math.round(size * 0.05)}px`;
-  let wid = ctx.measureText(text).width; if (wid > W - 220) { size = Math.floor(size * (W - 220) / wid); ctx.font = font(size); wid = ctx.measureText(text).width; }
-  ctx.translate(W / 2, y); const s = 1 + (1 - k) * (slow ? 0.12 : 0.6) + u * 0.012; ctx.scale(s, s);
+  ctx.font = font(size, weight); if (ctx.letterSpacing !== undefined) ctx.letterSpacing = `${Math.round(size * 0.05)}px`;
+  let wid = ctx.measureText(text).width; if (wid > W - 220) { size = Math.floor(size * (W - 220) / wid); ctx.font = font(size, weight); wid = ctx.measureText(text).width; }
+  ctx.translate(W / 2, y); const s = 1 + (1 - k) * (slow ? 0.1 : 0.55) + u * 0.012; ctx.scale(s, s);
   ctx.shadowColor = glow || "rgba(0,0,0,.85)"; ctx.shadowBlur = glow ? 50 : 30;
+  if (!slow && u < 0.08) { ctx.fillStyle = "rgba(255,40,60,.7)"; ctx.fillText(text, 8, 0); ctx.fillStyle = "rgba(40,220,255,.7)"; ctx.fillText(text, -8, 0); }
   ctx.fillStyle = color; ctx.fillText(text, 0, 0);
   if (accent) { ctx.shadowBlur = 0; ctx.fillStyle = accent; ctx.fillRect(-wid / 2, size * 0.62, wid * clamp(u / 0.5), 9); }
-  if (sub) { ctx.shadowColor = "rgba(0,0,0,.85)"; ctx.shadowBlur = 20; ctx.font = `600 ${Math.round(size * 0.3)}px "Segoe UI", system-ui, sans-serif`;
-    if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "3px"; ctx.fillStyle = "#d6dcd8"; ctx.fillText(sub, 0, size * 0.98); }
+  if (sub) { ctx.shadowColor = "rgba(0,0,0,.85)"; ctx.shadowBlur = 20; ctx.font = `600 ${Math.round(size * 0.24)}px "Segoe UI", system-ui, sans-serif`;
+    if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "4px"; ctx.fillStyle = "#d6dcd8"; ctx.fillText(sub, 0, size * 0.98); }
   ctx.restore();
 }
-function subtitle(text, u, dur) {  // a line spoken in the film, as a subtitle
+// a feature's name over the app: a dark band at the bottom, the name slides in on the beat
+function lower(title, sub, u, dur, color = "#fff") {
   if (u < 0 || u > dur) return;
-  ctx.save(); ctx.globalAlpha = clamp(u / 0.2) * clamp((dur - u) / 0.2);
-  ctx.font = '500 38px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.shadowColor = "#000"; ctx.shadowBlur = 12; ctx.fillStyle = "#fff"; ctx.fillText(text, W / 2, H - 170); ctx.restore();
+  const k = out3(clamp(u / 0.25)), f = clamp((dur - u) / 0.2), x = 130;
+  ctx.save();
+  const band = ctx.createLinearGradient(0, H - 360, 0, H);
+  band.addColorStop(0, "rgba(0,0,0,0)"); band.addColorStop(0.45, `rgba(0,0,0,${0.72 * f})`); band.addColorStop(1, `rgba(0,0,0,${0.9 * f})`);
+  ctx.fillStyle = band; ctx.fillRect(0, H - 360, W, 360);
+  ctx.globalAlpha = clamp(k * 1.3) * f; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  let size = 84; ctx.font = font(size); if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "3px";
+  const wid = ctx.measureText(title).width; if (wid > W - 2 * x) { size = Math.floor(size * (W - 2 * x) / wid); ctx.font = font(size); }
+  const dx = (1 - k) * -70;
+  ctx.shadowColor = "rgba(0,0,0,.9)"; ctx.shadowBlur = 24;
+  if (u < 0.1) { ctx.fillStyle = "rgba(255,40,60,.75)"; ctx.fillText(title, x + dx + 7, H - 150); ctx.fillStyle = "rgba(40,220,255,.75)"; ctx.fillText(title, x + dx - 7, H - 150); }
+  ctx.fillStyle = color; ctx.fillText(title, x + dx, H - 150);
+  ctx.shadowBlur = 0; ctx.fillStyle = "#e0283c"; ctx.fillRect(x, H - 128, clamp(u / 0.45) * 140, 6);
+  if (sub) { ctx.font = '500 36px "Segoe UI", system-ui, sans-serif'; if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "1px";
+    ctx.fillStyle = "#dfe5e1"; ctx.shadowColor = "rgba(0,0,0,.9)"; ctx.shadowBlur = 14; ctx.fillText(sub, x + dx * 0.5, H - 75); }
+  ctx.restore();
 }
-function credit(role, name, u, dur = 1.8, y = 200) {  // a film credit: each one who gave the app something, at their moment
+// a credit, like a film's: who gave the app this part, at the moment it pays off (top left)
+function credit(role, name, u, dur = 1.8, y = 175) {
   if (u < 0 || u > dur) return;
   const k = out3(clamp(u / 0.3)), f = clamp((dur - u) / 0.3), x = 130;
   ctx.save();
-  const bg = ctx.createLinearGradient(0, 0, 900, 0); bg.addColorStop(0, `rgba(0,0,0,${0.62 * k * f})`); bg.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = bg; ctx.fillRect(0, y - 50, 1000, 170);
+  const bg = ctx.createLinearGradient(0, 0, 1100, 0); bg.addColorStop(0, `rgba(0,0,0,${0.8 * k * f})`); bg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = bg; ctx.fillRect(0, y - 60, 1200, 175);
   ctx.globalAlpha = k * f; ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
   ctx.shadowColor = "rgba(0,0,0,.9)"; ctx.shadowBlur = 20;
   if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "8px";
   ctx.font = '700 26px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = "#e0b25a"; ctx.fillText(role, x + (1 - k) * 40, y);
   if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "2px";
-  ctx.font = '900 66px "Segoe UI Black", "Segoe UI", system-ui, sans-serif';
-  if (u < 0.12) { ctx.fillStyle = "rgba(255,40,60,.8)"; ctx.fillText(name, x + 6, y + 72); ctx.fillStyle = "rgba(40,220,255,.8)"; ctx.fillText(name, x - 6, y + 72); }
-  ctx.fillStyle = "#fff"; ctx.fillText(name, x, y + 72);
-  ctx.fillStyle = "#c8102e"; ctx.fillRect(x, y + 94, clamp(u / 0.6) * 90, 5);
+  let size = 64; ctx.font = font(size); const wid = ctx.measureText(name).width; if (wid > W - 260) { size = Math.floor(size * (W - 260) / wid); ctx.font = font(size); }
+  if (u < 0.12) { ctx.fillStyle = "rgba(255,40,60,.8)"; ctx.fillText(name, x + 6, y + 70); ctx.fillStyle = "rgba(40,220,255,.8)"; ctx.fillText(name, x - 6, y + 70); }
+  ctx.fillStyle = "#fff"; ctx.fillText(name, x, y + 70);
+  ctx.restore();
+}
+
+// a coach comes on: the camera moves in on them, their name large on the left
+function coachShot(clip, ct, u, dur, name, role) {
+  const r = mark(clip, "coach") || [1490, 746, 400, 309], Wt = 1100, Ht = Wt * 9 / 16;
+  const to = [clamp(r[0] + r[2] + 30 - Wt, 0, W - Wt), clamp(r[1] + r[3] + 25 - Ht, 0, H - Ht), Wt, Ht];
+  drawClip(clip, ct + u, FULL, to, u / Math.min(dur, 1.6));
+  const k = out3(clamp((u - 0.3) / 0.35)), f = clamp((dur - u) / 0.25), x = 110, y = 470;
+  if (u < 0.3) return;
+  ctx.save();
+  const g = ctx.createLinearGradient(0, 0, 900, 0); g.addColorStop(0, `rgba(0,0,0,${0.82 * k * f})`); g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = g; ctx.fillRect(0, y - 150, 1000, 300);
+  ctx.globalAlpha = k * f; ctx.textAlign = "left"; ctx.shadowColor = "rgba(0,0,0,.9)"; ctx.shadowBlur = 24;
+  if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "10px";
+  ctx.font = font(150); ctx.fillStyle = GOLD; ctx.fillText(name, x + (1 - k) * -60, y + 30);
+  if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "2px";
+  ctx.font = '600 36px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = "#e8ede9"; ctx.fillText(role, x, y + 95);
+  ctx.shadowBlur = 0; ctx.fillStyle = "#e0283c"; ctx.fillRect(x, y + 52, clamp((u - 0.3) / 0.5) * 160, 6);
   ctx.restore();
 }
 
 // ---------- the cut: [start, end, draw(u, T)] in seconds ----------
 const CUT = [];
 const at = (a, b, f, o = {}) => CUT.push({ a, b, f, ...o });
-const box = n => around(mark(n, "board"), 1.08), page = n => around(mark(n, "page"), 1.0);
+const box = (n, pad = 1.25) => around(mark(n, "board"), pad), page = n => around(mark(n, "page"), 1.0);
 const RED = "#e0283c", GOLD = "#ffcf6e", GREEN = "#36c27a";
+const bg = T => drawFilm(2.6 + T * 0.3, 0.55);  // the dark board behind the opening's words, moving slowly
+const card = (a, b, f, o = {}) => at(a, b, (u, T) => { bg(T); f(u, T); }, { embers: 0.8, ...o });
 
-// 0 – 6.5: slow and dark. The board in the dark, embers; who presents it; the question
-at(0, 6.5, (u, T) => {
-  drawFilm(2.6 + u * 0.35, 0.45 + 0.4 * (1 - clamp(u / 2)));
-  slam(CREATOR.toUpperCase() + " PRESENTS", u - 0.6, { size: 40, weight: 600, dur: 2.6, color: "#d8d2c4", slow: true });
-  slam("EVERY GAME YOU LOSE…", u - 3.7, { size: 78, dur: 2.8, slow: true });
-}, { embers: 1 });
-// 6.5: the first hit
-at(6.5, 9.0, (u, T) => {
-  drawFilm(4.9 + u * 0.4, 0.5);
-  ctx.save(); shake(T, 6 * clamp(1 - u / 0.4)); slam("HAS A LESSON IN IT.", u, { size: 96, dur: 2.5, color: GOLD }); ctx.restore();
-}, { embers: 1, flash: 0.35, punch: true });
-// 9.0 – 13.0: quiet. Your game, slowly; Maya speaks
-at(9.0, 13.0, (u) => {
-  drawClip("review", 0.2 + u * 0.35, box("review"), zoomIn(box("review"), 0.8), u / 4);
-  subtitle("“I go through your games with you, one moment at a time.”", u - 0.3, 3.4);
-}, { embers: 0.6 });
-// 13.0: the hit: the better move, an arrow across the board
-at(13.0, 16.16, (u, T) => {
-  drawClip("review", 1.9 + u * 0.55, zoomIn(box("review"), 0.86), zoomIn(box("review"), 0.72), u / 3.16);
-  ctx.save(); shake(T, 8 * clamp(1 - u / 0.35)); slam("YOUR MISTAKES.", u, { size: 104, y: H - 230, dur: 1.5, color: RED }); ctx.restore();
-  slam("FOUND.", u - 1.55, { size: 104, y: H - 230, dur: 1.55, color: GREEN });
-  credit("THE ENGINE", "STOCKFISH", u - 0.7, 2.3);
-}, { flash: 0.6, punch: true, embers: 0.3 });
-// 16.16: what they could have done: slower, to read
-at(16.16, 19.32, (u) => {
-  drawClip("review", 6.2 + u * 0.4, around(mark("review", "walk"), 1.0), zoomIn(around(mark("review", "walk"), 1.0), 0.85), u / 3.16);
-  slam("SHOWN. EXPLAINED.", u - 0.2, { size: 92, y: H - 220, dur: 2.9 });
-}, { punch: true, flash: 0.25, embers: 0.3 });
-// 19.32: how hard was it? Held, so it can be read
-at(19.32, 22.48, (u) => {
-  const b = around(mark("review", "hard"), 1.2);
-  drawClip("review", 10, b, zoomIn(b, 0.88), u / 3.16);
-  slam("HOW HARD WAS IT, REALLY?", u - 0.25, { size: 84, y: 200, dur: 2.9, color: GOLD });
-  credit("THE HUMAN MIND", "MAIA-3 · UNIVERSITY OF TORONTO", u - 1.0, 2.1, H - 330);
-}, { punch: true, flash: 0.3, embers: 0.4 });
-// 22.48 – 26.8: the montage: everything, quicker and quicker
+// ===== 0 – 30: Hitman. Slow and tense; the narrator; Maya; your mistakes, found =====
+at(0, HB[0], () => {}, { embers: 0.3 });
+card(HB[0], HB[2], (u) => slam(CREATOR.toUpperCase() + " PRESENTS", u, { size: 44, weight: 600, dur: HB[2] - HB[0], color: "#e6dfd0", slow: true }));
+card(HB[2], HB[5], (u) => slam("KNIGHTWISE", u, { size: 130, dur: HB[5] - HB[2], color: "#f4efe4", accent: RED, glow: "rgba(224,40,60,.35)", slow: true }), { embers: 1 });
+card(HB[5], HB[7], (u) => slam("EVERY GAME YOU LOSE…", u, { size: 82, dur: HB[7] - HB[5], slow: true }));
+card(HB[7], HB[10], (u, T) => { ctx.save(); shake(T, 6 * clamp(1 - u / 0.4)); slam("HAS A LESSON IN IT.", u, { size: 100, dur: HB[10] - HB[7], color: GOLD }); ctx.restore(); }, { embers: 1, flash: 0.35, punch: true });
+card(HB[10], HB[12], (u) => slam("MOST PLAYERS NEVER FIND IT.", u, { size: 74, dur: HB[12] - HB[10], color: "#cfc8bb", slow: true }), { embers: 0.5 });
+// Maya comes on, and says who she is
+at(HB[12], HB[16], (u) => {
+  coachShot("maya", 0.5, u, HB[16] - HB[12], "MAYA", "your coach for games and practice");
+  credit("THE VOICES", "KOKORO", u - 1.3, HB[16] - HB[12] - 1.4);
+}, { app: true, flash: 0.5 });
+// your mistakes: found, explained, and how hard they were
+card(HB[16], HB[17], (u, T) => { ctx.save(); shake(T, 8 * clamp(1 - u / 0.3)); slam("YOUR MISTAKES.", u, { size: 120, dur: HB[17] - HB[16], color: RED }); ctx.restore(); }, { flash: 0.6, punch: true });
+at(HB[17], HB[20], (u) => {
+  drawClip("review", 1.5 + u, box("review", 1.5), box("review", 1.25), u / (HB[20] - HB[17]));
+  lower("FOUND IN YOUR REAL GAMES", "the moments that cost you, and the better move", u - 0.1, HB[20] - HB[17] - 0.15);
+  credit("THE ENGINE", "STOCKFISH", u - 0.6, HB[20] - HB[17] - 0.7);
+}, { app: true, flash: 0.3 });
+card(HB[20], HB[21], (u, T) => { ctx.save(); shake(T, 6 * clamp(1 - u / 0.3)); slam("EXPLAINED.", u, { size: 120, dur: HB[21] - HB[20], color: GOLD }); ctx.restore(); }, { flash: 0.5, punch: true });
+at(HB[21], HB[24], (u) => {
+  const w = around(mark("review", "walk"), 1.12);
+  drawClip("review", 6.3 + u * 0.9, w, zoomIn(w, 0.94), u / (HB[24] - HB[21]));
+}, { app: true, flash: 0.25 });
+card(HB[24], HB[26], (u) => slam("HOW HARD WAS IT, REALLY?", u, { size: 92, dur: HB[26] - HB[24], color: GOLD }), { flash: 0.4, punch: true });
+at(HB[26], HB[28], (u) => {
+  const b = around(mark("review", "hard"), 1.5);
+  drawClip("review", 10.3, b, zoomIn(b, 0.93), u / (HB[28] - HB[26]));
+  credit("THE HUMAN MIND", "MAIA-3 · UNIVERSITY OF TORONTO", u - 0.25, HB[28] - HB[26] - 0.3, H - 360);
+}, { app: true, flash: 0.25 });
+// the run-in: everything that's coming, quicker and quicker, on the beat, then the last hit and silence
 {
-  const M = [["practice", 3], ["rematch", 3], ["guess", 3.5], ["prep", 3], ["ask", 8.5], ["wrapped", 2.9], ["practice", 6], ["guess", 5.5], ["rematch", 5], ["wrapped", 5.1]];
-  let t = 22.48; const n = M.length, span = 26.8 - 22.48;
-  M.forEach(([c, ct], i) => { const d = span * (n - i) / ((n * (n + 1)) / 2), a = t; t += d;
-    at(a, t, (u) => drawClip(c, ct, page(c), zoomIn(page(c), 0.68), u / d), { punch: true, flash: 0.45, embers: 0.4 }); });
+  const half = (a, b) => (a + b) / 2;
+  const T = [HB[28], HB[29], HB[30], half(HB[30], HB[31]), HB[31], half(HB[31], HB[32]), half(half(HB[31], HB[32]), HB[32]), HB[32]];
+  const S = [["practice", 4.6, "board"], ["rematch", 3.2, "board"], ["guess", 3.0, "page"], ["prep", 2.6, "page"], ["viktor", 2.0, "page"], ["level", 1.0, "page"], ["wrapped", 2.6, null]];
+  S.forEach(([c, ct, m], i) => at(T[i], T[i + 1], (u) => { const b = m === "board" ? box(c, 1.4) : m ? page(c) : FULL; drawClip(c, ct + u, b, zoomIn(b, 0.9), u / (T[i + 1] - T[i])); }, { app: true, flash: 0.45, punch: true }));
 }
-// 26.8 – 27.2: black, silence
-at(26.8, DROP, () => {}, { embers: 0 });
-// DROP: the rock, the title
-at(DROP, DROP + 2 * BAR, (u, T) => {
+// the silence: one line, then the run-up into the rock
+at(HB[32], TD, (u) => {
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+  slam("NOW… YOU WILL.", u - 0.45, { size: 78, dur: RAF_AT - HB[32] - 0.3, color: "#e6dfd0", slow: true });
+}, { embers: 0.25, flash: 0.9 });
+
+// ===== TD: the title, on the crash. Then every part of the app, one by one, on the bars =====
+at(TD, tb(2), (u, T) => {
   drawFilm(30 + u * 1.5, 0.55);
   ctx.save(); shake(T, 16 * clamp(1 - u / 0.6));
-  slam("KNIGHTWISE", u, { size: 220, dur: 2 * BAR, accent: RED, glow: "rgba(224,40,60,.55)", sub: "THE CHESS COACH THAT SITS BEHIND YOU" }); ctx.restore();
-  credit("MUSIC", "KEVIN MACLEOD", u - 1.2, 1.5, H - 330);
+  slam("KNIGHTWISE", u, { size: 230, dur: 2 * BAR, accent: RED, glow: "rgba(224,40,60,.55)", sub: "THE CHESS COACH THAT SITS BEHIND YOU ON CHESS.COM" }); ctx.restore();
+  credit("MUSIC", "KEVIN MACLEOD", u - 1.3, 2 * BAR - 1.35, H - 330);
 }, { flash: 1.2, embers: 1 });
-// after the drop: each part, two bars: a fast hit, then slower so the words can be read
-const PART = (i, clip, from, to, title, sub, key, who = null, bars = 2) => {
-  const a = DROP + (2 + 2 * i) * BAR, d = bars * BAR;
-  at(a, a + d, (u, T) => {
-    const ct = key - 0.5 + (u < 0.5 ? u * 1.6 : 0.8 + (u - 0.5) * 0.55);  // quick into the moment, then slow on it
-    drawClip(clip, ct, typeof from === "function" ? from() : from, typeof to === "function" ? to() : to, u / d);
-    ctx.save(); shake(T, 7 * clamp(1 - u / 0.25)); slam(title, u - 0.1, { size: 92, y: H - 215, dur: d - 0.15, sub }); ctx.restore();
-    if (who) credit(who[0], who[1], u - 1.0, d - 1.1);
-  }, { punch: true, flash: 0.4, embers: 0.35 });
-};
-PART(0, "practice", () => box("practice"), () => zoomIn(page("practice"), 0.92), "PRACTICE FROM YOUR OWN GAMES", "the positions you got wrong, again", 4.2, ["THE PUZZLES", "LICHESS"]);
-PART(1, "rematch", () => box("rematch"), () => zoomIn(page("rematch"), 0.9), "REPLAY THE MOMENT IT WENT WRONG", "against a human-like opponent at their level", 2.3, ["THE RULES OF CHESS", "PYTHON-CHESS"]);
-PART(2, "guess", () => page("guess"), () => zoomIn(page("guess"), 0.82), "GUESS THE HUMAN MOVE", "what would a 1,000 player play?", 2.3, ["REAL GAMES", "LICHESS ELITE DATABASE"]);
-PART(3, "prep", () => page("prep"), () => zoomIn(page("prep"), 0.8), "KNOW THEM BEFORE YOU PLAY", "their openings, from their public games", 1.7, ["THEIR GAMES", "CHESS.COM PUBLIC API"]);
-PART(4, "ask", () => around(mark("ask", "ask"), 1.7), () => around(mark("ask", "ask"), 1.3), "ASK YOUR COACH. OUT LOUD.", "Maya and Viktor answer by voice", 8.9, ["THE VOICES · THE EARS", "KOKORO · WHISPER · GROQ"], 3);
-PART(5.5, "wrapped", zoomIn(FULL, 0.62), zoomIn(FULL, 0.5), "YOUR MONTH, WRAPPED", null, 2.9);
-// the film: Jalandhar's sitar, slow motion into the checkmate, then silence
-at(F.a, F.b, (u, T) => {
-  const m = mateAt(), lands = m + 1.9;  // the winning piece lands 1.9 s into its move
-  const k = T < 56.5 ? lands - 9.5 + (T - F.a) * (8.0 / 8.1) : T < F.mate ? lands - 1.5 + (T - 56.5) * 0.5 : lands + (T - F.mate) * 0.2;
-  drawFilm(k);
-  slam("YOUR BEST WIN.", u - 0.4, { size: 100, y: 210, dur: 2.6, slow: true });
-  slam("AS A FILM.", u - 3.0, { size: 100, y: 210, dur: 2.0, color: GOLD, slow: true });
-  credit("THE 3D WORLD", "THREE.JS · POLY HAVEN", u - 5.2, 2.6, H - 330);
+// a part of the app: its own clip, its name, and its credit; two bars cut once on the second downbeat, closer
+function part(bar, bars, clip, ct, b1, b2, title, sub, who = null) {
+  const a = tb(bar), d = bars * BAR;
+  at(a, a + d, (u) => {
+    const second = bars > 1 && u >= BAR, b = second ? b2() : b1();
+    drawClip(clip, ct + u, b, zoomIn(b, 0.94), second ? (u - BAR) / (d - BAR) : u / (bars > 1 ? BAR : d));
+    if (second) flash(0.22 * (1 - clamp((u - BAR) / 0.1)));
+    lower(title, sub, u - 0.04, d - 0.1);
+    if (who) credit(who[0], who[1], u - 0.75, d - 0.85);
+  }, { app: true, flash: 0.35, punch: true });
+}
+part(2, 2, "practice", 3.6, () => page("practice"), () => box("practice", 1.35), "PRACTICE FROM YOUR OWN GAMES", "the positions you got wrong, until you get them right", ["THE PUZZLES", "LICHESS"]);
+part(4, 1, "daily", 0.6, () => page("daily"), null, "FIVE MINUTES A DAY", "three positions, picked for today");
+part(5, 2, "rematch", 1.6, () => page("rematch"), () => box("rematch", 1.35), "REPLAY THE MOMENT IT WENT WRONG", "against an opponent who plays like a human at your level", ["THE RULES OF CHESS", "PYTHON-CHESS"]);
+part(7, 2, "guess", 1.6, () => page("guess"), () => zoomIn(page("guess"), 0.8), "GUESS THE HUMAN MOVE", "what would a real player at your level play?", ["REAL GAMES", "LICHESS ELITE DATABASE"]);
+part(9, 2, "prep", 1.0, () => page("prep"), () => zoomIn(page("prep"), 0.82), "KNOW THEM BEFORE YOU PLAY", "their openings and habits, from their public games", ["THEIR GAMES", "CHESS.COM PUBLIC API"]);
+// ask: the question typed, then the answer
+at(tb(11), tb(14), (u) => {
+  const q = around(mark("ask", "ask", false), 2.2), a = around(mark("ask", "ask"), 1.6);
+  if (u < BAR) drawClip("ask", 1.4 + u * 1.1, q, zoomIn(q, 0.95), u / BAR);
+  else { drawClip("ask", 8.2 + (u - BAR) * 0.4, a, zoomIn(a, 0.93), (u - BAR) / (2 * BAR)); if (u - BAR < 0.1) flash(0.22); }
+  lower("ASK YOUR COACH. OUT LOUD.", "speak or type; they answer about your own position", u - 0.04, 3 * BAR - 0.1);
+  credit("THE EARS", "WHISPER · GROQ", u - 1.0, 3 * BAR - 1.1);
+}, { app: true, flash: 0.35, punch: true });
+// Viktor comes on, and says who he is
+at(tb(14), tb(16), (u) => {
+  coachShot("viktor", 0.6, u, 2 * BAR, "VIKTOR", "your coach for your plan and your progress");
+}, { app: true, flash: 0.5, punch: true });
+part(16, 2, "level", 0.6, () => page("level"), () => zoomIn(page("level"), 0.75), "FROM BEGINNER TO 2,000+", "five levels; each done when your games show it");
+part(18, 1, "course", 0.6, () => page("course"), null, "YOUR COURSE", "one lesson at a time, picked by your games", ["THE OPENINGS", "LICHESS OPENING CATALOGUE"]);
+part(19, 2, "progress", 0.7, () => page("progress"), () => zoomIn(page("progress"), 0.85), "EVERY HABIT, TRACKED", "your week, your clock, your badges");
+part(21, 1, "wrapped", 2.5, () => FULL, null, "YOUR MONTH, WRAPPED");
+part(22, 2, "settings", 0.9, () => around(mark("settings", "check"), 1.4), () => around(mark("settings", "check"), 1.2), "WHEN CHESS.COM CHANGES, IT KEEPS UP", "it checks the site and finds its way again");
+// the film of your best win: up to speed, then slow motion as the last piece lands, on the bar
+at(tb(24), tb(30), (u, T) => {
+  const lands = mateAt() + 1.9, hit = tb(28);
+  drawFilm(T < hit ? lands - (hit - T) : lands + (T - hit) * 0.2);
+  slam("YOUR BEST WIN.", u, { size: 100, y: 230, dur: 2 * BAR - 0.1 });
+  slam("AS A FILM.", u - 2 * BAR, { size: 100, y: 230, dur: 2 * BAR - 0.1, color: GOLD });
+  credit("THE 3D WORLD", "THREE.JS · POLY HAVEN", u - 4 * BAR - 0.3, 2 * BAR - 0.3, H - 360);
+  if (T >= hit && T - hit < 0.15) flash(0.5 * (1 - (T - hit) / 0.15));
 }, { flash: 0.5, embers: 0.6 });
-// the rock back: the promise, hard and slow
-at(F.b, F.b + 2 * BAR, (u, T) => {
+// the promise
+at(tb(30), tb(32), (u, T) => {
   ctx.fillStyle = "#050404"; ctx.fillRect(0, 0, W, H);
   ctx.save(); shake(T, 10 * clamp(1 - u / 0.4));
   slam("NEVER ON IN A GAME", u, { size: 100, y: H / 2 - 64, dur: 2 * BAR }); slam("AGAINST A REAL PERSON.", u - BAR, { size: 100, y: H / 2 + 64, dur: BAR, color: GREEN });
   ctx.restore();
 }, { flash: 1, embers: 0.8 });
-["FREE.", "NO ACCOUNT.", "NO ADS."].forEach((w, i) => { const a = F.b + 2 * BAR + i * 2 * BEAT;
-  at(a, a + 2 * BEAT, (u, T) => { drawClip(["review", "guess", "practice"][i], 6, FULL, FULL, 0); ctx.fillStyle = "rgba(0,0,0,.75)"; ctx.fillRect(0, 0, W, H);
-    ctx.save(); shake(T, 10 * clamp(1 - u / 0.3)); slam(w, u, { size: 180, dur: 2 * BEAT, color: i === 2 ? RED : "#fff" }); ctx.restore(); }, { flash: 0.8, embers: 0.6 }); });
-const END = F.b + 2 * BAR + 6 * BEAT;  // Hitman's last great hit lands here
-at(END, END + 3.7, (u, T) => {
-  drawFilm(mateAt() + 4.6, 0.68);
-  ctx.save(); shake(T, 12 * clamp(1 - u / 0.5));
-  slam("KNIGHTWISE", u, { size: 200, dur: 3.7, accent: RED, glow: "rgba(224,40,60,.5)", sub: "FREE ON THE MICROSOFT STORE" }); ctx.restore();
-}, { flash: 1, embers: 1 });
-// the end: who developed it, the way a film ends
-at(END + 3.7, END + 7.7, (u) => {
+["FREE.", "NO ACCOUNT.", "NO ADS.", "FOREVER."].forEach((w, i) => { const a = tb(32) + i * 2 * BEAT;
+  at(a, a + 2 * BEAT, (u, T) => { drawClip(["review", "guess", "practice", "progress"][i], 6, FULL, FULL, 0); ctx.fillStyle = "rgba(0,0,0,.78)"; ctx.fillRect(0, 0, W, H);
+    ctx.save(); shake(T, 10 * clamp(1 - u / 0.3)); slam(w, u, { size: 180, dur: 2 * BEAT, color: i === 3 ? GOLD : "#fff" }); ctx.restore(); }, { flash: 0.8, embers: 0.6 }); });
+// STOP: the rock stops dead on the bar and rings; the name, the narrator, the one who made it
+at(STOP, STOP + 4.8, (u, T) => {
+  drawFilm(mateAt() + 4.6 + u * 0.3, 0.68);
+  ctx.save(); shake(T, 14 * clamp(1 - u / 0.5));
+  slam("KNIGHTWISE", u, { size: 210, dur: 4.8, accent: RED, glow: "rgba(224,40,60,.5)", sub: u < 2.2 ? "THE CHESS COACH THAT SITS BEHIND YOU" : "FREE ON THE MICROSOFT STORE" }); ctx.restore();
+}, { flash: 1.2, embers: 1 });
+at(STOP + 4.8, STOP + 9.4, (u) => {
   ctx.fillStyle = "#030303"; ctx.fillRect(0, 0, W, H);
-  slam("DEVELOPED BY", u - 0.1, { size: 34, weight: 700, y: H / 2 - 125, dur: 3.9, color: "#e0b25a", slow: true });
-  slam(CREATOR.toUpperCase(), u - 0.3, { size: 160, dur: 3.7, glow: "rgba(224,40,60,.4)", slow: true });
-  slam("built with Claude, by Anthropic", u - 1.4, { size: 30, weight: 500, y: H / 2 + 140, dur: 2.5, color: "#9aa59f", slow: true });
+  slam("DEVELOPED BY", u - 0.1, { size: 34, weight: 700, y: H / 2 - 125, dur: 4.5, color: "#e0b25a", slow: true });
+  slam(CREATOR.toUpperCase(), u - 0.3, { size: 160, dur: 4.3, glow: "rgba(224,40,60,.4)", slow: true });
+  slam("built with Claude, by Anthropic", u - 1.4, { size: 30, weight: 500, y: H / 2 + 140, dur: 3.1, color: "#9aa59f", slow: true });
 }, { flash: 0.3, embers: 0.8 });
-at(END + 7.7, END + 10.4, (u) => { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = clamp((2.7 - u) / 0.9); slam("Free, and fair.", u, { size: 70, weight: 600, dur: 2.7, slow: true }); ctx.globalAlpha = 1; }, { embers: 0.3 });
-const LENGTH = END + 10.4;
+at(STOP + 9.4, STOP + 10.4, () => { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H); }, { embers: 0 });
+const LENGTH = STOP + 10.4;
 
-// ---------- the music: each song where it fits, every switch on a hit; Maya's voice above it ----------
-const S = "/ui/vendor/film/";
-const MUSIC = [  // [song, when in the trailer, from where in the song, how long, loudness, fade out]
-  ["hitman.mp3", 0, 0, 26.8, 0.85, 0.2],
-  ["ready-aim-fire.mp3", DROP, 2.3, F.a - DROP, 0.8, 0.12],
-  ["jalandhar.mp3", F.a, 51.0, F.mate + 0.1 - F.a, 0.85, 0.08],
-  ["ready-aim-fire.mp3", F.b, 2.3 + 8 * BAR, END - F.b, 0.8, 0.05],
-  ["hitman.mp3", END, 190.8, 7.4, 0.95, 1.5],
+// ---------- the sound: two songs, one switch; the voices above them ----------
+const S = "/ui/vendor/film/", VO = "/ui/vendor/trailer/voice/";
+const MUSIC = [  // [song, when in the trailer, from where in the song, until when in the trailer, loudness]
+  ["hitman.mp3", 0, 0, HB[32] + 0.35, 0.85],
+  ["ready-aim-fire.mp3", RAF_AT, rbeat(5), STOP + 0.12, 0.8],
 ];
-const VOICE = [[9.3, "01"], [DROP + 8 * BAR + 0.3, "05"], [END + 7.85, "08"]];
-
+const VOICE = [  // [when the first word starts, file, narrator?]
+  [HB[5] + 0.05, "n1", true], [HB[7] + 0.05, "n2", true], [HB[10] + 0.1, "n3", true],
+  [HB[12] + 0.3, "m1", false],
+  [HB[32] + 0.45, "n4", true],
+  [tb(14) + 0.3, "v1", false],
+  [STOP + 0.5, "n5", true], [STOP + 2.3, "n6", true],
+];
 let actx, master, start = 0, playing = false;
 const bufs = {};
 async function audio(into = null) {  // into: an offline context, for making the video
   if (into) actx = into; else { actx = new AudioContext(); master = actx.createGain(); master.connect(actx.destination); }
   const load = async u => { if (bufs[u] !== undefined) return; try { bufs[u] = await actx.decodeAudioData(await (await fetch(u)).arrayBuffer()); } catch (e) { bufs[u] = null; } };
   for (const m of MUSIC) await load(S + m[0]);
-  for (const [, n] of VOICE) await load(`/ui/vendor/trailer/voice/${n}.wav`);
+  for (const [, n] of VOICE) await load(VO + n + ".wav");
 }
-function schedule(actx, master, now) {  // the songs and the voice, on a live context or an offline one
-  const music = actx.createGain(); music.connect(master);
-  for (const [song, when, from, dur, loud, fade] of MUSIC) {
+function room(ac, seconds = 3.2) {  // a big hall: what lets the last hit ring
+  const n = Math.round(ac.sampleRate * seconds), b = ac.createBuffer(2, n, ac.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); let s = 12345 + c * 777;
+    for (let i = 0; i < n; i++) { s = (s * 16807) % 2147483647; d[i] = (s / 2147483647 * 2 - 1) * Math.pow(1 - i / n, 3.2); } }
+  const c = ac.createConvolver(); c.buffer = b; return c;
+}
+const speech = b => { const d = b.getChannelData(0); let a = 0, z = d.length - 1; while (a < z && Math.abs(d[a]) < 0.02) a++; while (z > a && Math.abs(d[z]) < 0.02) z--; return [a / b.sampleRate, (z - a) / b.sampleRate]; };
+function schedule(ac, out, now) {  // the songs and the voices, on a live context or an offline one
+  const music = ac.createGain(), hall = room(ac), send = ac.createGain();
+  music.connect(out); hall.connect(out); send.connect(hall); send.gain.value = 0;
+  for (const [song, when, from, until, loud] of MUSIC) {
     const b = bufs[S + song]; if (!b) continue;
-    const src = actx.createBufferSource(), g = actx.createGain(); src.buffer = b; src.connect(g); g.connect(music);
-    g.gain.setValueAtTime(loud, now + when); g.gain.setValueAtTime(loud, now + when + dur - fade); g.gain.linearRampToValueAtTime(0, now + when + dur);
-    src.start(now + when, from, dur + 0.05);
+    const src = ac.createBufferSource(), g = ac.createGain(); src.buffer = b; src.connect(g); g.connect(music); g.connect(send);
+    const pre = Math.min(0.03, from);  // a few milliseconds early, so the first beat's attack is whole
+    g.gain.setValueAtTime(loud, now + when - pre); g.gain.setValueAtTime(loud, now + until - 0.05); g.gain.linearRampToValueAtTime(0, now + until + 0.06);
+    src.start(now + when - pre, from - pre, until - when + pre + 0.1);
   }
-  for (const [t, n] of VOICE) {
-    const b = bufs[`/ui/vendor/trailer/voice/${n}.wav`]; if (!b) continue;
-    const src = actx.createBufferSource(), g = actx.createGain(); g.gain.value = 1.5; src.buffer = b; src.connect(g); g.connect(master); src.start(now + t);
-    music.gain.setTargetAtTime(0.4, now + t - 0.25, 0.08); music.gain.setTargetAtTime(1, now + t + b.duration, 0.3);  // the music steps back for her
+  // the hall opens only for the two endings: Hitman's last hit, and the rock's stop
+  for (const t of [HB[32], STOP]) { send.gain.setValueAtTime(0, now + t - 0.12); send.gain.linearRampToValueAtTime(0.55, now + t - 0.02); send.gain.setValueAtTime(0.55, now + t + 0.2); send.gain.linearRampToValueAtTime(0, now + t + 0.5); }
+  for (const [t, n, narrator] of VOICE) {
+    const b = bufs[VO + n + ".wav"]; if (!b) continue;
+    const [lead, dur] = speech(b), rate = narrator ? 0.95 : 1;  // the narrator a little lower and slower
+    const src = ac.createBufferSource(), g = ac.createGain(), wet = ac.createGain();
+    src.buffer = b; src.playbackRate.value = rate; src.connect(g); g.connect(out); src.connect(wet); wet.connect(hall);
+    g.gain.value = narrator ? 1.6 : 1.4; wet.gain.value = narrator ? 0.22 : 0.06;
+    src.start(now + t - lead / rate, 0);
+    music.gain.setTargetAtTime(0.3, now + t - 0.2, 0.06); music.gain.setTargetAtTime(1, now + t + dur / rate + 0.1, 0.25);  // the music steps back for the voice
   }
 }
 function startAudio() { const now = actx.currentTime + 0.2; start = now; schedule(actx, master, now); }
@@ -314,11 +390,11 @@ function render(T) {
   const c = CUT.find(x => T >= x.a && T < x.b); if (!c) return;
   const u = T - c.a;
   ctx.save();
-  if (c.punch) { const p = 1 + 0.1 * clamp(1 - u / 0.3); ctx.translate(W / 2, H / 2); ctx.scale(p, p); ctx.translate(-W / 2, -H / 2); }
+  if (c.punch) { const p = 1 + (c.app ? 0.05 : 0.1) * clamp(1 - u / 0.28); ctx.translate(W / 2, H / 2); ctx.scale(p, p); ctx.translate(-W / 2, -H / 2); }
   c.f(u, T);
   ctx.restore();
-  finish(T, c);
-  if (c.flash) flash(c.flash * clamp(1 - u / 0.16));
+  if (!c.app) finish(T, c);
+  if (c.flash) flash(c.flash * (c.app ? 0.6 : 1) * clamp(1 - u / 0.14));
 }
 function loop() {
   if (!playing) return;
@@ -381,11 +457,12 @@ async function make() {
   msg(res.ok ? `Saved: ${j.path}` : (j.message || "Couldn't save it."));
   window.trailerDone = res.ok ? j.path : "failed";
 }
-window.trailer = { render, LENGTH, CUT, loadFilm, make };
+window.trailer = { render, LENGTH, CUT, loadFilm, make, TD, STOP, BEAT, tb };
 (async () => {
-  for (const n of ["review", "ask", "practice", "rematch", "prep", "guess", "wrapped"]) await loadClip(n).catch(() => {});
+  for (const n of ["review", "maya", "ask", "practice", "daily", "rematch", "prep", "guess", "viktor", "level", "course", "progress", "wrapped", "settings"]) await loadClip(n).catch(() => {});
   document.getElementById("msg").textContent = `Ready: ${Math.round(LENGTH)} seconds.`;
-  render(DROP + 0.5);
+  window.trailerReady = true;
+  render(TD + 0.5);
 })();
 document.getElementById("play").onclick = () => play();
 document.getElementById("save").onclick = () => make();

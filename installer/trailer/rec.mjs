@@ -40,15 +40,17 @@ for (const s of scenes) {
   await send("Page.navigate", { url: BASE + "#/home" }); await sleep(800);
   await send("Page.navigate", { url: BASE + s.hash }); await sleep(s.load || 3000);
   await run(TIDY); await sleep(300);
-  if (s.nocoach) await run(`document.head.insertAdjacentHTML("beforeend", "<style>.kw-coach{display:none!important}</style>"); 1`);
+  if (!s.coach) await run(`document.head.insertAdjacentHTML("beforeend", "<style>.kw-coach{display:none!important}</style>"); 1`);
   await run(`(() => { if (window.__kwTick) return 1; window.__kwTick = 1; const d = document.createElement("div"); d.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;z-index:99999;pointer-events:none"; document.body.appendChild(d); let k = 0; (function f() { d.style.background = (k++ % 2) ? "rgba(0,0,0,.01)" : "rgba(0,0,0,.02)"; requestAnimationFrame(f); })(); return 1; })()`);  // keep frames coming while the page is still
-  const frames = [], marks = {}; let t0 = Date.now();
-  on["Page.screencastFrame"] = p => {
-    const n = frames.length; fs.writeFileSync(path.join(dir, `${n}.jpg`), Buffer.from(p.data, "base64"));
-    frames.push((Date.now() - t0) / 1000); send("Page.screencastFrameAck", { sessionId: p.sessionId });
-  };
-  await send("Page.startScreencast", { format: "jpeg", quality: 88, maxWidth: 1920, maxHeight: 1080 });
-  t0 = Date.now();
+  // full-size screenshots, one after another (a screencast comes at 1536 wide, soft once enlarged)
+  const frames = [], marks = {}; let t0 = Date.now(), filming = true;
+  const camera = (async () => {
+    while (filming) {
+      const a = (Date.now() - t0) / 1000, r = await send("Page.captureScreenshot", { format: "jpeg", quality: 90 });
+      fs.writeFileSync(path.join(dir, `${frames.length}.jpg`), Buffer.from(r.result.data, "base64"));
+      frames.push((a + (Date.now() - t0) / 1000) / 2);
+    }
+  })();
   for (const [what, a, b] of s.do || []) {
     if (what === "wait") await sleep(a);
     else if (what === "click") await run(`(() => { const e = document.querySelector(${JSON.stringify(a)}); if (e) e.click(); return !!e; })()`);
@@ -64,7 +66,7 @@ for (const s of scenes) {
       (marks[a] ||= []).push({ t: (Date.now() - t0) / 1000, r });
     } else if (what === "key") await run(`dispatchEvent(new KeyboardEvent("keydown", {key: ${JSON.stringify(a)}})); 1`);
   }
-  await send("Page.stopScreencast");
+  filming = false; await camera;
   fs.writeFileSync(path.join(dir, "frames.json"), JSON.stringify({ length: (Date.now() - t0) / 1000, frames, marks }));
   console.log(s.name, frames.length, "frames", ((Date.now() - t0) / 1000).toFixed(1), "s");
 }

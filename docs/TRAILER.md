@@ -1,23 +1,32 @@
 # The Knightwise trailer
 
-**Made by Knightwise itself (20 Oct):** `Videos\Knightwise\Knightwise trailer.mp4`, 76 seconds, 1920×1080, H.264 + AAC
-(what the Microsoft Store and YouTube take). Cut like an Indian action-film trailer, the owner's brief: slow and tense,
-then fast, then slow again, so there's time to take in each move.
+**Made by Knightwise itself (20 Oct, second cut after the owner's notes):** `Videos\Knightwise\Knightwise trailer.mp4`,
+88 seconds, 1920×1080, H.264 + AAC (what the Microsoft Store and YouTube take); `Knightwise trailer (phone).mp4` is the
+same at 720p, under 30 MB. Cut like an action-film trailer: slow and tense, then fast, then slow again.
 
-- **Songs, each where it fits** (Kevin MacLeod, CC BY 4.0): "Hitman" for the slow, tense opening (0–27 s) and the last
-  hit (66 s); "Ready Aim Fire" for the rock, from the title drop (27.2 s, its riff at 2.3 s); "Jalandhar" for the slow
-  motion into the checkmate, then silence on the king. Every cut is on a beat (172 a minute in the rock).
-- **Credits inside the film**, each at the moment its part pays off: Stockfish when the better move's arrow lands, Maia-3
-  on "How hard was it?", Lichess on practice, and so on. "Abhra Chakraborty presents" at the start, "Developed by Abhra
-  Chakraborty" at the end.
+- **Two songs, one switch** (Kevin MacLeod, CC BY 4.0): "Hitman" (tense) until its last hit at 26.55 s, a silence with
+  one line, then "Ready Aim Fire" from the bar before its crash, so the title lands on the crash; the rock stops dead
+  on a bar at 77.5 s and rings out. The first cut was off the beat: its rock was placed by loudness (2.3 s), but the
+  real crash is at 3.41 s. Now **every cut is on a measured beat**: `installer/trailer/beats.mjs` (onsets, loudness and
+  cymbal crashes, in a hidden Edge) and `track.py` (beat tracking); the beats are written into `trailer.html`.
+- **Voices** (`installer/make_trailer_voice.py`, Kokoro): a narrator (Viktor's voice, slowed: "Every game you lose… has
+  a lesson in it. Most players never find it. Now… you will."), and each coach on screen, once, saying who they are.
+- **Every part of the app, by name**, full screen and sharp (the film look is only on the title cards): review, practice,
+  five minutes a day, rematch, guess the human move, prep, ask your coach, the plan, the level ladder, the course,
+  progress, Wrapped, the chess.com check, the film; then fair play, free, no account, no ads.
+- **Credits inside the film**, each at its moment: Kokoro when Maya first speaks, Stockfish on the mistakes found,
+  Maia-3 on "How hard was it?", Lichess on practice, python-chess on the rematch, the Lichess Elite Database on the
+  guess, the chess.com public API on prep, Whisper and Groq on asking out loud, the Lichess opening catalogue on the
+  course, Three.js and Poly Haven on the film, Kevin MacLeod on the title. "Abhra Chakraborty presents… Knightwise" at
+  the start; Knightwise, then "Developed by Abhra Chakraborty", at the end.
 - **Opponents' names never appear** ("Opponent").
 
 **To make it again** (after the app changes):
-1. `python -m coach.get_assets --trailer` (the two songs and mp4-muxer, once).
+1. `python -m coach.get_assets --trailer` (the two songs and mp4-muxer, once), and `python installer/make_trailer_voice.py`.
 2. Record the clips: the app running on port 8766, then, from `installer/trailer`,
    `node rec.mjs scenes.json ../../coach/ui/vendor/trailer` (it drives a hidden Edge over its DevTools port: real pages,
    scripted clicks, opponents' names hidden). The cut itself is in `coach/ui/trailer.html`.
-3. Open `http://127.0.0.1:8766/ui/trailer.html`: **▶ Play** to watch, **Make the video (MP4)** to save it. It's made
+3. Open `http://127.0.0.1:8766/ui/trailer.html`: **▶ Play** to watch, **Make the video (MP4)** to save it (`?phone` for the small copy). It's made
    frame by frame, never live, so a slow or hidden window can't drop frames.
 
 ---

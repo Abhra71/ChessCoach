@@ -1,374 +1,540 @@
 [
-{
-"name": "review",
-"hash": "#/games/185261729330",
-"load": 4000,
-"do": [
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"mark",
-"walk",
-"document.querySelector('#walk')"
-],
-[
-"js",
-"Coach.react = () => {}; Coach.say && (Coach.say = () => {}); Coach.hide(); 1"
-],
-[
-"wait",
-1800
-],
-[
-"click",
-"#nextstep"
-],
-[
-"wait",
-2200
-],
-[
-"click",
-"#nextstep"
-],
-[
-"wait",
-2000
-],
-[
-"click",
-"#allsteps"
-],
-[
-"wait",
-4500
-],
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"mark",
-"walk",
-"document.querySelector('#walk')"
-],
-[
-"mark",
-"hard",
-"[...document.querySelectorAll('#walk .small')].find(e=>e.textContent.includes('How hard was it'))"
-]
-],
-"nocoach": true
-},
-{
-"name": "ask",
-"hash": "#/games/185261729330",
-"load": 4000,
-"do": [
-[
-"mark",
-"ask",
-"document.querySelector('#askbox')"
-],
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"js",
-"Coach.react = () => {}; Coach.say && (Coach.say = () => {}); Coach.hide(); 1"
-],
-[
-"click",
-"#allsteps"
-],
-[
-"wait",
-600
-],
-[
-"js",
-"document.querySelector('#askbox').scrollIntoView({block:'center'}); 1"
-],
-[
-"wait",
-500
-],
-[
-"type",
-"#askbox [data-q]",
-"Why was g6 a mistake?"
-],
-[
-"wait",
-300
-],
-[
-"click",
-"#askbox [data-ask]"
-],
-[
-"wait",
-6500
-],
-[
-"mark",
-"ask",
-"document.querySelector('#askbox')"
-],
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-]
-],
-"nocoach": true
-},
-{
-"name": "practice",
-"hash": "#/practice",
-"load": 4500,
-"do": [
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"mark",
-"page",
-"document.querySelector('#page')"
-],
-[
-"wait",
-2200
-],
-[
-"js",
-"[...document.querySelectorAll('button')].find(b=>b.textContent.includes(\"I'm ready\")).click(); 1"
-],
-[
-"wait",
-1500
-],
-[
-"js",
-"document.querySelector('rect[data-sq=\"b7\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
-],
-[
-"wait",
-500
-],
-[
-"js",
-"document.querySelector('rect[data-sq=\"b5\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
-],
-[
-"wait",
-3500
-],
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"mark",
-"page",
-"document.querySelector('#page')"
-]
-]
-},
-{
-"name": "rematch",
-"hash": "#/rematch/185261729330/30",
-"load": 4500,
-"do": [
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"mark",
-"page",
-"document.querySelector('#page')"
-],
-[
-"wait",
-1800
-],
-[
-"js",
-"document.querySelector('rect[data-sq=\"e8\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
-],
-[
-"wait",
-500
-],
-[
-"js",
-"document.querySelector('rect[data-sq=\"c8\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
-],
-[
-"wait",
-4500
-],
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"mark",
-"page",
-"document.querySelector('#page')"
-]
-]
-},
-{
-"name": "prep",
-"hash": "#/prep/gushynanda",
-"load": 8000,
-"do": [
-[
-"mark",
-"page",
-"document.querySelector('#page')"
-],
-[
-"wait",
-1500
-],
-[
-"js",
-"[...document.querySelectorAll('.small, div, h2, b')].find(e=>/HOW THEIR GAMES END/i.test(e.textContent)&&e.children.length===0).scrollIntoView({behavior:'smooth',block:'center'}); 1"
-],
-[
-"wait",
-4000
-],
-[
-"mark",
-"page",
-"document.querySelector('#page')"
-]
-]
-},
-{
-"name": "guess",
-"hash": "#/guess",
-"load": 5000,
-"do": [
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"mark",
-"page",
-"document.querySelector('#page')"
-],
-[
-"wait",
-1800
-],
-[
-"js",
-"document.querySelector('rect[data-sq=\"c4\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
-],
-[
-"wait",
-500
-],
-[
-"js",
-"document.querySelector('rect[data-sq=\"d5\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
-],
-[
-"wait",
-4000
-],
-[
-"mark",
-"board",
-"document.querySelector('#board')"
-],
-[
-"mark",
-"page",
-"document.querySelector('#page')"
-]
-]
-},
-{
-"name": "wrapped",
-"hash": "#/report/month",
-"load": 5000,
-"do": [
-[
-"click",
-"#wrapped"
-],
-[
-"wait",
-2200
-],
-[
-"key",
-"ArrowRight"
-],
-[
-"wait",
-2200
-],
-[
-"key",
-"ArrowRight"
-],
-[
-"wait",
-2200
-],
-[
-"key",
-"ArrowRight"
-],
-[
-"wait",
-2200
-]
-]
-},
-{
-"name": "settings",
-"hash": "#/settings",
-"load": 4000,
-"do": [
-[
-"mark",
-"check",
-"[...document.querySelectorAll('h3')].find(e=>e.textContent.includes('chess.com check')).closest('.settings-row')"
-],
-[
-"js",
-"[...document.querySelectorAll('h3')].find(h=>h.textContent.includes('chess.com check')).scrollIntoView({block:'center'}); 1"
-],
-[
-"wait",
-3500
-],
-[
-"mark",
-"check",
-"[...document.querySelectorAll('h3')].find(e=>e.textContent.includes('chess.com check')).closest('.settings-row')"
-]
-]
-}
+ {
+  "name": "review",
+  "hash": "#/games/185261729330",
+  "load": 4000,
+  "do": [
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "mark",
+    "walk",
+    "document.querySelector('#walk')"
+   ],
+   [
+    "js",
+    "Coach.react = () => {}; Coach.say && (Coach.say = () => {}); Coach.hide(); 1"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "click",
+    "#nextstep"
+   ],
+   [
+    "wait",
+    2200
+   ],
+   [
+    "click",
+    "#nextstep"
+   ],
+   [
+    "wait",
+    2000
+   ],
+   [
+    "click",
+    "#allsteps"
+   ],
+   [
+    "wait",
+    4500
+   ],
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "mark",
+    "walk",
+    "document.querySelector('#walk')"
+   ],
+   [
+    "mark",
+    "hard",
+    "[...document.querySelectorAll('#walk .small')].find(e=>e.textContent.includes('How hard was it'))"
+   ]
+  ],
+  "nocoach": true
+ },
+ {
+  "name": "maya",
+  "hash": "#/practice",
+  "load": 4500,
+  "coach": true,
+  "do": [
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "js",
+    "Coach.hide(); 1"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "js",
+    "Coach.show({ coach: 'maya', pose: 'greet', mood: 'greet', lines: [\"I'm Maya. I'll go through every game with you.\"], actions: [] }, { speak: false }); document.querySelector('.kw-coach').classList.add('talking'); 1"
+   ],
+   [
+    "wait",
+    2600
+   ],
+   [
+    "js",
+    "document.querySelector('.kw-coach').classList.remove('talking'); 1"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "mark",
+    "coach",
+    "document.querySelector('.kw-coach')"
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ]
+  ]
+ },
+ {
+  "name": "ask",
+  "hash": "#/games/185261729330",
+  "load": 4000,
+  "do": [
+   [
+    "mark",
+    "ask",
+    "document.querySelector('#askbox')"
+   ],
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "js",
+    "Coach.react = () => {}; Coach.say && (Coach.say = () => {}); Coach.hide(); 1"
+   ],
+   [
+    "click",
+    "#allsteps"
+   ],
+   [
+    "wait",
+    600
+   ],
+   [
+    "js",
+    "document.querySelector('#askbox').scrollIntoView({block:'center'}); 1"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "type",
+    "#askbox [data-q]",
+    "Why was g6 a mistake?"
+   ],
+   [
+    "wait",
+    300
+   ],
+   [
+    "click",
+    "#askbox [data-ask]"
+   ],
+   [
+    "wait",
+    6500
+   ],
+   [
+    "mark",
+    "ask",
+    "document.querySelector('#askbox')"
+   ],
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ]
+  ],
+  "nocoach": true
+ },
+ {
+  "name": "practice",
+  "hash": "#/practice",
+  "load": 4500,
+  "do": [
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "wait",
+    2200
+   ],
+   [
+    "js",
+    "[...document.querySelectorAll('button')].find(b=>b.textContent.includes(\"I'm ready\")).click(); 1"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "js",
+    "document.querySelector('rect[data-sq=\"b7\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "js",
+    "document.querySelector('rect[data-sq=\"b5\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
+   ],
+   [
+    "wait",
+    3500
+   ],
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ]
+  ]
+ },
+ {
+  "name": "rematch",
+  "hash": "#/rematch/185261729330/30",
+  "load": 4500,
+  "do": [
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "js",
+    "document.querySelector('rect[data-sq=\"e8\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "js",
+    "document.querySelector('rect[data-sq=\"c8\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
+   ],
+   [
+    "wait",
+    4500
+   ],
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ]
+  ]
+ },
+ {
+  "name": "prep",
+  "hash": "#/prep/gushynanda",
+  "load": 8000,
+  "do": [
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "wait",
+    1500
+   ],
+   [
+    "js",
+    "[...document.querySelectorAll('.small, div, h2, b')].find(e=>/HOW THEIR GAMES END/i.test(e.textContent)&&e.children.length===0).scrollIntoView({behavior:'smooth',block:'center'}); 1"
+   ],
+   [
+    "wait",
+    4000
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ]
+  ]
+ },
+ {
+  "name": "guess",
+  "hash": "#/guess",
+  "load": 5000,
+  "do": [
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "js",
+    "document.querySelector('rect[data-sq=\"c4\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
+   ],
+   [
+    "wait",
+    500
+   ],
+   [
+    "js",
+    "document.querySelector('rect[data-sq=\"d5\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"
+   ],
+   [
+    "wait",
+    4000
+   ],
+   [
+    "mark",
+    "board",
+    "document.querySelector('#board')"
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ]
+  ]
+ },
+ {
+  "name": "wrapped",
+  "hash": "#/report/month",
+  "load": 5000,
+  "do": [
+   [
+    "click",
+    "#wrapped"
+   ],
+   [
+    "wait",
+    2200
+   ],
+   [
+    "key",
+    "ArrowRight"
+   ],
+   [
+    "wait",
+    2200
+   ],
+   [
+    "key",
+    "ArrowRight"
+   ],
+   [
+    "wait",
+    2200
+   ],
+   [
+    "key",
+    "ArrowRight"
+   ],
+   [
+    "wait",
+    2200
+   ]
+  ]
+ },
+ {
+  "name": "settings",
+  "hash": "#/settings",
+  "load": 4000,
+  "do": [
+   [
+    "mark",
+    "check",
+    "[...document.querySelectorAll('h3')].find(e=>e.textContent.includes('chess.com check')).closest('.settings-row')"
+   ],
+   [
+    "js",
+    "[...document.querySelectorAll('h3')].find(h=>h.textContent.includes('chess.com check')).scrollIntoView({block:'center'}); 1"
+   ],
+   [
+    "wait",
+    3500
+   ],
+   [
+    "mark",
+    "check",
+    "[...document.querySelectorAll('h3')].find(e=>e.textContent.includes('chess.com check')).closest('.settings-row')"
+   ]
+  ]
+ },
+ {
+  "name": "viktor",
+  "hash": "#/plan",
+  "load": 4000,
+  "coach": true,
+  "do": [
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "js",
+    "Coach.hide(); 1"
+   ],
+   [
+    "wait",
+    700
+   ],
+   [
+    "js",
+    "Coach.show({ coach: 'viktor', pose: 'greet', mood: 'greet', lines: [\"I'm Viktor. I'll show you how far you've come.\"], actions: [] }, { speak: false }); document.querySelector('.kw-coach').classList.add('talking'); 1"
+   ],
+   [
+    "wait",
+    2700
+   ],
+   [
+    "js",
+    "document.querySelector('.kw-coach').classList.remove('talking'); 1"
+   ],
+   [
+    "wait",
+    1800
+   ],
+   [
+    "mark",
+    "coach",
+    "document.querySelector('.kw-coach')"
+   ],
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ]
+  ]
+ },
+ {
+  "name": "level",
+  "hash": "#/level",
+  "load": 4000,
+  "do": [
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "wait",
+    4500
+   ]
+  ]
+ },
+ {
+  "name": "course",
+  "hash": "#/course",
+  "load": 4000,
+  "do": [
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "wait",
+    4500
+   ]
+  ]
+ },
+ {
+  "name": "progress",
+  "hash": "#/progress",
+  "load": 4500,
+  "do": [
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "wait",
+    1200
+   ],
+   [
+    "js",
+    "[...document.querySelectorAll('h2,h3,div,b,.small')].find(e=>e.children.length===0&&/^BADGES$/i.test(e.textContent.trim())).scrollIntoView({behavior:'smooth',block:'start'}); 1"
+   ],
+   [
+    "wait",
+    3500
+   ]
+  ]
+ },
+ {
+  "name": "daily",
+  "hash": "#/daily",
+  "load": 4500,
+  "do": [
+   [
+    "mark",
+    "page",
+    "document.querySelector('#page')"
+   ],
+   [
+    "wait",
+    4500
+   ]
+  ]
+ }
 ]
