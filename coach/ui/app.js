@@ -954,12 +954,18 @@ function wrapped(r) {
 }
 
 // ---------- your game as a short 3D film (1.0): coach/film.py writes it, coach/ui/film.js plays it ----------
-const FILM_MUSIC = "/ui/vendor/film-music.mp3";  // the track the player picked (python -m coach.get_assets)
+// the two songs the owner picked by ear (20 Oct), one per film in turn; both CC BY 3.0, credited in Settings
+const FILM_SONGS = [
+  { url: "/ui/vendor/film/time-has-come.mp3", name: "Time has come, by Reiswerk feat. SackJo22" },
+  { url: "/ui/vendor/film/trio-cultural-mix.mp3", name: "A Trio Cultural Mix, by CSoul" },
+];
 async function filmView(id) {
   shell("progress", `<p class="muted">Setting up the film…</p>`);
   let s;
   try { s = await api(`/api/film/${encodeURIComponent(id || "week")}`); }
   catch (e) { $("#page").innerHTML = `<div class="empty">No game to film yet: win a game this week and it's here.</div>`; return; }
+  const song = FILM_SONGS[Number(String(s.id).slice(-1)) % FILM_SONGS.length];  // the same game, the same song
+  const FILM_MUSIC = song.url;
   const hasMusic = await fetch(FILM_MUSIC, { method: "HEAD" }).then(r => r.ok).catch(() => false);
   let musicOn = hasMusic && remember("kw-film-music") !== "off", stop = null;
   $("#page").innerHTML = `
@@ -970,6 +976,7 @@ async function filmView(id) {
     <div class="row" style="margin-top:12px"><button class="btn primary" id="filmgo">▶ Play</button>
       <button class="btn" id="filmsave" title="Plays it once and saves it as a video in Videos\\Knightwise">Save as a video</button>
       ${hasMusic ? `<button class="btn" id="filmmusic">${musicOn ? "Music on" : "Music off"}</button>` : ""}
+      ${hasMusic ? `<span class="small muted">♪ ${esc(song.name)}</span>` : ""}
       <span class="small muted" id="filmmsg"></span></div>`;
   const ready = () => window.Film ? Promise.resolve() : new Promise(r => window.addEventListener("film-ready", r, { once: true }));
   async function run(record) {
@@ -1800,6 +1807,8 @@ async function settingsView() {
             <li><b>The voices</b>: Kokoro, Apache-2.0, on this PC. <b>Hearing</b>: Whisper (MIT) on Groq, or Google Gemini, with your own key</li>
             <li><b>The 3D chess set</b>: "Chess Set" by Riley Queen, Poly Haven, CC0. <b>3D</b>: Three.js, MIT</li>
             <li><b>Sounds</b>: Kenney, CC0. <b>Welcome music</b>: Satie, Gymnopédie No. 1, played by Michael Laucke, public domain</li>
+            <li><b>The film's music</b>, from ccMixter, CC BY 3.0: "Time has come" by Reiswerk feat. SackJo22 (with SackJo22 and Apoxode),
+              and "A Trio Cultural Mix (instrumental)" by CSoul (samples by debbizo)</li>
             <li><b>Your games</b>: chess.com's public API. Knightwise is independent and not connected with chess.com</li>
           </ul></details></div></div>
     </div>`;

@@ -14,7 +14,8 @@ const KIND = { p: "pawn", n: "knight", b: "bishop", r: "rook", q: "queen", k: "k
 
 // music: the track's address (or null). Its loudness follows the film: in with the title, steady under the moves,
 // a little lower under a caption, up for the last winning move, out with the end card. It's in the saved video too.
-const LOUD = { intro: 0.55, moves: 0.55, caption: 0.42, last: 0.75, end: 0 };
+// 20 Oct, the owner: the songs are good "but that loud though": about 40% lower than first set
+const LOUD = { intro: 0.32, moves: 0.32, caption: 0.24, last: 0.45, end: 0 };
 
 function play(el, script, { record = false, music = null, onEnd = () => {} } = {}) {
   const W = 1280, H = 720;  // the film's own size: the same on every screen and in the saved video
