@@ -23,6 +23,24 @@ you saw. "Not believing my results" is the right attitude: this test is the real
 In chrome://extensions: remove Knightwise, then **Load unpacked** and choose `ChessCoach-0.6\extension`.
 Claude can't do this one: it's a folder dialog.
 
+**The test copy:** `try test new` (Claude runs it). It starts from nothing, like a new player's PC: its own data
+and its **own AI keys, none at first**, so you add your real keys yourself. It closes the Store copy first, and it's
+kept between sessions (`try test` carries on).
+
+**Watch for too much text** on every screen (20 Oct, the owner: "a lot of text pulls attention away"). For each page:
+what did you read, what did you skip, what would you cut? That list is the first fix after the test.
+
+---
+
+# Session 0: the very first start, about 20 minutes
+| Step | Do | Expect | Mark · Proof |
+|---|---|---|---|
+| 0.1 | Claude starts `try test new` | The welcome: the 3D film of the Opera Game, the right way round now, quiet piano, "Your personal chess coach" | ⚠️ the board was mirrored until today |
+| 0.2 | **Get started**, type `gushynanda` | Your games download, then Stockfish checks them: about 2 minutes, with progress | ✅ 14 Oct |
+| 0.3 | When it's done | Home, with your focus and Today's 5 minutes | ✅ |
+| 0.4 | Settings → **How to get a free key**, then add your Groq key in Key 1 and your Gemini key in Key 2 | Save key, Test key: green lines; "Talking is on" | ❓ the fresh copy has no keys: you add them |
+| 0.5 | Settings → **Arrows on chess.com** | The guided set-up for the extension, with pictures | ✅ 11 Oct; ❓ with the 0.6 extension |
+
 ---
 
 # Session A: the app, about 75 minutes
