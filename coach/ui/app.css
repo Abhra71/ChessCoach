@@ -471,3 +471,8 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 /* one tap at a natural ending: quiet, ignorable (19 Oct) */
 .helpful { gap: 8px; margin-top: 10px; }
 .helpful .small-btn { padding: 2px 8px; }
+/* your game as a 3D film (1.0): the picture keeps 16:9, a big play button until it starts */
+.film-wrap { position: relative; aspect-ratio: 16 / 9; background: #050505; border-radius: 10px; overflow: hidden; max-width: 1100px; }
+.film-play { position: absolute; inset: 0; margin: auto; width: 84px; height: 84px; border-radius: 50%; border: 0;
+  background: rgba(255,255,255,.92); color: #0a0a0a; font-size: 32px; cursor: pointer; padding-left: 6px; }
+.film-play:hover { background: #fff; }

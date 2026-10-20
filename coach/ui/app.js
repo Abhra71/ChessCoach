@@ -860,6 +860,52 @@ async function prepView(user) {
   else Coach.react("maya", "explain", "Playing someone soon? Type their chess.com name and I'll show you how they play.");
 }
 
+// ---------- your game as a short 3D film (1.0): coach/film.py writes it, coach/ui/film.js plays it ----------
+const FILM_MUSIC = "/ui/vendor/film-music.mp3";  // the track the player picked (python -m coach.get_assets)
+async function filmView(id) {
+  shell("progress", `<p class="muted">Setting up the film…</p>`);
+  let s;
+  try { s = await api(`/api/film/${encodeURIComponent(id || "week")}`); }
+  catch (e) { $("#page").innerHTML = `<div class="empty">No game to film yet: win a game this week and it's here.</div>`; return; }
+  const hasMusic = await fetch(FILM_MUSIC, { method: "HEAD" }).then(r => r.ok).catch(() => false);
+  let musicOn = hasMusic && remember("kw-film-music") !== "off", stop = null;
+  $("#page").innerHTML = `
+    <div class="page-head"><div><a href="#/games/${esc(s.id)}" class="small muted" style="text-decoration:none">← The game</a>
+      <h1 style="margin-top:6px">${esc(s.title)}</h1>
+      <p class="sub">Against ${esc(s.opponent)}, ${esc(s.date)}. Quiet moves go by quickly; it slows down for the moves that won it.</p></div></div>
+    <div class="film-wrap" id="film"><button class="film-play" id="filmplay" aria-label="Play the film">▶</button></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="filmgo">▶ Play</button>
+      <button class="btn" id="filmsave" title="Plays it once and saves it as a video in Videos\\Knightwise">Save as a video</button>
+      ${hasMusic ? `<button class="btn" id="filmmusic">${musicOn ? "Music on" : "Music off"}</button>` : ""}
+      <span class="small muted" id="filmmsg"></span></div>`;
+  const ready = () => window.Film ? Promise.resolve() : new Promise(r => window.addEventListener("film-ready", r, { once: true }));
+  async function run(record) {
+    await ready();
+    if (stop) stop();
+    Voice.stop(); Coach.hide();  // nothing in front of the film
+    $("#filmmsg").textContent = record ? "Recording: let it play to the end…" : "";
+    $("#filmsave").disabled = true; $("#filmgo").disabled = true;
+    window.kwFilm = stop = window.Film.play($("#film"), s, { record, music: musicOn ? FILM_MUSIC : null, onEnd: async r => {
+      $("#filmsave").disabled = false; $("#filmgo").disabled = false; $("#filmgo").textContent = "▶ Play again";
+      if (r.error) { $("#filmmsg").textContent = r.error; return; }
+      if (!r.video) return;
+      $("#filmmsg").textContent = "Saving…";
+      try {
+        const res = await fetch(`/api/film/save?game=${encodeURIComponent(s.id)}`, { method: "POST", headers: { "Content-Type": "video/webm" }, body: r.video });
+        const j = await res.json();
+        $("#filmmsg").textContent = res.ok ? `Saved: ${j.path}` : (j.message || "Couldn't save it.");
+      } catch (e) { $("#filmmsg").textContent = "Couldn't save it."; }
+    } });
+  }
+  $("#filmplay").onclick = () => run(false);
+  $("#filmgo").onclick = () => run(false);
+  $("#filmsave").onclick = () => run(true);
+  const mb = $("#filmmusic");
+  if (mb) mb.onclick = () => { musicOn = !musicOn; remember("kw-film-music", musicOn ? "on" : "off"); mb.textContent = musicOn ? "Music on" : "Music off"; };
+  window.addEventListener("hashchange", () => { if (stop) stop(); stop = null; }, { once: true });
+  Coach.react("viktor", "pleased", s.result === "win" ? "Your game, as a film. Watch the moves that won it: that's what we're building." : "Your game, as a film.");
+}
+
 // ---------- blindfold by voice: follow one of your games in your head (1.0) ----------
 // Maya reads out the first moves of one of your own games; the board stays empty. Then one question, answered by
 // clicking a square (or saying it, with an AI key). Right: the next one is a move longer. With the voice off, the
@@ -1170,9 +1216,10 @@ async function progressView() {
           ${s.improved ? `<div class="story-tile good"><div class="habit-icon">${svg((HABIT[s.improved.pattern] || ["hang"])[0])}</div>
             <div class="stat-label">Most improved</div><b>${esc((HABIT[s.improved.pattern] || [s.improved.pattern])[1] || s.improved.pattern)}</b>
             <div class="small muted">${s.improved.before} → ${s.improved.now} a game</div></div>` : ""}
-          ${s.best ? `<a class="story-tile click" href="#/games/${s.best.id}"><div class="stat-label">${esc(s.best.label)}</div>
+          ${s.best ? `<a class="story-tile click" href="#/${s.best.result === "win" ? "film" : "games"}/${s.best.id}"><div class="stat-label">${esc(s.best.label)}</div>
             <b>vs ${esc(s.best.opponent)} <span class="chip ${s.best.result}">${s.best.result === "win" ? "W" : s.best.result === "loss" ? "L" : "D"}</span></b>
-            <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div></a>` : ""}
+            <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div>
+            ${s.best.result === "win" ? `<span class="small" style="margin-top:6px;display:block"><b>▶ Watch it as a film</b></span>` : ""}</a>` : ""}
         </div>
         ${s.next ? `<div class="story-next"><span class="label">Next week's one thing</span><div>${esc(s.next.habit)}</div></div>` : ""}
       </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
@@ -1382,7 +1429,8 @@ async function gameView(id) {
     <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
       <h1 style="margin-top:6px">vs ${esc(g.opponent)} <span class="faint num">${g.opponent_rating}</span></h1>
       <p class="sub">${cap(g.result)} · ${esc(g.date)} · ${esc(g.time_class)} · you were ${g.color}${g.opening ? " · " + esc(g.opening) : ""}</p></div>
-      <a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener">Open on chess.com ↗</a></div>
+      <div class="row">${g.result === "win" && g.positions.length > 20 ? `<a class="btn" href="#/film/${g.id}">▶ Watch it as a film</a>` : ""}
+        <a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener">Open on chess.com ↗</a></div></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div>
         <div class="controls"><button class="btn" data-go="0">⏮</button><button class="btn" data-go="-1">◀</button>
@@ -1834,6 +1882,7 @@ async function screen(name, arg) {
   if (name === "endgames") return await endgamesView();
   if (name === "calc") return await calcView();
   if (name === "guess") return await guessView();
+  if (name === "film") return await filmView(arg && decodeURIComponent(arg));
   if (name === "blindfold") return await blindfoldView();
   if (name === "repertoire" && arg) { shell("level", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
   if (name === "repertoire") return await repertoireView();

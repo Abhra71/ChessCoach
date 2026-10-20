@@ -166,3 +166,12 @@ def test_a_key_moment_says_how_hard_the_better_move_was():
         assert m["hard"] and "at your level" in m["hard"]
     else:
         assert m["hard"] is None
+
+
+def test_app_files_only_from_inside_the_app():
+    """/ui/ serves the app's own files; ".." can't reach anything outside (20 Oct: linked folders are still served)."""
+    from coach.service import Handler
+    h = Handler.__new__(Handler)
+    assert h.static_file("app.js") is not None
+    assert h.static_file("../service.py") is None and h.static_file(r"..\service.py") is None
+    assert h.static_file("../../tests/conftest.py") is None and h.static_file("nope.js") is None

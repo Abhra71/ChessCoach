@@ -19,6 +19,7 @@ import urllib.error
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 import chess
 import chess.pgn
@@ -312,6 +313,11 @@ class Handler(BaseHTTPRequestHandler):
                 if item and item.get("drills"):
                     brief.add(item["drills"])
             return self.send(200, json.dumps(out), "application/json")
+        if path.startswith("/api/film/"):  # your game as a short 3D film: its script (1.0)
+            from coach import film
+            gid = path.rsplit("/", 1)[-1]
+            out = film.script(film.week_game() if gid == "week" else gid) if gid else None
+            return self.send(200 if out else 404, json.dumps(out or {"message": "No game to film yet."}), "application/json")
         if path == "/api/blindfold":  # blindfold by voice: the next game to follow in your head (1.0)
             from coach import blindfold
             out = blindfold.item()
@@ -462,6 +468,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, "forbidden", "text/plain")
         if self.path.startswith("/api/listen") and self.headers.get("Content-Type") == "application/octet-stream":
             return self.listen()
+        if self.path.startswith("/api/film/save") and self.headers.get("Content-Type") == "video/webm":
+            return self.save_film()
         if self.headers.get("Content-Type") != "application/json":
             return self.send(403, "forbidden", "text/plain")
         try:
@@ -652,6 +660,19 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, "{}", "application/json")
         self.send(404, "not found", "text/plain")
 
+    def save_film(self):
+        """A recorded film (webm, at most 80 MB) into Videos\\Knightwise, shown in Explorer (1.0)."""
+        from urllib.parse import parse_qs, urlsplit
+        from coach import film
+        size = int(self.headers.get("Content-Length", 0))
+        if not 0 < size <= 80_000_000:
+            return self.send(400, json.dumps({"message": "Too big or empty."}), "application/json")
+        gid = (parse_qs(urlsplit(self.path).query).get("game") or [""])[0]
+        target = film.save(self.rfile.read(size), gid)
+        if os.name == "nt":
+            subprocess.Popen(["explorer", "/select,", str(target)])
+        return self.send(200, json.dumps({"path": str(target)}), "application/json")
+
     def listen(self):
         """The player's voice: 16 kHz 16-bit mono samples from the app -> text. Through the player's own Groq or
         Gemini key first (fast and accurate, Jarvis's record); Whisper on this computer only if they installed it."""
@@ -721,15 +742,30 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(502, json.dumps({"message": f"The AI didn't answer: {str(e)[:200]}"}), "application/json")
         return self.send(200, json.dumps(answer), "application/json")
 
+    def static_file(self, name, root=None):
+        """The file a /ui/ address names, or None: inside the app's folder only. ".." is undone first, so nothing
+        outside can be reached by the address; a folder the developer linked in (coach/ui/vendor in a second copy
+        of the code, 20 Oct) is still served."""
+        root = Path(os.path.abspath(root or UI))
+        target = Path(os.path.abspath(root / name))
+        return target if root in target.parents and target.is_file() else None
+
+    def do_HEAD(self):
+        """Is this file there? (the film asks before playing its music)"""
+        path = self.path.split("?")[0]
+        ok = path.startswith("/ui/") and self.static_file(path[len("/ui/"):]) is not None
+        self.send_response(200 if ok else 404)
+        self.end_headers()
+
     def static(self, name, root=None):
         """Files of the desktop app (coach/ui), or the extension's drawings; nothing outside them."""
-        root = root or UI
-        target = (root / name).resolve()
-        if root.resolve() not in target.parents or not target.is_file():
+        target = self.static_file(name, root)
+        if target is None:
             return self.send(404, "not found", "text/plain")
         types = {".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg",
                  ".svg": "image/svg+xml", ".glb": "model/gltf-binary", ".gltf": "model/gltf+json",
-                 ".bin": "application/octet-stream", ".wav": "audio/wav", ".flac": "audio/flac", ".ogg": "audio/ogg", ".json": "application/json"}
+                 ".bin": "application/octet-stream", ".wav": "audio/wav", ".flac": "audio/flac", ".ogg": "audio/ogg", ".mp3": "audio/mpeg",
+                 ".json": "application/json"}
         ctype = types.get(target.suffix, "application/octet-stream")
         data = target.read_bytes()
         self.send_response(200)
