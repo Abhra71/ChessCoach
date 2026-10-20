@@ -156,3 +156,13 @@ def test_archive_tag_says_what_the_review_shows():
     assert game_tag(None) is None  # not checked (or not finished): no tag
     assert game_tag([dict(HANG, loss=2)]) == {"text": "clean game", "tone": "good"}  # a small slip isn't a mistake
     assert game_tag([HANG, dict(HANG, ply=21)]) == {"text": "2 pieces left hanging", "tone": "bad"}
+
+
+def test_a_key_moment_says_how_hard_the_better_move_was():
+    """1.0: "How hard was it?" from the human-move model, kind and in words; nothing without the model."""
+    from coach import maia
+    [m] = key_moments([HANG])
+    if maia.enabled():
+        assert m["hard"] and "at your level" in m["hard"]
+    else:
+        assert m["hard"] is None

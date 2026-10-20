@@ -94,7 +94,7 @@ def moment(r, played=None):
         say += f" In the game they missed it and played {after.san(real)}."
     return {
         "steps": walk(r, mine, best, best_reply, real, after, why, reason.get("better")),
-        "idea": reason["idea"], "lesson": lesson, "humans": _humans(r),
+        "idea": reason["idea"], "lesson": lesson, "humans": _humans(r), "hard": _hard(r, board, best),
         "ply": r["ply"], "move_number": move_number(r), "color": r["color"],
         "placement": r["fen"].split()[0],  # the board just before the player's move
         "after_placement": _after(r["fen"], mine),
@@ -119,6 +119,20 @@ def _humans(r):
     try:
         from coach import insights
         return maia.compare(r["fen"], r["move"], r["best"], insights.home().get("rating"))
+    except Exception:  # never lose the review over it
+        log.exception("maia")
+        return None
+
+
+def _hard(r, board, best):
+    """How hard was the better move to find? How many players at your level play it (the human-move model), in
+    words, or None. Kind on purpose: missing a move few players find is normal (1.0)."""
+    from coach import maia
+    if r["move"] == r["best"] or not maia.enabled():
+        return None
+    try:
+        from coach import insights
+        return maia.hard_words(maia.find_rate(board, best, insights.home().get("rating")))
     except Exception:  # never lose the review over it
         log.exception("maia")
         return None

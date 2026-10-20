@@ -4,7 +4,8 @@ The board starts just before the move that cost the most, exactly as it stood in
 better; from there Stockfish plays on for your opponent, weakened to about their level: it picks among its best few
 moves with a spread that grows as the rating falls, and now and then plays a loose move, the way club players do.
 That's an approximation of a level, not a copy of the person, and the app says so.
-With the human-move model switched on (coach/maia.py), the opponent plays like real players of their rating instead.
+With the human-move model (coach/maia.py, Maia-3 since 20 Oct 2026; on unless switched off in Settings), the
+opponent plays like real players of their rating instead, at any rating.
 """
 import math
 import random
@@ -30,22 +31,19 @@ def loose(rating):
 
 
 def pick(board, rating, rng=random):
-    """The opponent's move at about this rating: Maia's human moves when switched on (1,100 to 1,900; below 1,100
-    with an extra loose move now and then), otherwise Stockfish weakened as below."""
+    """The opponent's move at about this (chess.com) rating: the human-move model's moves when it's on, otherwise
+    Stockfish weakened as below."""
     legal = list(board.legal_moves)
     if len(legal) == 1:
         return legal[0]
     from coach import maia
     if _human(rating):
-        extra = max(0.0, loose(rating) - loose(1100))  # under 1,100 people blunder more than Maia's lowest level
-        if rng.random() < extra:
-            return rng.choice(legal)
         try:
-            move = maia.pick(board, rating, rng)
+            move = maia.pick(board, maia.lichess_rating(rating), rng)
             if move:
                 return move
-        except (chess.engine.EngineError, OSError):
-            pass  # Leela failed: fall back to the weakened Stockfish
+        except Exception:  # the model failed: fall back to the weakened Stockfish
+            pass
     if rng.random() < loose(rating):
         return rng.choice(legal)
     with live_engine.LOCK:
@@ -106,12 +104,10 @@ def end_say(result, real):
     return "They won again. Try once more from the same moment: it gets easier."
 
 
-HUMAN_FROM, HUMAN_TO = 900, 2000  # Maia's levels are 1,100 to 1,900: under 900 it would play far too well
-
-
 def _human(rating):
+    """Is the opponent played by the human-move model? At every rating since Maia-3 (20 Oct 2026)."""
     from coach import maia
-    return maia.enabled() and HUMAN_FROM <= (rating or 800) < HUMAN_TO
+    return maia.enabled()
 
 
 def setup(gid, ply):

@@ -2,7 +2,7 @@
 
 The opponent plays the moves this player really chose in their public games (chess.com, the last three months), as
 long as the game follows a position they've reached at least twice; after that, Maia plays on at their rating
-(coach/maia.py, when it's switched on), or else Stockfish weakened to about their level (coach/rematch.py).
+(coach/maia.py, Maia-3: on unless switched off in Settings), or else Stockfish weakened to about their level (coach/rematch.py).
 It's someone who opens like them and plays like players of their rating: not the person, and the page says so.
 Fair play: for before a game only.
 """

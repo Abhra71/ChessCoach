@@ -135,6 +135,7 @@
       ${k ? `<div class="kw-moment"><b>Key moment ${mi + 1} of ${moments.length}</b> · move ${k.move_number}
         <span class="kw-dots">${moments.map((m, i) => `<button class="${i === mi ? "on" : ""}" data-m="${i}" title="Move ${m.move_number}"></button>`).join("")}</span></div>
         <ol>${steps}</ol>
+        ${last && k.hard ? `<p class="kw-humans"><b>How hard was it?</b> ${escapeHtml(k.hard)}</p>` : ""}
         ${last && k.humans ? `<p class="kw-humans"><b>Real players:</b> ${escapeHtml(k.humans)}</p>` : ""}
         <div class="kw-row">${!last ? `<button class="kw-go" data-next>Next: ${escapeHtml(k.steps[shown + 1].title)} ▶</button>`
           : mi < moments.length - 1 ? `<button class="kw-go" data-nextm>Next moment ▶</button>` : ""}

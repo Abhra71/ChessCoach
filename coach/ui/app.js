@@ -1239,7 +1239,8 @@ async function gameView(id) {
       ${shown < k.steps.length - 1 ? `<div class="row"><button class="btn primary" id="nextstep">Next: ${esc(k.steps[shown + 1].title)} ▶</button>
           <button class="btn" id="allsteps">Show all steps</button></div>`
         : `${k.habit ? `<div class="small"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
-          ${k.humans ? `<div class="small" title="From Maia, the human-move model"><b>Real players:</b> ${esc(k.humans)}</div>` : ""}
+          ${k.hard ? `<div class="small" title="From the human-move model"><b>How hard was it?</b> ${esc(k.hard)}</div>` : ""}
+          ${k.humans ? `<div class="small" title="From the human-move model"><b>Real players:</b> ${esc(k.humans)}</div>` : ""}
           ${explained[k.ply] ? `<div class="coach-says">${esc(explained[k.ply])}</div>` : ""}
           <div class="row"><a class="btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a>
             ${k.lesson ? `<a class="btn" href="#/course/${k.lesson.id}" title="The course lesson on this idea">Learn it: ${esc(k.lesson.title)}</a>` : ""}
@@ -1427,8 +1428,8 @@ async function settingsView() {
       <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a finished set. No background music.</p></div>
         <div class="row"><button class="switch ${s.sounds ? "on" : ""}" id="sounds" aria-label="Sounds"></button>
           <span class="small muted">${s.sounds ? "On" : "Off"}</span></div></div>
-      ${s.human_ready ? `<div class="settings-row"><div><h3>Human-like opponents</h3><p class="note">Maia, a chess AI from the University of Toronto that plays like real players of a rating (1,100 to 1,900), mistakes included.
-        Your rematch and sparring opponents play like people, and reviews say what players at your level play. It runs on this PC, so it's off until you switch it on.</p></div>
+      ${s.human_ready ? `<div class="settings-row"><div><h3>Human-like opponents</h3><p class="note">The human-move model plays like real players of any rating, mistakes included: it learned from millions of online games.
+        Your rematch and sparring opponents play like people, and reviews say how many players at your level find a move. It's an estimate of a level, never a real person. It runs on this PC.</p></div>
         <div class="row"><button class="switch ${s.human_moves ? "on" : ""}" id="humanmoves" aria-label="Human-like opponents"></button>
           <span class="small muted">${s.human_moves ? "On" : "Off"}</span></div></div>` : ""}
       <div class="settings-row"><div><h3>AI: talk with your coaches</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.
