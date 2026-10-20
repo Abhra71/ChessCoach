@@ -81,8 +81,8 @@ Claude can't do this one: it's a folder dialog.
 | Step | Do | Expect | Mark · Proof |
 |---|---|---|---|
 | A7.1 | **Human-like opponents** | On by default now; it says it plays like real players of any rating, "never a real person" | ⚠️ changed |
-| A7.2 | **What the coach heard** list | The text of what you said by voice (never audio); Delete clears it | ❓ not yet checked in a browser |
-| A7.3 | Sidebar → **Send feedback** → **Send by email** | Your mail app opens a ready email to nanotech.mark.robots@gmail.com; or **Copy text** | ❓ not yet checked |
+| A7.2 | **What the coach heard** list | The text of what you said by voice (never audio); **Delete all of it** clears it | ✅ checked in the app today |
+| A7.3 | Sidebar → **Send feedback** → **Send by email** | Your mail app opens a ready email to nanotech.mark.robots@gmail.com; or **Copy text** | ✅ the email is tested (address, subject, text); ❓ your mail app opening it |
 
 ## A8. Your game as a film, 5 minutes
 | Step | Do | Expect | Mark · Proof |

@@ -224,6 +224,13 @@ UI = TEMPLATES / "ui"
 SHOW = None  # set by the desktop app: show the window at a screen
 
 
+def feedback_mail(text):
+    """The ready email for feedback: to FEEDBACK_TO, with the subject and the player's words (kept short enough
+    for every mail app's address limit)."""
+    from urllib.parse import quote
+    return f"mailto:{FEEDBACK_TO}?subject={quote(f'Knightwise feedback ({VERSION})')}&body={quote(text[:1800])}"
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.0"
 
@@ -577,8 +584,7 @@ class Handler(BaseHTTPRequestHandler):
                     f"How much Knightwise helped today (1 to 5): {entry['helped'] or '-'}\n\n"
                     f"Knightwise {VERSION}, page: {entry['page'] or '-'}")
             if body.get("email"):  # the player's own email app, ready to send (19 Oct: by email, not a GitHub form)
-                from urllib.parse import quote
-                webbrowser.open(f"mailto:{FEEDBACK_TO}?subject={quote(f'Knightwise feedback ({VERSION})')}&body={quote(text[:1800])}")
+                webbrowser.open(feedback_mail(text))
             return self.send(200, json.dumps({"saved": True, "text": text}), "application/json")
         if path == "/api/talk":  # a spoken turn with a coach: the reply, and one checked thing to do (0.6)
             from coach import talk
