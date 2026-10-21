@@ -27,6 +27,7 @@ const Coach = (() => {
           ${TALK && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(who.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
         ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
+        ${s.ai ? `<p class="kw-ai-note">AI can make mistakes. <button class="kw-report">Report it</button></p>` : ""}
         ${(s.actions || []).length ? `<div class="kw-actions">${s.actions.map((a, i) =>
           `<button data-i="${i}">${esc(a.label)}</button>`).join("")}</div>` : ""}
       </div>` : `${face}<button class="kw-tab">${esc(who.name)}</button>`;
@@ -37,6 +38,8 @@ const Coach = (() => {
     if (x) x.onclick = () => { if (Conv.on) Conv.stop(); fold(); };
     const t = box.querySelector(".kw-speak");
     if (t) t.onclick = () => Conv.start(s.coach);
+    const rep = box.querySelector(".kw-report");  // an AI answer that was wrong: straight to the feedback email (22 Oct)
+    if (rep) rep.onclick = () => window.feedbackBox && window.feedbackBox();
     box.querySelectorAll(".kw-actions button").forEach(b => b.onclick = () => act(s.actions[Number(b.dataset.i)]));
   }
 
@@ -121,7 +124,7 @@ const Conv = (() => {
     if (r.action && r.action.next && window.kwNextStep) speech = window.kwNextStep() || speech;  // the review's next step
     history.push(["player", text], ["coach", speech]);
     on = false;  // her answer; Talk again to say more
-    Coach.show({ coach, pose: r.mood || "explain", mood: r.mood || "explain", lines: [speech], actions: [] }, { speak: false });
+    Coach.show({ coach, pose: r.mood || "explain", mood: r.mood || "explain", lines: [speech], actions: [], ai: !!r.ai }, { speak: false });
     Voice.speak(speech, true, (COACHES[coach] || {}).voice);
   }
   function stop() {  // closing the box or leaving: stop listening, nothing is sent

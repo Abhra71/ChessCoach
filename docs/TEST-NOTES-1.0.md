@@ -48,3 +48,14 @@ Each one: what was seen, then the fix.
     sent (12) to stretch it.
 
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
+
+## Done during the test (22 Oct)
+- 13, talking: fixed and measured (above).
+- 14, the owner: "we need to say that AI can make mistakes, report issues to my email". Every AI answer (the coach's
+  bubble after Talk, the Ask boxes on Home and in a review) now ends with a small "AI can make mistakes. Report it";
+  Report it opens the feedback box, which emails FEEDBACK_TO. The chess.com bubble (extension/buddy.js) still needs it.
+
+## Where we stopped (22 Oct, 01:05)
+Session 0 done; Session A: A1 done (A1.3 checked from the record; A1.4 is the button being removed), next is **A2.1
+Practice**. Then A3–A8, Session B (on chess.com, with the 0.6 extension now loaded), Session C (voice). Restart with
+`try test` (not `test new`): the data and keys are kept.

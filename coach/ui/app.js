@@ -192,7 +192,9 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
   const go = async () => {
     const text = q.value.trim(); if (!text) return;
     out.innerHTML = `<span class="muted">Thinking…</span>`;
-    try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>`; Voice.speak(r.text, false, (COACHES[coach] || {}).voice); }
+    try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>` +
+      (r.ai !== false ? `<p class="kw-ai-note">AI can make mistakes. <button class="kw-report">Report it</button></p>` : "");
+      const rep = $(".kw-report", out); if (rep) rep.onclick = feedbackBox; Voice.speak(r.text, false, (COACHES[coach] || {}).voice); }
     catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
   $("[data-ask]", el).onclick = go;
@@ -212,6 +214,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
 }
 
 // ---------- feedback from beta testers: three short questions, saved with the app version ----------
+window.feedbackBox = () => feedbackBox();  // the coach's "Report it" (coaches.js)
 function feedbackBox() {
   if ($(".feedback-pop")) return;
   const page = location.hash.replace(/^#\/?/, "") || "home";
