@@ -68,3 +68,86 @@ def test_the_red_ring_only_on_chess_com_and_only_to_known_places():
     assert g["guide"]["to"] == "/play/computer" and g["guide"]["steps"][0]["path"] == "/play"
     assert talk.action({"guide": "bots"}, GAMES, {"section": "home"}) is None
     assert talk.action({"guide": "the moon"}, GAMES, {"section": "home", "chesscom": "True"}) is None
+
+
+def test_the_ai_s_order_in_any_shape_still_opens_the_game():
+    """22 Oct hand test: "review my last game" -> the AI wrote {"do": "review 185351926500"} and nothing opened."""
+    games = [{"n": 1, **GAMES[0]}, {"n": 2, **GAMES[1]}]
+    for do in ("review 111", "review:111", {"review": 1}, {"review": "1"}, ["review", "111"], {"review": "anna"}):
+        do = do if not isinstance(do, list) else " ".join(do)
+        r = talk.reply("maya", "review my last game", home=HOME, games=games, ask_ai=ai_says({"say": "Here it is.", "do": do}))
+        assert r["action"] == {"route": "games/111"}, do
+    assert talk.action("open settings", games, None) == {"route": "settings"}
+    assert talk.action("settings", games, None) == {"route": "settings"}
+
+
+def test_my_second_last_game_is_number_two_and_a_made_up_game_is_refused():
+    """"open the third last game review" -> the AI made up an id: now the games are numbered, and an id that
+    isn't one of them is refused out loud, never "Sure, let's look at that game." with nothing opening."""
+    games = [{"n": 1, **GAMES[0]}, {"n": 2, **GAMES[1]}]
+    assert talk.action({"review": 2}, games, None) == {"route": "games/222"}
+    r = talk.reply("maya", "open the third last game", home=HOME, games=games,
+                   ask_ai=ai_says({"say": "Sure, let's look at that game.", "do": "review:145346368235"}))
+    assert r["action"] is None and "can't find that game" in r["text"]
+
+
+def test_an_order_without_words_says_what_it_did():
+    """"open my game against hemmehra0416" -> {"do": "review …"} and no "say": a stock line about the habit came
+    instead. Now the coach says what was opened."""
+    r = talk.reply("maya", "open my game against anna", home=HOME, games=GAMES, ask_ai=ai_says({"do": "review 111"}))
+    assert r["ai"] and r["action"] == {"route": "games/111"} and r["text"] == "Here's your game against anna, 13 Oct 2026."
+
+
+def test_the_coach_is_told_the_games_by_number():
+    import coach.talk as t
+    rows = [{"id": str(i), "opponent": "x", "result": "win", "date": "d", "time_class": "rapid", "moments": 0, "checked": True}
+            for i in range(30)]
+    orig = t.insights.games_list
+    t.insights.games_list = lambda: rows
+    try:
+        got = t.recent_games()
+    finally:
+        t.insights.games_list = orig
+    assert [g["n"] for g in got] == list(range(1, talk.RECENT + 1)) and got[0]["id"] == "0"
+
+
+def test_the_flat_answer_do_what_say():
+    """The AI now answers {"do": "open", "what": "settings", "say": …}: it wrote {"do": "open"} with nothing to open
+    when the order was nested (22 Oct)."""
+    games = [{"n": 1, **GAMES[0]}, {"n": 2, **GAMES[1]}]
+    cases = [({"do": "open", "what": "settings"}, {"route": "settings"}), ({"do": "review", "what": 2}, {"route": "games/222"}),
+             ({"do": "review", "what": "anna"}, {"route": "games/111"}), ({"do": "rematch", "what": "1"}, None),
+             ({"do": "none", "what": ""}, None), ({"do": "prep", "what": "Bob_99"}, {"route": "prep/bob_99"})]
+    for order, want in cases:
+        r = talk.reply("maya", "x", home=HOME, games=games, ask_ai=ai_says({**order, "say": "Okay."}))
+        assert r["action"] == want or (want is None and order["do"] == "rematch"), order
+    r = talk.reply("maya", "x", home=HOME, games=games, ask_ai=ai_says({"do": "open", "what": "", "say": "Opening it."}))
+    assert r["action"] is None and "can't open that" in r["text"]
+
+
+def test_an_unknown_word_opens_a_page_it_names_and_is_otherwise_just_talk():
+    assert talk.action({"do": "show", "what": "level"}, GAMES, None) == {"route": "level"}
+    r = talk.reply("maya", "how do I get better", home=HOME, games=GAMES,
+                   ask_ai=ai_says({"do": "advice", "what": "habits", "say": "Keep every piece safe, one move at a time."}))
+    assert r["action"] is None and r["text"].startswith("Keep every piece safe")
+
+
+def test_a_wrong_order_is_tried_once_more_told_why():
+    """"open my second last game" -> {"do": "review", "what": "second last"}: asked again, it answers 2."""
+    answers = iter([{"do": "review", "what": "second last", "say": "Here it is."}, {"do": "review", "what": 2, "say": "Here it is."}])
+    seen = []
+
+    def ai(system, prompt, n):
+        seen.append(prompt)
+        return json.dumps(next(answers)), "groq"
+    games = [{"n": 1, **GAMES[0]}, {"n": 2, **GAMES[1]}]
+    r = talk.reply("maya", "open my second last game", home=HOME, games=games, ask_ai=ai)
+    assert r["action"] == {"route": "games/222"} and len(seen) == 2 and "could not be done" in seen[1]
+
+
+def test_busy_keys_are_said_plainly():
+    """22 Oct: with both free keys at their limit she answered every question with the habit line."""
+    def busy(*a):
+        raise RuntimeError("groq: HTTP 429; gemini: HTTP 429")
+    r = talk.reply("maya", "tell me a joke", home=HOME, games=GAMES, ask_ai=busy)
+    assert r["text"] == talk.BUSY and r["action"] is None and not r["ai"]

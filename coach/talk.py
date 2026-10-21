@@ -13,23 +13,30 @@ from coach import coaches, insights
 PAGES = {"home": "home", "games": "games", "practice": "practice", "daily": "daily", "plan": "plan",
          "progress": "progress", "openings": "openings", "settings": "settings", "level": "level",
          "endgames": "endgames", "prep": "prep", "course": "course"}
-RECENT = 20  # the games the coach can find by name ("my game against X")
+RECENT = 12  # the games the coach can find by name ("my game against X"); fewer words in, more turns a minute on a free key
 
 RULES = (
     " This is a spoken conversation: reply in at most 3 short sentences, easy to say out loud, with no lists and no "
     "symbols. Only talk about chess and this player's games; never give advice about a game being played right now. "
-    "The facts are all you know. Reply ONLY with JSON: {\"say\": \"what you say\", \"do\": null} or with \"do\" one of: "
-    "{\"open\": \"<page>\"} (pages: home, games, practice, daily, plan, progress, openings, settings, level: their level and what to work on next, endgames: the endgame trainer, prep: prep against an opponent, course: their course and the next lesson), "
-    "{\"review\": \"<game id>\"} to open the review of one of the games in the facts, "
-    "{\"rematch\": \"<game id>\"} to replay a lost or drawn game from where it went wrong, "
-    "{\"next\": true} to show the next step of the review on screen (only when where_the_player_is says review), "
-    "{\"prep\": \"<chess.com username>\"} to prepare against any player before a game (their openings and how their "
-    "games end), using a name from the facts when it sounds like one of them, "
-    "{\"open\": \"level\"} for their level and what to work on, "
-    "{\"guide\": \"<place>\"} to show them the way on chess.com with a red ring, step by step (places: puzzles, bots, "
-    "archive: their game history on chess.com, lessons). Ask for something only when the player wants it. "
-    "If they name an opponent who isn't in the facts, say you can't find that game. Never say you are opening, "
-    "replaying or showing something unless \"do\" does it; if you can't do it from here, say what to open first."
+    "The facts are all you know. Reply ONLY with JSON, three fields: "
+    "{\"do\": \"<one of the words below, or none>\", \"what\": \"<what it applies to>\", \"say\": \"what you say\"}. "
+    "do open, what a page: home, games, practice, daily (today's five minutes), plan, progress, openings, settings, level (their level and "
+    "what to work on next), endgames (the endgame trainer), prep (prep against an opponent), course (their course and "
+    "the next lesson). "
+    "do review, what a game's n: opens the review of one of the recent_games (n 1 is their last game, n 2 the one "
+    "before, so \"my third last game\" is 3; \"my game against X\" is the n of the newest game against X). "
+    "do rematch, what a game's n: replays a lost or drawn game from where it went wrong. "
+    "do next: shows the next step of the review on screen (only when where_the_player_is says review). "
+    "do prep, what a chess.com username: prepares against any player before a game (their openings and how their "
+    "games end), using a name from the facts when it sounds like one of them. "
+    "do guide, what a place on chess.com (puzzles, bots, archive: their game history on chess.com, lessons): shows "
+    "them the way there with a red ring, step by step. "
+    "do none when the player only talks or asks. Ask for something only when the player wants it. If they ask for "
+    "something you can't do yourself, like changing a setting, open the page where they can. If they name an opponent "
+    "who isn't in the facts, say you can't find that game. Never say you are opening, replaying or showing something "
+    "unless do does it. Nobody can delete games, change settings or change anything by talking to you: say so, and "
+    "open the page only if it really has what they asked for. Mention their habit only when it answers what they "
+    "asked, never as a closing line. \"say\" is always at least one sentence."
 )
 REFUSED = {  # an action the coach asked for that isn't possible here: say so, never "let's replay it" and nothing (19 Oct)
     "rematch": "I can't start a rematch from here. Open a game you lost or drew, then say rematch.",
@@ -37,12 +44,15 @@ REFUSED = {  # an action the coach asked for that isn't possible here: say so, n
     "review": "I can't find that game in your recent games.",
     "guide": "I show the way on chess.com itself. Open chess.com, ask me there, and I'll ring it for you.",
 }
+BUSY = "Give me a minute, I'm thinking too slowly right now. Ask me again in a moment."
+OPEN_FAILED = "I can't open that from here. Tell me which page, like your games, Practice or Settings."
 
 
 def recent_games(n=RECENT):
     """The player's last games as the coach may name them: id, opponent, result, date, key moments."""
-    return [{k: g[k] for k in ("id", "opponent", "result", "date", "time_class", "moments")}
-            for g in insights.games_list()[:n] if g.get("checked")]
+    games = [{k: g[k] for k in ("id", "opponent", "result", "date", "time_class", "moments")}
+             for g in insights.games_list() if g.get("checked")][:n]
+    return [{"n": i + 1, **g} for i, g in enumerate(games)]  # 1 = the last game: "my third last game" is 3, no counting
 
 
 def level_now():
@@ -75,20 +85,86 @@ def parse(text):
         out = json.loads(text[start:end + 1])
     except ValueError:
         return None
-    return out if isinstance(out, dict) and isinstance(out.get("say"), str) else None
+    if not isinstance(out, dict) or not (isinstance(out.get("say"), str) or out.get("do")):
+        return None
+    out["say"] = out.get("say") if isinstance(out.get("say"), str) else ""
+    return out
+
+
+VERBS = ("open", "review", "rematch", "next", "prep", "guide")
+
+
+def plain(do):
+    """The AI's "do" in whatever shape it wrote it: {"review": 3}, "review 1853…", "review:3", "open settings",
+    ["open", "settings"] or just "settings" (22 Oct test: a small model wrote "review 185351926500" and nothing
+    opened). Returns a dict; everything is still checked by action()."""
+    if isinstance(do, dict) and "do" in do:  # the whole answer: {"do": "open", "what": "settings"} (22 Oct)
+        verb, what = str(do.get("do") or "").strip().lower(), do.get("what")
+        if not verb or verb in ("none", "null", "nothing"):
+            return None
+        if isinstance(what, (dict, list)) or what in (None, ""):
+            return plain(str(do["do"]))  # "review 111", "open settings", "next", or a bare "settings"
+        if verb not in VERBS:  # {"do": "show", "what": "level"}: a page is a page; any other word is just talk
+            return {"open": str(what).lower()} if str(what).lower() in PAGES else None
+        return {verb: what}
+    if isinstance(do, list) and do:
+        do = do[0] if isinstance(do[0], (dict, str)) else None
+    if isinstance(do, dict):
+        return do
+    if not isinstance(do, str) or not do.strip():
+        return None
+    text = do.strip().strip("{}").replace('"', "").replace("'", "")
+    for sep in (":", "=", " ", "/"):
+        if sep in text:
+            verb, arg = (x.strip() for x in text.split(sep, 1))
+            return {verb.lower(): arg}
+    return {"open": text.lower()} if text.lower() in PAGES else {text.lower(): True}
+
+
+def find_game(ref, games):
+    """The game the AI meant: its number in the list (1 = the last), its id, or the opponent's name."""
+    if isinstance(ref, bool) or ref is None:
+        return None
+    ref = str(ref).strip().lstrip("#")
+    for g in games:
+        if g["id"] == ref:
+            return g
+    if ref.isdigit() and 1 <= int(ref) <= len(games):
+        return next((g for g in games if g.get("n") == int(ref)), games[int(ref) - 1])
+    return next((g for g in games if g["opponent"].lower() == ref.lower()), None)
+
+
+NAMES = {"home": "Home", "games": "your games", "practice": "Practice", "daily": "today's five minutes",
+         "plan": "your plan", "progress": "your progress", "openings": "your openings", "settings": "Settings",
+         "level": "your level", "endgames": "the endgame trainer", "prep": "prep", "course": "your course"}
+
+
+def confirm(done, games):
+    """What the coach says when the AI did something but forgot to say so (never a random line instead)."""
+    route = done.get("route") or ""
+    g = next((g for g in games if route.count("/") and g["id"] == route.split("/")[1]), None)
+    if route.startswith("games/") and g:
+        return f"Here's your game against {g['opponent']}, {g['date']}."
+    if route.startswith("rematch/") and g:
+        return f"Let's replay your game against {g['opponent']} from where it went wrong."
+    if route.startswith("prep/"):
+        return f"Here's how {route[5:]} plays."
+    if route in NAMES:
+        return f"Here's {NAMES[route]}."
+    return "Here's the next step." if done.get("next") else "Follow the red ring."
 
 
 def action(do, games, where):
     """The checked action: {"route": ...} for the app, {"next": True}, or None when it isn't allowed."""
+    do = plain(do)
     if not isinstance(do, dict):
         return None
-    ids = {g["id"]: g for g in games}
-    if do.get("open") in PAGES:
-        return {"route": PAGES[do["open"]]}
-    if str(do.get("review", "")) in ids:
-        return {"route": f"games/{do['review']}"}
-    if str(do.get("rematch", "")) in ids:
-        g = ids[str(do["rematch"])]
+    if str(do.get("open", "")).lower() in PAGES:
+        return {"route": PAGES[str(do["open"]).lower()]}
+    if "review" in do and find_game(do["review"], games):
+        return {"route": f"games/{find_game(do['review'], games)['id']}"}
+    if "rematch" in do and find_game(do["rematch"], games):
+        g = find_game(do["rematch"], games)
         detail = insights.extras_for(g["id"]).get("rematch") if g["result"] != "win" else None
         return {"route": f"rematch/{g['id']}/{detail['ply']}"} if detail else None
     if do.get("next") is True and (where or {}).get("section") == "review":
@@ -118,12 +194,32 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     prompt = f"Facts:\n{facts_text}\n\n{turns}Player: {str(said)[:500]}\n{name} (JSON):"
     try:
         text, _provider = (ask_ai or ai.complete)(system, prompt, 400)
-    except Exception:  # no key, both busy or down: the conversation still goes on
+    except ai.NoKey:  # no key: the written sentences, as before
         return fallback
+    except Exception:  # keys busy (the free limits) or down: say so plainly, never a stock line that ignores them (22 Oct)
+        return {"text": BUSY, "mood": "calm", "ai": False, "action": None}
     out = parse(text or "")
-    if not out or not out["say"].strip() or not coaches.grounded(out["say"], facts_text):
+    if not out or not coaches.grounded(out["say"], facts_text):
         return fallback
-    done = action(out.get("do"), games, where)
+    order = out if "what" in out or isinstance(out.get("do"), str) else out.get("do")  # flat (do, what) or the old shapes
+    done = action(order, games, where)
+    wanted = plain(order) if isinstance(plain(order), dict) else {}
+    if not done and next(iter(wanted), None) in VERBS:  # it meant to do something and wrote it wrong: once more, told why
+        again = None
+        try:
+            note = (f"\nYour answer {json.dumps(out)[:300]} could not be done: \"what\" must be a page from the list, a "
+                    "game's n from recent_games, a chess.com username or a place. Answer again, JSON only.\n")
+            again = parse((ask_ai or ai.complete)(system, prompt + note, 400)[0] or "")
+        except Exception:
+            pass
+        if again and coaches.grounded(again["say"], facts_text):
+            order2 = again if "what" in again or isinstance(again.get("do"), str) else again.get("do")
+            if action(order2, games, where) or not wanted:
+                out, order, done = again, order2, action(order2, games, where)
+    if not out["say"].strip():  # it did something and forgot to say what: say it, from what was done
+        if not done:
+            return fallback
+        out["say"] = confirm(done, games)
     if done and done.get("route"):  # who the player meant: the hearing expects that name next time (flagship 6)
         from coach import heard
         route = done["route"]
@@ -133,6 +229,8 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
             g = next((g for g in games if g["id"] == route.split("/")[1]), None)
             if g:
                 heard.learn(g["opponent"])
-    asked = next((k for k in REFUSED if isinstance(out.get("do"), dict) and k in out["do"]), None)
-    say = REFUSED[asked] if asked and done is None else out["say"].strip()[:600]
+    asked = plain(order) if isinstance(plain(order), dict) else {}
+    verb = next((k for k in REFUSED if k in asked), next(iter(asked), None))
+    # it asked for something that can't be done: say so, never "Opening it." with nothing opening (19 and 22 Oct)
+    say = (REFUSED.get(verb, OPEN_FAILED) if verb and done is None else out["say"].strip())[:600]
     return {"text": say, "mood": "pleased" if "!" in say else "calm", "ai": True, "action": done}
