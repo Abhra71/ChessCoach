@@ -7,7 +7,7 @@ import time
 
 os.environ["KNIGHTWISE_HOME"] = os.path.join(os.environ["TEMP"], "knightwise-test")
 os.environ["KNIGHTWISE_VAULT"] = "Knightwise-test"
-sys.path.insert(0, r"C:\Syntax_Assembler\ChessCoach-0.6")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from coach import ai, talk  # noqa: E402
 
 G = {g["n"]: g["id"] for g in talk.recent_games()}
