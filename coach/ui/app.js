@@ -214,7 +214,6 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
 }
 
 // ---------- feedback from beta testers: three short questions, saved with the app version ----------
-window.feedbackBox = () => feedbackBox();  // the coach's "Report it" (coaches.js)
 function feedbackBox() {
   if ($(".feedback-pop")) return;
   const page = location.hash.replace(/^#\/?/, "") || "home";
