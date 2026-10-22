@@ -5,6 +5,10 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_all
 
 ROOT = Path(SPECPATH).parent
+# the desktop app's screens, without the trailer's files (225 MB that players never see; 22 Oct test)
+UI = [(str(f), str(Path("coach/ui") / f.parent.relative_to(ROOT / "coach" / "ui")))
+      for f in (ROOT / "coach" / "ui").rglob("*") if f.is_file()
+      and "trailer" not in f.relative_to(ROOT / "coach" / "ui").parts[:3] and f.name != "trailer.html"]
 VOICE = [collect_all(m) for m in ("kokoro_onnx", "espeakng_loader", "phonemizer", "language_tags", "segments",
                                   "faster_whisper", "ctranslate2", "tokenizers")]
 
@@ -16,7 +20,7 @@ a = Analysis(
         (str(ROOT / "extension"), "extension"),               # icon for the tray
         (str(ROOT / "coach" / "drills_template.html"), "coach"),
     ] + ([(str(ROOT / "coach" / "feedback.key"), "coach")] if (ROOT / "coach" / "feedback.key").exists() else []) + [  # one-click feedback
-        (str(ROOT / "coach" / "ui"), "coach/ui"),             # the desktop app's screens
+    ] + UI + ([(str(ROOT / "coach" / "puzzles-pack.json"), "coach")] if (ROOT / "coach" / "puzzles-pack.json").exists() else []) + [  # the puzzles, packed
         (str(ROOT / "coach" / "library"), "coach/library"),   # strong players' games by pawn structure (CC0)
         (str(ROOT / "coach" / "openings"), "coach/openings"),  # the opening catalogue (Lichess, CC0)
         (str(ROOT / "voice" / "kokoro-v1.0.int8.onnx"), "voice"),  # the coach's voice (Kokoro); listening downloads later

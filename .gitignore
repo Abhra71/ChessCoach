@@ -9,5 +9,6 @@ build/
 voice/
 coach/ui/vendor/
 coach/feedback.key
+coach/puzzles-pack.json
 screenshots-raw/
 webview/

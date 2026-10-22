@@ -1064,7 +1064,7 @@ def update_once():
     from coach import fixes
     fixes.refresh()  # once a day: the fix file from GitHub (never fails; offline keeps the last copy)
     fetch.fetch(player())
-    if not puzzles.current():  # first run, or the library grew
+    if not puzzles.current() and not puzzles.from_pack():  # first run (the packed set), or the library grew
         STATE["phase"] = "downloading puzzles"
         puzzles.main()
     STATE["phase"] = "checking your games"

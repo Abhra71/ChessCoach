@@ -8,6 +8,7 @@ import collections
 import csv
 import io
 import json
+from pathlib import Path
 import sys
 import urllib.request
 
@@ -75,6 +76,22 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+PACK = Path(__file__).resolve().parent / "puzzles-pack.json"  # the kept set, packed in the app (22 Oct: the first
+# start's 300 MB download took 10 minutes); made with `python -m coach.puzzles` and copied here before a build
+
+
+def from_pack():
+    """A new install: the packed set, when it is the current version. True when it was used."""
+    try:
+        if json.loads(PACK.read_text()).get("_version") != VERSION:
+            return False
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_bytes(PACK.read_bytes())
+        return True
+    except (OSError, ValueError):
+        return False
 
 
 def current():
