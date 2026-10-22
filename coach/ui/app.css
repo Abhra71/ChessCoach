@@ -766,3 +766,15 @@ a.tile:hover { filter: brightness(1.05); }
 .lbar i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: #e9a23b; } .lskill.met .lbar i { background: var(--accent); }
 .lbar em { position: absolute; top: -4px; width: 2px; height: 16px; background: var(--text); }
 @media (max-width: 900px) { .ladder { grid-template-columns: repeat(5, minmax(0, 1fr)); } .lstepbox .small { display: none; } }
+
+/* the sidebar's foot (22 Oct): your account, then four quiet icons; a dot only when something needs you */
+.side-me { display: flex; align-items: center; gap: 9px; margin-top: auto; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--text); font-weight: 600; }
+.side-me:hover { background: rgba(255,255,255,.06); }
+.me-pic { width: 26px; height: 26px; border-radius: 6px; background: var(--raised); display: grid; place-items: center; color: var(--muted); }
+.me-pic svg { width: 16px; height: 16px; }
+.me-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+.side-icons { margin-top: 4px; }
+.side-icons button.on { color: var(--text); background: rgba(255,255,255,.06); }
+.side-icons .dot.ok, .side-icons .dot:not(.busy):not(.bad) { display: none; }
+.side-icons .dot.busy { background: #e9a23b; } .side-icons .dot.bad { background: #e5734f; }
+@media (max-width: 900px) { .me-name { display: none; } .side-icons { flex-direction: column; align-items: center; } }

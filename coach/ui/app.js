@@ -295,9 +295,12 @@ function shell(active, body) {
     <div class="shell">
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
-        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("train", "Train", "barbell")}${item("plan", "Your plan", "plan")}${item("course", "Your course", "book")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
+        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("train", "Train", "barbell")}${item("plan", "Your plan", "plan")}${item("course", "Your course", "book")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}</nav>
         <div class="side-foot" id="status" hidden></div>
+        <a class="side-me" href="#/settings" title="Your chess.com account and settings"><span class="me-pic">${svg("pawn")}</span>
+          <span class="me-name" id="mename">${esc((STATUS && STATUS.player) || "")}</span></a>
         <div class="side-icons">
+          <button id="sideset" class="${active === "settings" ? "on" : ""}" title="Settings">${svg("settings")}</button>
           <button id="aiuse" title="AI use today">${svg("sparkles")}<i class="dot"></i></button>
           <button id="feedback" title="Send feedback">${svg("message")}</button>
           <button id="synced" title="Checking…">${svg("sync")}<i class="dot"></i></button>
@@ -307,6 +310,7 @@ function shell(active, body) {
     </div>`;
   paintStatus(); paintAiUse();
   $("#feedback").onclick = feedbackBox;  // the Voice button left the sidebar (22 Oct test): it's in Settings
+  $("#sideset").onclick = () => go("settings");
 }
 
 // the AI usage panel, like Claude's: a bar per key, what's left today, and who is resting
@@ -348,7 +352,8 @@ function paintStatus() {
   el.hidden = !busy && s.phase !== "error" && !!s.phase;
   el.innerHTML = `<i class="dot ${!s.phase ? "" : busy ? "busy" : "ok"}"></i><span>${esc(text)}</span>`;
   const icon = $("#synced");
-  if (icon) { icon.title = text; icon.querySelector(".dot").className = `dot ${!s.phase || s.phase === "error" ? "" : busy ? "busy" : "ok"}`; }
+  if (icon) { icon.title = text; icon.querySelector(".dot").className = `dot ${!s.phase || s.phase === "error" ? "bad" : busy ? "busy" : "ok"}`; }
+  const me = $("#mename"); if (me && s.player && !me.textContent) me.textContent = s.player;
 }
 
 async function pollStatus() {
