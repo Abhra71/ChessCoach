@@ -749,3 +749,20 @@ a.tile:hover { filter: brightness(1.05); }
 .tp-ear svg { width: 22px; height: 22px; }
 .nav a[href="#/train"] svg { color: #e9a23b; }
 @media (max-width: 900px) { .tcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Your level, made clear (22 Oct): a ladder of five, then each skill as ten games */
+.ladder { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; position: relative; }
+.lstepbox { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 12px 6px; border-radius: 12px; background: var(--surface); opacity: .55; }
+.lstepbox.now { opacity: 1; box-shadow: inset 0 0 0 1.5px var(--accent); } .lstepbox.done { opacity: .85; }
+.lcircle { width: 30px; height: 30px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.lstepbox.now .lcircle { background: var(--accent); color: var(--on-accent); } .lstepbox.done .lcircle { background: var(--accent); color: var(--on-accent); }
+.lcircle svg { width: 16px; height: 16px; }
+.lstepbox b { font-size: 13px; }
+.lgoal { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; font-weight: 600; color: var(--muted); }
+.lgoal svg { width: 16px; height: 16px; color: var(--accent); }
+.ldots { display: flex; align-items: center; gap: 4px; } .ldots i { flex: 1; height: 12px; border-radius: 50%; aspect-ratio: 1; max-width: 14px; background: var(--line-strong); }
+.ldots i.hit { background: #e5734f; } .lskill.met .ldots i.hit { background: #e9a23b; }
+.ldots em { width: 2px; height: 18px; background: var(--text); border-radius: 1px; margin: 0 1px; }
+.lbar { position: relative; height: 8px; border-radius: 4px; background: var(--line-strong); }
+.lbar i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: #e9a23b; } .lskill.met .lbar i { background: var(--accent); }
+.lbar em { position: absolute; top: -4px; width: 2px; height: 16px; background: var(--text); }
+@media (max-width: 900px) { .ladder { grid-template-columns: repeat(5, minmax(0, 1fr)); } .lstepbox .small { display: none; } }
