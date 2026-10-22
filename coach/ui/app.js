@@ -1904,7 +1904,8 @@ async function extensionView() {
 
 // ---------- settings ----------
 async function settingsView() {
-  shell("settings", `<p class="muted">Loading…</p>`);
+  const was = ($("main") || {}).scrollTop || 0, again = location.hash.startsWith("#/settings") && $("#page .settings-row");
+  if (!again) shell("settings", `<p class="muted">Loading…</p>`);
   const [s, st] = await Promise.all([api("/api/settings"), api("/api/status")]);
   const aiSet = Object.values(s.slots).some(x => x.set);  // the real key state, never a stale flag
   const slot = (id, n) => {
@@ -1914,64 +1915,60 @@ async function settingsView() {
       <select class="field" data-provider>${Object.entries(s.providers).map(([k, p]) =>
         `<option value="${k}" ${k === x.provider ? "selected" : ""}>${esc(p.name)}${p.free ? ", free" : ", paid"}</option>`).join("")}</select>
       <input class="field" type="password" autocomplete="off" spellcheck="false" placeholder="${x.set ? "Paste a new key to replace it" : "Paste your API key"}" data-key>
-      <div class="row"><button class="btn primary" data-save>Save key</button>${x.set ? `<button class="btn" data-test>Test key</button><button class="btn danger" data-remove>Remove</button>` : ""}
+      <div class="row"><button class="btn" data-save>Save key</button>${x.set ? `<button class="btn" data-test>Test key</button><button class="btn danger" data-remove>Remove</button>` : ""}
         <a class="small muted" data-get href="${esc(prov.get_key)}" target="_blank" rel="noopener">Get a ${esc(prov.name)} key ↗</a></div>
       <div class="err" data-msg></div></div>`;
   };
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Settings</h1><p class="sub">Everything here stays on this computer.</p></div></div>
+    <div class="page-head"><div><h1>Settings</h1></div></div>
     <div class="box">
-      <div class="settings-row"><div><h3>chess.com account</h3><p class="note">Only public games are read. No password.</p></div>
+      <div class="settings-row"><div><h3 title="Only public games are read. No password.">chess.com account</h3></div>
         <div class="stack"><div class="row"><input class="field" id="user" value="${esc(st.player || "")}" spellcheck="false" style="max-width:280px">
           <button class="btn" id="saveuser">Change</button></div><div class="err" id="usermsg"></div></div></div>
       <div class="settings-row"><div><h3>Appearance</h3></div>
         <div><div class="seg" id="theme">${["system", "dark", "light"].map(t => `<button data-t="${t}" class="${s.theme === t ? "on" : ""}">${cap(t)}</button>`).join("")}</div></div></div>
-      <div class="settings-row"><div><h3>Voice</h3><p class="note">Your coaches speak. It runs on this computer, no internet needed.</p></div>
+      <div class="settings-row"><div><h3 title="Your coaches speak. It runs on this computer, no internet needed.">Voice</h3></div>
         <div class="stack"><div class="row"><button class="switch ${s.voice ? "on" : ""}" id="voice" aria-label="Voice"></button>
           <span class="small muted">${s.voice_ready ? (s.voice ? "On" : "Off") : "Voice files not installed"}</span></div>
           <div class="voices">${Object.entries(COACHES).map(([id, c]) => `<button class="btn voice-chip" data-hear="${id}">
             ${KnightwiseFaces.svg(id, "pleased")}<span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span><i>▶</i></button>`).join("")}</div>
           <div class="row"><span class="small ${s.talk_ready ? "ok-text" : "muted"}" id="listenstate">${s.talk_ready
-            ? "Talking is on: press Talk on a coach and just speak. Your Groq or Gemini key hears you, in about half a second."
-            : "Talking by voice needs a free Groq or Gemini key: add one below."}</span></div>
-          ${s.heard ? `<details class="small muted" id="heard"><summary>What your coaches heard: ${s.heard} line${s.heard === 1 ? "" : "s"}, kept as text on this PC</summary>
-            <p style="margin:6px 0">Never the sound, never sent anywhere. It lets the hearing learn the names you use. If a line is wrong, that's what the coach misheard.</p>
+            ? "✓ Talk is ready" : "Talking needs a key that can hear: add one below."}</span></div>
+          ${s.heard ? `<details class="small muted" id="heard"><summary title="Kept as text on this PC: never the sound, never sent anywhere. It lets the hearing learn the names you use.">What your coaches heard (${s.heard})</summary>
             <div data-lines class="stack" style="gap:2px"></div><button class="btn small-btn" id="forgetheard">Delete all of it</button></details>` : ""}
-          ${!s.listen_ready ? `<details class="small muted"><summary>Hear me on this PC instead (optional)</summary>
-            <p style="margin:6px 0">A one-time 485 MB download. It's slower and mishears more than the key does; use it only if you have no key.</p>
+          ${!s.listen_ready ? `<details class="small muted"><summary title="A one-time 485 MB download. Slower, and it mishears more than a key does.">Hear me on this PC instead</summary>
             <button class="btn" id="getlisten">Install listening on this PC</button></details>` : ""}</div></div>
-      <div class="settings-row"><div><h3>Sounds</h3><p class="note">Moves, right and wrong answers, a finished set. No background music.</p></div>
+      <div class="settings-row"><div><h3 title="Moves, right and wrong answers, a finished set. No background music.">Sounds</h3></div>
         <div class="row"><button class="switch ${s.sounds ? "on" : ""}" id="sounds" aria-label="Sounds"></button>
           <span class="small muted">${s.sounds ? "On" : "Off"}</span></div></div>
-      ${s.human_ready ? `<div class="settings-row"><div><h3>Human-like opponents</h3><p class="note">The human-move model plays like real players of any rating, mistakes included: it learned from millions of online games.
-        Your rematch and sparring opponents play like people, and reviews say how many players at your level find a move. It's an estimate of a level, never a real person. It runs on this PC.</p></div>
+      ${s.human_ready ? `<div class="settings-row"><div><h3 title="The human-move model plays like real players of any rating, mistakes included: it learned from millions of online games.
+        Your rematch and sparring opponents play like people, and reviews say how many players at your level find a move. It's an estimate of a level, never a real person. It runs on this PC.">Human-like opponents</h3></div>
         <div class="row"><button class="switch ${s.human_moves ? "on" : ""}" id="humanmoves" aria-label="Human-like opponents"></button>
           <span class="small muted">${s.human_moves ? "On" : "Off"}</span></div></div>` : ""}
-      <div class="settings-row"><div><h3>AI: talk with your coaches</h3><p class="note">Optional. With a key, the coach explains moves in its own words and answers your questions.
+      <div class="settings-row"><div><h3 title="Optional. With a key, the coach explains moves in its own words and answers your questions.
         Without one it uses the engine's built-in sentences. Keys are kept in Windows Credential Manager, encrypted for your Windows account,
-        and are only sent to the provider you choose.</p>
+        and are only sent to the provider you choose.">AI: talk with your coaches</h3>
         <button class="btn" id="aicompare" style="margin-top:8px">What AI adds</button></div>
-        <div class="grid">${slot("slot1", 1)}${slot("slot2", 2)}<p class="note">Key 2 is used when key 1 fails or runs out.</p>
+        <div class="grid">${slot("slot1", 1)}${slot("slot2", 2)}<p class="note" style="margin:0">Key 2 steps in when key 1 is busy.</p>
           <details class="keyguide"><summary><b>How to get a free key</b> <span class="small muted">about 2 minutes, never shown to anyone else</span></summary>
             <p class="small"><b>Under 18?</b> Ask a parent or guardian to make the key with you: Groq's and Google's terms are for adults, or need a parent's permission.</p>
             <ol class="small">
-              <li><b>Groq</b> (recommended, free, no card): press <b>Get a Groq key ↗</b> above. console.groq.com opens in your browser.</li>
+              <li>Pick a company in Key 1 and press its <b>Get a key ↗</b> link: its site opens in your browser.</li>
               <li>Sign in with a Google account or an email address. It asks for no card and no payment.</li>
-              <li>On the <b>API Keys</b> page, press <b>Create API Key</b>, give it a name such as Knightwise, and press <b>Submit</b>.</li>
-              <li>Copy the key it shows (it starts with <b>gsk_</b>). It is shown only once.</li>
+              <li>Find <b>API keys</b>, press <b>Create</b>, and name it Knightwise.</li>
+              <li>Copy the key it shows. It is shown only once.</li>
               <li>Come back here, paste it into Key 1, and press <b>Save key</b>, then <b>Test key</b>. A green line means it works.</li>
             </ol>
-            <p class="small muted">For a second key, Google Gemini works the same way at aistudio.google.com: <b>Get API key</b>, then <b>Create API key</b>. Put it in Key 2.
-              Keys stay in Windows Credential Manager on this PC, are sent only to the provider you picked, and never to Knightwise.</p>
+            <p class="small muted">A second company's key goes in Key 2. Keys stay on this PC and go only to the company you picked.</p>
           </details></div></div>
-      <div class="settings-row"><div><h3>Arrows on chess.com</h3><p class="note">The browser extension.</p></div>
+      <div class="settings-row"><div><h3 title="The browser extension.">Arrows on chess.com</h3></div>
         <div class="row">${connectedIn(st)}</div></div>
-      <div class="settings-row"><div><h3>chess.com check</h3><p class="note">chess.com changes its site now and then. Knightwise checks everything it uses there, each time.</p></div>
+      <div class="settings-row"><div><h3 title="chess.com changes its site now and then. Knightwise checks everything it uses there, each time.">chess.com check</h3></div>
         <div>${healthRow(st.health)}</div></div>
-      <div class="settings-row"><div><h3>Your data</h3><p class="note">Games, checks, practice and your logbook.</p></div>
+      <div class="settings-row"><div><h3 title="Games, checks, practice and your logbook.">Your data</h3></div>
         <div class="row"><button class="btn" id="folder">Open data folder</button></div></div>
-      <div class="settings-row"><div><h3>About and credits</h3><p class="note">Free and open source. Fair play: never active in games against real people.</p></div>
-        <div class="muted small">Knightwise ${esc((STATUS && STATUS.version) || "")} · open source, GPL-3.0 · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a>
+      <div class="settings-row"><div><h3 title="Free and open source. Fair play: never active in games against real people.">About and credits</h3></div>
+        <div class="muted small">Knightwise ${esc((STATUS && STATUS.version) || "")} · GPL-3.0 · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a>
           <details style="margin-top:6px"><summary>Made with the work of others, all free</summary><ul style="margin:6px 0 0;padding-left:18px">
             <li><b>Stockfish 19</b>, the move checker: the Stockfish team, GPL-3.0</li>
             <li><b>The human-move model</b> is Maia-3, by the CSSLab at the University of Toronto, AGPL-3.0: run by Knightwise itself</li>
@@ -1986,6 +1983,7 @@ async function settingsView() {
             <li><b>Your games</b>: chess.com's public API. Knightwise is independent and not connected with chess.com</li>
           </ul></details></div></div>
     </div>`;
+  if (again && $("main")) $("main").scrollTop = was;
   $("#theme").querySelectorAll("button").forEach(b => b.onclick = async () => {
     const r = await api("/api/settings", { theme: b.dataset.t }); applyTheme(r.theme); settingsView();
   });
