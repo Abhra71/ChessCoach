@@ -94,3 +94,16 @@
 .kw-feedback { display: block; margin: 10px 0 0 auto; padding: 0; border: 0; background: none; cursor: pointer;
                color: inherit; opacity: .55; font: 500 11.5px "Segoe UI", system-ui, sans-serif; text-decoration: underline; }
 .kw-feedback:hover { opacity: .9; }
+
+/* the calm look (22 Oct): warm greys, soft corners, pressable grey buttons, one green for the coach's pick */
+.kw-box { background: #3a3733; border: 0; border-radius: 14px; box-shadow: 0 14px 36px rgba(0,0,0,.45); }
+.kw-tab { background: #312e2b; border: 0; border-radius: 10px; }
+.kw-box p { color: #f3f1ee; } .kw-head span, .kw-x { color: #a6a19a; }
+.kw-actions a, .kw-actions button { background: #4a4641; border: 0; border-radius: 8px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.3); color: #f3f1ee !important; }
+.kw-actions .kw-best { background: #81b64c; color: #13210a !important; border: 0; box-shadow: inset 0 -3px 0 #5d8a35; }
+.kw-actions .kw-best::before { content: none; }
+.kw-box .kw-hint { border-top: 0; color: #a6a19a; padding-top: 0; }
+.kw-ask input { background: #262421; border: 0; border-radius: 999px; padding: 8px 14px; }
+.kw-ask button { background: #4a4641; color: #f3f1ee; border-radius: 999px; }
+.kw-more, .kw-report { display: block; margin: 8px 0 0; padding: 0; border: 0; background: none; cursor: pointer; color: #a6a19a; font: inherit; font-size: 12.5px; text-decoration: underline; }
+.kw-report { display: inline; margin: 0; }

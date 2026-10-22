@@ -94,6 +94,13 @@ Also asked: Home after the newest 20 games, the rest checked in the background (
   coach/feedback.key, packed, never in the repo), at most 4 a day per PC, an optional "your email, if you'd like a
   reply" (reply-to), no Copy text button. Auto-replies are a paid Web3Forms feature: the owner replies by hand for
   now and may set up a free Gmail Apps Script auto-reply later.
+- 22, the look (the owner approved a Home mockup, then "work on every UI change that's needed"): warm layered greys,
+  no left bars, soft cards, pressable buttons, one green per screen, coloured sidebar icons and four small status
+  icons (finding 7: no Voice button). Home, Practice, Plan, Level, Course, Progress, Settings (finding 8: keeps its
+  place; finding 9: no line naming companies), Games, the review, Prep, endgames, repertoire and the opening tree
+  redrawn as pictures, numbers and bars; long page intros fold into a ? by the title everywhere (finding 4); the
+  coach's bubble shows two sentences and one button, More for the rest, in the app and on chess.com, where AI answers
+  now say "AI can make mistakes · Report it" (finding 14). The extension needs a reload in Chrome to show it.
 
 ## Where we stopped (22 Oct, 01:05)
 Session 0 done; Session A: A1 done (A1.3 checked from the record; A1.4 is the button being removed), next is **A2.1

@@ -40,6 +40,7 @@
   }
   const today = () => new Date().toISOString().slice(0, 10);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const brief = t => { const parts = String(t).split(/(?<=[.!?])\s+/); return parts.length > 2 ? parts.slice(0, 2).join(" ") : t; };
 
   function remove() {
     if (box) box.remove();
@@ -59,14 +60,18 @@
       document.body.appendChild(box);
     }
     box.className = `kw-coach ${open ? "open" : "folded"}`;
+    // one line and one button, like the app (22 Oct, the calm look); More shows the rest, the voice says it all
+    const full = !!(s.more || s.ai || s.talking || warm), best = (s.actions || []).find(a => a.best) || (s.actions || [])[0];
+    const shown = full ? (s.actions || []) : best ? [best] : [];
     const face = `<button class="kw-char" title="${esc(s.name)}, your Knightwise coach">${KnightwiseFaces.figure(s.coach, s.pose || s.mood)}</button>`;
     box.innerHTML = open ? `${face}
       <div class="kw-box" role="status">
         <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
           ${s.talk_ready && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(s.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
-        ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
-        ${s.actions && s.actions.length ? `<div class="kw-actions">${s.actions.map((a, i) => {
+        ${(full ? s.lines : [brief(s.lines[0] || "")]).map(l => `<p>${esc(l)}</p>`).join("")}
+        ${s.ai ? `<p class="kw-hint">AI can make mistakes. <button class="kw-report">Report it</button></p>` : ""}
+        ${shown.length ? `<div class="kw-actions">${shown.map(a => { const i = s.actions.indexOf(a);
           const best = a.best ? ` class="kw-best" title="${esc(a.why || "My pick")}"` : "";  // the coach's pick, said out loud
           return a.warmup ? `<button data-warmup${best}>${esc(a.label)}</button>`
             : a.app ? `<button data-app="${esc(a.app)}"${best}>${esc(a.label)}</button>`
@@ -74,12 +79,17 @@
             : a.guide && !off("guide") ? `<button data-guide="${i}"${best}>${esc(a.label)}</button>`
             : `<a href="${esc(a.url)}"${best}>${esc(a.label)}</a>`;
         }).join("")}</div>` : ""}
-        ${s.ai_hint ? `<p class="kw-hint">${esc(s.ai_hint)}</p>` : ""}
-        ${s.ai_ready ? `<form class="kw-ask"><input placeholder="Ask ${esc(s.name)} anything about your chess" maxlength="300">
+        ${full && s.ai_hint ? `<p class="kw-hint">${esc(s.ai_hint)}</p>` : ""}
+        ${full && s.ai_ready ? `<form class="kw-ask"><input placeholder="Ask ${esc(s.name)} anything" maxlength="300">
           <button>Ask</button></form>` : ""}
         ${s.note ? `<p class="kw-hint">${esc(s.note)}</p>` : ""}
-        <button class="kw-feedback" title="Tell us what went wrong or what was confusing">Send feedback</button>
+        ${full ? `<button class="kw-feedback" title="Tell us what went wrong or what was confusing">Send feedback</button>`
+          : `<button class="kw-more" title="Everything ${esc(s.name)} said, the other buttons and Ask">More</button>`}
       </div>` : `${face}<button class="kw-tab">${esc(s.name)}</button>`;
+    const mo = box.querySelector(".kw-more");
+    if (mo) mo.onclick = () => { said = { ...said, more: true }; render(true); };
+    const rep = box.querySelector(".kw-report");  // an AI answer that was wrong: the feedback form (22 Oct)
+    if (rep) rep.onclick = () => send({ type: "open-app", route: "feedback" });
     const fb = box.querySelector(".kw-feedback");  // always in the same quiet place (19 Oct)
     if (fb) fb.onclick = () => send({ type: "open-app", route: "feedback" });
     const wake = box.querySelector(".kw-tab");
@@ -148,7 +158,7 @@
     const reply = a && a.ok ? a.data : { text: "I can't reach the Knightwise app right now.", mood: "calm" };
     talkHistory.push(["player", r.text], ["coach", reply.text]);
     talking = false;  // her answer, then Talk again when you want to say more
-    said = { ...said, pose: reply.mood || "explain", talking: false, lines: [reply.text] };
+    said = { ...said, pose: reply.mood || "explain", talking: false, lines: [reply.text], ai: !!reply.ai };
     render(true); speak();
     if (reply.action && reply.action.guide) { talking = false; guideStart(reply.action.guide); return; }  // the red ring
     const route = reply.action && reply.action.route;
@@ -406,7 +416,7 @@
     const r = await send({ type: "talk", coach: said.coach, text: question, history: history.slice(0, -1), where: { section: current, chesscom: true } });
     const reply = r && r.ok ? r.data : { text: "I can't reach the Knightwise app on this PC, and I answer from there. Open it from the Start menu.", mood: "calm" };
     history.push(["coach", reply.text]);
-    said = { ...said, mood: reply.mood, pose: "explain", lines: [reply.text], note: reply.note || null };
+    said = { ...said, mood: reply.mood, pose: "explain", lines: [reply.text], note: reply.note || null, ai: !!reply.ai };
     render(true); speak();
     if (reply.action && reply.action.guide) { setTimeout(() => guideStart(reply.action.guide), 1200); return; }  // the red ring
     const route = reply.action && reply.action.route;
