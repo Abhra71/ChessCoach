@@ -8,8 +8,11 @@ from coach.analyze import VALUE, win_chance
 
 NAME = {chess.PAWN: "pawn", chess.KNIGHT: "knight", chess.BISHOP: "bishop", chess.ROOK: "rook", chess.QUEEN: "queen",
         chess.KING: "king"}
-GOOD = ["Good.", "A good move.", "Solid.", "Fine."]
-TOP = ["The engine's top choice.", "The best move.", "Exactly right."]
+GOOD = ["Good.", "A good, solid move.", "Solid.", "Fine, that works."]
+TOP = ["The engine's top choice.", "The best move.", "Exactly right.", "Spot on."]
+SAY = {"Book": ["A book move.", "Straight from the opening books.", "Book: the known move here."],
+       "Brilliant": ["Brilliant! A sacrifice, and the best move.", "Brilliant: you gave that piece away on purpose, and it works."],
+       "Excellent": ["Excellent.", "Very nearly the best.", "Excellent: hard to do better."]}
 # win chance lost on one move (the same scale as the key moments)
 SMALL, MISTAKE, BIG = 4, 10, 20
 SLIP = 12  # the opponent handed this much win chance to the player
@@ -155,6 +158,7 @@ def game(positions, played, rows, me, opponent):
         if not mine:
             first_theirs = False
         kind, arrows, label = ("mine" if mine else "real"), [[move.uci(), "mine" if mine else "real"]], None
+        win, lost = None, None  # your chance to win after this move (0..100); what it gave away
         r = by_ply.get(i)
         after = board.copy()
         after.push(move)
@@ -173,15 +177,25 @@ def game(positions, played, rows, me, opponent):
                 if u:
                     arrows.append([u, "better"])
             else:
-                text += {"Book": " A book move.", "Brilliant": " Brilliant: a sacrifice, and the best move.",
-                         "Best": " " + TOP[i % len(TOP)], "Excellent": " Excellent.", "Good": " Good."}[label]
+                pool = SAY.get(label) or (TOP if label == "Best" else GOOD)
+                text += " " + pool[i % len(pool)]
                 kind = "good"
+            if label not in ("Best", "Book", "Brilliant") and best and loss >= 2 and len(arrows) < 2:
+                u = _uci(r["fen"], best)  # the better move, whenever there was one (22 Oct)
+                if u:
+                    arrows.append([u, "better"])
+            if label in ("Inaccuracy", "Mistake", "Blunder") and r.get("reply_pv"):
+                arrows.append([r["reply_pv"][0], "reply"])  # what they could take advantage of
+            win, lost = win_chance(r.get("cp_after", 0)), max(0, loss)
         elif not mine:  # their move: did it hand you a chance? (your chance after your last move -> before your next)
             prev, nxt = by_ply.get(i - 1), by_ply.get(i + 1)
+            if nxt and "cp_before" in nxt:
+                win = win_chance(nxt["cp_before"])
             if in_book:
                 label = "Book"
             if prev and nxt and "cp_after" in prev and "cp_before" in nxt:
                 gain = win_chance(nxt["cp_before"]) - win_chance(prev["cp_after"])
+                lost = max(0, gain)
                 label = "Book" if in_book and gain < 5 else _label(max(0, gain))
                 if gain >= SLIP and nxt.get("best"):
                     text += f" {'A blunder' if label == 'Blunder' else 'Their mistake'}: now {nxt['best']} is strong for you."
@@ -195,8 +209,30 @@ def game(positions, played, rows, me, opponent):
             named = names[tuple(sans)]
             text = (text[:-len(" Checkmate.")] + f" This is the {named}. Checkmate." if text.endswith(" Checkmate.")
                     else text + f" This is the {named}.")
-        out.append({"ply": i, "text": text, "kind": kind, "label": label, "sign": SIGN.get(label, ""), "arrows": arrows})
+        if win is None and out:
+            win = out[-1]["win"]
+        out.append({"ply": i, "text": text, "kind": kind, "label": label, "sign": SIGN.get(label, ""), "arrows": arrows,
+                    "mine": mine, "win": None if win is None else round(win, 1), "lost": None if lost is None else round(lost, 1)})
         board.push(move)
+    return out
+
+
+def accuracy(lost):
+    """One move's accuracy, 0..100, from the win chance it gave away (Lichess's formula)."""
+    import math
+    return max(0.0, min(100.0, 103.1668 * math.exp(-0.04354 * lost) - 3.1669))
+
+
+def summary(moves):
+    """Both players: accuracy (the mean over their moves) and how many of each label, like chess.com's report."""
+    out = {}
+    for side, mine in (("you", True), ("them", False)):
+        ms = [m for m in moves if m["mine"] == mine and m["lost"] is not None]
+        counts = {}
+        for m in moves:
+            if m["mine"] == mine and m["label"]:
+                counts[m["label"]] = counts.get(m["label"], 0) + 1
+        out[side] = {"accuracy": round(sum(accuracy(m["lost"]) for m in ms) / len(ms), 1) if ms else None, "counts": counts}
     return out
 
 

@@ -206,7 +206,7 @@ def game_detail(gid):
     side, other = _side(g, player)
     every = narrate.game(positions, played, rows, chess.WHITE if side == "white" else chess.BLACK, g[other]["username"])
     return {**game_row(g, rows, player), "positions": positions, "key_moments": key, "narration": every,
-            "highlights": narrate.highlights(every) if not key else [],
+            "summary": narrate.summary(every),
             "move_numbers": [move_number({"ply": i}) for i in range(1, len(positions))], **extras(g, rows, player)}
 
 

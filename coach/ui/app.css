@@ -513,3 +513,21 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .mv-label.lbl-inaccuracy { background: #f0c15c; } .mv-label.lbl-mistake { background: #f0a43a; } .mv-label.lbl-blunder { background: #ff4d42; }
 .movelist span.lbl-brilliant { color: #26c2a3; } .movelist span.lbl-inaccuracy { color: #f0c15c; }
 .movelist span.lbl-mistake { color: #f0a43a; } .movelist span.lbl-blunder { color: #ff4d42; font-weight: 650; }
+
+/* the review: who's winning beside the board, the game as a graph, the report (22 Oct) */
+.evalwrap { display: flex; gap: 8px; max-width: 584px; }
+.evalwrap .board-wrap { flex: 1; }
+.evalbar { position: relative; width: 16px; border-radius: 4px; background: #3a3a3a; overflow: hidden; flex: none; }
+.evalbar i { position: absolute; left: 0; right: 0; bottom: 0; background: #f2f2f2; transition: height .35s ease; }
+.evalbar.flip { background: #f2f2f2; } .evalbar.flip i { background: #3a3a3a; }
+.evalbar span { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font-size: 8.5px; font-weight: 700; color: #0a0a0a; }
+.evalbar.flip span { color: #f2f2f2; }
+.evalgraph { margin-top: 10px; height: 54px; max-width: 584px; cursor: pointer; border-radius: 4px; background: #141414; overflow: hidden; }
+.evalgraph svg { width: 100%; height: 100%; display: block; }
+.eg-area { fill: rgba(242,242,242,.16); } .eg-line { fill: none; stroke: #f2f2f2; stroke-width: .5; vector-effect: non-scaling-stroke; }
+.eg-mid { stroke: #444; stroke-width: .3; vector-effect: non-scaling-stroke; } .eg-now { stroke: #36c27a; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.report { display: flex; flex-direction: column; gap: 10px; }
+.rep-acc { display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: center; }
+.rep-acc b { display: block; font-size: 28px; line-height: 1.1; } .rep-acc span { font-size: 12.5px; color: var(--muted, #aaa); }
+.rep-counts { width: 100%; border-collapse: collapse; } .rep-counts td { padding: 3px 4px; } .rep-counts td:nth-child(2) { text-align: center; }
+.rep-counts td.num:first-child { text-align: left; } .rep-counts td.num:last-child { text-align: right; }

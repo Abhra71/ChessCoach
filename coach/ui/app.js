@@ -1604,9 +1604,11 @@ async function gameView(id) {
       <div class="row">${g.result === "win" && g.positions.length > 20 ? `<a class="btn" href="#/film/${g.id}">▶ Watch it as a film</a>` : ""}
         <a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener">Open on chess.com ↗</a></div></div>
     <div class="game-layout">
-      <div><div class="board-wrap" id="board"></div>
+      <div><div class="evalwrap"><div class="evalbar ${flip ? "flip" : ""}" id="evalbar" title="Who's winning"><i></i><span></span></div>
+          <div class="board-wrap" id="board"></div></div>
         <div class="controls"><button class="btn" data-go="0">⏮</button><button class="btn" data-go="-1">◀</button>
           <button class="btn" data-go="1">▶</button><button class="btn" data-go="end">⏭</button></div>
+        <div class="evalgraph" id="evalgraph" title="Your chance to win, move by move: click to go there"></div>
         <div style="margin-top:12px">${Board.legend(["mine", "better", "real", "reply"])}</div></div>
       <div class="stack">
         <div class="box stack walk" id="walk"></div>
@@ -1621,14 +1623,41 @@ async function gameView(id) {
   const stepPly = (k, st) => st.board === "before" ? k.ply - 1 : k.ply;
   const toArrows = list => list.map(([u, kind]) => ({ from: u.slice(0, 2), to: u.slice(2, 4), kind }));
   const momentAt = p => moments.findIndex(k => k.ply === p);
+  // a move's label: its colour and its mark on the board, like chess.com's icons (22 Oct)
+  const LABEL = { Brilliant: ["#26c2a3", "!!"], Best: ["#36c27a", "★"], Excellent: ["#36c27a", "✓"], Good: ["#95b776", "✓"],
+    Book: ["#a88865", "≡"], Inaccuracy: ["#f0c15c", "?!"], Mistake: ["#f0a43a", "?"], Blunder: ["#ff4d42", "??"] };
+  const ORDER = ["Brilliant", "Best", "Excellent", "Good", "Book", "Inaccuracy", "Mistake", "Blunder"];
+  const badge = l => l ? `<span class="mv-label lbl-${l.toLowerCase()}">${LABEL[l][1]} ${l}</span>` : "";
   let view = null;  // a key moment's step picked by hand: its board and arrows, until ◀ ▶ moves on
+  function evalbar() {  // your chance to win after this move: the bar fills from your side
+    const bar = $("#evalbar"); if (!bar) return;
+    const back = said.slice(0, ply).reverse().find(m => m.win != null), win = ply && back ? back.win : 50;
+    bar.querySelector("i").style.height = `${win}%`;
+    bar.querySelector("span").textContent = `${Math.round(win)}%`;
+  }
+  function graph() {  // the whole game at a glance: click anywhere to go to that move
+    const el = $("#evalgraph"); if (!el || !said.length) return;
+    const n = said.length, W = 100, H = 24, x = i => (i / n) * W, y = v => H - (v / 100) * H;
+    let last = 50, pts = [`0,${y(50)}`];
+    said.forEach((m, i) => { if (m.win != null) last = m.win; pts.push(`${x(i + 1).toFixed(2)},${y(last).toFixed(2)}`); });
+    const dots = said.filter(m => ["Mistake", "Blunder", "Brilliant"].includes(m.label) && m.mine)
+      .map(m => `<circle cx="${x(m.ply)}" cy="${y(m.win ?? 50)}" r="1.1" fill="${LABEL[m.label][0]}"/>`).join("");
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polygon points="0,${H} ${pts.join(" ")} ${W},${H}" class="eg-area"/>
+      <line x1="0" y1="${H / 2}" x2="${W}" y2="${H / 2}" class="eg-mid"/>
+      <polyline points="${pts.join(" ")}" class="eg-line"/>${dots}
+      ${mode ? `<line x1="${x(ply)}" y1="0" x2="${x(ply)}" y2="${H}" class="eg-now"/>` : ""}</svg>`;
+    el.onclick = e => { const r = el.getBoundingClientRect(); move(Math.round(((e.clientX - r.left) / r.width) * n)); };
+  }
   function board() {
     const k = view ? moments[view[0]] : null, st = k ? k.steps[view[1]] : null, hl = {};
-    const at = st ? stepPly(k, st) : ply, pos = g.positions[at];
+    const at = st ? stepPly(k, st) : ply, pos = g.positions[at], m = said[ply - 1];
     let arrows = st ? toArrows(st.arrows) : [];
-    if (!st && ply > 0 && mode && said[ply - 1]) arrows = toArrows(said[ply - 1].arrows);
-    else if (!st && pos.uci) { hl[pos.uci.slice(0, 2)] = "hl-last"; hl[pos.uci.slice(2, 4)] = "hl-last"; }
-    Board.render($("#board"), { fen: pos.fen, flip, highlights: hl, arrows });
+    if (!st && ply > 0 && mode && m) arrows = toArrows(m.arrows);
+    if (pos.uci) { hl[pos.uci.slice(0, 2)] = "hl-last"; hl[pos.uci.slice(2, 4)] = "hl-last"; }
+    const mark = !st && mode && m && m.label && pos.uci ? { sq: pos.uci.slice(2, 4), text: LABEL[m.label][1], color: LABEL[m.label][0] } : null;
+    Board.render($("#board"), { fen: pos.fen, flip, highlights: hl, arrows, badge: mark });
+    evalbar(); graph();
     let html = "";
     for (let i = 1; i < g.positions.length; i += 2) {
       html += `<span class="n">${(i + 1) / 2}.</span>`;
@@ -1637,28 +1666,40 @@ async function gameView(id) {
             title="${said[j - 1] && said[j - 1].label ? said[j - 1].label : ""}">${esc(g.positions[j].san)}${said[j - 1] && said[j - 1].sign ? said[j - 1].sign : ""}</span>` : "<span></span>";
     }
     $("#moves").innerHTML = html;
-    $("#moves").querySelectorAll("span[data-p]").forEach(el => el.onclick = () => move(Number(el.dataset.p)));
+    $("#moves").querySelectorAll("span[data-p]").forEach(el => el.onclick = () => { if (mode !== "key") mode = "game"; move(Number(el.dataset.p)); });
   }
-  // the key moments, always one click away while you go through the game
-  const jumps = () => moments.length ? `<div class="row small" style="gap:6px;align-items:center"><span class="muted">Key moments:</span>
-      ${moments.map((k, i) => `<button class="btn small-btn ${k.ply === ply ? "primary" : ""}" data-jump="${k.ply}" title="${esc(cap(k.pattern))}">Move ${k.move_number}</button>`).join("")}</div>` : "";
+  // the report at the start, like chess.com's: accuracy, and how many of each kind of move, for both of you
+  function report() {
+    const s = g.summary || {}, you = s.you || { counts: {} }, them = s.them || { counts: {} };
+    const acc = v => v == null ? "–" : v.toFixed(1);
+    return `<div class="report">
+      <div class="rep-acc"><div><b>${acc(you.accuracy)}</b><span>You</span></div><div class="faint">Accuracy</div>
+        <div><b>${acc(them.accuracy)}</b><span>${esc(g.opponent)}</span></div></div>
+      <table class="rep-counts">${ORDER.filter(l => you.counts[l] || them.counts[l]).map(l => `<tr>
+        <td class="num">${you.counts[l] || 0}</td><td>${badge(l)}</td><td class="num">${them.counts[l] || 0}</td></tr>`).join("")}</table>
+      ${g.opening ? `<p class="small muted" style="margin:0">Opening: ${esc(g.opening)}</p>` : ""}</div>`;
+  }
+  const modes = () => `<div class="row">
+      <button class="btn small-btn ${mode === "game" ? "primary" : ""}" data-mode="game">Whole game</button>
+      ${moments.length ? `<button class="btn small-btn ${mode === "key" ? "primary" : ""}" data-mode="key">Key moments only</button>` : ""}</div>`;
   function draw() {
     board();
     const w = $("#walk");
-    if (!mode) {  // the start: what's in the game, and how to begin
-      w.innerHTML = `<h2 style="margin:0">${moments.length ? `${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game`
-          : "No big mistakes in this game"}</h2>
-        <p class="muted" style="margin:0">Maya goes through the game with you, move by move, and stops to explain the key moments. Use ◀ ▶ under the board.</p>
-        <div class="row"><button class="btn primary" id="startreview">▶ Start review</button></div>${jumps()}`;
-      $("#startreview").onclick = () => move(1);
+    if (!mode) {  // the start: the report, and two ways in
+      w.innerHTML = `<h2 style="margin:0">Game review</h2>${report()}
+        <p class="muted small" style="margin:0">${moments.length ? `${moments.length} key moment${moments.length === 1 ? "" : "s"}. ` : "No big mistakes. "}Use ◀ ▶ under the board, and Maya talks you through it.</p>
+        <div class="row"><button class="btn primary" id="startreview">▶ Review the whole game</button>
+          ${moments.length ? `<button class="btn" data-mode="key">Key moments only</button>` : ""}</div>`;
+      $("#startreview").onclick = () => setMode("game");
       wire(w);
       return;
     }
     const m = said[ply - 1], last = ply === g.positions.length - 1, total = g.move_numbers[g.move_numbers.length - 1];
     const ki = momentAt(ply), k = moments[ki];
-    w.innerHTML = `<div class="row spread"><h2 style="margin:0">${ply ? `Move ${g.move_numbers[ply - 1]} of ${total}` : "The start"}</h2>
+    const head = mode === "key" && k ? `Key moment ${ki + 1} of ${moments.length}` : ply ? `Move ${g.move_numbers[ply - 1]} of ${total}` : "The start";
+    w.innerHTML = `${modes()}<div class="row spread"><h2 style="margin:0">${head}</h2>
         <span class="small faint">◀ ▶ under the board</span></div>
-      <p style="margin:0">${ply && m && m.label ? `<span class="mv-label lbl-${m.label.toLowerCase()}">${m.label}${m.sign ? " " + m.sign : ""}</span> ` : ""}${ply && m ? esc(m.text) : "The starting position. Press ▶ for the first move."}</p>
+      <p style="margin:0">${ply && m ? `${badge(m.label)} ${esc(m.text)}` : "The starting position. Press ▶ for the first move."}</p>
       ${last && ending() ? `<p class="small" style="margin:0"><b>The end:</b> ${esc(ending())}</p>` : ""}
       ${k ? `<div class="box stack keycard" style="padding:12px">
         <div class="row spread"><span class="what">Key moment ${ki + 1} of ${moments.length} · ${esc(cap(k.pattern))}</span>
@@ -1674,7 +1715,7 @@ async function gameView(id) {
           ${k.lesson ? `<a class="btn" href="#/course/${k.lesson.id}" title="The course lesson on this idea">Learn it: ${esc(k.lesson.title)}</a>` : ""}
           ${g.result !== "win" ? `<a class="btn" href="#/rematch/${g.id}/${k.ply}" title="Play the game on from here against the engine, at their level">Rematch from here</a>` : ""}
           ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}">Explain like a coach</button>` : ""}</div></div>` : ""}
-      ${jumps()}${last ? `<div data-helpful></div>` : ""}`;
+      ${last || (mode === "key" && ki === moments.length - 1) ? `<div data-helpful></div>` : ""}`;
     helpful(w.querySelector("[data-helpful]"), `review ${g.id}`);
     wire(w);
     w.querySelectorAll("[data-s]").forEach(li => li.onclick = () => {  // one step of the moment on the board, said again
@@ -1690,23 +1731,33 @@ async function gameView(id) {
       } catch (err) { b.textContent = err.message.slice(0, 80); }
     });
   }
-  function wire(w) { w.querySelectorAll("[data-jump]").forEach(b => b.onclick = () => move(Number(b.dataset.jump))); }
+  function wire(w) { w.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode)); }
   // one move of the game (yours, then theirs): the board after it, and Maya's line about it; on a key moment she
   // explains it there and then. Going back says it again.
   function move(p, speak = true) {
-    mode = "game"; view = null;
+    mode = mode || "game"; view = null;
     ply = Math.max(0, Math.min(g.positions.length - 1, p));
     draw();
     const m = said[ply - 1], k = moments[momentAt(ply)];
     let text = !ply || !m ? "The starting position." : m.text;
-    if (k) text += " " + k.steps.slice(2).map(st => st.text).join(" ");  // the line already says the better move: then their reply
+    if (k) text = (mode === "key" ? `Key moment ${momentAt(ply) + 1}. ` : "Key moment! ") + text + " " + k.steps.slice(2).map(st => st.text).join(" ");
     if (ply === g.positions.length - 1 && ending()) text += ` ${ending()}`;
     if (speak) Coach.react("maya", k || (m && m.kind === "bad") ? "worried" : m && (m.kind === "good" || m.kind === "slip") ? "pleased" : "explain", text);
     return text;
   }
-  // ◀ ▶ (and Next / Back by voice): one move; returns what Maya says
+  function setMode(md) {
+    mode = md;
+    return md === "key" ? move(moments[0].ply) : move(ply || 1);
+  }
+  // ◀ ▶ (and Next / Back by voice): one move, or one key moment in "Key moments only"; returns what Maya says
   function step(d) {
-    if (!mode) return move(1);
+    if (!mode) return setMode("game");
+    if (mode === "key") {
+      const at = momentAt(ply), to = at < 0 ? (d > 0 ? moments.findIndex(k => k.ply > ply) : -1) : at + d;
+      if (to < 0) return move(moments[0].ply);
+      if (to >= moments.length) { const t = "That was the last key moment. Try it again, or review the whole game."; Coach.react("maya", "calm", t); return t; }
+      return move(moments[to].ply);
+    }
     if (ply + d > g.positions.length - 1) { const t = ending() || "That was the last move."; Coach.react("maya", "calm", t); return t; }
     return move(ply + d);
   }
@@ -1717,18 +1768,20 @@ async function gameView(id) {
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go, was = ply;
     if (v === "1" || v === "-1") step(Number(v));
+    else if (mode === "key") move(v === "0" ? moments[0].ply : moments[moments.length - 1].ply);
     else move(v === "0" ? 0 : g.positions.length - 1);
     if (ply === was + 1) Sound.move(g.positions[ply].san);
   });
   draw();
-  // Maya says what's in the game and waits for you: nothing is walked through until you start
+  // Maya gives the headline and waits for you: nothing is walked through until you start
+  const s = g.summary || {}, acc = s.you && s.you.accuracy != null ? ` Your accuracy: ${Math.round(s.you.accuracy)}.` : "";
   const worst = moments.reduce((a, b) => (b.loss > (a ? a.loss : -1) ? b : a), null);
   if (worst) Coach.react("maya", "explain",
-    `${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game; move ${worst.move_number} cost you the most. ` +
-    "Press Start review and we'll go through it move by move.",
-    [{ label: "▶ Start review", run: () => move(1) }]);
-  else Coach.react("maya", "celebrate", "No big mistakes in this game. Press Start review and we'll go through it move by move.",
-    [{ label: "▶ Start review", run: () => move(1) }]);
+    `${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game; move ${worst.move_number} cost you the most.${acc} ` +
+    "Review the whole game with me, or just the key moments.",
+    [{ label: "▶ Whole game", run: () => setMode("game") }, { label: "Key moments", run: () => setMode("key") }]);
+  else Coach.react("maya", "celebrate", `No big mistakes in this game.${acc} Press Review and we'll go through it move by move.`,
+    [{ label: "▶ Review", run: () => setMode("game") }]);
 }
 
 // ---------- practice ----------

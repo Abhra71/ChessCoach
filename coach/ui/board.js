@@ -65,6 +65,11 @@ const Board = (() => {
       s += `<circle cx="${x + 5}" cy="${y + 5}" r="4.3" class="target-take" pointer-events="none"/>`;
     }
     for (const a of opts.arrows || []) s += arrowSvg(a, flip);
+    if (opts.badge) {  // a move's label on its square, like chess.com's icons: {sq, text, color}
+      const [x, y] = xy(opts.badge.sq, flip);
+      s += `<g pointer-events="none"><circle cx="${x + 8.6}" cy="${y + 1.4}" r="2.3" fill="${opts.badge.color}" stroke="#0a0a0a" stroke-width=".3"/>
+        <text x="${x + 8.6}" y="${y + 2.35}" text-anchor="middle" font-size="2.6" font-weight="800" fill="#0a0a0a">${opts.badge.text}</text></g>`;
+    }
     s += `</svg>`;
     el.innerHTML = s;
     slide(el, el._was, pieces, flip);
