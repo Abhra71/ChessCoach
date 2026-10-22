@@ -226,10 +226,34 @@ def part_of_day(hour):
     return "Good morning" if 5 <= hour < 12 else "Good afternoon" if 12 <= hour < 18 else "Good evening"
 
 
+# the chess.com place that trains this player's habit, offered by itself on chess.com's home (22 Oct test: "the coach
+# doesn't suggest sections useful for me on chess.com, it only points when I tell it")
+CHESSCOM_FOR = {
+    "left a piece hanging": ("puzzles", "Puzzles on chess.com: spot what's loose"),
+    "walked into a fork or trick": ("puzzles", "Puzzles on chess.com: forks and tricks"),
+    "missed a free capture": ("puzzles", "Puzzles on chess.com: free pieces"),
+    "walked into checkmate": ("lessons", "Lessons on chess.com: checkmate patterns"),
+    "missed a checkmate": ("lessons", "Lessons on chess.com: checkmate patterns"),
+    "stalemated a won game": ("lessons", "Lessons on chess.com: finishing won games"),
+}
+
+
+def chesscom_pick(home):
+    """A red-ring button to the chess.com section for the player's focus, or None."""
+    f = (home or {}).get("focus") or {}
+    route = CHESSCOM_FOR.get(f.get("pattern"))
+    return guide(route[0], route[1]) if route else None
+
+
 def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, again=False, in_app=False):
     """again: a second visit to this section today, so no full welcome again, just where things stand (13 Oct test:
     "welcoming is an art"; the coach was greeting every time, then folding silently)."""
     said = _speak(section, home, hour, moments, rng, extra, in_app)
+    if section == "home" and not in_app and said.get("lines"):  # on chess.com: the place there that fits your habit
+        pick = chesscom_pick(home if home is not None else {})
+        acts = said.get("actions") or []
+        if pick and not any((a.get("guide") or {}).get("id") == pick["guide"]["id"] for a in acts):
+            said = {**said, "actions": [a for a in acts if a is not OPEN_APP] + [pick] + [a for a in acts if a is OPEN_APP]}
     if in_app:
         said = _for_app(said)
     if again and said.get("lines") and section != "review":
