@@ -644,3 +644,16 @@ a.tile:hover { filter: brightness(1.05); }
 .brief-head { display: flex; align-items: center; gap: 8px; } .brief-head svg { width: 18px; height: 18px; color: #e9a23b; }
 .brief-title { margin: 0; }
 .brief-mind { display: flex; gap: 8px; align-items: flex-start; } .brief-mind svg { width: 16px; height: 16px; color: var(--accent); flex: none; margin-top: 2px; }
+
+/* Your plan, the calm way (22 Oct): a board, a bar and a button per thing */
+.plan-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px; }
+.pcard { display: flex; flex-direction: column; gap: 10px; padding: 14px; cursor: pointer; }
+.pcard:hover { filter: brightness(1.05); }
+.pcard h3 { font-size: 15px; min-height: 2.6em; }
+.pcard .btn { justify-content: center; margin-top: auto; }
+.pcard .mini-board { max-width: 100%; }
+.pkind { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.pkind svg { width: 16px; height: 16px; color: #5ea4e8; }
+.pnew { background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+.pdone svg { width: 18px; height: 18px; color: var(--accent); }
+.pcard .psegs .pseg { cursor: default; }

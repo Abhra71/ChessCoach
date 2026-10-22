@@ -378,17 +378,29 @@ async function planView(arg) {
   if (!p.player) { $("#page").innerHTML = `<div class="empty">Your plan appears once your games are checked.</div>`; return; }
   const all = [...(p.novelty ? [p.novelty] : []), ...Object.values(p.items).filter(Boolean)];
   if (arg) { const item = all.find(x => x.id === decodeURIComponent(arg)); if (item) return lessonView(item); }
-  const card = (x, isNew) => `<div class="box plan-card ${isNew ? "new" : ""}">
-      <div class="plan-face">${KnightwiseFaces.figure(x.coach, isNew ? "pleased" : "explain")}</div>
-      <div class="plan-text"><div class="label">${isNew ? "New for you · " : ""}${KIND_LABEL[x.kind]} · with ${COACHES[x.coach].name}</div>
-        <h3>${esc(x.title)}</h3><p class="muted small">${esc(x.why || x.intro)}</p>
-        <button class="btn ${isNew ? "primary" : ""}" data-id="${esc(x.id)}">${p.done.includes(x.id) ? "Again" : "Start"}</button></div></div>`;
+  // a picture of each thing, not a sentence (22 Oct: "what is the plan and why so less in it"): its board, how many
+  // positions, done or not; one Viktor in his bubble, not on every card
+  const ICONS = { opening: "book", tactic: "bolt", idea: "sparkles", endgame: "mate" };
+  const card = (x, isNew) => {
+    const n = (x.drills || []).length, done = p.done.includes(x.id);
+    return `<div class="box pcard ${isNew ? "new" : ""}" data-id="${esc(x.id)}" title="${esc(x.why || x.intro || "")}">
+      <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span>
+        ${isNew ? `<span class="pnew">New</span>` : done ? `<span class="pdone">${svg("check")}</span>` : ""}</div>
+      <h3>${esc(x.title)}</h3>
+      <div class="mini-board" data-board="${esc(x.id)}"></div>
+      ${n ? `<div class="psegs">${Array.from({ length: n }, () => `<i class="pseg ${done ? "right" : ""}"></i>`).join("")}</div>` : ""}
+      <button class="btn ${isNew ? "primary" : ""}">${done ? "Again" : "Start"}</button></div>`;
+  };
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Your plan</h1>
-      <p class="sub">Four things, picked for you from your games and from the coaches' library. One at a time.</p></div></div>
-    ${p.novelty ? card(p.novelty, true) : ""}
-    <div class="plan-grid">${Object.values(p.items).filter(Boolean).map(x => card(x, false)).join("")}</div>
-    <p class="note">Puzzles: Lichess puzzle database. Openings: Lichess opening catalogue, checked by Stockfish.</p>`;
+    <div class="page-head"><div><h1>Your plan</h1></div></div>
+    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>`;
+  all.forEach(x => {  // the position each one starts from
+    const el = document.querySelector(`[data-board="${CSS.escape(x.id)}"]`), d0 = (x.drills || [])[0];
+    if (!el) return;
+    if (x.fen) Board.render(el, { fen: x.fen, flip: x.side === "black" });
+    else if (d0 && d0.start) Board.render(el, typeof d0.start === "string" ? { fen: d0.start, flip: d0.flip } : { pieces: d0.start, flip: d0.flip });
+    else el.remove();
+  });
   document.querySelectorAll("[data-id]").forEach(b => b.onclick = () => go(`plan/${encodeURIComponent(b.dataset.id)}`));
   if (p.novelty && !p.novelty.again) api("/api/plan/mark", { id: p.novelty.id, novelty: true }).catch(() => {});
   if (p.novelty) AiCard.maybe("novelty");
