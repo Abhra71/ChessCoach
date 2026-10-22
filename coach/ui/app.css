@@ -795,3 +795,9 @@ a.tile:hover { filter: brightness(1.05); }
 .checking { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 14px; }
 .checking svg { width: 18px; height: 18px; color: #e9a23b; animation: spin 2s linear infinite; } .checking .bar { flex: 1; } .checking .bar > div { background: var(--accent); }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* the rematch (22 Oct): where it starts, and the opponent as a player */
+.rival { display: flex; align-items: center; gap: 10px; }
+.rival-face { width: 38px; height: 38px; border-radius: 10px; background: var(--raised); display: grid; place-items: center; }
+.rival-face svg { width: 20px; height: 20px; color: #e9a23b; }
+.rstart { grid-column: 1 / -1; font-size: 12.5px; font-weight: 600; color: var(--accent); padding: 2px 0 4px; }

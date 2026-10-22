@@ -579,14 +579,15 @@ async function rematchView(gid, ply) {
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games/${esc(gid)}" class="small muted" style="text-decoration:none">← Back to the game</a>
       <h1 style="margin-top:6px">Rematch vs ${esc(s.opponent)} <span class="faint num">${s.rating}</span></h1>
-      <p class="sub">From move ${s.move_number}, where it went wrong. In the real game you played ${esc(s.real_move)} and ${s.real === "loss" ? "lost" : "drew"}.</p></div></div>
+      <p class="sub">From move ${s.move_number} · you played ${esc(s.real_move)} and ${s.real === "loss" ? "lost" : "drew"}</p></div></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
         <div class="box stack" style="padding:16px">
-          <h2 style="margin:0">Your moves from here</h2>
-          <p class="small muted" style="margin:0">${s.human ? `They play like real ${s.rating} players: Maia, the human-move model, learned from millions of games at that level. It's players like them, not the person.`
-            : `They play at about their level: the engine makes mistakes on purpose, the way a ${s.rating} player might. It's an approximation, not the person.`}</p>
+          <div class="rival" title="${esc(s.human ? `Maia, the human-move model, learned from millions of real games at ${s.rating}: it plays and slips like players of that rating, never the person.` : `The engine at about ${s.rating}, making human-like mistakes on purpose; never the person.`)}">
+            <span class="rival-face">${svg("users")}</span>
+            <div><b>${esc(s.opponent)}-style <span class="faint num">${s.rating}</span></b>
+              <div class="small muted">${s.human ? `Plays like real ${s.rating} players` : `Plays at about ${s.rating}`}</div></div></div>
           <div class="movelist" id="rmoves"></div>
           <div class="err" id="rmsg"></div>
           <div class="row"><button class="btn" id="undo">Take back</button><button class="btn" id="again">Start again</button></div>
@@ -602,8 +603,9 @@ async function rematchView(gid, ply) {
     Board.render($("#board"), { fen: cur().fen, flip: s.flip, highlights: hl, targets, onClick: click });
     let html = "";
     // numbered from the real game: you, then their answer
+    html += `<span class="rstart">▶ Starts here: move ${s.move_number}, you to move</span>`;  // 22 Oct: "where does it start from?"
     played.forEach((p, i) => { html += `<span class="n">${s.move_number + i}.</span><span>${esc(p[0])}</span><span>${esc(p[1] || "")}</span>`; });
-    $("#rmoves").innerHTML = html || `<span class="small muted" style="grid-column:1/-1">Your move. Not ${esc(s.real_move)} this time.</span>`;
+    $("#rmoves").innerHTML = html + (played.length ? "" : `<span class="small muted" style="grid-column:1/-1">Not ${esc(s.real_move)} this time.</span>`);
   }
   async function click(sq) {
     if (busy || cur().over) return;

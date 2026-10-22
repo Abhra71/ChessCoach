@@ -114,6 +114,10 @@ Each one: what was seen, then the fix.
     "Whole game, previous move." got "I can't show or change anything" (fixed in the instructions: moving through a
     review is always allowed). Worked: next, back, "previous move", "Back. Sorry, next.", and a long back/next tangle.
 
+32. **Rematch: unclear where it starts, and the human-move model over-explained.** Fixed 22 Oct: "▶ Starts here: move
+    26, you to move" at the top of the moves; a short header; the opponent as a player card ("Laro1966-style 537 ·
+    Plays like real 537 players"), the Maia explanation on hover.
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)
