@@ -67,6 +67,14 @@ Each one: what was seen, then the fix.
     Fix: give the coaches a few facts about Knightwise (made by Abhra Chakraborty, free; Maya: games, practice;
     Viktor: progress, plan) and what they can do by voice.
 
+21. **Game review had no start and the coach didn't follow ◀ ▶** (everything on screen at once; Maya silent on
+    Next/Previous; "tap the game and choose Review" for a button that didn't exist; a clean game had nothing to
+    review). Fixed 22 Oct: ▶ Start review (nothing walks or talks before it); ◀ ▶ under the board drive the review and
+    Maya says every step, going back says it again; three ways: Key moments, Highlights (a clean game) and Whole game,
+    move by move: who moved which piece from where, what it attacks or leaves loose, the engine's verdict on your
+    moves and their slips (coach/narrate.py, no AI); "next", "back" and "start the review" by voice. The AI only for
+    wording later, never for the chess (owner: "if our engine is more accurate should we use AI?").
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)

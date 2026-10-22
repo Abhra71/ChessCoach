@@ -1584,7 +1584,19 @@ async function gameView(id) {
   const aiReady = Object.values(cfg.slots).some(x => x.set);
   const explained = {}, moments = g.key_moments, keyPly = new Set(moments.map(m => m.ply));
   const flip = g.color === "black";
-  let mi = 0, si = 0, shown = 0, free = !moments.length, ply = moments.length ? moments[0].ply - 1 : g.positions.length - 1;
+  // nothing shows or talks until you start (22 Oct test): then ◀ ▶ walk the review, and Maya says every step
+  let mi = 0, si = 0, shown = 0, free = true, ply = 0, mode = null, hi = 0;
+  const said = g.narration || [], high = g.highlights || [];
+  const END = { checkmated: "checkmated.", resigned: "resigned.", timeout: "ran out of time.", abandoned: "left the game.",
+    stalemate: "Stalemate: a draw.", agreed: "A draw by agreement.", repetition: "A draw by repetition.",
+    insufficient: "A draw: not enough pieces to mate.", timevsinsufficient: "A draw: time ran out, but no mate was possible.",
+    "50move": "A draw by the 50-move rule." };
+  const ending = () => {  // how the game ended, said on its last move
+    const h = END[g.how] || "";
+    if (!h || h[0] === h[0].toUpperCase()) return h;
+    if (g.how === "checkmated") return g.result === "win" ? "You won by checkmate." : "Checkmate: they won.";
+    return `${g.result === "win" ? g.opponent : "You"} ${h}`;
+  };
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
       <h1 style="margin-top:6px">vs ${esc(g.opponent)} <span class="faint num">${g.opponent_rating}</span></h1>
@@ -1607,10 +1619,13 @@ async function gameView(id) {
       </div>
     </div>`;
   const stepPly = (k, st) => st.board === "before" ? k.ply - 1 : k.ply;
+  const flat = moments.flatMap((k, m) => k.steps.map((_, i) => [m, i]));  // every step of every key moment, in order
+  const toArrows = list => list.map(([u, kind]) => ({ from: u.slice(0, 2), to: u.slice(2, 4), kind }));
   function board() {
-    const k = moments[mi], st = !free && k ? k.steps[si] : null, pos = g.positions[ply], hl = {};
-    if (!st && pos.uci) { hl[pos.uci.slice(0, 2)] = "hl-last"; hl[pos.uci.slice(2, 4)] = "hl-last"; }
-    const arrows = st ? st.arrows.map(([u, kind]) => ({ from: u.slice(0, 2), to: u.slice(2, 4), kind })) : [];
+    const k = moments[mi], st = mode === "key" && k ? k.steps[si] : null, pos = g.positions[ply], hl = {};
+    let arrows = st ? toArrows(st.arrows) : [];
+    if (!st && ply > 0 && (mode === "whole" || mode === "high") && said[ply - 1]) arrows = toArrows(said[ply - 1].arrows);
+    else if (!st && pos.uci) { hl[pos.uci.slice(0, 2)] = "hl-last"; hl[pos.uci.slice(2, 4)] = "hl-last"; }
     Board.render($("#board"), { fen: pos.fen, flip, highlights: hl, arrows });
     let html = "";
     for (let i = 1; i < g.positions.length; i += 2) {
@@ -1619,22 +1634,45 @@ async function gameView(id) {
         ? `<span data-p="${j}" class="${j === ply ? "cur" : ""} ${keyPly.has(j) ? "key" : ""}">${esc(g.positions[j].san)}</span>` : "<span></span>";
     }
     $("#moves").innerHTML = html;
-    $("#moves").querySelectorAll("span[data-p]").forEach(el => el.onclick = () => { ply = Number(el.dataset.p); free = true; draw(); });
+    $("#moves").querySelectorAll("span[data-p]").forEach(el => el.onclick = () => { mode = "whole"; move(Number(el.dataset.p)); });
   }
+  const tabs = () => `<div class="row">
+      ${moments.length ? `<button class="btn small-btn ${mode === "key" ? "primary" : ""}" data-mode="key">Key moments</button>`
+        : high.length ? `<button class="btn small-btn ${mode === "high" ? "primary" : ""}" data-mode="high">Highlights</button>` : ""}
+      <button class="btn small-btn ${mode === "whole" ? "primary" : ""}" data-mode="whole">Whole game</button></div>`;
   function draw() {
     board();
     const w = $("#walk");
-    if (!moments.length) {
-      w.innerHTML = `<h2 style="margin:0">No big mistakes in this game</h2><p class="muted">Every move kept your position. Step through it with the arrows under the board.</p>`;
+    if (!mode) {  // the start: what's in the game, and how to begin
+      w.innerHTML = `<h2 style="margin:0">${moments.length ? `${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game`
+          : "No big mistakes in this game"}</h2>
+        <p class="muted" style="margin:0">${moments.length ? "Maya goes through each one with you, step by step. Use ◀ ▶ under the board."
+          : "Maya can show you its best moments, or go through every move."}</p>
+        <div class="row"><button class="btn primary" id="startreview">▶ Start review</button>
+          <button class="btn" data-mode="whole">Whole game, move by move</button></div>`;
+      $("#startreview").onclick = () => setMode(moments.length ? "key" : high.length ? "high" : "whole");
+      w.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+      return;
+    }
+    if (mode === "whole" || mode === "high") {
+      const m = said[ply - 1], last = ply === g.positions.length - 1, total = g.move_numbers[g.move_numbers.length - 1];
+      const where = mode === "high" ? `Highlight ${hi + 1} of ${high.length}` : ply ? `Move ${g.move_numbers[ply - 1]} of ${total}` : "The start";
+      w.innerHTML = `${tabs()}<div class="row spread"><h2 style="margin:0">${where}</h2>
+          <span class="small faint">◀ ▶ under the board</span></div>
+        <p style="margin:0">${ply && m ? esc(m.text) : "The starting position. Press ▶ for the first move."}</p>
+        ${last && ending() ? `<p class="small" style="margin:0"><b>The end:</b> ${esc(ending())}</p>` : ""}
+        ${keyPly.has(ply) ? `<div class="row"><button class="btn primary" data-moment="${moments.findIndex(k => k.ply === ply)}">Go through this key moment</button></div>` : ""}`;
+      w.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+      w.querySelectorAll("[data-moment]").forEach(b => b.onclick = () => { mode = "key"; open(Number(b.dataset.moment)); });
       return;
     }
     const k = moments[mi];
-    w.innerHTML = `
+    w.innerHTML = `${tabs()}
       <div class="row spread"><h2 style="margin:0">Key moment ${mi + 1} of ${moments.length}</h2>
         <div class="dots">${moments.map((m, i) => `<button class="dot ${i === mi ? "on" : ""}" data-m="${i}" title="Move ${m.move_number}" aria-label="Key moment ${i + 1}, move ${m.move_number}"></button>`).join("")}</div></div>
       <div class="row spread"><span class="what">Move ${k.move_number} · ${esc(cap(k.pattern))}</span>
         <span class="small faint" title="How much of your chance to win this move cost">−${Math.round(k.loss)}% win chance</span></div>
-      <ol class="steps">${k.steps.slice(0, shown + 1).map((st, i) => `<li class="step ${!free && i === si ? "on" : ""}" data-s="${i}">
+      <ol class="steps">${k.steps.slice(0, shown + 1).map((st, i) => `<li class="step ${i === si ? "on" : ""}" data-s="${i}">
         <span class="tag"><i style="background:${Board.KIND[st.kind].color}"></i>${esc(st.title)}${st.san ? ` <b>${esc(st.san)}</b>` : ""}</span>
         <div class="small">${esc(st.text)}</div></li>`).join("")}</ol>
       ${shown < k.steps.length - 1 ? `<div class="row"><button class="btn primary" id="nextstep">Next: ${esc(k.steps[shown + 1].title)} ▶</button>
@@ -1650,9 +1688,10 @@ async function gameView(id) {
             ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}">Explain like a coach</button>` : ""}</div>
           ${mi === moments.length - 1 && shown === k.steps.length - 1 ? `<div data-helpful></div>` : ""}`}`;
     helpful(w.querySelector("[data-helpful]"), `review ${g.id}`);
+    w.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode));
     w.querySelectorAll("[data-m]").forEach(b => b.onclick = () => open(Number(b.dataset.m)));
     w.querySelectorAll("[data-s]").forEach(li => li.onclick = () => pick(Number(li.dataset.s)));
-    const ns = $("#nextstep"); if (ns) ns.onclick = () => { shown++; pick(shown); };
+    const ns = $("#nextstep"); if (ns) ns.onclick = () => step(1);
     const all = $("#allsteps"); if (all) all.onclick = () => { shown = k.steps.length - 1; pick(shown, false); };
     const nm = $("#nextmoment"); if (nm) nm.onclick = () => open(mi + 1);
     w.querySelectorAll("[data-explain]").forEach(b => b.onclick = async () => {
@@ -1663,41 +1702,68 @@ async function gameView(id) {
       } catch (err) { b.textContent = err.message.slice(0, 80); }
     });
   }
-  // show one step: its board, its arrows, and Maya says it (worried when it went wrong for you)
+  // one step of a key moment: its board, its arrows, and Maya says it (worried when it went wrong for you)
   function pick(i, speak = true) {
     const k = moments[mi], st = k.steps[i];
-    si = i; free = false; ply = stepPly(k, st);
+    si = i; shown = Math.max(shown, i); free = false; ply = stepPly(k, st);
     draw();
     const bad = st.kind === "mine" || (st.kind === "real" && !k.reply_missed && k.real_reply_san);
-    if (speak) Coach.react("maya", bad ? "worried" : "explain", st.text);
+    const text = i === 0 ? `Move ${k.move_number}. ${st.text}` : st.text;
+    if (speak) Coach.react("maya", bad ? "worried" : "explain", text);
+    return text;
   }
-  function open(i) { mi = i; shown = 0; pick(0); }
-  // "next" by voice: the next step, or the next moment; returns what Maya says
-  window.kwNextStep = () => {
-    if (!moments.length || !location.hash.includes(`games/${g.id}`)) return null;
-    const k = moments[mi];
-    if (shown < k.steps.length - 1) { shown++; pick(shown, false); return k.steps[shown].text; }
-    if (mi < moments.length - 1) { open(mi + 1); return `Key moment ${mi + 1}, move ${moments[mi].move_number}. ${moments[mi].steps[0].text}`; }
-    return "That was the last key moment. You can try it again, or rematch from there.";
-  };
+  function open(i) { mi = i; shown = 0; return pick(0); }
+  // one move of the whole game: the board after it, and Maya's line about it (going back says it again)
+  function move(p, speak = true) {
+    ply = Math.max(0, Math.min(g.positions.length - 1, p)); free = true;
+    draw();
+    const m = said[ply - 1];
+    const text = !ply || !m ? "The starting position." : m.text + (ply === g.positions.length - 1 && ending() ? ` ${ending()}` : "");
+    if (speak) Coach.react("maya", m && m.kind === "bad" ? "worried" : m && (m.kind === "good" || m.kind === "slip") ? "pleased" : "explain", text);
+    return text;
+  }
+  function setMode(m) {
+    mode = m;
+    if (m === "key") return open(0);
+    if (m === "high") { hi = 0; return move(high[0]); }
+    return move(ply || 1);
+  }
+  // ◀ ▶ (and Next / Back by voice): one step in whatever is being reviewed; returns what Maya says
+  function step(d) {
+    if (!mode) return setMode(moments.length ? "key" : high.length ? "high" : "whole");
+    if (mode === "key") {
+      const at = flat.findIndex(([m, i]) => m === mi && i === si), to = at + d;
+      if (to < 0) return pick(0);
+      if (to >= flat.length) { const t = "That was the last key moment. Try it again, or go through the whole game."; Coach.react("maya", "calm", t); return t; }
+      if (flat[to][0] !== mi) { mi = flat[to][0]; shown = flat[to][1]; }
+      return pick(flat[to][1]);
+    }
+    if (mode === "high") { hi = Math.max(0, Math.min(high.length - 1, hi + d)); return move(high[hi]); }
+    if (ply + d > g.positions.length - 1) { const t = ending() || "That was the last move."; Coach.react("maya", "calm", t); return t; }
+    return move(ply + d);
+  }
+  window.kwNextStep = () => location.hash.includes(`games/${g.id}`) ? step(1) : null;
+  window.kwBackStep = () => location.hash.includes(`games/${g.id}`) ? step(-1) : null;
   askBox($("#askbox"), { placeholder: "Why is my bishop in danger here?", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
-    onAsk: q => { const k = moments[mi]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: !free && k ? k.ply : null }); } });
+    onAsk: q => { const k = moments[mi]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: mode === "key" && k ? k.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go, was = ply;
-    ply = v === "0" ? 0 : v === "end" ? g.positions.length - 1 : Math.max(0, Math.min(g.positions.length - 1, ply + Number(v)));
-    free = true;
+    if (v === "1" || v === "-1") step(Number(v));
+    else if (mode === "key") { const [m, i] = v === "0" ? flat[0] : flat[flat.length - 1]; mi = m; shown = i; pick(i); }
+    else if (mode === "high") { hi = v === "0" ? 0 : high.length - 1; move(high[hi]); }
+    else { mode = "whole"; move(v === "0" ? 0 : g.positions.length - 1); }
     if (ply === was + 1) Sound.move(g.positions[ply].san);
-    draw();
   });
   draw();
-  // Maya welcomes you at once (13 Oct test: she only came after a moment was clicked): how many, which cost most
+  // Maya says what's in the game and waits for you: nothing is walked through until you start
   const worst = moments.reduce((a, b) => (b.loss > (a ? a.loss : -1) ? b : a), null);
   if (worst) Coach.react("maya", "explain",
-    `${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game, and we'll take them one at a time. ` +
+    `${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game. ` +
     (moments.length < 2 ? `It's move ${worst.move_number}. ` : worst === moments[0] ? `The first one, move ${worst.move_number}, cost you the most. `
-      : `First move ${moments[0].move_number}; move ${worst.move_number} cost you the most. `) + "Press Next when you're ready.",
-    [{ label: `Start with move ${moments[0].move_number}`, run: () => pick(0) }]);
-  else Coach.react("maya", "celebrate", "No big mistakes in this game. That's how it's done.");
+      : `Move ${worst.move_number} cost you the most. `) + "Press Start review when you're ready.",
+    [{ label: "▶ Start review", run: () => setMode("key") }]);
+  else Coach.react("maya", "celebrate", "No big mistakes in this game. Press Start review and I'll show you its best moments.",
+    [{ label: "▶ Start review", run: () => setMode(high.length ? "high" : "whole") }]);
 }
 
 // ---------- practice ----------

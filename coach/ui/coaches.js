@@ -133,6 +133,7 @@ const Conv = (() => {
       if (owner && owner !== coach) { handover = { tab, owner }; speech = `${speech} Here's ${COACHES[owner].name}.`; }
     }
     if (r.action && r.action.next && window.kwNextStep) speech = window.kwNextStep() || speech;  // the review's next step
+    if (r.action && r.action.back && window.kwBackStep) speech = window.kwBackStep() || speech;  // and back again
     history.push(["player", text], ["coach", speech]);
     on = false;  // her answer; Talk again to say more
     Coach.show({ coach, pose: r.mood || "explain", mood: r.mood || "explain", lines: [speech], actions: [], ai: !!r.ai }, { speak: false });

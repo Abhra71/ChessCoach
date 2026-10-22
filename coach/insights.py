@@ -202,7 +202,11 @@ def game_detail(gid):
         m = moment(r, played)
         m["habit"] = ABOUT[classify(r)][1] if classify(r) in ABOUT else None
         key.append(m)
-    return {**game_row(g, rows, player), "positions": positions, "key_moments": key,
+    from coach import narrate  # the whole game, move by move, no AI (22 Oct)
+    side, other = _side(g, player)
+    every = narrate.game(positions, played, rows, chess.WHITE if side == "white" else chess.BLACK, g[other]["username"])
+    return {**game_row(g, rows, player), "positions": positions, "key_moments": key, "narration": every,
+            "highlights": narrate.highlights(every) if not key else [],
             "move_numbers": [move_number({"ply": i}) for i in range(1, len(positions))], **extras(g, rows, player)}
 
 

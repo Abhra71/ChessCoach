@@ -26,7 +26,8 @@ RULES = (
     "do review, what a game's n: opens the review of one of the recent_games (n 1 is their last game, n 2 the one "
     "before, so \"my third last game\" is 3; \"my game against X\" is the n of the newest game against X). "
     "do rematch, what a game's n: replays a lost or drawn game from where it went wrong. "
-    "do next: shows the next step of the review on screen (only when where_the_player_is says review). "
+    "do next: starts the review, or shows its next step or move (only when where_the_player_is says review). "
+    "do back: the review's previous step or move again (only when where_the_player_is says review). "
     "do prep, what a chess.com username: prepares against any player before a game (their openings and how their "
     "games end), using a name from the facts when it sounds like one of them. "
     "do guide, what a place on chess.com (puzzles, bots, archive: their game history on chess.com, lessons): shows "
@@ -42,6 +43,7 @@ RULES = (
 REFUSED = {  # an action the coach asked for that isn't possible here: say so, never "let's replay it" and nothing (19 Oct)
     "rematch": "I can't start a rematch from here. Open a game you lost or drew, then say rematch.",
     "next": "Open a game's review first, then say next and I'll go through it step by step.",
+    "back": "Open a game's review first, then say next or back to go through it.",
     "review": "I can't find that game in your recent games.",
     "guide": "I show the way on chess.com itself. Open chess.com, ask me there, and I'll ring it for you.",
 }
@@ -92,7 +94,7 @@ def parse(text):
     return out
 
 
-VERBS = ("open", "review", "rematch", "next", "prep", "guide")
+VERBS = ("open", "review", "rematch", "next", "back", "prep", "guide")
 
 
 def plain(do):
@@ -152,7 +154,7 @@ def confirm(done, games):
         return f"Here's how {route[5:]} plays."
     if route in NAMES:
         return f"Here's {NAMES[route]}."
-    return "Here's the next step." if done.get("next") else "Follow the red ring."
+    return "Here's the next step." if done.get("next") else "Here it is again." if done.get("back") else "Follow the red ring."
 
 
 def action(do, games, where):
@@ -170,6 +172,8 @@ def action(do, games, where):
         return {"route": f"rematch/{g['id']}/{detail['ply']}"} if detail else None
     if do.get("next") is True and (where or {}).get("section") == "review":
         return {"next": True}
+    if do.get("back") is True and (where or {}).get("section") == "review":  # 22 Oct: going back says it again
+        return {"back": True}
     if do.get("guide") in coaches.ROUTES and (where or {}).get("chesscom"):  # the red ring, on chess.com only
         return {"guide": coaches.guide(do["guide"])["guide"]}
     who = str(do.get("prep", "")).strip().lower()  # any chess.com player (19 Oct: "I can't find that game")
