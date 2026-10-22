@@ -60,6 +60,13 @@ Each one: what was seen, then the fix.
     over, speaks, and the next Talk is with them (the conversation carries over).
 18. **Report it did nothing** (the global feedbackBox called itself). Fixed 22 Oct.
 
+19. **Practice always opened on the same game (vs Geethasharvesh).** No answers had been saved in the test copy, so
+    the same "clearest first" positions led every visit. Fixed 22 Oct: new positions come in a different order each
+    day (the same all day). To check: whether answers are being saved at all (no practice.jsonl yet).
+20. **Talking: "Who made this app? What can Viktor do?"** Maya called Viktor "the avatar" and didn't know the maker.
+    Fix: give the coaches a few facts about Knightwise (made by Abhra Chakraborty, free; Maya: games, practice;
+    Viktor: progress, plan) and what they can do by voice.
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)

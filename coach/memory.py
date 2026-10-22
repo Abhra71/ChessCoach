@@ -102,6 +102,9 @@ def choose(candidate_ids, n, today=None):
         box, last = state[cid]
         if is_due(box, last, today):
             (missed if box == 0 else review).append(cid)
+    # new ones in a different order each day (22 Oct test: the same game came first every time); today's stays put
+    import random
+    random.Random(today.isoformat()).shuffle(new)
     return (done_today + missed + new + review)[:n]
 
 

@@ -18,8 +18,12 @@ def day(n):
     return date.fromordinal(D.toordinal() + n)
 
 
-def test_new_positions_come_first_in_given_order():
-    assert memory.choose(["a", "b", "c"], 2, today=D) == ["a", "b"]
+def test_new_positions_change_order_by_day_but_not_within_a_day():
+    ids = [str(n) for n in range(12)]
+    today = memory.choose(ids, 4, today=D)
+    assert len(today) == 4 and set(today) <= set(ids)
+    assert memory.choose(ids, 4, today=D) == today  # the same all day, even after a rebuild
+    assert any(memory.choose(ids, 4, today=day(k)) != today for k in range(1, 4))  # 22 Oct: not the same game first
 
 
 def test_wrong_answer_comes_back_tomorrow_before_new_ones():
@@ -30,8 +34,9 @@ def test_wrong_answer_comes_back_tomorrow_before_new_ones():
 
 def test_answered_today_stay_in_todays_set_before_new_ones():
     memory.record_practice("c", "game", True, day=D)
-    assert memory.choose(["a", "b", "c"], 2, today=D) == ["c", "a"]
-    assert memory.choose(["a", "b", "c"], 2, today=day(1)) == ["a", "b"]  # a new day: new positions first
+    first = memory.choose(["a", "b", "c"], 2, today=D)
+    assert first[0] == "c" and first[1] in ("a", "b")
+    assert set(memory.choose(["a", "b", "c"], 2, today=day(1))) == {"a", "b"}  # a new day: new positions first
 
 
 def test_right_answers_space_out():
