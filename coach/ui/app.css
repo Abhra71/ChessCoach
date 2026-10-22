@@ -697,3 +697,12 @@ a.tile:hover { filter: brightness(1.05); }
 .ctitle { font-size: 12.5px; line-height: 1.3; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .cnode.next .ctitle { color: var(--text); font-weight: 600; }
 .cnode.coming .ctitle, .cnode.later .ctitle { color: var(--faint); }
+
+/* Progress, the calm way (22 Oct): the clock as numbers, badges as a medal, a number and a bar */
+.pclock { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; padding: 16px 18px; }
+.pclock h2 { display: inline-flex; align-items: center; gap: 8px; } .pclock h2 svg { width: 18px; height: 18px; color: #e9a23b; }
+.pclock-n { display: flex; flex-direction: column; } .pclock-n b { font-size: 24px; font-weight: 650; } .pclock-n b span { font-size: 16px; }
+.pclock .btn { margin-left: auto; }
+.story-next { display: flex; align-items: center; gap: 8px; } .story-next svg { width: 16px; height: 16px; color: var(--accent); flex: none; }
+.ltool { white-space: nowrap; }
+.badge-group, .badge-source { text-transform: none; letter-spacing: 0; }

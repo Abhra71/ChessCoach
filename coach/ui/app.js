@@ -29,6 +29,7 @@ const ICON = {
   message: '<path d="M4 5h16v11H9.5L4 20.5z"/>',
   sync: '<path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4.5V11h-6.5"/>',
   lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
@@ -1359,9 +1360,10 @@ const BADGE_SOURCES = [["From your chess.com games", ["Habits", "Clean play", "R
 const TIERS = ["Bronze", "Silver", "Gold"];
 function badgeCard(b) {  // what you have, what's next, and whether it's complete: one look
   const state = b.tier === 3 ? "Complete" : b.tier ? `${b.tier_name} · Gold at ${b.tiers[2]}` : `Not started · Bronze at ${b.tiers[0]}`;
-  return `<div class="badge t${b.tier}">
-    <div class="medal">${svg(b.icon)}</div><b>${esc(b.name)}</b><div class="tier-name">${b.tier === 3 ? "✓ " : ""}${esc(state)}</div>
-    <div class="small muted">${b.next ? `${b.best} of ${b.next} ${esc(b.what)}, for ${TIERS[b.tier]}` : `${b.best} ${esc(b.what)}`}</div>
+  // a medal, its name, a number and a bar; the words are on hover (22 Oct: less text)
+  return `<div class="badge t${b.tier}" title="${esc(state)} · ${esc(b.what)}">
+    <div class="medal">${svg(b.icon)}</div><b>${esc(b.name)}</b>
+    <div class="small muted num">${b.next ? `${b.best}/${b.next}` : `${b.best}`}${b.tier === 3 ? " ✓" : ""}</div>
     <div class="bar"><div style="width:${b.next ? Math.min(100, 100 * b.best / b.next) : 100}%"></div></div></div>`;
 }
 async function progressView() {
@@ -1371,8 +1373,9 @@ async function progressView() {
   const s = p.story, r = (s && s.results) || {};
   const complete = p.badges.filter(b => b.tier === 3).length, started = p.badges.filter(b => b.tier && b.tier < 3).length;
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Progress</h1><p class="sub">From your real chess.com games, checked by Stockfish.</p></div>
-      <div class="row"><a class="btn" href="#/report/week">Report for your coach</a><a class="btn" href="#/film/month">▶ Your game of the month</a>
+    <div class="page-head"><div><h1>Progress</h1></div>
+      <div class="row"><a class="ltool" href="#/report/week" title="A report for your coach or a parent">${svg("plan")}<span>Report</span></a>
+        <a class="ltool" href="#/film/month" title="Your game of the month, as a film">${svg("practice")}<span>Film</span></a>
         <a class="btn primary" href="#/report/month">▶ Your month, Wrapped</a></div></div>
     <div class="grid">
       ${s ? `<div class="box story rise" id="story">
@@ -1395,16 +1398,16 @@ async function progressView() {
             <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div>
 </a>` : ""}
         </div>
-        ${s.next ? `<div class="story-next"><span class="label">Next week's one thing</span><div>${esc(s.next.habit)}</div></div>` : ""}
+        ${s.next ? `<div class="story-next" title="Next week's one thing">${svg("bolt")}<span>${esc(s.next.habit)}</span></div>` : ""}
       </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
-      ${p.clock && p.clock.lines.length ? `<div class="box rise stack" style="padding:16px"><h2 style="margin:0">Your clock</h2>
-        <p class="small muted" style="margin:0">Your last ${p.clock.games} games with a clock, from the time chess.com records on every move.</p>
-        ${p.clock.lines.map(l => `<p style="margin:0">${esc(l)}</p>`).join("")}
-        ${p.clock.big && p.clock.fast / p.clock.big >= 0.3 ? `<p class="small" style="margin:0"><b>Try this:</b> when they capture or give check, count to five before you answer.</p>` : ""}
-        ${p.clock.fast ? `<div><a class="btn" href="#/clockdrill">Slow-down drill: your rushed moves</a></div>` : ""}</div>` : ""}
+      ${p.clock && p.clock.lines.length ? `<div class="box rise pclock" title="${esc(p.clock.lines.join(" "))}">
+        <h2 style="margin:0">${svg("clock")}Your clock</h2>
+        <div class="pclock-n"><b class="num">${p.clock.fast}<span class="faint">/${p.clock.big}</span></b><span class="muted small">big mistakes in a rush</span></div>
+        <div class="pclock-n"><b class="num">${p.clock.on_time}<span class="faint">/${p.clock.losses}</span></b><span class="muted small">losses on time</span></div>
+        ${p.clock.fast ? `<a class="btn" href="#/clockdrill" title="Your rushed moves, again: count to five first">Slow down</a>` : ""}</div>` : ""}
       <div class="box rise"><div class="row spread"><h2 style="margin:0">Badges</h2>
           <div class="ring-legend"><span><i class="t1"></i>Bronze</span><span><i class="t2"></i>Silver</span><span><i class="t3"></i>Gold, complete</span></div></div>
-        <p class="small muted" style="margin:6px 0 0">${complete} complete · ${started} on the way · ${p.badges.length - complete - started} not started. A badge is complete at Gold.</p>
+        <p class="small muted num" style="margin:6px 0 0" title="A badge is complete at Gold">${complete} complete · ${started} on the way · ${p.badges.length - complete - started} to start</p>
         ${BADGE_SOURCES.map(([title, groups]) => `<h3 class="badge-source">${title}</h3>
         ${groups.filter(gr => p.badges.some(b => b.group === gr)).map(gr => `<div class="badge-group">${esc(gr)}</div>
         <div class="badges">${p.badges.filter(b => b.group === gr).map(badgeCard).join("")}</div>`).join("")}`).join("")}</div>
