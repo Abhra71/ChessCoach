@@ -464,8 +464,14 @@
     }
     if (KnightwiseContract.off("coach") || (here === "member" && KnightwiseContract.off("prep"))) return;  // paused (fixes.json)
     current = here;
-    const store = (await send({ type: "greeted", section: here })) || {};
-    const first = store.day !== today();  // the first visit to this section today: the full welcome
+    // every time chess.com is opened (a new tab or window), the coach opens and talks once; the pages after that in the
+    // same visit show the folded tab, open on click (22 Oct test: "open and talk automatically the first time every
+    // web open, then open on click")
+    let first = false;
+    try { first = !sessionStorage.getItem("kw-visit-greeted"); sessionStorage.setItem("kw-visit-greeted", "1"); } catch (e) {
+      const store = (await send({ type: "greeted", section: here })) || {};
+      first = store.day !== today();
+    }
     const who = here === "member" ? location.pathname.split("/")[2] : undefined;
     const r = await send({ type: "coach", section: here, hour: new Date().getHours(), again: !first, who });
     if (current !== here) return;
