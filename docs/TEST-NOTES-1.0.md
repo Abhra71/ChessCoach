@@ -126,6 +126,9 @@ Each one: what was seen, then the fix.
     panel can be scrolled; the key moment as chips (fixed 22 Oct). Repeat visits: a folded tab, the first page of each
     visit opens and talks; with buttons all the text shows (fixed).
 
+35. **Chrome lists a warning under the extension's Errors:** "ScriptProcessorNode is deprecated" (offscreen.js, the
+    chess.com microphone). It works; Chrome hasn't removed it. After launch: move the recorder to an AudioWorklet.
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)
