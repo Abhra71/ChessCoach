@@ -84,7 +84,7 @@ const Coach = (() => {
     if (!r || TAB_SECTION[location.hash.replace(/^#\/?/, "").split("/")[0] || "home"] !== section) return;
     said = { ...r, casual: true, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
     more = false;
-    if (r.quiet && !force) { said.lines = [`${(COACHES[r.coach] || {}).name || "Your coach"} is here if you need anything.`]; return render(false); }  // nothing new: just the tab
+    if (r.quiet && !force) { said.lines = ["I'm here if you need anything."]; return render(false); }  // nothing new: just the tab
     render(true);  // the full welcome first, later just where things stand (once a day)
     if (first || force) { remember(`kw-app-greeted-${section}`, today()); talk(); }
     else { const now = said; clearTimeout(quiet); quiet = setTimeout(() => { if (said === now) render(false); }, 20000); }
