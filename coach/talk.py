@@ -40,6 +40,15 @@ RULES = (
     "open the page only if it really has what they asked for. Mention their habit only when it answers what they "
     "asked, never as a closing line. \"say\" is always at least one sentence."
 )
+# what the coaches know about the app itself (22 Oct test: Maya called Viktor "the avatar" and didn't know the maker)
+ABOUT = {
+    "made_by": "Abhra Chakraborty, one person working alone; free forever, no account, no ads",
+    "coaches": {"Maya": "your games, reviews, practice and Home", "Viktor": "your progress, plan, course, level and Train"},
+    "what_they_can_do_by_voice": "open any page, review a game by its opponent or how recent it is, rematch it, say next or "
+                                 "back in a review, prep against a chess.com player, and on chess.com show the way with a red ring",
+    "fair_play": "completely off during a game against a real person",
+    "the_games_they_see": "the last 12 games in detail; all_games has the totals",
+}
 REFUSED = {  # an action the coach asked for that isn't possible here: say so, never "let's replay it" and nothing (19 Oct)
     "rematch": "I can't start a rematch from here. Open a game you lost or drew, then say rematch.",
     "next": "Open a game's review first, then say next and I'll go through it step by step.",
@@ -191,7 +200,8 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     fallback = coaches.chat(coach, said, history, home=home, ask_ai=lambda *a: (_ for _ in ()).throw(ai.NoKey()))
     fallback["action"] = None
     facts = {"player": coaches.player_card(home), "recent_games": games, "where_the_player_is": where or {},
-             "level": level_now(), "next_lesson": next_lesson()}
+             "level": level_now(), "next_lesson": next_lesson(), "knightwise": ABOUT,
+             "all_games": {"checked": home.get("games"), "results": home.get("results")}}
     facts_text = json.dumps(facts)
     system = (ai.COACH_RULES.format(rating=home.get("rating") or "unknown") + coaches.PERSONA[coach] + RULES)
     name = coaches.COACHES[coach]["name"]

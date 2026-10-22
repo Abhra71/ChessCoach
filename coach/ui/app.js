@@ -356,9 +356,13 @@ function paintStatus() {
   const me = $("#mename"); if (me && s.player && !me.textContent) me.textContent = s.player;
 }
 
+let lastPhase = null;
 async function pollStatus() {
   try { STATUS = await api("/api/status"); } catch (e) { STATUS = {}; }
   paintStatus();
+  // the check just finished: Home shows the new numbers by itself (22 Oct test, finding 5)
+  if (lastPhase && lastPhase !== "ready" && STATUS.phase === "ready" && /^#?\/?(home)?$/.test(location.hash.replace("#/", "")) && $(".home-head")) home();
+  lastPhase = STATUS.phase;
   setTimeout(pollStatus, STATUS.phase && STATUS.phase !== "ready" ? 1500 : 6000);
 }
 
@@ -1538,7 +1542,7 @@ async function home() {
     else if (localStorage.getItem("kw-ai-next")) { localStorage.removeItem("kw-ai-next"); setTimeout(() => AiCard.maybe("welcome"), 4000); }
     else AiCard.maybe("week");
   } catch (e) {}
-  const hour = new Date().getHours(), hello = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const hour = new Date().getHours(), hello = hour >= 5 && hour < 12 ? "Good morning" : hour >= 12 && hour < 18 ? "Good afternoon" : "Good evening";  // the coaches' rule: evening until 5 am
   const f = h.focus, last = h.last_game, r = h.results || {}, pr = h.practice || {};
   const better = h.pieces_last20 < h.pieces_per_game;
   const played = (r.win || 0) + (r.loss || 0) + (r.draw || 0) || 1, pct = n => (100 * (n || 0) / played).toFixed(1);
@@ -1551,6 +1555,8 @@ async function home() {
   const short = { "left a piece hanging": "hanging", "walked into a fork or trick": "forks", "missed a free capture": "missed takes",
     "walked into checkmate": "walked into mate", "missed a checkmate": "missed mates", "stalemated a won game": "stalemates" };
   $("#page").innerHTML = `
+    ${STATUS.phase && !["ready", "starting"].includes(STATUS.phase) && STATUS.total ? `<div class="box checking">${svg("sync")}
+      <span>Checking your games: <b class="num">${STATUS.done}</b> of ${STATUS.total}</span><div class="bar"><div style="width:${100 * STATUS.done / STATUS.total}%"></div></div></div>` : ""}
     <div class="home-head"><h1>${hello}, ${esc(h.player)}</h1>
       <button class="btn ghost icon-btn" id="brief" title="Hear it from Maya">${svg("sound")}</button>
       <span class="home-streak" title="Days in a row of your five minutes">${svg("flame")}<b class="num">${d.streak || 0}</b></span></div>
@@ -1864,8 +1870,9 @@ function healthRow(h) {
 // Settings: where the extension really is. "Set up" only while it isn't connected anywhere.
 function connectedIn(st) {
   const names = { chrome: "Chrome", edge: "Edge", brave: "Brave", opera: "Opera" };
-  const where = Object.keys(st.extension_in || {}).map(b => names[b] || "your browser");
-  return where.length ? `<span class="ok-text">Connected in ${where.join(" and ")}</span>`
+  const where = (st.extension_now || []).map(b => names[b] || "your browser"), ever = Object.entries(st.extension_in || {});
+  if (where.length) return `<span class="ok-text">Connected in ${where.join(" and ")}</span>`;
+  return ever.length ? `<span class="faint">Not connected · last seen ${esc(ever.map(([, t]) => t.slice(11)).sort().pop())}</span><a class="btn" href="#/extension">Set up</a>`
     : `<span class="faint">Not connected yet</span><a class="btn" href="#/extension">Set up</a>`;
 }
 

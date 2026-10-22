@@ -305,6 +305,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
             STATE["extension_seen"] = time.strftime("%Y-%m-%d %H:%M")
             STATE.setdefault("extension_in", {})[browser_of(self.headers.get("User-Agent"))] = STATE["extension_seen"]
+            STATE.setdefault("extension_at", {})[browser_of(self.headers.get("User-Agent"))] = time.time()  # finding 11
             return self.send(200, "{}", "application/json")
         if path == "/api/listen/warm":  # the player pressed Talk: load the listening model while they speak
             from coach import hearing
@@ -979,6 +980,8 @@ def status():
             "done": STATE.get("done", 0), "total": STATE.get("total", 0), "error": STATE.get("error"),
             "review_ready": (DATA / "review.html").exists(), "extension_seen": STATE.get("extension_seen"),
             "extension_in": STATE.get("extension_in", {}), "health": health.summary(),
+            # connected only if seen lately: it checks in every minute (22 Oct test: "connected" after it was removed)
+            "extension_now": [b for b, t in STATE.get("extension_at", {}).items() if time.time() - t < 180],
             "extension_path": str(EXTENSION), "browsers": sorted(browsers()), "listen_install": STATE.get("listen_install")}
 
 
