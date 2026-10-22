@@ -1649,10 +1649,11 @@ async function gameView(id) {
         <div style="margin-top:12px">${Board.legend(["mine", "better", "real", "reply"])}</div></div>
       <div class="stack">
         <div class="box stack walk" id="walk"></div>
-        ${g.clock && g.clock.lines.length ? `<div class="box stack clockbox" style="padding:14px"><h2 style="margin:0">Your clock</h2>
-          ${g.clock.lines.map(l => `<p class="small" style="margin:0">${esc(l)}</p>`).join("")}
-          <p class="small faint" style="margin:0">From the clock chess.com recorded on every move. Average: ${g.clock.average} s a move.</p></div>` : ""}
-        <div class="box stack" style="padding:14px"><h2 style="margin:0">Ask the coach about this position</h2><div id="askbox"></div></div>
+        ${g.clock && g.clock.lines.length ? `<div class="box rclock" title="${esc(g.clock.lines.join(" "))}">
+          ${svg("clock")}<span><b class="num">${g.clock.average}s</b><span class="muted small">a move</span></span>
+          ${g.clock.longest ? `<span><b class="num">${Math.floor(g.clock.longest.seconds / 60)}:${String(g.clock.longest.seconds % 60).padStart(2, "0")}</b><span class="muted small">longest, move ${g.clock.longest.move}</span></span>` : ""}
+          ${g.clock.left != null ? `<span><b class="num">${Math.floor(g.clock.left / 60)}:${String(g.clock.left % 60).padStart(2, "0")}</b><span class="muted small">left at the end</span></span>` : ""}</div>` : ""}
+        <div class="askpill" id="askbox" title="Ask the coach about this position"></div>
         <details class="box" style="padding:12px"><summary><b>All moves</b> <span class="small muted">click one to see the board there</span></summary>
           <div class="movelist" id="moves" style="margin-top:10px"></div></details>
       </div>
@@ -1724,7 +1725,7 @@ async function gameView(id) {
     const w = $("#walk");
     if (!mode) {  // the start: the report, and two ways in
       w.innerHTML = `<h2 style="margin:0">Game review</h2>${report()}
-        <p class="muted small" style="margin:0">${moments.length ? `${moments.length} key moment${moments.length === 1 ? "" : "s"}. ` : "No big mistakes. "}Use ◀ ▶ under the board, and Maya talks you through it.</p>
+        <p class="muted small" style="margin:0">${moments.length ? `${moments.length} key moment${moments.length === 1 ? "" : "s"}` : "No big mistakes"}</p>
         <div class="row"><button class="btn primary" id="startreview">▶ Review the whole game</button>
           ${moments.length ? `<button class="btn" data-mode="key">Key moments only</button>` : ""}</div>`;
       $("#startreview").onclick = () => setMode("game");

@@ -719,3 +719,8 @@ a.tile:hover { filter: brightness(1.05); }
 .gstat svg { width: 15px; height: 15px; } .gstat.bad { color: #e5734f; }
 .gdate { text-align: right; }
 @media (max-width: 700px) { .grow { grid-template-columns: 26px 12px minmax(0, 1fr) 52px 52px; } .gtype, .gdate { display: none; } }
+
+/* the review's clock, as numbers (22 Oct) */
+.rclock { display: flex; align-items: center; gap: 20px; padding: 12px 16px; }
+.rclock > svg { width: 20px; height: 20px; color: #e9a23b; flex: none; }
+.rclock > span { display: flex; flex-direction: column; } .rclock b { font-size: 17px; }
