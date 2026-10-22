@@ -616,7 +616,7 @@ a.tile:hover { filter: brightness(1.05); }
 .home-vs { display: flex; align-items: center; gap: 22px; margin-top: 14px; padding: 10px 16px; background: var(--surface); border-radius: 12px; }
 .home-vs > span { display: inline-flex; align-items: center; gap: 6px; } .home-vs b { font-size: 16px; }
 .home-vs svg { color: var(--muted); }
-.askpill { margin-top: 14px; background: var(--surface); border-radius: 999px; padding: 6px 8px 6px 14px; }
+.askpill { margin-top: 14px; background: var(--surface); border-radius: 16px; padding: 8px 10px; }
 .askpill .field { background: transparent; }
 @media (max-width: 900px) { .home-cards { grid-template-columns: 1fr; } .home-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .home-vs { flex-wrap: wrap; gap: 12px; } }
 .kw-more { background: none; border: 0; padding: 0; margin-top: 2px; color: var(--muted, #a6a19a); cursor: pointer; font: inherit; font-size: 12.5px; text-decoration: underline; }

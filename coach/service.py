@@ -652,7 +652,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(503, json.dumps({"message": "The voice isn't installed."}), "application/json")
             try:
                 audio = voice.say(str(body.get("text", "")), settings.load()["voice_name"] if not body.get("voice")
-                                  else str(body["voice"]))
+                                  else str(body["voice"]), slow=body.get("slow") is True)
             except Exception as e:
                 log.exception("voice failed")
                 return self.send(500, json.dumps({"message": str(e)[:200]}), "application/json")

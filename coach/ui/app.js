@@ -84,24 +84,24 @@ const Voice = (() => {  // the coach speaks sentence by sentence; the next one i
   const PAUSE = 450;  // ms between sentences: back to back they sounded rushed, though the voice itself was right
   const talkers = [], tell = v => talkers.forEach(f => { try { f(v); } catch (e) {} });
   const split = t => String(t).replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).filter(Boolean);
-  const audio = (text, voice) => fetch("/api/say", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(voice ? { text, voice } : { text }) }).then(r => { if (!r.ok) throw new Error("voice"); return r.blob(); }).then(b => URL.createObjectURL(b));
+  const audio = (text, voice, slow) => fetch("/api/say", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, ...(voice ? { voice } : {}), ...(slow ? { slow: true } : {}) }) }).then(r => { if (!r.ok) throw new Error("voice"); return r.blob(); }).then(b => URL.createObjectURL(b));
   const play = url => new Promise(done => { const a = new Audio(url); playing = a; a.onended = a.onerror = done; a.play().catch(done); });
   function stop() { token++; if (playing) { playing.pause(); playing = null; } tell(false); }
-  async function speak(text, force, voice) {
+  async function speak(text, force, voice, slow = false) {  // slow: the teaching pace (reviews, training, numbers)
     stop();
     if ((!on && !force) || !text) return;
     const mine = ++token, parts = split(text);
-    let next = audio(parts[0], voice);
+    let next = audio(parts[0], voice, slow);
     for (let i = 0; i < parts.length; i++) {
       let url;
       try { url = await next; } catch (e) { return; }
       if (mine !== token) return;
-      if (i + 1 < parts.length) next = audio(parts[i + 1], voice);
+      if (i + 1 < parts.length) next = audio(parts[i + 1], voice, slow);
       tell(true);
       await play(url);
       if (mine !== token) return;
-      if (i + 1 < parts.length) await wait(PAUSE);  // a breath between sentences, like a person (13 Oct: "too fast")
+      if (i + 1 < parts.length) await wait(slow ? PAUSE + 250 : PAUSE);  // a breath between sentences, like a person (13 Oct: "too fast")
       if (mine !== token) return;
     }
     tell(false);

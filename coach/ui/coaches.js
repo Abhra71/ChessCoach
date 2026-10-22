@@ -56,7 +56,7 @@ const Coach = (() => {
     if (a.url) window.open(a.url, "_blank", "noopener");
   }
   function fold() { clearTimeout(foldTimer); Voice.stop(); render(false); }
-  function talk() { if (said) Voice.speak(said.spoken || said.lines.join(" "), false, (COACHES[said.coach] || {}).voice); }
+  function talk() { if (said) Voice.speak(said.spoken || said.lines.join(" "), false, (COACHES[said.coach] || {}).voice, !said.casual); }
 
   Voice.onTalk(on => {
     if (!box) return;
@@ -82,7 +82,7 @@ const Coach = (() => {
     const first = remember(`kw-app-greeted-${section}`) !== today();  // the first visit to this section today
     const r = await api(`/api/coach?section=${section}&in=app&hour=${new Date().getHours()}${first || force ? "" : "&again=1"}`).catch(() => null);
     if (!r || TAB_SECTION[location.hash.replace(/^#\/?/, "").split("/")[0] || "home"] !== section) return;
-    said = { ...r, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
+    said = { ...r, casual: true, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
     more = false;
     if (r.quiet && !force) { said.lines = [`${(COACHES[r.coach] || {}).name || "Your coach"} is here if you need anything.`]; return render(false); }  // nothing new: just the tab
     render(true);  // the full welcome first, later just where things stand (once a day)
@@ -144,7 +144,7 @@ const Conv = (() => {
     history.push(["player", text], ["coach", speech]);
     on = false;  // her answer; Talk again to say more
     Coach.show({ coach, pose: r.mood || "explain", mood: r.mood || "explain", lines: [speech], actions: [], ai: !!r.ai }, { speak: false });
-    await Voice.speak(speech, true, (COACHES[coach] || {}).voice);
+    await Voice.speak(speech, true, (COACHES[coach] || {}).voice, !!(r.action && (r.action.next || r.action.back)));  // review steps: teaching pace
     if (!handover || on || location.hash.replace(/^#\/?/, "").split("/")[0] !== handover.tab) return;
     const page = Coach.takeHeld();  // the page's own line, if it said one, else the coach's greeting for it
     if (page && page.coach === handover.owner) Coach.show(page);

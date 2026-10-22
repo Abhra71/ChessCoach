@@ -93,11 +93,15 @@ def speakable(text):
     return re.sub(r"\s+", " ", text).replace(" ,", ",")
 
 
-def say(text, voice=DEFAULT):
-    """WAV bytes for one short piece of text (cached, so repeated phrases are instant)."""
+SLOW = 0.86  # teaching pace: reviews, training and numbers (22 Oct test: "during training and review she needs to go slower")
+
+
+def say(text, voice=DEFAULT, slow=False):
+    """WAV bytes for one short piece of text (cached, so repeated phrases are instant). slow: the teaching pace;
+    greetings and casual talk keep the normal one."""
     voice = voice if voice in CHOICES or voice in COACH_VOICES else DEFAULT
     text = speakable(text)[:600]
-    speed = SPEED.get(voice, 1.0)
+    speed = round(SPEED.get(voice, 1.0) * (SLOW if slow else 1.0), 3)
     key = hashlib.sha1(f"{voice}|{speed}|{text}".encode()).hexdigest()
     cached = CACHE / f"{key}.wav"
     if cached.exists():
