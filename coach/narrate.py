@@ -131,14 +131,17 @@ def _label(loss):
     return next(name for top, name in LABELS if loss < top)
 
 
-def _sacrifice(after, sq):
-    """The piece that just moved (a knight or more) can be taken for less: given away on purpose."""
+def _sacrifice(after, sq, captured=0):
+    """The piece that just moved (a knight or more) can be taken for less, and it wasn't just a fair trade: given
+    away on purpose. A king only counts as an attacker when the piece has no defender (22 Oct test: a queen check
+    "attacked" by the king was called brilliant)."""
     p = after.piece_at(sq)
-    if not p or VALUE[p.piece_type] < 3:
+    if not p or VALUE[p.piece_type] < 3 or captured >= VALUE[p.piece_type]:
         return False
-    attackers = after.attackers(not p.color, sq)
-    return bool(attackers) and (not after.attackers(p.color, sq) or
-                                min(VALUE[after.piece_at(a).piece_type] for a in attackers) < VALUE[p.piece_type])
+    defended = bool(after.attackers(p.color, sq))
+    takers = [VALUE[after.piece_at(a).piece_type] for a in after.attackers(not p.color, sq)
+              if after.piece_at(a).piece_type != chess.KING or not defended]
+    return bool(takers) and (not defended or min(takers) < VALUE[p.piece_type])
 
 
 def game(positions, played, rows, me, opponent):
@@ -148,7 +151,7 @@ def game(positions, played, rows, me, opponent):
     by_ply = {r["ply"]: r for r in rows}
     prefixes, names = book()
     board = chess.Board(positions[0]["fen"])
-    out, first_theirs, sans, in_book, named = [], True, [], True, None
+    out, first_theirs, sans, in_book, named, punish = [], True, [], True, None, False
     for i, move in enumerate(played, start=1):
         mine = board.turn == me
         san = board.san(move)
@@ -167,7 +170,8 @@ def game(positions, played, rows, me, opponent):
             label = "Best" if best and san == best else _label(loss)
             if in_book and loss < 5:
                 label = "Book"
-            elif label == "Best" and _sacrifice(after, move.to_square) and win_chance(r.get("cp_after", 0)) >= 40:
+            elif label == "Best" and win_chance(r.get("cp_after", 0)) >= 40 and _sacrifice(
+                    after, move.to_square, VALUE[board.piece_at(move.to_square).piece_type] if board.piece_at(move.to_square) else 0):
                 label = "Brilliant"
             if label in ("Inaccuracy", "Mistake", "Blunder") and best:
                 text += {"Inaccuracy": f" An inaccuracy: {best} was better.", "Mistake": f" A mistake: {best} was better.",
@@ -178,7 +182,7 @@ def game(positions, played, rows, me, opponent):
                     arrows.append([u, "better"])
             else:
                 pool = SAY.get(label) or (TOP if label == "Best" else GOOD)
-                text += " " + pool[i % len(pool)]
+                text += " You punished their mistake." if punish and label in ("Best", "Brilliant", "Excellent") else " " + pool[i % len(pool)]
                 kind = "good"
             if label not in ("Best", "Book", "Brilliant") and best and loss >= 2 and len(arrows) < 2:
                 u = _uci(r["fen"], best)  # the better move, whenever there was one (22 Oct)
@@ -198,11 +202,20 @@ def game(positions, played, rows, me, opponent):
                 lost = max(0, gain)
                 label = "Book" if in_book and gain < 5 else _label(max(0, gain))
                 if gain >= SLIP and nxt.get("best"):
-                    text += f" {'A blunder' if label == 'Blunder' else 'Their mistake'}: now {nxt['best']} is strong for you."
                     kind = "slip"
-                    u = _uci(nxt["fen"], nxt["best"])
-                    if u:
-                        arrows.append([u, "better"])
+                    # did you take the chance? Then the next move says so; the arrow is only for a chance you missed
+                    # (22 Oct test: a green "Better" on their move showed your next move, and you played it anyway)
+                    took = i < len(played) and after.san(played[i]) == nxt["best"]
+                    if took:
+                        text += " A blunder by them." if label == "Blunder" else " A mistake by them."
+                        punish = True
+                    else:
+                        b = nxt["best"]
+                        text += (f" {'A blunder' if label == 'Blunder' else 'Their mistake'}: "
+                                 + (f"{b} is checkmate for you here." if b.endswith("#") else f"{b} was the move for you here."))
+                        u = _uci(nxt["fen"], nxt["best"])
+                        if u:
+                            arrows.append([u, "better", "Your chance"])
                 elif label == "Inaccuracy":
                     text += " An inaccuracy by them."
         if in_book and tuple(sans) in names and names[tuple(sans)] != named:  # the opening, by name, when it's reached
@@ -211,6 +224,8 @@ def game(positions, played, rows, me, opponent):
                     else text + f" This is the {named}.")
         if win is None and out:
             win = out[-1]["win"]
+        if mine:
+            punish = False
         out.append({"ply": i, "text": text, "kind": kind, "label": label, "sign": SIGN.get(label, ""), "arrows": arrows,
                     "mine": mine, "win": None if win is None else round(win, 1), "lost": None if lost is None else round(lost, 1)})
         board.push(move)

@@ -1683,7 +1683,7 @@ async function gameView(id) {
       </div>
     </div>`;
   const stepPly = (k, st) => st.board === "before" ? k.ply - 1 : k.ply;
-  const toArrows = list => list.map(([u, kind]) => ({ from: u.slice(0, 2), to: u.slice(2, 4), kind }));
+  const toArrows = list => list.map(([u, kind, label]) => ({ from: u.slice(0, 2), to: u.slice(2, 4), kind, ...(label ? { label } : {}) }));
   const momentAt = p => moments.findIndex(k => k.ply === p);
   // a move's label: its colour and its mark on the board, like chess.com's icons (22 Oct)
   const LABEL = { Brilliant: ["#26c2a3", "!!"], Best: ["#36c27a", "★"], Excellent: ["#36c27a", "✓"], Good: ["#95b776", "✓"],

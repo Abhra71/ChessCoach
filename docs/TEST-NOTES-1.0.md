@@ -95,6 +95,15 @@ Each one: what was seen, then the fix.
     one line of how hard, short wrapping buttons; the rest on hover or spoken. The chess.com panel needs the same.
 27. **Maya too fast when teaching.** Fixed 22 Oct: a slower pace for reviews, training and numbers.
 
+28. **The rating tile shows only rapid** (293), so after a blitz game at 100 the owner thought they "fell to 100".
+    Fix: one line per game type played (Rapid 293 · Blitz 100), each with its 30-day change.
+
+29. **Review: on the opponent's blunder, a green "Better" arrow showed the player's next move** (Qxe5+ vs Laro1966),
+    which they then played. Fixed 22 Oct: if you took the chance, their move says "a blunder by them" and yours
+    "you punished their mistake"; an arrow only for a chance you missed, labelled "Your chance". Audit of 40 games:
+    "Qxg2# wins something" now "is checkmate"; a king move no longer "wins something"; queen checks "attacked" by
+    the king were called Brilliant (kings only count against an undefended piece; a fair trade is never a sacrifice).
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)
