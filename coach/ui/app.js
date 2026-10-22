@@ -1619,7 +1619,7 @@ async function home() {
     f ? f.habit : "",
     last ? `In your last game, against ${last.opponent}, ${lastGameWords(last, "I found")}` : ""].join(" ");
   $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
-  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya", chips: ASK_CHIPS.home,
+  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,
     onAsk: async q => {  // the same brain as Talk (19 Oct): typing "open my last review" opens it
       const r = await api("/api/talk", { coach: "maya", text: q, history: [], where: { section: "home" } });
