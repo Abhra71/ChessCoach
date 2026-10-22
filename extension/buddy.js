@@ -487,9 +487,9 @@
     if (r && r.ok && loadGuide()) { render(true); guideArrive(); return; }  // on the way with the red ring
     if (current !== here) return;
     if (first && r && r.ok) said = { ...said, pose: "greet" };
-    render(true);  // never silent: the full welcome first, later in the day just where things stand
+    // the first page of a visit: open and talk; the pages after it: the folded tab, open on click (22 Oct test)
+    if (first || !(r && r.ok)) render(true); else render(false);
     if (first && r && r.ok) { send({ type: "greeted", section: here, set: today() }); speak(); }  // asleep: try again later
-    else { clearTimeout(foldTimer); foldTimer = setTimeout(() => render(false), MINUTES_OPEN * 60000); }
   }
 
   // ---- the archive: a Knightwise tag on each finished game ("clean game", "2 pieces left hanging") ----
