@@ -118,6 +118,14 @@ Each one: what was seen, then the fix.
     26, you to move" at the top of the moves; a short header; the opponent as a player card ("Laro1966-style 537 ·
     Plays like real 537 players"), the Maia explanation on hover.
 
+33. **chess.com talking:** "How do I play a bot?" opened Knightwise's Practice ("choose a bot there": there are none).
+    Fixed 22 Oct (instructions: on chess.com, going somewhere on chess.com is the red ring; Knightwise has no bots);
+    measured: bots, puzzles and "my old games" all guide, "open my plan" still opens the app. Left: "please do" after
+    the coach's offer did nothing; a yes should do what was just offered.
+34. **chess.com panel:** the coach now follows chess.com's own move buttons (each move's line, arrows, voice) and the
+    panel can be scrolled; the key moment as chips (fixed 22 Oct). Repeat visits: a folded tab, the first page of each
+    visit opens and talks; with buttons all the text shows (fixed).
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)
