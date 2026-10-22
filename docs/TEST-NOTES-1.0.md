@@ -152,3 +152,11 @@ Also asked: Home after the newest 20 games, the rest checked in the background (
 Session 0 done; Session A: A1 done (A1.3 checked from the record; A1.4 is the button being removed), next is **A2.1
 Practice**. Then A3–A8, Session B (on chess.com, with the 0.6 extension now loaded), Session C (voice). Restart with
 `try test` (not `test new`): the data and keys are kept.
+
+## 23 Oct: where the test stopped (low usage)
+- 36. The coach's typed answer never went away (Home and every Ask bar). Fixed: it fades after 90 s unless the mouse is on it. **Check it.**
+- 37. The red ring stopped on a repeat-visit page (the quiet tab ran first). Fixed in a286983. **Recheck: chess.com home → puzzles button → ring on Puzzles, then on Solve Puzzles.**
+- Still to do in the chess.com section: Maya stays away on the Play page (fair play).
+- Then in this order: Talking (including "please do" after an offer), Practice and daily, Plan/Course/Level, Train, Home/Progress/Settings, rare things.
+- Open fixes: 28 (rating per game type), accuracy runs high in one-sided games, "please do".
+- After the test (not before): rebuild with PyInstaller, then make_msix.py, then a smoke test, then upload with a parent.

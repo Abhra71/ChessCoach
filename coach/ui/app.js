@@ -212,12 +212,19 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
     return;
   }
   const q = $("[data-q]", el), out = $("[data-a]", el), mic = $("[data-mic]", el);
+  // the answer goes away on its own after 90 seconds, unless the mouse is on it (23 Oct test)
+  let fade = null;
+  const fadeLater = () => { clearTimeout(fade); fade = setTimeout(function tick() {
+    if (out.matches(":hover")) { fade = setTimeout(tick, 10000); return; }
+    out.innerHTML = ""; q.value = ""; }, 90000); };
   const go = async () => {
     const text = q.value.trim(); if (!text) return;
+    clearTimeout(fade);
     out.innerHTML = `<span class="muted">Thinking…</span>`;
     try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>` +
       (r.ai !== false ? `<p class="kw-ai-note">AI can make mistakes. <button class="kw-report">Report it</button></p>` : "");
-      const rep = $(".kw-report", out); if (rep) rep.onclick = feedbackBox; Voice.speak(r.text, false, (COACHES[coach] || {}).voice); }
+      const rep = $(".kw-report", out); if (rep) rep.onclick = feedbackBox; Voice.speak(r.text, false, (COACHES[coach] || {}).voice);
+      fadeLater(); }
     catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
   $("[data-ask]", el).onclick = go;
