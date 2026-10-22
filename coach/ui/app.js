@@ -224,7 +224,7 @@ function feedbackBox() {
     <label class="small">What went wrong, or was confusing?<textarea class="field" data-wrong rows="3" maxlength="1500" placeholder="For example: the arrow pointed at the wrong square"></textarea></label>
     <label class="small">Your email, only if you'd like a reply (optional)<input class="field" type="email" data-reply maxlength="120" placeholder="you@example.com" style="width:100%;margin-top:4px"></label>
     <div class="small">How much did Knightwise help today? <span class="stars">${[1, 2, 3, 4, 5].map(n => `<button class="btn small-btn" data-n="${n}">${n}</button>`).join("")}</span></div>
-    <div class="row"><button class="btn primary" data-send>Send</button><button class="btn" data-copy>Copy text</button></div>
+    <div class="row"><button class="btn primary" data-send>Send</button></div>
     <span class="small muted" data-msg>It goes to ${FEEDBACK_TO}, with the app version and this page (${esc(page)}). Nothing else about you, and your email only if you add it.</span>`;
   document.body.appendChild(box);
   let helped = 0;
@@ -260,7 +260,6 @@ function feedbackBox() {
     catch (e) { msg.textContent = `Couldn't copy here. Please write to ${FEEDBACK_TO}.`; }
   };
   box.querySelector("[data-send]").onclick = () => send(true);
-  box.querySelector("[data-copy]").onclick = () => send(false);
 }
 const FEEDBACK_TO = "nanotech.mark.robots@gmail.com";
 
