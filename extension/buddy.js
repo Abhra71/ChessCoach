@@ -297,9 +297,14 @@
       guideSay([`It's right there, in the red ring: "${name}".`]);
     }, 12000);
   }
+  // going back (Chrome's back button) ends the guide: you changed your mind (22 Oct test: the ring was still there)
+  let wentBack = false;
+  addEventListener("popstate", () => { wentBack = true; });
+  try { wentBack = (performance.getEntriesByType("navigation")[0] || {}).type === "back_forward"; } catch (e) {}
   function guideArrive() {  // a new page while guiding: on the way, arrived, or a wrong turn
     guiding = loadGuide();
     if (!guiding) return;
+    if (wentBack) { wentBack = false; guiding = null; saveGuide(); document.querySelectorAll(".kw-ring").forEach(r => r.remove()); return; }
     const p = here();
     if (p !== guiding.last) {
       const onRoute = arrived(guiding) || guiding.steps.some(s => p === s.path || (!s.exact && p.startsWith(s.path + "/")));
