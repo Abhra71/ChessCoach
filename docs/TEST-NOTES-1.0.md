@@ -110,6 +110,10 @@ Each one: what was seen, then the fix.
     uses the win-chance scale only, like chess.com and Lichess, so it runs high in one-sided games: look at it later.
     Qxa8 vs Laro1966 checked: a real blunder (+8.8 to 0.0, a perpetual check).
 
+31. **Talking in a review:** "Next." was refused (the AI wrote next with a word after it: fixed, any shape works);
+    "Whole game, previous move." got "I can't show or change anything" (fixed in the instructions: moving through a
+    review is always allowed). Worked: next, back, "previous move", "Back. Sorry, next.", and a long back/next tangle.
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)

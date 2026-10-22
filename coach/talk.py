@@ -28,6 +28,8 @@ RULES = (
     "do rematch, what a game's n: replays a lost or drawn game from where it went wrong. "
     "do next: starts the review, or shows its next step or move (only when where_the_player_is says review). "
     "do back: the review's previous step or move again (only when where_the_player_is says review). "
+    "In a review, \"next\", \"forward\", \"previous\", \"back\" or \"previous move\" means do next or do back, even "
+    "with other words around them; moving through the review is always allowed. "
     "do prep, what a chess.com username: prepares against any player before a game (their openings and how their "
     "games end), using a name from the facts when it sounds like one of them. "
     "do guide, what a place on chess.com (puzzles, bots, archive: their game history on chess.com, lessons): shows "
