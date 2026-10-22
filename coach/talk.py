@@ -194,6 +194,29 @@ def action(do, games, where):
     return None
 
 
+def this_move(where):
+    """In a review: the move on screen, as the engine and the review see it (its words, label, the better move, the key
+    moment), so the coach answers about it from facts (22 Oct test: "why was that bad?" got a stock line)."""
+    where = where or {}
+    if where.get("section") != "review" or not where.get("game") or not str(where.get("ply", "")).isdigit():
+        return {}
+    try:
+        d = insights.game_detail(where["game"])
+        p = int(where["ply"])
+        if not d or not 0 < p <= len(d.get("narration") or []):
+            return {}
+        m = d["narration"][p - 1]
+        out = {"the_move_on_screen": {"move_number": d["move_numbers"][p - 1], "san": d["positions"][p]["san"],
+                                      "by": "the player" if m["mine"] else "the opponent", "label": m["label"],
+                                      "what_happened": m["text"]}}
+        k = next((k for k in d.get("key_moments") or [] if k["ply"] == p), None)
+        if k:
+            out["the_move_on_screen"]["key_moment"] = [s["text"] for s in k["steps"]] + ([k["hard"]] if k.get("hard") else [])
+        return out
+    except Exception:
+        return {}
+
+
 def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=None):
     """{text, mood, ai, action}. Never fails: without a working AI, a written reply and no action."""
     from coach import ai
@@ -205,6 +228,7 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     facts = {"player": coaches.player_card(home), "recent_games": games, "where_the_player_is": where or {},
              "level": level_now(), "next_lesson": next_lesson(), "knightwise": ABOUT,
              "all_games": {"checked": home.get("games"), "results": home.get("results")}}
+    facts.update(this_move(where))
     facts_text = json.dumps(facts)
     system = (ai.COACH_RULES.format(rating=home.get("rating") or "unknown") + coaches.PERSONA[coach] + RULES)
     name = coaches.COACHES[coach]["name"]

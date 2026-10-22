@@ -103,7 +103,8 @@ const Conv = (() => {
   let on = false, rec = false, history = [], coach = "maya", limit = null;
   const where = () => {
     const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
-    return name === "games" && arg ? { section: "review", game: arg } : { section: name || "home" };
+    // in a review, the move on screen too, so "why was that bad?" is about that move (22 Oct test)
+    return name === "games" && arg ? { section: "review", game: arg, ply: String(window.kwPly ? window.kwPly() : "") } : { section: name || "home" };
   };
   const show = (pose, lines, actions = []) => Coach.show({ coach, pose, mood: pose, lines, talking: true, actions }, { speak: false });
   async function start(who) {

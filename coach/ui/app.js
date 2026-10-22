@@ -1824,6 +1824,7 @@ async function gameView(id) {
     return move(ply + d);
   }
   window.kwNextStep = () => location.hash.includes(`games/${g.id}`) ? step(1) : null;
+  window.kwPly = () => location.hash.includes(`games/${g.id}`) ? ply : null;
   window.kwBackStep = () => location.hash.includes(`games/${g.id}`) ? step(-1) : null;
   askBox($("#askbox"), { placeholder: "Ask Maya about this position", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
     onAsk: q => { const k = moments[momentAt(ply)]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: k ? k.ply : null }); } });
