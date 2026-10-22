@@ -237,6 +237,10 @@ function feedbackBox() {
     if (!wrong && !doing && !helped) return;
     const r = await api("/api/feedback", { doing, wrong, helped, page, email });
     const msg = box.querySelector("[data-msg]");
+    if (email && r.limit) {  // four sent from this PC today: copy instead (22 Oct)
+      try { await navigator.clipboard.writeText(r.text); } catch (e) {}
+      msg.textContent = `You've sent ${r.limit} today, thank you! It's copied: paste it into an email to ${FEEDBACK_TO}.`; return;
+    }
     if (email && r.key) {  // one click: straight to the builder's inbox through Web3Forms (22 Oct)
       msg.textContent = "Sending…";
       try {

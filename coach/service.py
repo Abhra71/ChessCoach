@@ -233,6 +233,25 @@ def feedback_key():
         return None
 
 
+SENDS_A_DAY = 4  # one-click sends from one PC a day: the free form plan is ~250 a month for everyone, and no flooding
+
+
+def feedback_send_allowed(today=None):
+    """Counts this PC's one-click sends today (data/feedback-sent.json); True and counted when under the limit."""
+    today = today or time.strftime("%Y-%m-%d")
+    path = DATA / "feedback-sent.json"
+    try:
+        seen = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        seen = {}
+    n = seen.get("n", 0) if seen.get("date") == today else 0
+    if n >= SENDS_A_DAY:
+        return False
+    DATA.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"date": today, "n": n + 1}), encoding="utf-8")
+    return True
+
+
 def feedback_mail(text):
     """The ready email for feedback: to FEEDBACK_TO, with the subject and the player's words (kept short enough
     for every mail app's address limit)."""
@@ -595,6 +614,9 @@ class Handler(BaseHTTPRequestHandler):
                     f"How much Knightwise helped today (1 to 5): {entry['helped'] or '-'}\n\n"
                     f"Knightwise {VERSION}, page: {entry['page'] or '-'}")
             key = feedback_key()  # one-click Send (22 Oct: "as easy as just a send button"): the page posts it
+            if body.get("email") and key and not feedback_send_allowed():  # at most SENDS_A_DAY from one PC
+                key = None
+                return self.send(200, json.dumps({"saved": True, "text": text, "key": None, "limit": SENDS_A_DAY}), "application/json")
             if body.get("email") and not key:  # no form key in this build: the player's own email app, ready to send
                 webbrowser.open(feedback_mail(text))
             return self.send(200, json.dumps({"saved": True, "text": text, "key": key, "version": VERSION}), "application/json")
