@@ -12,11 +12,11 @@ function stop() {
   if (audio) { audio.pause(); audio = null; }
 }
 
-async function play(url, text, voice) {
+async function play(url, text, voice, slow) {
   stop();
   const mine = run;
   const fetchOne = s => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ text: s, voice }) })
+                                    body: JSON.stringify({ text: s, voice, ...(slow ? { slow: true } : {}) }) })
     .then(r => { if (!r.ok) throw new Error("no voice"); return r.blob(); });
   const parts = sentences(text);
   let next = parts.length ? fetchOne(parts[0]) : null;
@@ -40,7 +40,7 @@ async function play(url, text, voice) {
 
 chrome.runtime.onMessage.addListener(msg => {
   if (msg.type === "stop") { stop(); tell(false); }
-  if (msg.type === "play") play(msg.url, msg.text, msg.voice);
+  if (msg.type === "play") play(msg.url, msg.text, msg.voice, msg.slow);
 });
 
 // ---- Talk on chess.com (0.6): record the player's voice here, then the Knightwise app writes it down ----

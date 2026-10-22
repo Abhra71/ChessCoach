@@ -100,7 +100,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   }
   if (msg.type === "say" && sender.tab) {
     speakingTab = sender.tab.id;
-    player().then(() => chrome.runtime.sendMessage({ type: "play", url: `${COACH}/api/say`, text: msg.text, voice: msg.voice }));
+    player().then(() => chrome.runtime.sendMessage({ type: "play", url: `${COACH}/api/say`, text: msg.text, voice: msg.voice, slow: !!msg.slow }));
     return false;
   }
   if (msg.type === "open-app" && /^[a-z][a-z0-9/]*$/.test(msg.route || "")) {  // bring the Knightwise window forward

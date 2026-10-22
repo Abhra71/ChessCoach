@@ -284,6 +284,13 @@ class Handler(BaseHTTPRequestHandler):
             if rows:  # a finished, checked game only: the clock coach and the rematch
                 from coach import insights
                 body.update(insights.extras_for(path.rsplit("/", 1)[-1]))
+                try:  # every move, so the coach follows chess.com's own arrows too (22 Oct test)
+                    d = insights.game_detail(path.rsplit("/", 1)[-1])
+                    body["moves"] = [{"placement": d["positions"][m["ply"]]["fen"].split()[0], "ply": m["ply"],
+                                      "number": d["move_numbers"][m["ply"] - 1], "text": m["text"], "label": m["label"],
+                                      "arrows": m["arrows"]} for m in d.get("narration") or []]
+                except Exception:
+                    log.exception("moves for the extension")
             return self.send(200, json.dumps(body), "application/json")
         if path == "/api/status":
             return self.send(200, json.dumps(status()), "application/json")

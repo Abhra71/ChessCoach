@@ -9,6 +9,7 @@
   // "reply" is the engine's best answer; "real" is what the opponent really played, when it was different
   const LABELS = { mine: "You played", reply: "Their best reply", real: "They played", best: "Better", better: "Better" };
   let moments = [], overlay = null, panel = null, timer = null, gameId = null;
+  let moves = [], onMove = null, spokenPly = null, scrolledTo = null;  // every move's line; the one on chess.com's board
   // one key moment at a time, one step at a time (the same as the app's review): which moment, which step, how many shown
   let mi = 0, si = 0, shown = 0, extra = { clock: null, rematch: null }, voice = null;
   let small = false;
@@ -87,6 +88,12 @@
       }
     }
     if (step) overlay.innerHTML = step.arrows.map(([u, kind], n) => arrow(u, kind, flipped, step.arrows.length > 1 && n > 0)).join("");
+    // anywhere else in the game (chess.com's own ◀ ▶): that move's line, its arrows, and Maya says it once
+    onMove = step ? null : [...moves].reverse().find(m => m.placement === now) || null;
+    if (onMove) {
+      overlay.innerHTML = onMove.arrows.map(([u, kind], n) => arrow(u, kind, flipped, n > 0)).join("");
+      if (spokenPly !== onMove.ply) { spokenPly = onMove.ply; say(onMove.text); }
+    }
     renderPanel();
   }
 
@@ -101,7 +108,7 @@
     setTimeout(draw, 300);
   }
 
-  function say(text) { if (voice && voice.on) chrome.runtime.sendMessage({ type: "say", text, voice: voice.name }); }
+  function say(text) { if (voice && voice.on) chrome.runtime.sendMessage({ type: "say", text, voice: voice.name, slow: true }); }
 
   function pick(i, speak = true) {  // one step: the board where it belongs, its arrows, and Maya says it
     const k = moments[mi], st = k.steps[i];
@@ -128,7 +135,8 @@
     const two = t => { const p = String(t).split(/(?<=[.!?])\s+/); return p.length > 2 ? p.slice(0, 2).join(" ") : t; };
     const steps = k ? `<div class="kw-chips">${k.steps.slice(0, shown + 1).map((x, i) => `<button class="kw-chip ${i === si ? "on" : ""}" data-s="${i}" title="${escapeHtml(x.text)}">
         <i style="background:${COLORS[x.kind]}"></i>${escapeHtml(x.title.replace(/^You played$/, "You").replace(/^They replied$/, "They"))}${x.san ? ` <b>${escapeHtml(x.san)}</b>` : ""}</button>`).join("")}</div>
-        ${st ? `<p class="kw-say" title="${escapeHtml(st.text)}">${escapeHtml(two(st.text))}</p>` : ""}` : "";
+        ${st && !onMove ? `<p class="kw-say" title="${escapeHtml(st.text)}">${escapeHtml(two(st.text))}</p>` : ""}` : "";
+    const moveLine = onMove ? `<p class="kw-say kw-move"><b>Move ${onMove.number}</b>${onMove.label ? ` · ${escapeHtml(onMove.label)}` : ""}<br>${escapeHtml(onMove.text)}</p>` : "";
     const last = k && shown >= k.steps.length - 1;
     const clock = extra.clock && extra.clock.lines.length ? `<details class="kw-clock"><summary>Your clock</summary>
         ${extra.clock.lines.map(l => `<div>${escapeHtml(l)}</div>`).join("")}</details>` : "";
@@ -137,7 +145,7 @@
       : `${char}<div class="chess-coach-panel"><div class="head"><span><b>Maya</b> <small>Game reviews</small></span>` +
         `<span><button class="min" title="Make small">–</button>` +
         `<button class="x" title="Close for this game">×</button></span></div>
-      <p>${escapeHtml(maya.line)}</p>${broken}
+      <p>${escapeHtml(maya.line)}</p>${broken}${moveLine}
       ${k ? `<div class="kw-moment"><b>Key moment ${mi + 1} of ${moments.length}</b> · move ${k.move_number}
         <span class="kw-dots">${moments.map((m, i) => `<button class="${i === mi ? "on" : ""}" data-m="${i}" title="Move ${m.move_number}"></button>`).join("")}</span></div>
         ${steps}
@@ -166,7 +174,8 @@
     on("[data-m]", el => { mi = Number(el.dataset.m); shown = 0; pick(0); });
     on("[data-s]", el => pick(Number(el.dataset.s)));
     const box = panel.querySelector(".chess-coach-panel"), cur = panel.querySelector(".kw-chip.on");
-    if (box && cur) box.scrollTop = Math.max(0, cur.offsetTop - 90);  // the step on show stays in view
+    const at = `${mi}/${si}`;  // only when the step changed, so you can still scroll the panel yourself (22 Oct)
+    if (box && cur && scrolledTo !== at) { scrolledTo = at; box.scrollTop = Math.max(0, cur.offsetTop - 90); }
   }
   const send = type => { try { chrome.runtime.sendMessage({ type }); } catch (e) {} };
 
@@ -245,7 +254,7 @@
     if (gameId !== id) return;
     report("player-names", names, names ? "" : "names not on the page after 45 s");
     report("board", !!board, board ? "" : "no board element after 45 s");
-    moments = data.moments; mi = 0; si = 0; shown = 0;
+    moments = data.moments; mi = 0; si = 0; shown = 0; moves = data.moves || []; spokenPly = null;
     extra = { clock: data.clock || null, rematch: data.rematch || null };
     if (!names || !board) useFallback(!names ? "player-names" : "board");
     const n = moments.length;
