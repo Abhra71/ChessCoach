@@ -127,8 +127,15 @@ def book():
     return _BOOK
 
 
-def _label(loss):
-    return next(name for top, name in LABELS if loss < top)
+def _label(loss, cp_loss=0):
+    """From the win chance given away; in a decided game that barely moves, so the pawns given away count too
+    (22 Oct test: "the number of excellent moves were many, was it real?"): a pawn or more is never Excellent."""
+    name = next(name for top, name in LABELS if loss < top)
+    if name in ("Excellent", "Good") and cp_loss >= 200:
+        return "Inaccuracy"
+    if name == "Excellent" and cp_loss >= 80:
+        return "Good"
+    return name
 
 
 def _sacrifice(after, sq, captured=0):
@@ -167,7 +174,8 @@ def game(positions, played, rows, me, opponent):
         after.push(move)
         if mine and r:
             loss, best = r.get("loss") or 0, r.get("best")
-            label = "Best" if best and san == best else _label(loss)
+            cp_loss = max(0, (r.get("cp_before") or 0) - (r.get("cp_after") or 0)) if abs(r.get("cp_before") or 0) < 5000 else 0
+            label = "Best" if best and san == best else _label(loss, cp_loss)
             if in_book and loss < 5:
                 label = "Book"
             elif label == "Best" and win_chance(r.get("cp_after", 0)) >= 40 and _sacrifice(
@@ -200,7 +208,8 @@ def game(positions, played, rows, me, opponent):
             if prev and nxt and "cp_after" in prev and "cp_before" in nxt:
                 gain = win_chance(nxt["cp_before"]) - win_chance(prev["cp_after"])
                 lost = max(0, gain)
-                label = "Book" if in_book and gain < 5 else _label(max(0, gain))
+                cp_gain = max(0, nxt["cp_before"] - prev["cp_after"]) if abs(prev["cp_after"]) < 5000 and abs(nxt["cp_before"]) < 5000 else 0
+                label = "Book" if in_book and gain < 5 else _label(max(0, gain), cp_gain)
                 if gain >= SLIP and nxt.get("best"):
                     kind = "slip"
                     # did you take the chance? Then the next move says so; the arrow is only for a chance you missed

@@ -104,6 +104,12 @@ Each one: what was seen, then the fix.
     "Qxg2# wins something" now "is checkmate"; a king move no longer "wins something"; queen checks "attacked" by
     the king were called Brilliant (kings only count against an undefended piece; a fair trade is never a sacrifice).
 
+30. **"So many Excellent moves, was it real?"** In a decided game the win chance barely moves, so moves that gave away
+    a pawn or more looked Excellent. Fixed 22 Oct: a pawn or more given away is at most Good, two or more an
+    Inaccuracy (your moves in 40 games: 1,313 Excellent before, 308 after). Left: accuracy (94.7 vs Laro1966) still
+    uses the win-chance scale only, like chess.com and Lichess, so it runs high in one-sided games: look at it later.
+    Qxa8 vs Laro1966 checked: a real blunder (+8.8 to 0.0, a perpetual check).
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)
