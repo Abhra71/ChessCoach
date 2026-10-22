@@ -1,6 +1,6 @@
 # Knightwise: the maintainer's handbook
 
-Written on 20 Oct 2026, at 1.0, for keeping Knightwise working for years with no Claude Code: just you, a normal
+Written on 20 Oct 2026, at 1.0, brought up to date on 23 Oct 2026 after the hand test, for keeping Knightwise working for years with no Claude Code: just you, a normal
 Claude chat, and this file. Every recipe says what to type, what to check, and how to undo it.
 
 ---
@@ -57,6 +57,11 @@ the file you paste are its memory. If a change grows past three files, stop and 
 | Downloading games from chess.com | `coach/fetch.py` |
 | Checking moves with Stockfish | `coach/analyze.py` |
 | Why a move was a mistake | `coach/why.py` |
+| Every move's label and line in a review (Book, Brilliant, Best… Blunder), openings, accuracy | `coach/narrate.py` (`LABELS`, `_label()`, `_sacrifice()`, `accuracy()`) |
+| What the AI coach is told, and what it may do (open, review, guide, offer…) | `coach/talk.py` (`RULES`, `ABOUT`, `VERBS`, `action()`) |
+| When Maya greets on chess.com, the folded tab, her suggestions there | `extension/buddy.js` (`kw-visit-greeted`), `coach/coaches.py` (`CHESSCOM_FOR`, `fresh_today()`) |
+| The Ask bars in the app (the answer fading, the glowing suggestion) | `coach/ui/app.js` (`askBox()`) |
+| Send feedback (one click, 4 a day) | `coach/service.py` (`SENDS_A_DAY`, `feedback_send_allowed()`), key in `coach/feedback.key` |
 | Habits (hanging pieces, forks…) | `coach/patterns.py`, `coach/review.py` (`ABOUT`) |
 | Practice positions and puzzles | `coach/drills.py`, `coach/puzzles.py`, `coach/memory.py` |
 | The course, the level ladder, the plan | `coach/course.py`, `coach/ladder.py`, `coach/plan.py` |
@@ -86,6 +91,16 @@ Open **PowerShell** in the project folder (in Explorer: the folder, then type `p
 | Throw away every change since the last commit | `git checkout -- .` |
 | Commit and push | `git add -A` then `git commit -m "What changed, in plain words"` then `git push` |
 | See the app's own log | open `logbook/service.log` |
+| A test copy with its own data and no keys (kept between sessions) | `try test`; start it again from nothing: `try test new`. Its data is in `%TEMP%\knightwise-test` |
+
+**After a change, what to restart:**
+- a `.py` file: quit Knightwise from the tray (or close its `pythonw` processes) and start it again;
+- a file in `coach/ui/`: press **Ctrl+R** in the app window;
+- a file in `extension/`: `chrome://extensions` → Knightwise → the round arrow, then refresh the chess.com tab.
+
+**Tracing what the coach did:** every talk turn writes one line to `logbook/service.log`:
+`talk maya at home: 'what they said' -> the action, ai=True, 2.1 s: 'what she answered'`. When she does the wrong
+thing, paste that line and `coach/talk.py` into the chat.
 
 **Tests on GitHub:** every push runs all the tests on GitHub's computer. A failure emails you. To see why without
 signing in: open the repo's **Actions** tab, the failed run: each failing test is named there.
@@ -115,6 +130,12 @@ changed.
 | 13 | The app won't start | port 8765 is taken by another Knightwise | Quit Knightwise by the clock, or restart the PC |
 | 14 | A test fails on GitHub but not on your PC | GitHub's computer is Linux and has no saved data | The failing test assumes something about your PC; make it set up what it needs (see `tests/conftest.py`) |
 | 15 | The Store rejects an upload | version not higher, or the manifest changed | Section 7: the version must go up in both places |
+| 16 | Talk does the wrong thing (opens a page when asked for advice, ignores "please do") | the AI misread `RULES` | Find the `talk` line in `logbook/service.log`; add one plain sentence to `RULES` in `coach/talk.py`, and a test in `tests/test_talk.py` |
+| 17 | A review label looks wrong (too many Excellent, a false Brilliant) | the thresholds | `LABELS` and `_label()` in `coach/narrate.py` (win chance lost, plus pawns given away); `_sacrifice()` for Brilliant. Tests: `tests/test_narrate.py` |
+| 18 | Talk hears words nobody said, or ignores a quiet voice | the silence gates | `QUIET` (600) and `NO_SPEECH` (0.6) in `coach/ai.py`. Lower `QUIET` for quiet microphones |
+| 19 | Send feedback stops working | the Web3Forms key is missing, or 4 sends today already | Is `coach/feedback.key` packed in the build? The limit is `SENDS_A_DAY` in `coach/service.py`. Without a key it opens the email app |
+| 20 | The red ring stops after one page | a page reached mid-route skipped the ring | `guideArrive()` in `extension/buddy.js` must run before the quiet-greeting return (fixed 23 Oct) |
+| 21 | The voice is too fast or too slow when teaching | the teaching pace | `SLOW` (0.86) in `coach/voice.py`; greetings use the normal pace |
 
 **To pause a broken feature for everyone at once** (while you work on it): add its name to `off` in `fixes.json`
 (section 5). Names: `review`, `tags`, `warmup`, `prep`, `talk`, `coach`, `guide`. It shows "resting" instead of
@@ -197,6 +218,10 @@ fix file. Upgrade only when there's a reason (a bug fixed upstream, a security f
 
 **You need:** a parent for anything in Partner Center that asks to accept terms (you're under 18). About an hour.
 
+0. **The full hand test comes first. Never build or upload before it.** Biggest features first: game review, the
+   coach on chess.com, Talk, practice and daily, plan/course/level, Train, Home/Progress/Settings, then rare things.
+   Note each finding in `docs/TEST-NOTES-1.0.md` (a number, what you saw, fixed or not). Fix, test again, and only
+   when the list is clear go on to step 1. A quick test instead of the full one has always let something through.
 1. **The version number goes up in two places**, always together:
    - `extension/manifest.json` → `"version": "1.0.1"` (three numbers)
    - `installer/msix/AppxManifest.xml` → `Version="1.0.1.0"` (four numbers, the last always 0)
@@ -236,6 +261,18 @@ Store has signed it. Test from the source with `try.bat` instead; the Store buil
   line; anything longer goes on hover (a `title`), behind the small **?** by the page title, or is spoken by the coach.
 - The coach's bubble shows two sentences and one button; More shows the rest. The voice says it all.
 - Long page intros (`<p class="sub">` over 90 characters) fold into the **?** by themselves (`foldIntros` in app.js).
+
+## 7c. How the coach behaves (decided in the 22–23 Oct hand test)
+- **A coach, not a tool.** Asked "what should I do?", she suggests one thing and the menu item for it glows. She opens
+  it only when the player says yes, ok or please do (`offer` in `RULES`, `point()` in `askBox()`).
+- **Her typed answer goes away** after a minute, or when the player presses a button or link or types elsewhere; not
+  on a click on empty space, and not while the mouse rests on it.
+- **On chess.com:** she greets and talks once per visit, then waits as a folded tab. When she has buttons to offer,
+  the whole text shows; otherwise two sentences and More.
+- **chess.com things asked for in the app** (its puzzles, bots, lessons) open chess.com in the browser; Knightwise's
+  own practice is not chess.com. On chess.com itself, the red ring shows the way.
+- **Small talk gets small talk.** Her habit tip only when it answers the question (finding 38 is still open).
+- **Teaching pace:** reviews, training and numbers are spoken slower than greetings.
 
 ## 8. After 1.0: ideas kept for later, with how to start
 Each is a separate, small piece of work. Paste this section with the files named.
