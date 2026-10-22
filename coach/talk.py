@@ -31,6 +31,7 @@ RULES = (
     "games end), using a name from the facts when it sounds like one of them. "
     "do guide, what a place on chess.com (puzzles, bots, archive: their game history on chess.com, lessons): shows "
     "them the way there with a red ring, step by step. "
+    "When the player asks you to open, show or take them to a page, do is open, every time. "
     "do none when the player only talks or asks. Ask for something only when the player wants it. If they ask for "
     "something you can't do yourself, like changing a setting, open the page where they can. If they name an opponent "
     "who isn't in the facts, say you can't find that game. Never say you are opening, replaying or showing something "

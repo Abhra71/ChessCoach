@@ -15,6 +15,7 @@ a = Analysis(
         (str(ROOT / "engine"), "engine"),                     # Stockfish
         (str(ROOT / "extension"), "extension"),               # icon for the tray
         (str(ROOT / "coach" / "drills_template.html"), "coach"),
+    ] + ([(str(ROOT / "coach" / "feedback.key"), "coach")] if (ROOT / "coach" / "feedback.key").exists() else []) + [  # one-click feedback
         (str(ROOT / "coach" / "ui"), "coach/ui"),             # the desktop app's screens
         (str(ROOT / "coach" / "library"), "coach/library"),   # strong players' games by pawn structure (CC0)
         (str(ROOT / "coach" / "openings"), "coach/openings"),  # the opening catalogue (Lichess, CC0)

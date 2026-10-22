@@ -8,5 +8,6 @@ dist/
 build/
 voice/
 coach/ui/vendor/
+coach/feedback.key
 screenshots-raw/
 webview/

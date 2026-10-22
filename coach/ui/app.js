@@ -223,7 +223,7 @@ function feedbackBox() {
     <label class="small">What were you doing?<textarea class="field" data-doing rows="2" maxlength="1500" placeholder="For example: going through my last game's review"></textarea></label>
     <label class="small">What went wrong, or was confusing?<textarea class="field" data-wrong rows="3" maxlength="1500" placeholder="For example: the arrow pointed at the wrong square"></textarea></label>
     <div class="small">How much did Knightwise help today? <span class="stars">${[1, 2, 3, 4, 5].map(n => `<button class="btn small-btn" data-n="${n}">${n}</button>`).join("")}</span></div>
-    <div class="row"><button class="btn primary" data-send>Send by email</button><button class="btn" data-copy>Copy text</button></div>
+    <div class="row"><button class="btn primary" data-send>Send</button><button class="btn" data-copy>Copy text</button></div>
     <span class="small muted" data-msg>It goes to ${FEEDBACK_TO}, with the app version and this page (${esc(page)}). Nothing else about you.</span>`;
   document.body.appendChild(box);
   let helped = 0;
@@ -237,6 +237,17 @@ function feedbackBox() {
     if (!wrong && !doing && !helped) return;
     const r = await api("/api/feedback", { doing, wrong, helped, page, email });
     const msg = box.querySelector("[data-msg]");
+    if (email && r.key) {  // one click: straight to the builder's inbox through Web3Forms (22 Oct)
+      msg.textContent = "Sending…";
+      try {
+        const sent = await fetch("https://api.web3forms.com/submit", { method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ access_key: r.key, subject: `Knightwise feedback (${r.version})`, from_name: "Knightwise", message: r.text }) })
+          .then(x => x.json());
+        if (!sent.success) throw new Error(sent.message || "not sent");
+        msg.textContent = "Sent. Thank you!"; setTimeout(() => box.remove(), 2500); return;
+      } catch (e) { email = false; }  // offline or the service is down: copy it instead, so nothing is lost
+    }
     if (email) { msg.textContent = "Your email app is opening with it. Press Send there. Thank you!"; setTimeout(() => box.remove(), 4000); return; }
     try { await navigator.clipboard.writeText(r.text); msg.textContent = `Copied. Paste it into an email to ${FEEDBACK_TO}. Thank you!`; }
     catch (e) { msg.textContent = `Couldn't copy here. Please write to ${FEEDBACK_TO}.`; }

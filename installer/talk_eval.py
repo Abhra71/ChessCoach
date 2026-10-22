@@ -63,6 +63,7 @@ def run(rounds):
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")
     rounds = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     score, out = run(rounds)
     json.dump(out, open("talkeval-out.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)

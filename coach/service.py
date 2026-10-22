@@ -224,6 +224,15 @@ UI = TEMPLATES / "ui"
 SHOW = None  # set by the desktop app: show the window at a screen
 
 
+def feedback_key():
+    """The Web3Forms access key that emails feedback to FEEDBACK_TO (coach/feedback.key; packed in the build, never in
+    the repo). Web3Forms keys are public by design: one can only send to the inbox it was made for."""
+    try:
+        return (Path(__file__).parent / "feedback.key").read_text(encoding="utf-8").strip()[:80] or None
+    except OSError:
+        return None
+
+
 def feedback_mail(text):
     """The ready email for feedback: to FEEDBACK_TO, with the subject and the player's words (kept short enough
     for every mail app's address limit)."""
@@ -585,9 +594,10 @@ class Handler(BaseHTTPRequestHandler):
             text = (f"What I was doing: {entry['doing'] or '-'}\nWhat went wrong or was confusing: {entry['wrong'] or '-'}\n"
                     f"How much Knightwise helped today (1 to 5): {entry['helped'] or '-'}\n\n"
                     f"Knightwise {VERSION}, page: {entry['page'] or '-'}")
-            if body.get("email"):  # the player's own email app, ready to send (19 Oct: by email, not a GitHub form)
+            key = feedback_key()  # one-click Send (22 Oct: "as easy as just a send button"): the page posts it
+            if body.get("email") and not key:  # no form key in this build: the player's own email app, ready to send
                 webbrowser.open(feedback_mail(text))
-            return self.send(200, json.dumps({"saved": True, "text": text}), "application/json")
+            return self.send(200, json.dumps({"saved": True, "text": text, "key": key, "version": VERSION}), "application/json")
         if path == "/api/talk":  # a spoken turn with a coach: the reply, and one checked thing to do (0.6)
             from coach import talk
             turns = body.get("history") if isinstance(body.get("history"), list) else []
