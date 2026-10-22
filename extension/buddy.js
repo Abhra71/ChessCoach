@@ -61,7 +61,8 @@
     }
     box.className = `kw-coach ${open ? "open" : "folded"}`;
     // one line and one button, like the app (22 Oct, the calm look); More shows the rest, the voice says it all
-    const full = !!(s.more || s.ai || s.talking || warm), best = (s.actions || []).find(a => a.best) || (s.actions || [])[0];
+    // buttons need the words that explain them: with any, everything shows; without, two sentences and More (22 Oct)
+    const full = !!(s.more || s.ai || s.talking || warm || (s.actions || []).length), best = (s.actions || []).find(a => a.best) || (s.actions || [])[0];
     const shown = full ? (s.actions || []) : best ? [best] : [];
     const face = `<button class="kw-char" title="${esc(s.name)}, your Knightwise coach">${KnightwiseFaces.figure(s.coach, s.pose || s.mood)}</button>`;
     box.innerHTML = open ? `${face}
