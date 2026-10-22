@@ -336,7 +336,7 @@ def wav(pcm16, rate=16000):
 def _groq_hear(key, audio):
     import uuid
     boundary = uuid.uuid4().hex
-    fields = {"model": HEAR_MODEL["groq"], "language": "en", "prompt": hear_hint(), "response_format": "json",
+    fields = {"model": HEAR_MODEL["groq"], "language": "en", "prompt": hear_hint(), "response_format": "verbose_json",
               "temperature": "0"}
     body = b"".join(f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode()
                     for k, v in fields.items())
@@ -348,6 +348,11 @@ def _groq_hear(key, audio):
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         out = json.load(resp)
     _count("groq", 0)
+    # Whisper "hears" stock lines in near silence ("Subtitles by the Amara.org community", 22 Oct test): keep only
+    # the parts its own score says were speech
+    segs = out.get("segments")
+    if segs:
+        return " ".join(x.get("text", "").strip() for x in segs if (x.get("no_speech_prob") or 0) < NO_SPEECH).strip()
     return (out.get("text") or "").strip()
 
 
@@ -371,10 +376,24 @@ def _gemini_hear(key, audio):
 HEARERS = {"groq": _groq_hear, "gemini": _gemini_hear}
 
 
+NO_SPEECH = 0.6  # Whisper's own chance that a part had no speech in it: above this, it's dropped
+QUIET = 600  # the loudest moment of a recording, out of 32767: below this nobody spoke (a click, the room)
+
+
+def loud_enough(pcm16):
+    """Was anything said at all? The loudest sample of the recording, so near silence is never sent to be heard."""
+    from array import array
+    a = array("h")
+    a.frombytes(pcm16[: len(pcm16) - len(pcm16) % 2])
+    return bool(a) and max(abs(min(a)), max(a)) >= QUIET
+
+
 def hear(pcm16, rate=16000, hearers=None):
     """The player's words, through key 1 then key 2 (only Groq and Gemini can hear). Returns (text, provider).
     Raises NoKey when no key that can hear is set."""
     hearers = hearers or HEARERS
+    if not loud_enough(pcm16):
+        return "", None
     audio, s, errors = wav(pcm16, rate), settings.load(), []
     for slot in settings.SLOTS:
         key, provider = settings.get_key(slot), s[slot]["provider"]

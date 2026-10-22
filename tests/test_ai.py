@@ -84,7 +84,7 @@ def test_hearing_goes_to_the_keys_that_can_hear_then_the_next(monkeypatch):
         calls.append("gemini")
         assert audio[:4] == b"RIFF"
         return "review my last game"
-    text, by = ai.hear(b"\x00\x00" * 16000, hearers={"groq": busy, "gemini": gem})
+    text, by = ai.hear(b"\x00\x40" * 16000, hearers={"groq": busy, "gemini": gem})
     assert (text, by, calls) == ("review my last game", "gemini", ["groq", "gemini"])
     assert ai.resting("groq")  # the busy one rests
 
@@ -95,4 +95,4 @@ def test_hearing_without_a_key_that_can_hear(monkeypatch):
     monkeypatch.setattr(settings, "load", lambda: {"slot1": {"provider": "anthropic"}, "slot2": {"provider": "openai"}})
     monkeypatch.setattr(settings, "get_key", lambda slot: "k")
     with pytest.raises(ai.NoKey):
-        ai.hear(b"\x00\x00" * 16000)
+        ai.hear(b"\x00\x40" * 16000)  # audible: silence is never sent at all
