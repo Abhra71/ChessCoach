@@ -638,6 +638,8 @@ class Handler(BaseHTTPRequestHandler):
             where = {k: str(v)[:40] for k, v in where.items() if k in ("section", "game", "step", "chesscom", "ply")}
             t0 = time.time()
             r = talk.reply(str(body.get("coach", "maya")), str(body.get("text", "")), history, where)
+            if (r.get("action") or {}).get("web", "").startswith("https://www.chess.com/"):
+                webbrowser.open(r["action"]["web"])  # chess.com's page, in their own browser
             # the debug logbook: one line a turn, words only, so a wrong answer can be traced (22 Oct hand test)
             log.info("talk %s at %s: %r -> %s, ai=%s, %.1f s: %r", body.get("coach", "maya"), where.get("section"),
                      str(body.get("text", ""))[:120], r.get("action"), r.get("ai"), time.time() - t0, r.get("text", "")[:120])

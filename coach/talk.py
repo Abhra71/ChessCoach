@@ -40,6 +40,8 @@ RULES = (
     "the Play Online page, where they press Play a Friend themselves): shows "
     "them the way there with a red ring, step by step. "
     "When the player asks you to open, show or take them to a page, do is open, every time. "
+    "When they want something on chess.com (its puzzles, bots, lessons, their game history there), do is guide, "
+    "even in the app: Knightwise's own practice is not chess.com. "
     "When where_the_player_is has chesscom and they ask how to get somewhere on chess.com (bots, puzzles, lessons, their "
     "game history), do is guide, never open: Knightwise has no bots; chess.com does. "
     "do none when the player only talks or asks. Ask for something only when the player wants it. If they ask for "
@@ -195,6 +197,8 @@ def action(do, games, where):
         return {"back": True}
     if do.get("guide") in coaches.ROUTES and (where or {}).get("chesscom"):  # the red ring, on chess.com only
         return {"guide": coaches.guide(do["guide"])["guide"]}
+    if do.get("guide") in coaches.ROUTES:  # in the app: that chess.com page opens in their browser (23 Oct test)
+        return {"web": coaches.ROUTES[do["guide"]]["url"]}
     who = str(do.get("prep", "")).strip().lower()  # any chess.com player (19 Oct: "I can't find that game")
     if who and len(who) <= 30 and all(c.isalnum() or c in "-_" for c in who):
         return {"route": f"prep/{who}"}

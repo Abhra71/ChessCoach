@@ -66,7 +66,7 @@ def test_the_red_ring_only_on_chess_com_and_only_to_known_places():
     """"Take me to the bots": the ring on chess.com; in the app it says where to ask; an unknown place does nothing."""
     g = talk.action({"guide": "bots"}, GAMES, {"section": "home", "chesscom": "True"})
     assert g["guide"]["to"] == "/play/computer" and g["guide"]["steps"][0]["path"] == "/play"
-    assert talk.action({"guide": "bots"}, GAMES, {"section": "home"}) is None
+    assert talk.action({"guide": "bots"}, GAMES, {"section": "home"}) == {"web": "https://www.chess.com/play/computer"}  # in the app: the page itself
     assert talk.action({"guide": "the moon"}, GAMES, {"section": "home", "chesscom": "True"}) is None
 
 
