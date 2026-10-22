@@ -657,3 +657,43 @@ a.tile:hover { filter: brightness(1.05); }
 .pnew { background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
 .pdone svg { width: 18px; height: 18px; color: var(--accent); }
 .pcard .psegs .pseg { cursor: default; }
+
+/* Your level, the calm way (22 Oct): a ring for the level, a number and a bar per skill, one green button */
+.ltools { display: flex; gap: 6px; flex-wrap: wrap; }
+.ltool { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 999px; background: var(--surface); color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 600; }
+.ltool:hover { color: var(--text); filter: brightness(1.1); } .ltool svg { width: 16px; height: 16px; color: #b48ce0; }
+.lcur { display: flex; align-items: center; gap: 16px; padding: 16px 18px; }
+.lring { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.lring span { width: 50px; height: 50px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-size: 13px; color: var(--muted); }
+.lring b { font-size: 18px; color: var(--text); }
+.lname { font-size: 20px; margin: 2px 0 0; }
+.lskills { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
+.lskill { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+.lskill .btn { justify-content: center; margin-top: auto; }
+.lmet svg { width: 18px; height: 18px; color: var(--accent); }
+.lnum { display: flex; align-items: baseline; gap: 8px; } .lnum b { font-size: 24px; font-weight: 650; }
+.bar.warm > div { background: #e9a23b; } .lskill .bar > div { background: var(--accent); } .lskill .bar.warm > div { background: #e9a23b; }
+.llater { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.lrow { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.lrow .lstep { width: 26px; height: 26px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: var(--muted); }
+.lrow .lstate { margin-left: auto; } .lrow .lstate svg { width: 17px; height: 17px; color: var(--faint); }
+.lrow.done .lstate svg { color: var(--accent); } .lrow:not(.done) b { color: var(--muted); }
+
+/* Your course, the calm way (22 Oct): the next lesson, then a path of circles per level */
+.cnext { display: flex; align-items: center; gap: 14px; padding: 14px 16px; margin-bottom: 14px; text-decoration: none; color: inherit; }
+.cnext:hover { filter: brightness(1.05); } .cnext h3 { margin: 2px 0 0; } .cnext .btn { margin-left: auto; }
+.cnext-icon { width: 42px; height: 42px; border-radius: 12px; background: var(--raised); display: grid; place-items: center; flex: none; }
+.cnext-icon svg { width: 22px; height: 22px; color: #5ea4e8; }
+.cgroup { padding: 14px 16px; }
+.cpath { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 14px 8px; margin-top: 14px; position: relative; }
+.cnode { display: flex; flex-direction: column; align-items: center; gap: 7px; text-decoration: none; color: inherit; text-align: center; }
+.cnode[href]:hover .cdot { filter: brightness(1.15); }
+.cdot { width: 38px; height: 38px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; box-shadow: inset 0 -3px 0 var(--press); }
+.cdot svg { width: 18px; height: 18px; }
+.cnode.passed .cdot, .cnode.fine .cdot { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 -3px 0 var(--accent-edge); }
+.cnode.next .cdot { background: var(--text); color: var(--bg); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); }
+.cnode.again .cdot, .cnode.watching .cdot { background: #e9a23b; color: #2a1a04; }
+.cnode.coming .cdot, .cnode.later .cdot { color: var(--faint); box-shadow: none; }
+.ctitle { font-size: 12.5px; line-height: 1.3; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cnode.next .ctitle { color: var(--text); font-weight: 600; }
+.cnode.coming .ctitle, .cnode.later .ctitle { color: var(--faint); }

@@ -28,6 +28,7 @@ const ICON = {
   sparkles: '<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.8 2.2 2.2.8-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/>',
   message: '<path d="M4 5h16v11H9.5L4 20.5z"/>',
   sync: '<path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4.5V11h-6.5"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
@@ -643,22 +644,30 @@ async function levelView() {
   const p = await api("/api/ladder");
   if (!p.player) return go("welcome");
   if (!p.levels || !p.levels.length) { $("#page").innerHTML = `<div class="empty">Your level appears once your games are checked.</div>`; return; }
-  const cur = p.levels[p.current];
-  const level = (l, i) => `<div class="box rise level ${i === p.current ? "now" : l.done ? "done" : "later"}">
-      <div class="row spread"><div><div class="label">Level ${i + 1} · ${esc(l.band)}</div><h2 style="margin:4px 0 0">${esc(l.name)}</h2></div>
-        <span class="chip ${l.done ? "win" : i === p.current ? "draw" : ""}">${l.done ? "Done" : i === p.current ? "Working on it" : "Later"}</span></div>
-      ${i <= p.current || l.done ? `<div class="skills">${l.skills.map(s => `<div class="skill ${s.met ? "met" : s.met === false ? "not" : ""}">
-        <div class="skill-head"><b>${s.met ? "✓ " : ""}${esc(s.name)}</b>${s.met === false && i === p.current ? `<a class="btn small-btn" href="#/${esc(s.train.route)}">${esc(s.train.label)}</a>` : ""}</div>
-        <div class="small muted">${esc(s.what)}: ${esc(skillValue(s))}</div></div>`).join("")}</div>`
-        : `<p class="small muted" style="margin:8px 0 0">${l.skills.map(s => esc(s.name)).join(" · ")}</p>`}
-    </div>`;
+  const cur = p.levels[p.current], next = cur.skills.find(s => s.met === false);
+  // each skill as a number, its goal and a bar toward it; one green button, for the one thing now (22 Oct: less text)
+  const toward = s => s.value === null ? 0 : s.way === "max" ? (s.value <= s.target ? 100 : Math.max(8, 100 * s.target / s.value))
+    : Math.min(100, 100 * s.value / (s.target || 1));
+  const num = s => s.value === null ? "–" : s.unit === "%" ? `${Math.round(s.value)}%` : s.unit === "points" ? s.value.toFixed(1) : `${s.value}`;
+  const goal = s => `${s.way === "max" ? "≤" : "≥"} ${s.unit === "%" ? s.target + "%" : s.target}`;
+  const skill = s => `<div class="box lskill ${s.met ? "met" : ""}" title="${esc(s.what)}${s.unit && s.unit !== "%" ? ", " + esc(s.unit) : ""}">
+      <div class="row spread"><b>${esc(s.name)}</b>${s.met ? `<span class="lmet">${svg("check")}</span>` : ""}</div>
+      <div class="lnum"><b class="num">${num(s)}</b><span class="muted small">goal ${goal(s)}</span></div>
+      <div class="bar ${s.met ? "" : "warm"}"><div style="width:${toward(s)}%"></div></div>
+      ${s.met === false ? `<a class="btn ${s === next ? "primary" : ""}" href="#/${esc(s.train.route)}">${esc(s.train.label.replace(/ it$/, ""))}</a>` : ""}</div>`;
+  const met = cur.skills.filter(s => s.met).length, total = cur.skills.length, deg = 360 * met / total;
+  const TOOLS = [["repertoire", "book", "Repertoire"], ["calc", "sparkles", "In your head"], ["blindfold", "practice", "Blindfold"],
+    ["guess", "medal", "Guess the move"], ["endgames", "mate", "Endgames"]];
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Your level</h1>
-      <p class="sub">Five levels from beginner to 2,000+, measured on your last ${p.games} games. A level is done when every skill meets its goal.</p></div>
-      <div class="row"><a class="btn" href="#/repertoire">Your repertoire</a><a class="btn" href="#/calc">See it in your head</a><a class="btn" href="#/blindfold">Blindfold</a><a class="btn" href="#/guess">Weekly challenge: guess the human move</a><a class="btn" href="#/endgames">Endgame trainer</a></div></div>
-    <div class="stack">${p.levels.map(level).join("")}</div>
-    <p class="note">The goals are our first estimate of each level, and we'll tune them on real players' games. They don't promise a rating; your games show the progress.</p>`;
-  const next = cur.skills.find(s => s.met === false);
+    <div class="page-head"><div><h1>Your level</h1></div>
+      <div class="ltools">${TOOLS.map(([r, i, n]) => `<a class="ltool" href="#/${r}" title="${n}">${svg(i)}<span>${n}</span></a>`).join("")}</div></div>
+    <div class="box lcur rise">
+      <div class="lring" style="background:conic-gradient(var(--accent) ${deg}deg, var(--line-strong) 0)"><span><b class="num">${met}</b>/${total}</span></div>
+      <div><div class="muted small">Level ${p.current + 1} · ${esc(cur.band)}</div><h2 class="lname">${esc(cur.name)}</h2></div></div>
+    <div class="lskills rise">${cur.skills.map(skill).join("")}</div>
+    <div class="llater">${p.levels.map((l, i) => i === p.current ? "" : `<div class="box lrow ${l.done ? "done" : ""}" title="${esc(l.skills.map(s => s.name).join(" · "))}">
+        <span class="lstep num">${i + 1}</span><b>${esc(l.name)}</b><span class="muted small">${esc(l.band)}</span>
+        <span class="lstate">${l.done ? svg("check") : svg("lock")}</span></div>`).join("")}</div>`;
   Coach.react("viktor", "explain", next
     ? `You're on level ${p.current + 1}, ${cur.name}. The one thing now: ${next.name.toLowerCase()}. ${next.what}: ${skillValue(next)}.`
     : `Every level done. Remarkable. Keep playing: the numbers keep watching.`,
@@ -674,29 +683,28 @@ async function courseView() {
   const c = await api("/api/course");
   if (!c.player) return go("welcome");
   const next = c.lessons.find(l => l.next);
-  const row = l => {
-    const [label, cls] = l.next ? ["Next for you", "draw"] : COURSE_CHIP[l.status];
-    const can = l.status !== "coming";
-    return `<div class="course-row ${l.next ? "now" : ""} ${l.status}">
-      <div><b>${esc(l.title)}</b><div class="small muted">${esc(l.reason || l.habit)}</div></div>
-      <div class="row"><span class="chip ${cls}">${esc(label)}</span>
-        ${can ? `<a class="btn small-btn" href="#/course/${l.id}">${l.status === "passed" || l.status === "fine" ? "Again" : "Open"}</a>` : ""}</div></div>`;
+  // a path of lessons per level, like chess.com's: a circle a lesson, the next one lit (22 Oct: less text)
+  const ICON = { passed: "check", fine: "check", coming: "lock", later: "lock" };
+  const node = l => {
+    const can = l.status !== "coming", cls = l.next ? "next" : l.status;
+    return `<a class="cnode ${cls}" ${can ? `href="#/course/${l.id}"` : ""} title="${esc(l.reason || l.habit || "")}${(COURSE_CHIP[l.status] || [])[0] ? " · " + esc(COURSE_CHIP[l.status][0]) : ""}">
+      <span class="cdot">${ICON[l.status] && !l.next ? svg(ICON[l.status]) : l.next ? svg("practice") : ""}</span>
+      <span class="ctitle">${esc(l.title)}</span></a>`;
   };
   const groups = Object.keys(c.levels).map((lv, i) => {
     const ls = c.lessons.filter(l => l.level === lv);
     const done = ls.filter(l => l.status === "passed" || l.status === "fine").length;
-    return `<div class="box rise stack" style="padding:16px"><div class="row spread"><div><div class="label">Level ${i + 1}</div>
-        <h2 style="margin:4px 0 0">${esc(c.levels[lv])}</h2></div><span class="small muted num">${done} of ${ls.length} done</span></div>
-      ${ls.map(row).join("")}</div>`;
+    return `<div class="box cgroup rise"><div class="row spread"><b>Level ${i + 1} · ${esc(c.levels[lv])}</b>
+        <span class="muted small num">${done}/${ls.length}</span></div>
+      <div class="cpath">${ls.map(node).join("")}</div></div>`;
   }).join("");
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Your course</h1>
-      <p class="sub">From beginner to 2,000+, one idea at a time. Your games pick the next lesson, and a lesson is done only when that mistake drops in the games you play after it.</p></div></div>
-    ${next ? `<div class="box plan-card new" style="margin-bottom:16px"><div class="plan-face">${KnightwiseFaces.figure("viktor", "pleased")}</div>
-      <div class="plan-text"><div class="label">Next for you</div><h3>${esc(next.title)}</h3><p class="muted small">${esc(next.reason)}</p>
-      <a class="btn primary" href="#/course/${next.id}">Start the lesson</a></div></div>` : ""}
-    <div class="stack">${groups}</div>
-    <p class="note">Lessons written for Knightwise. Positions from your own games and the Lichess puzzle database, checked by Stockfish. "Coming" lessons need strong players' games, a download that waits for your yes.</p>`;
+    <div class="page-head"><div><h1>Your course</h1></div></div>
+    ${next ? `<a class="box cnext rise" href="#/course/${next.id}">
+      <span class="cnext-icon">${svg("book")}</span>
+      <div><div class="muted small">Next for you</div><h3>${esc(next.title)}</h3></div>
+      <span class="btn primary">Start</span></a>` : ""}
+    <div class="stack">${groups}</div>`;
   Coach.react("viktor", "explain", next ? `Next for you: ${next.title.toLowerCase()}. ${next.reason}` : "Every lesson at your level is done or already fine. Keep playing: your games keep watching.",
     next ? [{ label: "Start the lesson", app: `course/${next.id}` }] : []);
 }
