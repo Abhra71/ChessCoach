@@ -83,7 +83,7 @@ Each one: what was seen, then the fix.
     greys; one title and one short line per card, details on demand or spoken; a clear first thing on each page.
     Home first (mockup first), then the review, then the rest.
 
-23. **The Ask bar feels underrated and doesn't look like a place to type** (Home and the review). Fix later: a
+23. **(Fixed 22 Oct: Maya's face, a clear field, mic and send inside, three questions to tap on Home and in the review.)** **The Ask bar feels underrated and doesn't look like a place to type** (Home and the review). Fix later: a
     clear input look (a search icon or the coach's face on the left, a visible field, the mic as an icon), the
     Talk and Ask buttons as icons inside the bar, a warmer placeholder.
 

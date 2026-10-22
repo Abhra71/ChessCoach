@@ -35,6 +35,9 @@ const ICON = {
   ear: '<path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-6 0"/><path d="M10 9a2 2 0 0 1 4 0"/>',
   users: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14a5 5 0 0 1 5 6"/>',
   search: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  send: '<path d="M4 12h15M13 6l6 6-6 6"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
@@ -191,10 +194,18 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turn
 })();
 
 // a question box with a microphone: onAsk(text) answers it
-function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
-  el.innerHTML = `<div class="row"><input class="field" data-q placeholder="${esc(enabled ? placeholder : "Add an AI key in Settings to ask the coach")}" ${enabled ? "" : "disabled"}>
-    ${listen && enabled ? `<button class="btn mic" data-mic title="Click to talk, click again to stop">Talk</button>` : ""}
-    <button class="btn" data-ask ${enabled ? "" : "disabled"}>Ask</button></div><div data-a class="small" style="margin-top:8px"></div>`;
+// Ask the coach: her face, a field that looks like one, the mic and send inside it, and a few questions to tap
+// (22 Oct test: "people won't click here to type, it's not understandable")
+const ASK_CHIPS = { home: ["Review my last game", "Why do I lose?", "What should I practise?"],
+  review: ["Why was that bad?", "What should I have played?", "Next"] };
+function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
+  const face = typeof KnightwiseFaces !== "undefined" ? KnightwiseFaces.svg(coach || "maya", "pleased") : "";
+  el.innerHTML = `<div class="askbar"><span class="ask-face">${face}</span>
+      <input class="ask-in" data-q placeholder="${esc(enabled ? placeholder : "Add an AI key in Settings to ask the coach")}" ${enabled ? "" : "disabled"}>
+      ${listen && enabled ? `<button class="ask-ic" data-mic title="Talk: click, speak, click again to stop">${svg("mic")}</button>` : ""}
+      <button class="ask-ic send" data-ask title="Ask" ${enabled ? "" : "disabled"}>${svg("send")}</button></div>
+    ${enabled && chips && chips.length ? `<div class="ask-chips">${chips.map(c => `<button data-chip>${esc(c)}</button>`).join("")}</div>` : ""}
+    <div data-a class="small" style="margin-top:8px"></div>`;
   if (!enabled) {  // the feature is never hidden: say what a free key gives, and where to add it
     el.innerHTML = `<p class="small" style="margin:0 0 10px">Talk with your coaches and get real replies with a free AI key.</p>
       <a class="btn" href="#/settings">Set up now</a>`;
@@ -210,14 +221,16 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach }) {
     catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
   $("[data-ask]", el).onclick = go;
+  el.querySelectorAll("[data-chip]").forEach(b => b.onclick = () => { q.value = b.textContent; go(); });
+  q.oninput = () => $("[data-ask]", el).classList.toggle("ready", !!q.value.trim());  // green only when there's something to send
   q.onkeydown = e => { if (e.key === "Enter") go(); };
   if (mic) mic.onclick = async () => {
     if (!Mic.on) {
       Voice.stop();
       try { await Mic.start(); } catch (e) { out.innerHTML = `<span class="err">The microphone isn't available.</span>`; return; }
-      mic.textContent = "Stop"; mic.classList.add("rec"); out.innerHTML = `<span class="muted">Listening… click Stop when you're done.</span>`;
+      mic.innerHTML = svg("stop"); mic.classList.add("rec"); out.innerHTML = `<span class="muted">Listening… click ■ when you're done.</span>`;
     } else {
-      mic.textContent = "Talk"; mic.classList.remove("rec"); out.innerHTML = `<span class="muted">Writing down what you said…</span>`;
+      mic.innerHTML = svg("mic"); mic.classList.remove("rec"); out.innerHTML = `<span class="muted">Writing down what you said…</span>`;
       try { const text = await Mic.stop(); if (!text) { out.innerHTML = `<span class="muted">I didn't catch that. Try again.</span>`; return; }
         q.value = text; go(); }
       catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
@@ -1606,7 +1619,7 @@ async function home() {
     f ? f.habit : "",
     last ? `In your last game, against ${last.opponent}, ${lastGameWords(last, "I found")}` : ""].join(" ");
   $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
-  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya",
+  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya", chips: ASK_CHIPS.home,
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,
     onAsk: async q => {  // the same brain as Talk (19 Oct): typing "open my last review" opens it
       const r = await api("/api/talk", { coach: "maya", text: q, history: [], where: { section: "home" } });
@@ -1828,7 +1841,7 @@ async function gameView(id) {
   window.kwNextStep = () => location.hash.includes(`games/${g.id}`) ? step(1) : null;
   window.kwPly = () => location.hash.includes(`games/${g.id}`) ? ply : null;
   window.kwBackStep = () => location.hash.includes(`games/${g.id}`) ? step(-1) : null;
-  askBox($("#askbox"), { placeholder: "Ask Maya about this position", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
+  askBox($("#askbox"), { placeholder: "Ask Maya about this position", coach: "maya", chips: ASK_CHIPS.review, enabled: aiReady, listen: cfg.talk_ready,
     onAsk: q => { const k = moments[momentAt(ply)]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: k ? k.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go, was = ply;
