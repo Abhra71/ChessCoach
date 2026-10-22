@@ -151,3 +151,9 @@ def test_busy_keys_are_said_plainly():
         raise RuntimeError("groq: HTTP 429; gemini: HTTP 429")
     r = talk.reply("maya", "tell me a joke", home=HOME, games=GAMES, ask_ai=busy)
     assert r["text"] == talk.BUSY and r["action"] is None and not r["ai"]
+
+
+def test_next_and_back_whatever_follows_the_word():
+    for do in ({"do": "next", "what": "step"}, {"do": "next", "what": "move"}, {"next": 1}, "next"):
+        assert talk.action(do, [], {"section": "review"}) == {"next": True}
+    assert talk.action({"do": "back", "what": "previous move"}, [], {"section": "review"}) == {"back": True}

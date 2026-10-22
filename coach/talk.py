@@ -179,9 +179,10 @@ def action(do, games, where):
         g = find_game(do["rematch"], games)
         detail = insights.extras_for(g["id"]).get("rematch") if g["result"] != "win" else None
         return {"route": f"rematch/{g['id']}/{detail['ply']}"} if detail else None
-    if do.get("next") is True and (where or {}).get("section") == "review":
+    # next / back: whatever the AI wrote after the word ("next": "step", "move"…) (22 Oct test: "Next." was refused)
+    if "next" in do and do["next"] not in (False, None, "none") and (where or {}).get("section") == "review":
         return {"next": True}
-    if do.get("back") is True and (where or {}).get("section") == "review":  # 22 Oct: going back says it again
+    if "back" in do and do["back"] not in (False, None, "none") and (where or {}).get("section") == "review":  # 22 Oct: going back says it again
         return {"back": True}
     if do.get("guide") in coaches.ROUTES and (where or {}).get("chesscom"):  # the red ring, on chess.com only
         return {"guide": coaches.guide(do["guide"])["guide"]}
