@@ -605,6 +605,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(reply), "application/json")
         if path == "/api/feedback":  # a beta tester's report: kept on this PC (where it's sent is the builder's choice)
             entry = {k: str(body.get(k, ""))[:1500] for k in ("doing", "wrong", "page")}
+            reply = str(body.get("reply", "")).strip()[:120]  # optional, so the maker can press Reply (22 Oct)
+            reply = reply if "@" in reply and "." in reply.split("@")[-1] and " " not in reply else ""
             entry.update(helped=max(0, min(5, int(body.get("helped") or 0))), version=VERSION, at=time.strftime("%Y-%m-%d %H:%M"))
             DATA.mkdir(parents=True, exist_ok=True)
             with open(DATA / "feedback.jsonl", "a", encoding="utf-8") as fh:
@@ -612,14 +614,14 @@ class Handler(BaseHTTPRequestHandler):
             note_in_logbook(f"Feedback saved ({entry['page']}): {entry['wrong'][:80]}")
             text = (f"What I was doing: {entry['doing'] or '-'}\nWhat went wrong or was confusing: {entry['wrong'] or '-'}\n"
                     f"How much Knightwise helped today (1 to 5): {entry['helped'] or '-'}\n\n"
-                    f"Knightwise {VERSION}, page: {entry['page'] or '-'}")
+                    f"Knightwise {VERSION}, page: {entry['page'] or '-'}" + (f"\nReply to: {reply}" if reply else ""))
             key = feedback_key()  # one-click Send (22 Oct: "as easy as just a send button"): the page posts it
             if body.get("email") and key and not feedback_send_allowed():  # at most SENDS_A_DAY from one PC
                 key = None
                 return self.send(200, json.dumps({"saved": True, "text": text, "key": None, "limit": SENDS_A_DAY}), "application/json")
             if body.get("email") and not key:  # no form key in this build: the player's own email app, ready to send
                 webbrowser.open(feedback_mail(text))
-            return self.send(200, json.dumps({"saved": True, "text": text, "key": key, "version": VERSION}), "application/json")
+            return self.send(200, json.dumps({"saved": True, "text": text, "key": key, "version": VERSION, "reply": reply or None}), "application/json")
         if path == "/api/talk":  # a spoken turn with a coach: the reply, and one checked thing to do (0.6)
             from coach import talk
             turns = body.get("history") if isinstance(body.get("history"), list) else []

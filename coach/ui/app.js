@@ -222,9 +222,10 @@ function feedbackBox() {
   box.innerHTML = `<div class="row spread"><h2 style="margin:0">Send feedback</h2><button class="btn small-btn" data-close>✕</button></div>
     <label class="small">What were you doing?<textarea class="field" data-doing rows="2" maxlength="1500" placeholder="For example: going through my last game's review"></textarea></label>
     <label class="small">What went wrong, or was confusing?<textarea class="field" data-wrong rows="3" maxlength="1500" placeholder="For example: the arrow pointed at the wrong square"></textarea></label>
+    <label class="small">Your email, only if you'd like a reply (optional)<input class="field" type="email" data-reply maxlength="120" placeholder="you@example.com" style="width:100%;margin-top:4px"></label>
     <div class="small">How much did Knightwise help today? <span class="stars">${[1, 2, 3, 4, 5].map(n => `<button class="btn small-btn" data-n="${n}">${n}</button>`).join("")}</span></div>
     <div class="row"><button class="btn primary" data-send>Send</button><button class="btn" data-copy>Copy text</button></div>
-    <span class="small muted" data-msg>It goes to ${FEEDBACK_TO}, with the app version and this page (${esc(page)}). Nothing else about you.</span>`;
+    <span class="small muted" data-msg>It goes to ${FEEDBACK_TO}, with the app version and this page (${esc(page)}). Nothing else about you, and your email only if you add it.</span>`;
   document.body.appendChild(box);
   let helped = 0;
   box.querySelector("[data-close]").onclick = () => box.remove();
@@ -234,8 +235,9 @@ function feedbackBox() {
   // by email (19 Oct: not a GitHub form, most people don't use GitHub); Copy text for those without a mail app
   const send = async email => {
     const wrong = box.querySelector("[data-wrong]").value.trim(), doing = box.querySelector("[data-doing]").value.trim();
+    const replyTo = box.querySelector("[data-reply]").value.trim();  // optional: so the maker can press Reply (22 Oct)
     if (!wrong && !doing && !helped) return;
-    const r = await api("/api/feedback", { doing, wrong, helped, page, email });
+    const r = await api("/api/feedback", { doing, wrong, helped, page, email, reply: replyTo });
     const msg = box.querySelector("[data-msg]");
     if (email && r.limit) {  // four sent from this PC today: copy instead (22 Oct)
       try { await navigator.clipboard.writeText(r.text); } catch (e) {}
@@ -246,7 +248,8 @@ function feedbackBox() {
       try {
         const sent = await fetch("https://api.web3forms.com/submit", { method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ access_key: r.key, subject: `Knightwise feedback (${r.version})`, from_name: "Knightwise", message: r.text }) })
+          body: JSON.stringify({ access_key: r.key, subject: `Knightwise feedback (${r.version})`, from_name: "Knightwise", message: r.text,
+            ...(r.reply ? { email: r.reply, replyto: r.reply } : {}) }) })
           .then(x => x.json());
         if (!sent.success) throw new Error(sent.message || "not sent");
         msg.textContent = "Sent. Thank you!"; setTimeout(() => box.remove(), 2500); return;

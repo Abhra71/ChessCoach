@@ -1,6 +1,6 @@
 # Knightwise privacy policy
 
-*Last updated: 20 October 2026 (Knightwise 1.0)*
+*Last updated: 22 October 2026 (Knightwise 1.0)*
 
 Knightwise is a free, open-source chess coach for Windows (source code: https://github.com/Abhra71/ChessCoach).
 It is made by one person (Abhra71). There are no accounts, no adverts and no tracking.
@@ -27,12 +27,12 @@ ever sent to the AI company it belongs to.
 | The endgame trainer | Lichess's endgame tablebase | the position on the board; nothing about you |
 | You type to a coach, or ask for an explanation, **only with an AI key** | the AI company whose key you added (Groq, Google Gemini, Anthropic or OpenAI) | your question, the chess position or moment, the engine's facts and your rating |
 | You click **Talk**, **only with an AI key** | the AI company whose key you added (Groq or Google Gemini) | the recording of what you said, from the moment you click Talk until you click Stop, to be written down as text. Then your question as above |
-| You press **Send by email** in Send feedback | your own email app | the feedback you wrote, ready for you to send or not |
+| You press **Send** in Send feedback | Web3Forms (web3forms.com), which emails it to the maker | the feedback you wrote, the app version and the page you were on; your email address **only if you type it in** (optional, so the maker can reply). At most 4 a day. If it can't be sent, it is copied for you to email yourself |
 | You press **Share** on your week | the app you pick (WhatsApp, X or Instagram) | a line about your week and its picture, for you to post or not |
 
 Each of those companies handles its request under its own privacy policy. Knightwise does not send anything to its
 maker on its own, and it collects no analytics, crash reports or usage statistics. Feedback only reaches the maker
-if you send the email yourself.
+when you press Send yourself.
 
 The microphone is on only after you click Talk, and until you click Stop (at most a minute).
 
@@ -45,7 +45,9 @@ links and buttons it points at with its red ring. It sends nothing to anyone els
 Knightwise never gives help during a game against a real person: no hints, no arrows, no reading the board.
 
 ## Children
-Knightwise does not knowingly collect personal information from anyone, including children.
+Knightwise does not knowingly collect personal information from anyone, including children. The only personal
+detail it can send is an email address someone chooses to type into Send feedback, so the maker can reply; it is
+never required, and it is used for nothing else.
 
 ## Deleting your data
 Uninstall Knightwise: the Store app's data is removed with it. (The older installer kept it in
@@ -54,4 +56,5 @@ Uninstall Knightwise: the Store app's data is removed with it. (The older instal
 Videos\Knightwise.
 
 ## Contact
-Questions: open an issue at https://github.com/Abhra71/ChessCoach/issues
+Questions: Send feedback in the app, email nanotech.mark.robots@gmail.com, or open an issue at
+https://github.com/Abhra71/ChessCoach/issues
