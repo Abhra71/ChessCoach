@@ -75,6 +75,14 @@ Each one: what was seen, then the fix.
     moves and their slips (coach/narrate.py, no AI); "next", "back" and "start the review" by voice. The AI only for
     wording later, never for the chess (owner: "if our engine is more accurate should we use AI?").
 
+22. **The look feels "AI-made" and too busy** (owner, 22 Oct): the coloured bar on a card's left edge ("every AI
+    tool has it, I hate it"); too many colours competing so nothing can be focused on; too much text on Home and the
+    review; borders too sharp. Chess.com as the bar: easy to navigate, colour placed with care, softer shapes. Not
+    fewer features, a calmer way of showing them. Plan: no left bars (10 places in app.css); cards set apart by
+    shade and soft corners; one accent (the board green) for the one main action, red only for danger; warm neutral
+    greys; one title and one short line per card, details on demand or spoken; a clear first thing on each page.
+    Home first (mockup first), then the review, then the rest.
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)
