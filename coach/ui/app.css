@@ -531,3 +531,102 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
 .rep-acc b { display: block; font-size: 28px; line-height: 1.1; } .rep-acc span { font-size: 12.5px; color: var(--muted, #aaa); }
 .rep-counts { width: 100%; border-collapse: collapse; } .rep-counts td { padding: 3px 4px; } .rep-counts td:nth-child(2) { text-align: center; }
 .rep-counts td.num:first-child { text-align: left; } .rep-counts td.num:last-child { text-align: right; }
+
+/* ===================== the calm look (22 Oct, the owner's verdict on the mockup) =====================
+   Warm layered greys, never pure black; areas set apart by shade, not lines; soft corners; pressable buttons;
+   one green for the one main action; colour lives in icons; no coloured bars on card edges. */
+:root {
+  --bg: #f4f2ef; --surface: #ffffff; --raised: #ebe8e3; --line: #e2ded8; --line-strong: #d3cec6;
+  --text: #1f1d1a; --muted: #6a645c; --faint: #938c83; --accent: #5d8a35; --accent-edge: #456a26; --on-accent: #ffffff;
+  --side: #ebe8e3; --press: rgba(0,0,0,.16); --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #262421; --surface: #312e2b; --raised: #3d3a36; --line: #3a3733; --line-strong: #4a4641;
+    --text: #f3f1ee; --muted: #a6a19a; --faint: #807a72; --invert: #f3f1ee; --on-invert: #262421;
+    --accent: #81b64c; --accent-edge: #5d8a35; --on-accent: #13210a; --side: #1e1c1a; --press: rgba(0,0,0,.32);
+    --red: #e5734f; --mine: #e5734f; --better: #81b64c;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #262421; --surface: #312e2b; --raised: #3d3a36; --line: #3a3733; --line-strong: #4a4641;
+  --text: #f3f1ee; --muted: #a6a19a; --faint: #807a72; --invert: #f3f1ee; --on-invert: #262421;
+  --accent: #81b64c; --accent-edge: #5d8a35; --on-accent: #13210a; --side: #1e1c1a; --press: rgba(0,0,0,.32);
+  --red: #e5734f; --mine: #e5734f; --better: #81b64c;
+}
+.side { background: var(--side); border-right: 0; padding: 18px 10px; }
+.nav a { border-radius: 8px; color: var(--text); opacity: .86; }
+.nav a:hover, .nav a.on { opacity: 1; background: rgba(255,255,255,.06); }
+.nav a.on { font-weight: 600; }
+.nav svg { width: 19px; height: 19px; }
+.nav a[href="#/home"] svg { color: #81b64c; } .nav a[href="#/games"] svg { color: #e9a23b; }
+.nav a[href="#/practice"] svg { color: #e5734f; } .nav a[href="#/plan"] svg, .nav a[href="#/course"] svg { color: #5ea4e8; }
+.nav a[href="#/level"] svg, .nav a[href="#/progress"] svg { color: #b48ce0; } .nav a[href="#/settings"] svg { color: var(--muted); }
+.box { border: 0; border-radius: 12px; box-shadow: none; background: var(--surface); }
+.box.focus, .moment.on { border-left: 0; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.coach-says, .brief-mind { border-left: 0; background: var(--raised); border-radius: 10px; padding: 10px 12px; }
+.skill { border: 0; background: var(--raised); border-radius: 10px; }
+.skill.met, .skill.not { border-left: 0; }
+.btn { border: 0; background: var(--raised); border-radius: 8px; box-shadow: inset 0 -3px 0 var(--press); padding: 9px 15px 10px; }
+.btn:hover { filter: brightness(1.08); background: var(--raised); }
+.btn:active { box-shadow: inset 0 -1px 0 var(--press); transform: translateY(1px); }
+.btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 -3px 0 var(--accent-edge); border: 0; }
+.btn.primary:hover { opacity: 1; filter: brightness(1.06); }
+.btn.ghost { background: transparent; box-shadow: none; }
+.field { border: 0; background: var(--raised); border-radius: 10px; }
+h2 { text-transform: none; letter-spacing: 0; font-size: 15px; color: var(--text); }
+.label { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+th { text-transform: none; letter-spacing: 0; }
+.chip { border: 0; border-radius: 5px; background: var(--raised); }
+.chip.win { background: var(--accent); color: var(--on-accent); } .chip.loss { background: #e5734f; color: #2a1008; }
+.seg { border: 0; background: var(--raised); border-radius: 8px; } .seg button.on { background: var(--accent); color: var(--on-accent); }
+.switch.on { background: var(--accent); }
+/* the sidebar's small things: four grey icons, a coloured dot only when it matters */
+.side-icons { margin-top: auto; display: flex; justify-content: space-around; padding: 8px 4px 2px; }
+.side-icons button { position: relative; background: none; border: 0; color: var(--faint); cursor: pointer; padding: 6px; border-radius: 8px; }
+.side-icons button:hover { color: var(--text); background: rgba(255,255,255,.06); }
+.side-icons svg { width: 19px; height: 19px; }
+.side-icons .dot { position: absolute; right: 3px; top: 4px; width: 7px; height: 7px; }
+
+/* Home, the calm way (22 Oct) */
+.home-head { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+.home-head h1 { font-size: 22px; font-weight: 650; }
+.home-head .icon-btn { padding: 6px; color: var(--muted); } .home-head .icon-btn svg { width: 19px; height: 19px; }
+.home-streak { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 18px; }
+.home-streak svg { width: 20px; height: 20px; color: #e9a23b; }
+.home-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.hcard { display: flex; flex-direction: column; gap: 10px; padding: 14px; text-decoration: none; color: inherit; }
+.hcard:hover { filter: brightness(1.05); }
+.hcard .btn { justify-content: center; margin-top: auto; }
+.mini-board { width: 100%; aspect-ratio: 1; border-radius: 8px; overflow: hidden; pointer-events: none; }
+.mini-board .coord { display: none; }
+.week-bars { display: flex; gap: 4px; } .week-bars i { flex: 1; height: 5px; border-radius: 3px; background: var(--line-strong); }
+.week-bars i.on { background: var(--accent); }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hcard .small svg, .home-vs svg, .tile svg { width: 16px; height: 16px; vertical-align: -3px; }
+.hicon svg { width: 20px; height: 20px; color: #e5734f; }
+.hnum { display: flex; align-items: baseline; gap: 8px; } .hnum b { font-size: 34px; font-weight: 650; line-height: 1; }
+.up-good, .up-bad { display: inline-flex; align-items: center; gap: 2px; font-weight: 600; font-size: 13px; }
+.up-good { color: var(--accent); } .up-bad { color: #e5734f; } .up-good svg, .up-bad svg { width: 13px; height: 13px; }
+.hcard .spark { width: 100%; height: 56px; }
+.home-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.tile { display: flex; flex-direction: column; gap: 5px; padding: 12px 14px; text-decoration: none; color: inherit; }
+.tile > svg { width: 19px; height: 19px; color: var(--muted); } .tile b { font-size: 20px; font-weight: 650; }
+a.tile:hover { filter: brightness(1.05); }
+.home-vs { display: flex; align-items: center; gap: 22px; margin-top: 14px; padding: 10px 16px; background: var(--surface); border-radius: 12px; }
+.home-vs > span { display: inline-flex; align-items: center; gap: 6px; } .home-vs b { font-size: 16px; }
+.home-vs svg { color: var(--muted); }
+.askpill { margin-top: 14px; background: var(--surface); border-radius: 999px; padding: 6px 8px 6px 14px; }
+.askpill .field { background: transparent; }
+@media (max-width: 900px) { .home-cards { grid-template-columns: 1fr; } .home-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .home-vs { flex-wrap: wrap; gap: 12px; } }
+.kw-more { background: none; border: 0; padding: 0; margin-top: 2px; color: var(--muted, #a6a19a); cursor: pointer; font: inherit; font-size: 12.5px; text-decoration: underline; }
+/* the coach's bubble in the app, the calm way: warm grey, soft, no outline */
+.kw-coach.kw-app .kw-box { background: #3a3733; border: 0; border-radius: 14px; }
+.kw-coach.kw-app .kw-actions button:first-child { background: var(--accent); color: var(--on-accent); border: 0; border-radius: 8px; box-shadow: inset 0 -3px 0 var(--accent-edge); }
+
+.help-q { margin-left: 8px; width: 20px; height: 20px; border-radius: 50%; border: 0; background: var(--raised); color: var(--muted);
+  font-size: 12px; font-weight: 700; cursor: pointer; vertical-align: 4px; padding: 0; line-height: 20px; }
+.help-q:hover { color: var(--text); } .help-q.new { box-shadow: 0 0 0 0 rgba(129,182,76,.6); animation: helpPulse 2s ease-out 2; }
+@keyframes helpPulse { 0% { box-shadow: 0 0 0 0 rgba(129,182,76,.6); } 100% { box-shadow: 0 0 0 10px rgba(129,182,76,0); } }
+.help-pop { max-width: 560px; margin: 6px 0 14px; padding: 10px 14px; background: var(--surface); border-radius: 12px; color: var(--muted); font-size: 13.5px; }
+.mini-board { max-width: 230px; margin: 0 auto; }

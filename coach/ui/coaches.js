@@ -15,6 +15,7 @@ const Coach = (() => {
   const remember = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const today = () => new Date().toISOString().slice(0, 10);
 
+  let more = false;  // one line and one button (22 Oct, the approved look); More shows the rest, the voice says it all
   function render(open) {
     if (!said) return;
     if (!box || !document.body.contains(box)) {
@@ -28,10 +29,11 @@ const Coach = (() => {
         <div class="kw-head"><b>${esc(who.name)}</b><span>${esc(who.role)}</span>
           ${TALK && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(who.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
-        ${s.lines.map(l => `<p>${esc(l)}</p>`).join("")}
+        ${(more ? s.lines : s.lines.slice(0, 1)).map(l => `<p>${esc(l)}</p>`).join("")}
         ${s.ai ? `<p class="kw-ai-note">AI can make mistakes. <button class="kw-report">Report it</button></p>` : ""}
-        ${(s.actions || []).length ? `<div class="kw-actions">${s.actions.map((a, i) =>
+        ${(s.actions || []).length ? `<div class="kw-actions">${(more ? s.actions : s.actions.slice(0, 1)).map((a, i) =>
           `<button data-i="${i}">${esc(a.label)}</button>`).join("")}</div>` : ""}
+        ${!more && (s.lines.length > 1 || (s.actions || []).length > 1) ? `<button class="kw-more" title="Show everything">More</button>` : ""}
       </div>` : `${face}<button class="kw-tab">${esc(who.name)}</button>`;
     box.querySelector(".kw-char").onclick = () => open ? fold() : (render(true), talk());
     const tab = box.querySelector(".kw-tab");
@@ -40,6 +42,8 @@ const Coach = (() => {
     if (x) x.onclick = () => { if (Conv.on) Conv.stop(); fold(); };
     const t = box.querySelector(".kw-speak");
     if (t) t.onclick = () => Conv.start(s.coach);
+    const mo = box.querySelector(".kw-more");
+    if (mo) mo.onclick = () => { more = true; render(true); };
     const rep = box.querySelector(".kw-report");  // an AI answer that was wrong: straight to the feedback email (22 Oct)
     if (rep) rep.onclick = () => window.feedbackBox && window.feedbackBox();
     box.querySelectorAll(".kw-actions button").forEach(b => b.onclick = () => act(s.actions[Number(b.dataset.i)]));
@@ -62,7 +66,7 @@ const Coach = (() => {
   // say something now (open, with voice)
   function show(s, { speak = true } = {}) {
     if (Conv.on && !s.talking) { held = s; return; }  // in a conversation, only the conversation speaks (kept for a handover)
-    said = s; clearTimeout(foldTimer); render(true); if (speak) talk();
+    said = s; more = !!s.talking; clearTimeout(foldTimer); render(true); if (speak) talk();
   }
   // a quick reaction on a board: pose (worried, celebrate, explain...) and one line
   // spoken: what the voice says when it differs from the short line in the bubble
@@ -78,6 +82,7 @@ const Coach = (() => {
     const r = await api(`/api/coach?section=${section}&in=app&hour=${new Date().getHours()}${first || force ? "" : "&again=1"}`).catch(() => null);
     if (!r || TAB_SECTION[location.hash.replace(/^#\/?/, "").split("/")[0] || "home"] !== section) return;
     said = { ...r, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
+    more = false;
     if (r.quiet && !force) { said.lines = [`${(COACHES[r.coach] || {}).name || "Your coach"} is here if you need anything.`]; return render(false); }  // nothing new: just the tab
     render(true);  // the full welcome first, later just where things stand (once a day)
     if (first || force) { remember(`kw-app-greeted-${section}`, today()); talk(); }

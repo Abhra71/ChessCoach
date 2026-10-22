@@ -25,6 +25,10 @@ const ICON = {
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   book: '<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5c-.8 0-1.5-.7-1.5-1.5z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z"/>',
   down: '<path d="M12 5v14M6 13l6 6 6-6"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  sparkles: '<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.8 2.2 2.2.8-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/>',
+  message: '<path d="M4 5h16v11H9.5L4 20.5z"/>',
+  sync: '<path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4.5V11h-6.5"/>',
+  sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
 };
 const svg = (name, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${ICON[name]}</svg>`;
@@ -284,20 +288,17 @@ function shell(active, body) {
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
         <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("course", "Your course", "book")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
-        <button class="btn side-voice" id="mute" title="Voice on or off">${Voice.on ? "Voice on" : "Voice off"}</button>
-        <button class="side-ai" id="aiuse" hidden></button>
-        <button class="side-ai" id="feedback" title="Tell us what went wrong or what was confusing">Send feedback</button>
-        <div class="side-foot" id="status"><i class="dot"></i><span>Connecting…</span></div>
+        <div class="side-foot" id="status" hidden></div>
+        <div class="side-icons">
+          <button id="aiuse" title="AI use today">${svg("sparkles")}<i class="dot"></i></button>
+          <button id="feedback" title="Send feedback">${svg("message")}</button>
+          <button id="synced" title="Checking…">${svg("sync")}<i class="dot"></i></button>
+        </div>
       </aside>
       <main><div class="page" id="page">${body}</div></main>
     </div>`;
   paintStatus(); paintAiUse();
-  $("#feedback").onclick = feedbackBox;
-  $("#mute").onclick = () => {
-    Voice.set(!Voice.on);
-    $("#mute").textContent = Voice.on ? "Voice on" : "Voice off";
-    api("/api/settings", { voice: Voice.on }).catch(() => {});
-  };
+  $("#feedback").onclick = feedbackBox;  // the Voice button left the sidebar (22 Oct test): it's in Settings
 }
 
 // the AI usage panel, like Claude's: a bar per key, what's left today, and who is resting
@@ -306,15 +307,15 @@ async function paintAiUse() {
   const b = $("#aiuse");
   if (!b) return;
   const u = await api("/api/ai-usage").catch(() => null);
-  if (!u || !u.slots.length) { b.hidden = true; return; }
+  if (!u || !u.slots.length) { b.title = "No AI key: add one in Settings"; b.querySelector(".dot").className = "dot"; b.onclick = () => go("settings"); return; }
   const rows = u.slots.map(x => {
     const limit = x.requests_limit || FREE_DAY[x.provider], left = x.requests_left ?? (limit ? limit - x.requests : null);
     const pct = limit ? Math.min(100, Math.round(100 * (limit - left) / limit)) : 0;
     return { ...x, limit, left, pct };
   });
   const top = Math.max(...rows.map(r => r.pct)), rest = rows.some(r => r.resting_minutes);
-  b.hidden = false;
-  b.innerHTML = `<i class="dot ${rest ? "busy" : top > 80 ? "busy" : "ok"}"></i><span>AI · ${top}% used today</span>`;
+  b.title = `AI · ${top}% used today`;
+  b.querySelector(".dot").className = `dot ${rest ? "busy" : top > 80 ? "busy" : "ok"}`;
   b.onclick = () => {
     const old = $(".ai-pop"); if (old) { old.remove(); return; }
     const pop = document.createElement("div"); pop.className = "ai-pop box";
@@ -335,7 +336,11 @@ function paintStatus() {
   const s = STATUS, busy = s.phase && !["ready", "waiting for your chess.com username", "starting"].includes(s.phase);
   const text = !s.phase ? "Coach not running" : busy ? `${cap(s.phase)}${s.total ? ` ${s.done}/${s.total}` : "…"}`
     : s.phase === "error" ? "Last check failed, retrying" : `Up to date${s.last_update ? " · " + s.last_update.slice(11) : ""}`;
+  // quiet when all is well: a grey icon with a dot; words only while it's working on something or went wrong
+  el.hidden = !busy && s.phase !== "error" && !!s.phase;
   el.innerHTML = `<i class="dot ${!s.phase ? "" : busy ? "busy" : "ok"}"></i><span>${esc(text)}</span>`;
+  const icon = $("#synced");
+  if (icon) { icon.title = text; icon.querySelector(".dot").className = `dot ${!s.phase || s.phase === "error" ? "" : busy ? "busy" : "ok"}`; }
 }
 
 async function pollStatus() {
@@ -1508,40 +1513,53 @@ async function home() {
   const played = (r.win || 0) + (r.loss || 0) + (r.draw || 0) || 1, pct = n => (100 * (n || 0) / played).toFixed(1);
   const rc = h.rating_change;
   const arrow = (good, text) => `<span class="trend ${good ? "good" : "bad"}">${svg(good ? "down" : "up")}${text}</span>`;
+  // pictures and numbers, not sentences (22 Oct, the approved mockup): three cards, small tiles, one green button
+  const d = h.daily || {}, tiles = h.patterns.slice(0, 3), v = h.you_vs_you;
+  // good or bad decides the colour; rising (more wins) or falling (fewer pieces lost) decides the arrow
+  const trend = (good, text, rises = false) => `<span class="${good ? "up-good" : "up-bad"}">${svg(good === rises ? "up" : "down")}${text}</span>`;
+  const short = { "left a piece hanging": "hanging", "walked into a fork or trick": "forks", "missed a free capture": "missed takes",
+    "walked into checkmate": "walked into mate", "missed a checkmate": "missed mates", "stalemated a won game": "stalemates" };
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>${hello}, ${esc(h.player)}</h1>
-      <p class="sub">${h.games} games checked by Stockfish</p></div>
-      <div class="row"><button class="btn" id="brief" title="Maya says your focus in three sentences">▶ Hear it from Maya</button></div></div>
-    <div class="grid">
-      ${dailyCard(h.daily || {})}
-      ${f ? `<div class="box focus hero rise">
-        <div class="hero-main"><div class="label">Your focus</div>
-          <h3 class="hero-title">${esc(PATTERN_TITLE[f.pattern] || cap(f.pattern))}</h3>
-          <p class="hero-habit">${esc(f.habit)}</p>
-          <div class="row"><a class="btn ${(h.daily || {}).done_today ? "primary" : ""}" href="#/practice/${encodeURIComponent(f.pattern)}">Practise this</a>
-            <span class="pill red">${f.times} times · ${f.games} games</span></div></div>
-        <div class="hero-side">${spark(h.trend)}
-          <div class="hero-num"><span class="faint num">${h.pieces_per_game.toFixed(1)}</span><span class="faint">→</span>${roll(h.pieces_last20, 1)}</div>
-          <div class="stat-label">pieces given away a game, lately</div>${arrow(better, better ? "better" : "worse")}</div></div>` : ""}
-      <div class="habits rise">${h.patterns.map(p => {
-        const [icon, name] = HABIT[p.pattern] || ["hang", cap(p.pattern)], fewer = p.recent <= p.per_game;
-        return `<a class="habit box ${p.pattern === (f && f.pattern) ? "top" : ""}" href="#/practice/${encodeURIComponent(p.pattern)}" title="Practise this">
-          <div class="habit-icon">${svg(icon)}</div><div class="big">${roll(p.times)}</div><div class="habit-name">${esc(name)}</div>
-          ${arrow(fewer, fewer ? "fewer lately" : "more lately")}</a>`; }).join("")}</div>
-      <div class="grid cols-3 rise">
-        ${vsCard(h.you_vs_you)}
-        <div class="box"><div class="big">${h.rating ? roll(h.rating) : "–"}</div><div class="stat-label">${cap(h.rating_class || "")} rating</div>
-          ${rc ? `<span class="trend ${rc > 0 ? "good" : "bad"}">${svg(rc > 0 ? "up" : "down")}${rc > 0 ? "+" : ""}${rc} this month</span>` : ""}
-          <div class="wld"><i class="w" style="width:${pct(r.win)}%"></i><i class="d" style="width:${pct(r.draw)}%"></i><i class="l" style="width:${pct(r.loss)}%"></i></div>
-          <div class="wld-key small muted"><span><i class="w"></i>${r.win || 0} won</span><span><i class="d"></i>${r.draw || 0} drawn</span><span><i class="l"></i>${r.loss || 0} lost</span></div></div>
-      </div>
-      ${last ? `<div class="box row spread rise"><div><div class="label muted-label">Your last game</div>
-          <h3 style="margin:6px 0 4px">vs ${esc(last.opponent)} <span class="faint num">${last.opponent_rating}</span>
-            <span class="chip ${last.result}">${last.result === "win" ? "W" : last.result === "loss" ? "L" : "D"}</span></h3>
-          <p class="sub">${cap(lastGameWords(last, "Maya found"))}</p></div>
-        <a class="btn" href="#/games/${last.id}">Review game</a></div>` : ""}
-      <div class="box rise"><h2>Ask the coach</h2><div id="askbox"></div></div>
-    </div>`;
+    <div class="home-head"><h1>${hello}, ${esc(h.player)}</h1>
+      <button class="btn ghost icon-btn" id="brief" title="Hear it from Maya">${svg("sound")}</button>
+      <span class="home-streak" title="Days in a row of your five minutes">${svg("flame")}<b class="num">${d.streak || 0}</b></span></div>
+    <div class="home-cards rise">
+      <a class="box hcard" href="#/daily">
+        <div class="row spread"><b>${d.done_today ? "Done today" : "Today"}</b><span class="muted">5 min</span></div>
+        <div class="mini-board" id="todayboard"></div>
+        <div class="week-bars" title="This week">${(d.week || []).map(on => `<i class="${on ? "on" : ""}"></i>`).join("")}</div>
+        <span class="btn ${d.done_today ? "" : "primary"}">${d.done_today ? "Play again" : "Start"}</span></a>
+      ${last ? `<a class="box hcard" href="#/games/${last.id}">
+        <div class="row spread"><b class="ellipsis">${esc(last.opponent)} <span class="faint num">${last.opponent_rating}</span></b>
+          <span class="chip ${last.result}">${last.result === "win" ? "W" : last.result === "loss" ? "L" : "D"}</span></div>
+        <div class="mini-board" id="lastboard"></div>
+        <div class="row spread muted small"><span title="Key moments">${svg("bolt")} ${last.moments}</span>
+          <span title="Pieces given away">${svg("hang")} ${last.pieces_lost}</span></div>
+        <span class="btn">Review</span></a>` : ""}
+      ${f ? `<a class="box hcard" href="#/practice/${encodeURIComponent(f.pattern)}">
+        <div class="row spread"><b>Your focus</b><span class="hicon" title="${esc(PATTERN_TITLE[f.pattern] || cap(f.pattern))}">${svg((HABIT[f.pattern] || ["hang"])[0])}</span></div>
+        <div class="hnum"><b class="num">${roll(h.pieces_last20, 1)}</b>${trend(better, h.pieces_per_game.toFixed(1))}</div>
+        ${spark(h.trend)}
+        <span class="muted small">pieces lost a game</span>
+        <span class="btn">Practise</span></a>` : ""}
+    </div>
+    <div class="home-tiles rise">
+      ${tiles.map(p => { const [icon] = HABIT[p.pattern] || ["hang"], fewer = p.recent <= p.per_game;
+        return `<a class="box tile" href="#/practice/${encodeURIComponent(p.pattern)}" title="${esc((HABIT[p.pattern] || [])[1] || p.pattern)}: practise it">
+          ${svg(icon)}<b class="num">${roll(p.times)}</b><span class="muted small">${esc(short[p.pattern] || p.pattern)} ${trend(fewer, "")}</span></a>`; }).join("")}
+      <div class="box tile" title="${cap(h.rating_class || "")} rating · ${r.win || 0} won, ${r.draw || 0} drawn, ${r.loss || 0} lost">
+        <div class="row spread"><b class="num">${h.rating ? roll(h.rating) : "–"}</b>${rc ? `<span class="${rc > 0 ? "up-good" : "up-bad"} small">${rc > 0 ? "+" : ""}${rc}</span>` : ""}</div>
+        <div class="wld"><i class="w" style="width:${pct(r.win)}%"></i><i class="d" style="width:${pct(r.draw)}%"></i><i class="l" style="width:${pct(r.loss)}%"></i></div>
+        <span class="muted small">${esc(h.rating_class || "rating")}</span></div>
+    </div>
+    ${v ? `<div class="home-vs rise" title="${esc(v.now.label)} against ${esc(v.then.label.toLowerCase())}">
+      <span class="muted small">You vs you</span>
+      <span title="Pieces given away a game">${svg("hang")}<b class="num">${v.now.pieces}</b>${trend(v.now.pieces <= v.then.pieces, v.then.pieces)}</span>
+      <span title="Games won">${svg("medal")}<b class="num">${v.now.wins}%</b>${trend(v.now.wins >= v.then.wins, v.then.wins + "%", true)}</span>
+      <span title="Key moments a game">${svg("bolt")}<b class="num">${v.now.moments}</b>${trend(v.now.moments <= v.then.moments, v.then.moments)}</span></div>` : ""}
+    <div class="askpill" id="askbox"></div>`;
+  if (last && last.fen) Board.render($("#lastboard"), { fen: last.fen, flip: last.flip });
+  api("/api/warmup").then(w => { const x = (w.items || [])[0]; if (x && $("#todayboard")) Board.render($("#todayboard"), { pieces: x.board, flip: x.flip }); }).catch(() => {});
   countUp($("#page"));
   // three sentences, not six (13 Oct test, point 1: "is it needed?"): your focus, the habit, your last game
   const briefing = [`${hello}, ${h.player}.`,
@@ -2170,16 +2188,19 @@ const INTRO = {
   progress: ["Progress", "Your week, your clock and your badges, all from your real games. Badges from chess.com games and from Knightwise practice are counted apart."],
   openings: null, settings: null, extension: null,
 };
-function intro(name) {
-  const it = INTRO[name], page = $("#page");
-  if (!it || !page || remember(`kw-intro-${name}`) === "seen" || page.querySelector(".intro")) return;
-  const box = document.createElement("div");
-  box.className = "box intro rise";
-  box.innerHTML = `<div><b>${esc(it[0])}</b><p class="small" style="margin:4px 0 0">${esc(it[1])}</p></div>
-    <button class="btn small-btn">Got it</button>`;
-  box.querySelector("button").onclick = () => { remember(`kw-intro-${name}`, "seen"); box.remove(); };
-  const head = page.querySelector(".page-head");
-  if (head) head.after(box); else page.prepend(box);
+function intro(name) {  // a small ? by the page's title, not a card on the page (22 Oct: the calm look)
+  const it = INTRO[name], page = $("#page"), h1 = page && page.querySelector("h1");
+  if (!it || !h1 || h1.querySelector(".help-q")) return;
+  const q = document.createElement("button");
+  q.className = "help-q" + (remember(`kw-intro-${name}`) === "seen" ? "" : " new");
+  q.title = it[1]; q.textContent = "?"; q.setAttribute("aria-label", `What is ${it[0]}?`);
+  q.onclick = e => {
+    e.preventDefault(); remember(`kw-intro-${name}`, "seen"); q.classList.remove("new");
+    const old = page.querySelector(".help-pop"); if (old) { old.remove(); return; }
+    const pop = document.createElement("div"); pop.className = "help-pop"; pop.textContent = it[1];
+    h1.after(pop);
+  };
+  h1.appendChild(q);
 }
 
 async function route() {

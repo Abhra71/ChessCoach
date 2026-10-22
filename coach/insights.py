@@ -106,6 +106,12 @@ def home():
     results = collections.Counter(_result(g, _side(g, player)[0]) for g in checked)
     rapid = next((g for g in games if g["time_class"] == "rapid"), games[0] if games else None)
     last = game_row(checked[0], moves[checked[0]["url"]], player) if checked else None
+    if last:  # its final position, for the small board on Home (22 Oct: pictures, not sentences)
+        try:
+            board = chess.pgn.read_game(io.StringIO(checked[0]["pgn"])).end().board()
+            last["fen"], last["flip"] = board.fen(), last["color"] == "black"
+        except (ValueError, AttributeError):
+            pass
     recent = {g["url"] for g in checked[:20]}  # each habit: per game overall, and per game in the last 20
     recent_counts = collections.Counter(r["pattern"] for r in rows if r["url"] in recent and r["pattern"] in ABOUT)
     due = len(memory.boxes())  # positions practised so far
