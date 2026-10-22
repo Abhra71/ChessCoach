@@ -31,6 +31,11 @@ ROUTES = {
     "archive": {"to": "/games/archive", "name": "your game history", "url": "https://www.chess.com/games/archive",
                 "steps": [{"path": "/play", "name": "Play", "exact": True},
                           {"path": "/games/archive", "name": "Game History"}]},
+    # a friend: the ring goes as far as chess.com's Play Online page and stops there (a game starts on it: fair play);
+    # the coach says to press Play a Friend (22 Oct test)
+    "friend": {"to": "/play/online", "name": "Play a Friend, on the Play Online page", "url": "https://www.chess.com/play/online",
+               "steps": [{"path": "/play", "name": "Play", "exact": True},
+                         {"path": "/play/online", "name": "Play Online"}]},
     "lessons": {"to": "/lessons", "name": "the lessons", "url": "https://www.chess.com/lessons",
                 "steps": [{"path": "/learn", "name": "Learn", "exact": True},
                           {"path": "/lessons", "name": "Next Lesson"}]},
