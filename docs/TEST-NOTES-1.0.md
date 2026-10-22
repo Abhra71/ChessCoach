@@ -161,3 +161,6 @@ Practice**. Then A3–A8, Session B (on chess.com, with the 0.6 extension now lo
 - Open fixes: 28 (rating per game type), accuracy runs high in one-sided games, "please do".
 - After the test (not before): rebuild with PyInstaller, then make_msix.py, then a smoke test, then upload with a parent.
 - 38. Maya brings up the habit in small talk ("hailo" -> "keep focusing on safe piece play"). Check in the Talking section.
+
+## 23 Oct: launch postponed
+The owner called off the same-day launch. The test goes on in order next session (above); build only after it.
