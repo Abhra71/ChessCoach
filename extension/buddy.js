@@ -482,6 +482,7 @@
     const r = await send({ type: "coach", section: here, hour: new Date().getHours(), again: !first, who });
     if (current !== here) return;
     // a repeat visit with nothing new: the coach waits as a folded tab, one click away (22 Oct test: "where are you")
+    if (r && r.ok && r.data.quiet && loadGuide()) { said = { ...r.data, lines: ["This way: follow the red ring."] }; render(true); guideArrive(); return; }  // on the way with the ring first
     if (r && r.ok && r.data.quiet) { said = { ...r.data, lines: ["I'm here if you need anything."] }; render(false); return; }
     if (r && r.ok && !r.data.lines.length) { remove(); return; }  // nothing to say here (your own profile): no coach
     said = r && r.ok ? r.data : {
