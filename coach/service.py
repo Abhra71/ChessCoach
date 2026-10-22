@@ -594,8 +594,12 @@ class Handler(BaseHTTPRequestHandler):
             history = [(str(t[0]), str(t[1])) for t in turns[-6:] if isinstance(t, list) and len(t) == 2]
             where = body.get("where") if isinstance(body.get("where"), dict) else {}
             where = {k: str(v)[:40] for k, v in where.items() if k in ("section", "game", "step", "chesscom")}
-            return self.send(200, json.dumps(talk.reply(str(body.get("coach", "maya")), str(body.get("text", "")),
-                                                        history, where)), "application/json")
+            t0 = time.time()
+            r = talk.reply(str(body.get("coach", "maya")), str(body.get("text", "")), history, where)
+            # the debug logbook: one line a turn, words only, so a wrong answer can be traced (22 Oct hand test)
+            log.info("talk %s at %s: %r -> %s, ai=%s, %.1f s: %r", body.get("coach", "maya"), where.get("section"),
+                     str(body.get("text", ""))[:120], r.get("action"), r.get("ai"), time.time() - t0, r.get("text", "")[:120])
+            return self.send(200, json.dumps(r), "application/json")
         if path == "/api/heard/forget":
             from coach import heard
             heard.forget()
