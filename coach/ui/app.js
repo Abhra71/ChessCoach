@@ -1598,7 +1598,7 @@ async function home() {
     f ? f.habit : "",
     last ? `In your last game, against ${last.opponent}, ${lastGameWords(last, "I found")}` : ""].join(" ");
   $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
-  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "How do I stop leaving pieces hanging?", coach: "maya",
+  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,
     onAsk: async q => {  // the same brain as Talk (19 Oct): typing "open my last review" opens it
       const r = await api("/api/talk", { coach: "maya", text: q, history: [], where: { section: "home" } });
@@ -1794,6 +1794,8 @@ async function gameView(id) {
     mode = mode || "game"; view = null;
     ply = Math.max(0, Math.min(g.positions.length - 1, p));
     draw();
+    const q = $("#askbox input");  // the question follows the move you're on (22 Oct: not always "my bishop")
+    if (q && ply) q.placeholder = `Ask about ${g.move_numbers[ply - 1]}${ply % 2 ? "." : "..."} ${g.positions[ply].san}`;
     const m = said[ply - 1], k = moments[momentAt(ply)];
     let text = !ply || !m ? "The starting position." : m.text;
     if (k) text = (mode === "key" ? `Key moment ${momentAt(ply) + 1}. ` : "Key moment! ") + text + " " + k.steps.slice(2).map(st => st.text).join(" ");
@@ -1819,7 +1821,7 @@ async function gameView(id) {
   }
   window.kwNextStep = () => location.hash.includes(`games/${g.id}`) ? step(1) : null;
   window.kwBackStep = () => location.hash.includes(`games/${g.id}`) ? step(-1) : null;
-  askBox($("#askbox"), { placeholder: "Why is my bishop in danger here?", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
+  askBox($("#askbox"), { placeholder: "Ask Maya about this position", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
     onAsk: q => { const k = moments[momentAt(ply)]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: k ? k.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go, was = ply;
