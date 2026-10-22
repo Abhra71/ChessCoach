@@ -160,3 +160,4 @@ Practice**. Then A3–A8, Session B (on chess.com, with the 0.6 extension now lo
 - Then in this order: Talking (including "please do" after an offer), Practice and daily, Plan/Course/Level, Train, Home/Progress/Settings, rare things.
 - Open fixes: 28 (rating per game type), accuracy runs high in one-sided games, "please do".
 - After the test (not before): rebuild with PyInstaller, then make_msix.py, then a smoke test, then upload with a parent.
+- 38. Maya brings up the habit in small talk ("hailo" -> "keep focusing on safe piece play"). Check in the Talking section.
