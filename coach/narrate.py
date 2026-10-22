@@ -102,53 +102,101 @@ def _uci(fen, san):
         return None
 
 
+# chess.com-style labels (22 Oct: "names openings, calls book moves... blunder, good, brilliant"), from the win
+# chance a move gave away (the engine on your moves; for theirs, what they handed you)
+LABELS = [(2, "Excellent"), (5, "Good"), (10, "Inaccuracy"), (20, "Mistake"), (101, "Blunder")]
+SIGN = {"Brilliant": "!!", "Best": "", "Book": "", "Excellent": "", "Good": "", "Inaccuracy": "?!", "Mistake": "?",
+        "Blunder": "??"}
+_BOOK = None
+
+
+def book():
+    """(every move sequence that is still in the opening catalogue, the name of each exact line)."""
+    global _BOOK
+    if _BOOK is None:
+        from coach import openings
+        prefixes, names = set(), {}
+        for _eco, name, sans in openings.catalogue():
+            names[tuple(sans)] = name
+            for k in range(1, len(sans) + 1):
+                prefixes.add(tuple(sans[:k]))
+        _BOOK = (prefixes, names)
+    return _BOOK
+
+
+def _label(loss):
+    return next(name for top, name in LABELS if loss < top)
+
+
+def _sacrifice(after, sq):
+    """The piece that just moved (a knight or more) can be taken for less: given away on purpose."""
+    p = after.piece_at(sq)
+    if not p or VALUE[p.piece_type] < 3:
+        return False
+    attackers = after.attackers(not p.color, sq)
+    return bool(attackers) and (not after.attackers(p.color, sq) or
+                                min(VALUE[after.piece_at(a).piece_type] for a in attackers) < VALUE[p.piece_type])
+
+
 def game(positions, played, rows, me, opponent):
-    """Every move of the game: [{ply, text, kind, arrows}], ply 1 = the first move. rows: the engine's verdicts on
-    the player's moves (moves.jsonl, by ply)."""
+    """Every move of the game: [{ply, text, kind, label, arrows}], ply 1 = the first move. rows: the engine's
+    verdicts on the player's moves (moves.jsonl, by ply). Labels like chess.com's: Book, Brilliant, Best,
+    Excellent, Good, Inaccuracy, Mistake, Blunder; the opening is named when its line is reached."""
     by_ply = {r["ply"]: r for r in rows}
+    prefixes, names = book()
     board = chess.Board(positions[0]["fen"])
-    out, first_theirs = [], True
+    out, first_theirs, sans, in_book, named = [], True, [], True, None
     for i, move in enumerate(played, start=1):
         mine = board.turn == me
+        san = board.san(move)
+        sans.append(san)
+        in_book = in_book and tuple(sans) in prefixes
         text = line(board, move, me, opponent, first_theirs and not mine)
         if not mine:
             first_theirs = False
-        kind, arrows = ("mine" if mine else "real"), [[move.uci(), "mine" if mine else "real"]]
+        kind, arrows, label = ("mine" if mine else "real"), [[move.uci(), "mine" if mine else "real"]], None
         r = by_ply.get(i)
+        after = board.copy()
+        after.push(move)
         if mine and r:
-            loss = r.get("loss") or 0
-            best = r.get("best")
-            same = best and board.san(move) == best
-            if same:
-                text += " " + TOP[i % len(TOP)]
-                kind = "good"
-            elif loss >= BIG and best:
-                text += f" A big mistake: {best} was much better."
-                kind = "bad"
-            elif loss >= MISTAKE and best:
-                text += f" A mistake: {best} was better."
-                kind = "bad"
-            elif loss >= SMALL and best:
-                text += f" Playable, but {best} was better."
-            else:
-                text += " " + GOOD[i % len(GOOD)]
-                kind = "good"
-            if kind == "bad" and best:
+            loss, best = r.get("loss") or 0, r.get("best")
+            label = "Best" if best and san == best else _label(loss)
+            if in_book and loss < 5:
+                label = "Book"
+            elif label == "Best" and _sacrifice(after, move.to_square) and win_chance(r.get("cp_after", 0)) >= 40:
+                label = "Brilliant"
+            if label in ("Inaccuracy", "Mistake", "Blunder") and best:
+                text += {"Inaccuracy": f" An inaccuracy: {best} was better.", "Mistake": f" A mistake: {best} was better.",
+                         "Blunder": f" A blunder: {best} was much better."}[label]
+                kind = "bad" if label != "Inaccuracy" else "mine"
                 u = _uci(r["fen"], best)
                 if u:
                     arrows.append([u, "better"])
+            else:
+                text += {"Book": " A book move.", "Brilliant": " Brilliant: a sacrifice, and the best move.",
+                         "Best": " " + TOP[i % len(TOP)], "Excellent": " Excellent.", "Good": " Good."}[label]
+                kind = "good"
         elif not mine:  # their move: did it hand you a chance? (your chance after your last move -> before your next)
             prev, nxt = by_ply.get(i - 1), by_ply.get(i + 1)
+            if in_book:
+                label = "Book"
             if prev and nxt and "cp_after" in prev and "cp_before" in nxt:
                 gain = win_chance(nxt["cp_before"]) - win_chance(prev["cp_after"])
+                label = "Book" if in_book and gain < 5 else _label(max(0, gain))
                 if gain >= SLIP and nxt.get("best"):
-                    text += f" Their slip: now {nxt['best']} is strong for you."
+                    text += f" {'A blunder' if label == 'Blunder' else 'Their mistake'}: now {nxt['best']} is strong for you."
                     kind = "slip"
                     u = _uci(nxt["fen"], nxt["best"])
                     if u:
                         arrows.append([u, "better"])
+                elif label == "Inaccuracy":
+                    text += " An inaccuracy by them."
+        if in_book and tuple(sans) in names and names[tuple(sans)] != named:  # the opening, by name, when it's reached
+            named = names[tuple(sans)]
+            text = (text[:-len(" Checkmate.")] + f" This is the {named}. Checkmate." if text.endswith(" Checkmate.")
+                    else text + f" This is the {named}.")
+        out.append({"ply": i, "text": text, "kind": kind, "label": label, "sign": SIGN.get(label, ""), "arrows": arrows})
         board.push(move)
-        out.append({"ply": i, "text": text, "kind": kind, "arrows": arrows})
     return out
 
 

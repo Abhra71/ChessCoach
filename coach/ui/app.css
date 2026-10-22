@@ -505,3 +505,11 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
   .report .muted, .report .label { color: #555 !important; }
 }
 .film-controls { margin-top: 12px; align-items: center; }
+
+/* move labels in the review, like chess.com's (22 Oct) */
+.mv-label { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-right: 4px; color: #0a0a0a; background: #9aa0a6; }
+.mv-label.lbl-brilliant { background: #26c2a3; } .mv-label.lbl-best, .mv-label.lbl-excellent { background: #36c27a; }
+.mv-label.lbl-good { background: #95b776; } .mv-label.lbl-book { background: #a88865; }
+.mv-label.lbl-inaccuracy { background: #f0c15c; } .mv-label.lbl-mistake { background: #f0a43a; } .mv-label.lbl-blunder { background: #ff4d42; }
+.movelist span.lbl-brilliant { color: #26c2a3; } .movelist span.lbl-inaccuracy { color: #f0c15c; }
+.movelist span.lbl-mistake { color: #f0a43a; } .movelist span.lbl-blunder { color: #ff4d42; font-weight: 650; }

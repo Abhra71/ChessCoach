@@ -25,8 +25,17 @@ def test_engine_verdict_and_better_move_for_your_moves():
     pos, played = _positions(["e4", "e5", "Qh5"])
     rows = [{"ply": 3, "loss": 25, "best": "Nf3", "fen": pos[2]["fen"]}]
     out = narrate.game(pos, played, rows, chess.WHITE, "rival")
-    assert "A big mistake: Nf3 was much better." in out[2]["text"] and out[2]["kind"] == "bad"
+    assert "A blunder: Nf3 was much better." in out[2]["text"] and out[2]["kind"] == "bad"
+    assert out[2]["label"] == "Blunder" and out[2]["sign"] == "??"
     assert ["g1f3", "better"] in out[2]["arrows"]
+
+
+def test_book_moves_and_the_opening_by_name():
+    pos, played = _positions(["e4", "e5", "Nf3", "Nf6"])
+    rows = [{"ply": 2, "loss": 1, "best": "e5"}, {"ply": 4, "loss": 1, "best": "Nc6"}]
+    out = narrate.game(pos, played, rows, chess.BLACK, "rival")
+    assert [m["label"] for m in out] == ["Book"] * 4
+    assert "This is the Petrov's Defense." in out[3]["text"]
 
 
 def test_checkmate_is_said():

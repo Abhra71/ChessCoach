@@ -1633,7 +1633,8 @@ async function gameView(id) {
     for (let i = 1; i < g.positions.length; i += 2) {
       html += `<span class="n">${(i + 1) / 2}.</span>`;
       for (const j of [i, i + 1]) html += g.positions[j]
-        ? `<span data-p="${j}" class="${j === ply ? "cur" : ""} ${keyPly.has(j) ? "key" : ""}">${esc(g.positions[j].san)}</span>` : "<span></span>";
+        ? `<span data-p="${j}" class="${j === ply ? "cur" : ""} ${keyPly.has(j) ? "key" : ""} ${said[j - 1] && said[j - 1].label ? "lbl-" + said[j - 1].label.toLowerCase() : ""}"
+            title="${said[j - 1] && said[j - 1].label ? said[j - 1].label : ""}">${esc(g.positions[j].san)}${said[j - 1] && said[j - 1].sign ? said[j - 1].sign : ""}</span>` : "<span></span>";
     }
     $("#moves").innerHTML = html;
     $("#moves").querySelectorAll("span[data-p]").forEach(el => el.onclick = () => move(Number(el.dataset.p)));
@@ -1657,7 +1658,7 @@ async function gameView(id) {
     const ki = momentAt(ply), k = moments[ki];
     w.innerHTML = `<div class="row spread"><h2 style="margin:0">${ply ? `Move ${g.move_numbers[ply - 1]} of ${total}` : "The start"}</h2>
         <span class="small faint">◀ ▶ under the board</span></div>
-      <p style="margin:0">${ply && m ? esc(m.text) : "The starting position. Press ▶ for the first move."}</p>
+      <p style="margin:0">${ply && m && m.label ? `<span class="mv-label lbl-${m.label.toLowerCase()}">${m.label}${m.sign ? " " + m.sign : ""}</span> ` : ""}${ply && m ? esc(m.text) : "The starting position. Press ▶ for the first move."}</p>
       ${last && ending() ? `<p class="small" style="margin:0"><b>The end:</b> ${esc(ending())}</p>` : ""}
       ${k ? `<div class="box stack keycard" style="padding:12px">
         <div class="row spread"><span class="what">Key moment ${ki + 1} of ${moments.length} · ${esc(cap(k.pattern))}</span>
