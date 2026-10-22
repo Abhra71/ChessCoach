@@ -778,3 +778,7 @@ a.tile:hover { filter: brightness(1.05); }
 .side-icons .dot.ok, .side-icons .dot:not(.busy):not(.bad) { display: none; }
 .side-icons .dot.busy { background: #e9a23b; } .side-icons .dot.bad { background: #e5734f; }
 @media (max-width: 900px) { .me-name { display: none; } .side-icons { flex-direction: column; align-items: center; } }
+/* AI use: green while there's room, orange when nearly used up (22 Oct) */
+.ai-pop .bar > div { background: var(--accent); }
+.ai-pop .bar.red > div { background: #e9a23b; }
+.ai-pop .ai-row .row span.muted { color: var(--accent); font-weight: 600; }
