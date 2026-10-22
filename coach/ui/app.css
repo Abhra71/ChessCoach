@@ -734,3 +734,18 @@ a.tile:hover { filter: brightness(1.05); }
 .prep-grid .tree-score { width: 120px; display: inline-flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
 .prep-grid .tree-score b { position: relative; font-size: 12px; }
 @media (max-width: 900px) { .prep-grid { grid-template-columns: 1fr; } }
+
+/* Train (22 Oct): every tool as a picture, a name and a few words */
+.tgroup { font-size: 12.5px; font-weight: 600; color: var(--faint); margin: 18px 0 8px; }
+.tcards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tcard { display: flex; flex-direction: column; gap: 6px; padding: 12px; text-decoration: none; color: inherit; }
+.tcard:hover { filter: brightness(1.07); }
+.tpic { height: 112px; border-radius: 9px; background: var(--raised); display: grid; place-items: center; position: relative; overflow: hidden; margin-bottom: 4px; }
+.tpic .mini-board { width: 96px; max-width: 96px; margin: 0; }
+.tname { display: flex; align-items: center; gap: 7px; font-size: 14.5px; } .tname svg { width: 17px; height: 17px; display: block; }
+.tp-bars { display: flex; align-items: flex-end; gap: 6px; height: 60px; } .tp-bars i { width: 14px; border-radius: 3px; background: #807a72; }
+.tp-vs { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.tp-ear { position: absolute; width: 38px; height: 38px; border-radius: 50%; background: #f3f1ee; color: #262421; display: grid; place-items: center; }
+.tp-ear svg { width: 22px; height: 22px; }
+.nav a[href="#/train"] svg { color: #e9a23b; }
+@media (max-width: 900px) { .tcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

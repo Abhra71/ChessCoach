@@ -30,6 +30,11 @@ const ICON = {
   sync: '<path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 4.5V11h-6.5"/>',
   lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/>',
+  barbell: '<path d="M2 12h2M20 12h2M7 12h10"/><rect x="4" y="8" width="3" height="8" rx="1"/><rect x="17" y="8" width="3" height="8" rx="1"/>',
+  tree: '<circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 12h10M7 11l10-5.5M7 13l10 5.5"/>',
+  ear: '<path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-6 0"/><path d="M10 9a2 2 0 0 1 4 0"/>',
+  users: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14a5 5 0 0 1 5 6"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
   pawn: '<path fill="currentColor" stroke="none" d="M12 3a3 3 0 0 0-1.8 5.4C9 9.3 8.5 10.5 8.6 12h6.8c.1-1.5-.4-2.7-1.6-3.6A3 3 0 0 0 12 3Zm-3.3 10c-.4 2.3-1.4 4-2.9 5.3V21h12.4v-2.7c-1.5-1.3-2.5-3-2.9-5.3Z"/>',
@@ -290,7 +295,7 @@ function shell(active, body) {
     <div class="shell">
       <aside class="side">
         <div class="brand"><div class="brand-mark" style="color:var(--on-invert)">${svg("pawn")}</div><span>Knightwise</span></div>
-        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("plan", "Your plan", "plan")}${item("course", "Your course", "book")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
+        <nav class="nav">${item("home", "Home", "home")}${item("games", "Games", "games")}${item("practice", "Practice", "practice")}${item("train", "Train", "barbell")}${item("plan", "Your plan", "plan")}${item("course", "Your course", "book")}${item("level", "Your level", "up")}${item("progress", "Progress", "progress")}${item("settings", "Settings", "settings")}</nav>
         <div class="side-foot" id="status" hidden></div>
         <div class="side-icons">
           <button id="aiuse" title="AI use today">${svg("sparkles")}<i class="dot"></i></button>
@@ -424,7 +429,7 @@ function plainMove(san) {
 }
 
 async function openingTree() {
-  shell("games", `<p class="muted">Loading…</p>`);
+  shell("train", `<p class="muted">Loading…</p>`);
   const t = (await api("/api/openings")).tree || {};
   if (!t.white && !t.black) { $("#page").innerHTML = `<div class="empty">Your opening tree appears once your games are checked.</div>`; return; }
   const label = n => `${Math.ceil(n.ply / 2)}${n.ply % 2 ? "." : "..."} ${n.san}`;
@@ -448,7 +453,7 @@ async function openingTree() {
       <span class="small muted">${root.games} games · you score ${root.score}%</span></div>
       <div class="tree">${root.children.filter(c => c.games >= 2).map(c => node(c, 0, white)).join("")}</div></div>` : "";
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
+    <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">How your games start</h1><p class="sub">Your opening tree: the first three moves of every game you played, and how each way went for you.</p></div></div>
     <div class="game-layout">
       <div class="stack">
@@ -496,7 +501,7 @@ async function tryAgain(gid, ply) {
 
 // ---------- spar against a player you'll meet: their openings, then human moves at their rating (0.11) ----------
 async function sparView(user, color) {
-  shell("games", `<p class="muted">Reading their games…</p>`);
+  shell("train", `<p class="muted">Reading their games…</p>`);
   let s;
   try { s = await api(`/api/spar/${encodeURIComponent(user)}?color=${color}`); }
   catch (e) { $("#page").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
@@ -661,7 +666,7 @@ async function levelView() {
     ["guess", "medal", "Guess the move"], ["endgames", "mate", "Endgames"]];
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your level</h1></div>
-      <div class="ltools">${TOOLS.map(([r, i, n]) => `<a class="ltool" href="#/${r}" title="${n}">${svg(i)}<span>${n}</span></a>`).join("")}</div></div>
+</div>
     <div class="box lcur rise">
       <div class="lring" style="background:conic-gradient(var(--accent) ${deg}deg, var(--line-strong) 0)"><span><b class="num">${met}</b>/${total}</span></div>
       <div><div class="muted small">Level ${p.current + 1} · ${esc(cur.band)}</div><h2 class="lname">${esc(cur.name)}</h2></div></div>
@@ -756,11 +761,11 @@ async function themeLesson(theme) {
 
 // ---------- your repertoire: three opening lines to know by heart (0.8) ----------
 async function repertoireView(fresh) {
-  shell("level", `<p class="muted">Choosing your lines…</p>`);
+  shell("train", `<p class="muted">Choosing your lines…</p>`);
   const lines = await api(`/api/repertoire${fresh ? "?fresh=1" : ""}`);
   const slot = l => l.side === "white" ? "As White" : `As Black, against 1. ${l.against}`;
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+    <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Your repertoire</h1>
       <p class="sub">Three lines to know by heart, chosen from what you already play: from the Lichess opening catalogue, checked by Stockfish. They stay until you ask for new ones.</p></div>
       <button class="btn" id="newlines">Choose new lines</button></div>
@@ -777,10 +782,10 @@ async function repertoireView(fresh) {
 const GOAL = { mate: "Checkmate them", promote: "Make a new queen", draw: "Hold the draw" };
 
 async function endgamesView() {
-  shell("level", `<p class="muted">Loading…</p>`);
+  shell("train", `<p class="muted">Loading…</p>`);
   const list = await api("/api/endgames");
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+    <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Endgame trainer</h1>
       <p class="sub">The endings every player must know, played out against perfect defence: Lichess's endgame tablebase knows the best move in every one. A new position each time.</p></div></div>
     <div class="plan-cards">${list.map(e => `<a class="box pcard" href="#/endgame/${e.id}" title="${esc(e.idea)}">
@@ -793,7 +798,7 @@ async function endgamesView() {
 }
 
 async function endgameView(id) {
-  shell("level", `<p class="muted">Setting up the position…</p>`);
+  shell("train", `<p class="muted">Setting up the position…</p>`);
   let s;
   try { s = await api(`/api/endgame/${encodeURIComponent(id)}`); } catch (e) { $("#page").innerHTML = `<div class="empty">No such ending.</div>`; return; }
   const history = [{ ...s, made: 0 }];
@@ -855,7 +860,7 @@ async function endgameView(id) {
 
 // ---------- prep before a game: how a chess.com player plays, from their public games (0.8, flagship 1) ----------
 async function prepView(user) {
-  shell("games", `<p class="muted">Loading…</p>`);
+  shell("train", `<p class="muted">Loading…</p>`);
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
       <h1 style="margin-top:6px">Prep before a game</h1>
@@ -1088,12 +1093,12 @@ async function filmView(id) {
 // moves show one at a time instead, then disappear.
 const each = plies => { const n = Math.ceil(plies / 2); return `${n} move${n === 1 ? "" : "s"} each`; };
 async function blindfoldView() {
-  shell("level", `<p class="muted">Finding one of your games…</p>`);
+  shell("train", `<p class="muted">Finding one of your games…</p>`);
   let x;
   try { x = await api("/api/blindfold"); } catch (e) { $("#page").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
   let ready = false, done = false, peeked = false, reading = 0;
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+    <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Blindfold</h1>
       <p class="sub">Maya reads out the start of one of your games. Follow it in your head: the board stays empty. Then answer on the board.
         Each right answer makes the next one a move longer.</p></div>
@@ -1185,7 +1190,7 @@ async function blindfoldView() {
 // human-move model says how many of them play each move; your guess scores by that. Then the three most played
 // moves, and what the engine prefers: where people and the engine differ is the lesson.
 async function guessView() {
-  shell("level", `<p class="muted">Setting up this week's challenge…</p>`);
+  shell("train", `<p class="muted">Setting up this week's challenge…</p>`);
   const c = await api("/api/guess");
   if (!c.positions.length) {
     $("#page").innerHTML = `<div class="empty">The weekly challenge needs the human-move model. Switch on "Human-like opponents" in Settings.</div>`;
@@ -1194,7 +1199,7 @@ async function guessView() {
   let i = 0, picked = null, total = 0, answered = false;
   const scores = [];
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+    <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Guess the human move</h1>
       <p class="sub">This week's challenge: five positions from real games. What would a player of that rating play? The closer to what most of them play, the more points.
         ${c.best != null ? ` Your best this week: <b>${c.best}</b> of ${c.positions.length * 100}.` : ""}</p></div>
@@ -1279,13 +1284,13 @@ async function guessView() {
 // The board stays still. You put in the whole line first, as arrows: your move, their answer, your next move.
 // Only then is it checked and played out. Strong players don't move until they've seen the end.
 async function calcView() {
-  shell("level", `<p class="muted">Loading…</p>`);
+  shell("train", `<p class="muted">Loading…</p>`);
   const items = await api("/api/calc");
   if (!items.length) { $("#page").innerHTML = `<div class="empty">The calculation puzzles appear once the puzzles are downloaded.</div>`; return; }
   let i = 0, line = [], picked = null, done = false;
   const firstTry = {};
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
+    <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">See it in your head</h1>
       <p class="sub">The board doesn't move. Put in the whole line as arrows first: your move, their best answer, your next move. Then check it.</p></div>
       <span class="muted num" id="calccount"></span></div>
@@ -1611,8 +1616,7 @@ async function games() {
   }
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Games <span class="faint num" style="font-size:16px">${list.length}</span></h1></div>
-      <div class="row"><a class="ltool" href="#/prep" title="See how a player plays before you face them">${svg("practice")}<span>Prep</span></a>
-        <a class="ltool" href="#/openings" title="Every opening you've played, as a tree">${svg("book")}<span>Opening tree</span></a></div></div>
+</div>
     <div class="box glist">${html}</div>`;
 }
 
@@ -2172,6 +2176,8 @@ async function screen(name, arg) {
   if (name === "daily") return await daily();
   if (name === "progress") return await progressView();
   if (name === "level") return await levelView();
+  if (name === "train") return trainView();
+  toolIntro(name);
   if (name === "course" && arg) return await courseLesson(decodeURIComponent(arg));
   if (name === "course") return await courseView();
   if (name === "endgames") return await endgamesView();
@@ -2180,7 +2186,7 @@ async function screen(name, arg) {
   if (name === "film") return await filmView(arg && decodeURIComponent(arg));
   if (name === "report") return await reportView(arg);
   if (name === "blindfold") return await blindfoldView();
-  if (name === "repertoire" && arg) { shell("level", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
+  if (name === "repertoire" && arg) { shell("train", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
   if (name === "repertoire") return await repertoireView();
   if (name === "prep") return await prepView(arg && decodeURIComponent(arg));
   if (name === "feedback") { history.replaceState(null, "", "#/home"); setTimeout(feedbackBox, 400); return await home(); }  // from chess.com
@@ -2249,6 +2255,57 @@ api("/api/settings").then(s => {
 api("/api/status").then(s => { STATUS = s; if (!s.player && !location.hash.includes("welcome")) go("welcome"); else route(); })
   .catch(() => route());
 pollStatus();
+
+// ---------- Train: every training tool on one page, each one a picture and a few words (22 Oct) ----------
+// The owner: "the flagships feel hidden… I myself did not understand what each does, how do we manage without
+// injecting boring text". Each card shows what it does; the coach says one sentence the first time you open one.
+const TRAIN = [
+  ["Before a game", "#e9a23b", [
+    ["prep", "search", "Prep", "Know them before you play", "maya", "Type any chess.com name. I'll show how they open and how their games end, then you can spar their style."],
+    ["openings", "tree", "Opening tree", "How your games start", "maya", "Every game you played, branching from move one. Green is where you score well, red where you lose."],
+    ["repertoire", "book", "Repertoire", "Three lines, by heart", "viktor", "Three opening lines picked from what you already play. Learn them to move six and every game starts on your terms."],
+    ["spar", "games", "Spar", "Play their style first", "maya", "Pick a player in Prep first: then you play against their real openings, at their level."],
+  ]],
+  ["Sharpen your eye", "#5ea4e8", [
+    ["calc", "sparkles", "In your head", "See the whole line first", "viktor", "The board won't move. Put the whole line in as arrows first: your move, their answer, your next. Then check."],
+    ["blindfold", "ear", "Blindfold", "Hear it, see it, no board", "viktor", "I read out the start of one of your games. Follow it in your head, then answer on the board."],
+    ["guess", "users", "Guess the move", "What would they play?", "viktor", "Five real positions a week. Guess what most players of that rating play: the closer, the more points."],
+    ["endgames", "mate", "Endgames", "Win the won games", "viktor", "The endings every player must know, against perfect defence. Learn them once, keep them for life."],
+  ]],
+];
+const TRAIN_PIC = {  // what each tool looks like, drawn small
+  prep: `<div class="tp-bars"><i style="height:52px;background:#81b64c"></i><i style="height:20px;background:#a6a19a"></i><i style="height:34px;background:#e5734f"></i></div>`,
+  openings: `<svg viewBox="0 0 110 70" width="110" height="70"><circle cx="12" cy="35" r="6" fill="#f3f1ee"/><path d="M18 35 48 15M18 35h30M18 35l30 20" stroke="#807a72" stroke-width="2"/><circle cx="52" cy="15" r="5" fill="#81b64c"/><circle cx="52" cy="35" r="5" fill="#a6a19a"/><circle cx="52" cy="55" r="5" fill="#e5734f"/><path d="M57 15 88 8M57 15l31 7" stroke="#807a72" stroke-width="2"/><circle cx="92" cy="8" r="4" fill="#81b64c"/><circle cx="92" cy="22" r="4" fill="#a6a19a"/></svg>`,
+  repertoire: { fen: "r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4" },
+  spar: `<div class="tp-vs">${"<svg viewBox='0 0 24 24' width='30' height='30' fill='none' stroke='#f3f1ee' stroke-width='1.8'><circle cx='12' cy='8' r='4'/><path d='M4 21a8 8 0 0 1 16 0'/></svg>"}<span>vs</span>${"<svg viewBox='0 0 24 24' width='30' height='30' fill='none' stroke='#a6a19a' stroke-width='1.8'><circle cx='12' cy='8' r='4'/><path d='M4 21a8 8 0 0 1 16 0'/></svg>"}</div>`,
+  calc: { fen: "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1", arrows: [{ from: "d1", to: "d8", kind: "better" }] },
+  blindfold: { fen: "8/8/8/8/8/8/8/8 w - - 0 1", ear: true },
+  guess: `<div class="tp-bars"><i style="height:14px"></i><i style="height:48px;background:#5ea4e8"></i><i style="height:26px"></i><i style="height:8px"></i></div>`,
+  endgames: { fen: "8/8/4k3/8/4P3/4K3/8/8 w - - 0 1" },
+};
+function trainView() {
+  shell("train", "");
+  $("#page").innerHTML = `<div class="page-head"><div><h1>Train</h1></div></div>
+    ${TRAIN.map(([group, colour, tools]) => `<div class="tgroup">${esc(group)}</div>
+      <div class="tcards">${tools.map(([route, icon, name, line]) => `<a class="box tcard" href="#/${route === "spar" ? "prep" : route}">
+        <div class="tpic" data-pic="${route}"></div>
+        <b class="tname"><span style="color:${colour}">${svg(icon)}</span>${esc(name)}</b><span class="muted small">${esc(line)}</span></a>`).join("")}</div>`).join("")}`;
+  document.querySelectorAll("[data-pic]").forEach(el => {
+    const p = TRAIN_PIC[el.dataset.pic];
+    if (typeof p === "string") { el.innerHTML = p; return; }
+    const b = document.createElement("div"); b.className = "mini-board"; el.appendChild(b);
+    Board.render(b, { fen: p.fen, arrows: p.arrows || [] });
+    if (p.ear) el.insertAdjacentHTML("beforeend", `<span class="tp-ear">${svg("ear")}</span>`);
+  });
+  Coach.react("viktor", "explain", "Your training tools. Pick one: I'll tell you what it does the first time.");
+}
+// the first time you open a tool, its coach says what it's for, in one or two sentences (spoken, not written)
+function toolIntro(name) {
+  const t = TRAIN.flatMap(g => g[2]).find(x => x[0] === name);
+  if (!t) return;
+  try { if (localStorage.getItem(`kw-tool-${name}`)) return; localStorage.setItem(`kw-tool-${name}`, "1"); } catch (e) { return; }
+  setTimeout(() => Coach.react(t[4], "explain", t[5]), 900);
+}
 
 // Long page intros fold into a small ? by the title, on every page (22 Oct: "keep as less text as possible, with
 // some space to breathe"). Short lines, like a game's date and result, stay as they are.
