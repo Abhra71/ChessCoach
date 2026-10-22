@@ -46,7 +46,7 @@
   function clearArrows() { if (overlay) overlay.innerHTML = ""; }
 
   function draw() {
-    if (!moments.length || fallback) return;  // after a fallback: the panel only, no arrows
+    if (!moments.length || (fallback && fallback !== FALLBACK.pieces)) return;  // after a fallback: the panel only, no arrows
     const board = boardEl();
     if (!board) return;  // start() waits for it and reports if it never comes
     const now = KnightwiseContract.boardPlacement(board);
@@ -55,9 +55,13 @@
     if (!now) {
       noPiecesSince = noPiecesSince || Date.now();
       if (Date.now() - noPiecesSince < PIECES_GRACE) { clearTimeout(retry); retry = setTimeout(draw, 1000); return; }
-      report("pieces", false, "no piece could be read after 20 s"); return useFallback("pieces");
+      if (!fallback) report("pieces", false, "no piece could be read after 20 s");
+      useFallback("pieces");
+      clearTimeout(retry); retry = setTimeout(draw, 3000);  // keep looking: a page that reconnected gets its arrows (22 Oct)
+      return;
     }
     noPiecesSince = 0;
+    if (fallback === FALLBACK.pieces) { fallback = null; renderPanel(); }  // the pieces came back: arrows after all
     report("pieces", true);
     if (!overlay || !board.contains(overlay)) {
       overlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");

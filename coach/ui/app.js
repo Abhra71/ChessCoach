@@ -1757,20 +1757,18 @@ async function gameView(id) {
         <span class="small faint">◀ ▶ under the board</span></div>
       <p style="margin:0">${ply && m ? `${badge(m.label)} ${esc(m.text)}` : "The starting position. Press ▶ for the first move."}</p>
       ${last && ending() ? `<p class="small" style="margin:0"><b>The end:</b> ${esc(ending())}</p>` : ""}
-      ${k ? `<div class="box stack keycard" style="padding:12px">
-        <div class="row spread"><span class="what">Key moment ${ki + 1} of ${moments.length} · ${esc(cap(k.pattern))}</span>
-          <span class="small faint" title="How much of your chance to win this move cost">−${Math.round(k.loss)}% win chance</span></div>
-        <ol class="steps">${k.steps.map((st, i) => `<li class="step ${view && view[0] === ki && view[1] === i ? "on" : ""}" data-s="${i}" title="Show this on the board">
-          <span class="tag"><i style="background:${Board.KIND[st.kind].color}"></i>${esc(st.title)}${st.san ? ` <b>${esc(st.san)}</b>` : ""}</span>
-          <div class="small">${esc(st.text)}</div></li>`).join("")}</ol>
-        ${k.habit ? `<div class="small"><b>Habit:</b> ${esc(k.habit)}</div>` : ""}
-        ${k.hard ? `<div class="small" title="From the human-move model"><b>How hard was it?</b> ${esc(k.hard)}</div>` : ""}
-        ${k.humans ? `<div class="small" title="From the human-move model"><b>Real players:</b> ${esc(k.humans)}</div>` : ""}
+      ${k ? `<div class="box keycard" title="${esc([k.habit && "Habit: " + k.habit, k.humans].filter(Boolean).join(" · "))}">
+        <div class="row spread"><span class="what">${svg("bolt")} Key moment ${ki + 1}/${moments.length}</span>
+          <span class="small bad-text" title="How much of your chance to win this move cost">−${Math.round(k.loss)}%</span></div>
+        <div class="kchips">${k.steps.map((st, i) => `<button class="kchip ${view && view[0] === ki && view[1] === i ? "on" : ""}" data-s="${i}" title="${esc(st.text)}">
+          <i style="background:${Board.KIND[st.kind].color}"></i>${esc(st.title.replace(/^You played$/, "You").replace(/^They replied$/, "They"))}${st.san ? ` <b>${esc(st.san)}</b>` : ""}</button>`).join("")}</div>
+        ${view && view[0] === ki ? `<p class="small" style="margin:0">${esc(k.steps[view[1]].text)}</p>` : ""}
+        ${k.hard ? `<p class="small muted" style="margin:0" title="${esc(k.hard)} From the human-move model.">${svg("users")} ${esc(String(k.hard).split(/(?<=\.)\s/)[0])}</p>` : ""}
         ${explained[k.ply] ? `<div class="coach-says">${esc(explained[k.ply])}</div>` : ""}
-        <div class="row"><a class="btn primary" href="#/try/${g.id}/${k.ply}">Try it again</a>
-          ${k.lesson ? `<a class="btn" href="#/course/${k.lesson.id}" title="The course lesson on this idea">Learn it: ${esc(k.lesson.title)}</a>` : ""}
-          ${g.result !== "win" ? `<a class="btn" href="#/rematch/${g.id}/${k.ply}" title="Play the game on from here against the engine, at their level">Rematch from here</a>` : ""}
-          ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}">Explain like a coach</button>` : ""}</div></div>` : ""}
+        <div class="kbtns"><a class="btn primary" href="#/try/${g.id}/${k.ply}">Try again</a>
+          ${k.lesson ? `<a class="btn" href="#/course/${k.lesson.id}" title="The lesson: ${esc(k.lesson.title)}">Learn it</a>` : ""}
+          ${g.result !== "win" ? `<a class="btn" href="#/rematch/${g.id}/${k.ply}" title="Play on from here against the engine, at their level">Rematch</a>` : ""}
+          ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}" title="The coach explains it in their own words">Explain</button>` : ""}</div></div>` : ""}
       ${last || (mode === "key" && ki === moments.length - 1) ? `<div data-helpful></div>` : ""}`;
     helpful(w.querySelector("[data-helpful]"), `review ${g.id}`);
     wire(w);

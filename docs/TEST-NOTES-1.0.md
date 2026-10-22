@@ -87,6 +87,14 @@ Each one: what was seen, then the fix.
     clear input look (a search icon or the coach's face on the left, a visible field, the mic as an icon), the
     Talk and Ask buttons as icons inside the bar, a warmer placeholder.
 
+24. **On chess.com, "can't draw the arrows here" stuck after chess.com disconnected and reconnected** (its board
+    was empty for over 20 s). Fixed 22 Oct: the extension keeps looking and draws once the pieces come back.
+25. **Whisper "heard" "Subtitles by the Amara.org community" in near silence** and Maya answered it. Fixed 22 Oct:
+    near-silent recordings aren't sent; parts Whisper scores as no speech are dropped.
+26. **The review's key moment was a wall of text and its buttons overflowed.** Fixed 22 Oct: chips for the steps,
+    one line of how hard, short wrapping buttons; the rest on hover or spoken. The chess.com panel needs the same.
+27. **Maya too fast when teaching.** Fixed 22 Oct: a slower pace for reviews, training and numbers.
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)

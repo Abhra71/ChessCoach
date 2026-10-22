@@ -782,3 +782,12 @@ a.tile:hover { filter: brightness(1.05); }
 .ai-pop .bar > div { background: var(--accent); }
 .ai-pop .bar.red > div { background: #e9a23b; }
 .ai-pop .ai-row .row span.muted { color: var(--accent); font-weight: 600; }
+
+/* the key moment, short (22 Oct: "why so much text"): chips for its steps, one line of how hard, wrapping buttons */
+.keycard { display: flex; flex-direction: column; gap: 10px; padding: 12px; background: var(--raised); }
+.keycard .what { display: inline-flex; align-items: center; gap: 6px; } .keycard .what svg, .keycard p svg { width: 15px; height: 15px; vertical-align: -3px; }
+.kchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.kchip { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 5px 11px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; font-size: 13px; }
+.kchip i { width: 8px; height: 8px; border-radius: 50%; } .kchip.on { box-shadow: inset 0 0 0 1.5px var(--text); }
+.kbtns { display: flex; flex-wrap: wrap; gap: 8px; } .kbtns .btn { padding: 7px 12px 8px; }
+.bad-text { color: #e5734f; }
