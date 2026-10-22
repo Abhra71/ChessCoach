@@ -18,8 +18,11 @@ RECENT = 12  # the games the coach can find by name ("my game against X"); fewer
 RULES = (
     " This is a spoken conversation: reply in at most 3 short sentences, easy to say out loud, with no lists and no "
     "symbols. Only talk about chess and this player's games; never give advice about a game being played right now. "
-    "The facts are all you know. Reply ONLY with JSON, three fields: "
-    "{\"do\": \"<one of the words below, or none>\", \"what\": \"<what it applies to>\", \"say\": \"what you say\"}. "
+    "The facts are all you know. Reply ONLY with JSON, four fields: "
+    "{\"do\": \"<one of the words below, or none>\", \"what\": \"<what it applies to>\", \"say\": \"what you say\", "
+    "\"offer\": \"<what you suggest next, as a do and a what, like open practice or review 1, or none>\"}. "
+    "You are their coach, not a tool: when it helps, suggest the one next thing worth doing and put it in offer, so they "
+    "can press it; offer never does it by itself. When they say yes, ok or please do to your last suggestion, do it. "
     "do open, what a page: home, games, practice, daily (today's five minutes), plan, progress, openings, settings, level (their level and "
     "what to work on next), endgames (the endgame trainer), prep (prep against an opponent), course (their course and "
     "the next lesson). "
@@ -278,4 +281,7 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     verb = next((k for k in REFUSED if k in asked), next(iter(asked), None))
     # it asked for something that can't be done: say so, never "Opening it." with nothing opening (19 and 22 Oct)
     say = (REFUSED.get(verb, OPEN_FAILED) if verb and done is None else out["say"].strip())[:600]
-    return {"text": say, "mood": "pleased" if "!" in say else "calm", "ai": True, "action": done}
+    offered = None if done else action(out.get("offer"), games, where)  # her suggestion, for a "Show me" button
+    if offered and not offered.get("route"):
+        offered = None
+    return {"text": say, "mood": "pleased" if "!" in say else "calm", "ai": True, "action": done, "offer": offered}

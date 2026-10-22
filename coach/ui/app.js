@@ -212,11 +212,20 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
     return;
   }
   const q = $("[data-q]", el), out = $("[data-a]", el), mic = $("[data-mic]", el);
-  // the answer goes away on its own after 90 seconds, unless the mouse is on it (23 Oct test)
+  // the answer goes away after a minute, or when they do something else (23 Oct test), unless the mouse is on it
   let fade = null;
+  const clearAnswer = () => { clearTimeout(fade); out.innerHTML = ""; q.value = "";
+    document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point"));
+    document.removeEventListener("pointerdown", elsewhere, true); };
+  const elsewhere = e => { if (!el.contains(e.target)) clearAnswer(); };
   const fadeLater = () => { clearTimeout(fade); fade = setTimeout(function tick() {
     if (out.matches(":hover")) { fade = setTimeout(tick, 10000); return; }
-    out.innerHTML = ""; q.value = ""; }, 90000); };
+    clearAnswer(); }, 60000);
+    document.addEventListener("pointerdown", elsewhere, true); };
+  // her suggestion: the menu item it lives under glows, like a coach pointing; no button (23 Oct test)
+  const point = offer => {
+    if (!offer || !offer.route) return;
+    const nav = document.querySelector(`.nav a[href="#/${offer.route.split("/")[0]}"]`); if (nav) nav.classList.add("kw-point"); };
   const go = async () => {
     const text = q.value.trim(); if (!text) return;
     clearTimeout(fade);
@@ -224,7 +233,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
     try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>` +
       (r.ai !== false ? `<p class="kw-ai-note">AI can make mistakes. <button class="kw-report">Report it</button></p>` : "");
       const rep = $(".kw-report", out); if (rep) rep.onclick = feedbackBox; Voice.speak(r.text, false, (COACHES[coach] || {}).voice);
-      fadeLater(); }
+      point(r.offer); fadeLater(); }
     catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
   $("[data-ask]", el).onclick = go;
@@ -1629,12 +1638,14 @@ async function home() {
   api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,
     onAsk: async q => {  // the same brain as Talk (19 Oct): typing "open my last review" opens it
-      const r = await api("/api/talk", { coach: "maya", text: q, history: [], where: { section: "home" } });
+      const r = await api("/api/talk", { coach: "maya", text: q, history: homeTalk.slice(-4), where: { section: "home" } });
+      homeTalk.push(["player", q], ["coach", r.text]);  // so "please do" knows what she offered
       if (r.action && r.action.route) setTimeout(() => go(r.action.route), 1200);
       return r;
     } }));
 }
 
+const homeTalk = [];
 // ---------- games ----------
 async function games() {
   shell("games", `<p class="muted">Loading…</p>`);
