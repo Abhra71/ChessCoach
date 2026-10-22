@@ -452,13 +452,13 @@ async function openingTree() {
       <h1 style="margin-top:6px">How your games start</h1><p class="sub">Your opening tree: the first three moves of every game you played, and how each way went for you.</p></div></div>
     <div class="game-layout">
       <div class="stack">
-        <div class="box stack intro-box" style="padding:16px">
-          <h2 style="margin:0">How to read it</h2>
+        <details class="box stack intro-box" style="padding:12px 16px">
+          <summary class="small muted" style="cursor:pointer">How to read it</summary>
           <p class="small" style="margin:0">Each row is one move from the start of your games. Click a row to see the board after it, and the moves that came next.</p>
           <p class="small" style="margin:0"><b>1. e4</b> is White's first move, <b>1... e5</b> is Black's answer. The letter and number are the square: files a to h, rows 1 to 8.
             A capital letter is the piece: N knight, B bishop, R rook, Q queen, K king. No letter means a pawn.</p>
           <p class="small" style="margin:0">The bar is your score in the games that went that way: a win counts 1, a draw a half. <span class="good-text">Green</span> is where you do well, <span class="bad-text">red</span> is where you lose more.</p>
-        </div>
+        </details>
         ${side("White", t.white, true)}${side("Black", t.black, false)}
       </div>
       <div class="stack tree-side"><div class="board-wrap" id="treeboard"></div><div class="box" style="padding:14px" id="treesay">
@@ -764,10 +764,11 @@ async function repertoireView(fresh) {
       <h1 style="margin-top:6px">Your repertoire</h1>
       <p class="sub">Three lines to know by heart, chosen from what you already play: from the Lichess opening catalogue, checked by Stockfish. They stay until you ask for new ones.</p></div>
       <button class="btn" id="newlines">Choose new lines</button></div>
-    <div class="plan-grid">${lines.map((l, i) => `<div class="box plan-card"><div class="plan-text">
-      <div class="label">${esc(slot(l))}${l.kept ? " · you already play this" : ""}</div>
-      <h3>${esc(l.name)}</h3><p class="muted small">${l.kept ? "It works for you: now learn it to move 6." : esc(l.why)}</p>
-      <a class="btn ${i === 0 ? "primary" : ""}" href="#/repertoire/${i}">Practise it</a></div></div>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
+    <div class="plan-cards">${lines.map((l, i) => `<a class="box pcard" href="#/repertoire/${i}" title="${esc(l.kept ? "It works for you: now learn it to move 6." : l.why)}">
+      <div class="row spread"><span class="pkind"><span class="gside ${l.side}"></span>${l.side === "white" ? "As White" : `Against 1. ${esc(l.against)}`}</span>
+        ${l.kept ? `<span class="pdone" title="You already play this">${svg("check")}</span>` : ""}</div>
+      <h3>${esc(l.name)}</h3>
+      <span class="btn ${i === 0 ? "primary" : ""}">Practise</span></a>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
   $("#newlines").onclick = () => repertoireView(true);
   Coach.react("viktor", "explain", "Three lines. Know them to move six without thinking, and every game starts on your terms.");
 }
@@ -782,10 +783,12 @@ async function endgamesView() {
     <div class="page-head"><div><a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>
       <h1 style="margin-top:6px">Endgame trainer</h1>
       <p class="sub">The endings every player must know, played out against perfect defence: Lichess's endgame tablebase knows the best move in every one. A new position each time.</p></div></div>
-    <div class="plan-grid">${list.map(e => `<div class="box plan-card">
-      <div class="plan-text"><div class="label">Level ${e.level} · ${esc(GOAL[e.goal])} in ${e.limit} moves</div>
-        <h3>${esc(e.name)}</h3><p class="muted small">${esc(e.idea)}</p>
-        <a class="btn ${e.solved ? "" : "primary"}" href="#/endgame/${e.id}">${e.solved ? `Again · solved ${e.solved}×` : "Start"}</a></div></div>`).join("")}</div>`;
+    <div class="plan-cards">${list.map(e => `<a class="box pcard" href="#/endgame/${e.id}" title="${esc(e.idea)}">
+      <div class="row spread"><span class="pkind">${svg({ mate: "mate", promote: "up", draw: "draw" }[e.goal] || "mate")}Level ${e.level}</span>
+        ${e.solved ? `<span class="pdone" title="Solved ${e.solved}×">${svg("check")}</span>` : ""}</div>
+      <h3>${esc(e.name)}</h3>
+      <span class="muted small">${esc(GOAL[e.goal])} · ${e.limit} moves</span>
+      <span class="btn ${e === list.find(x => !x.solved) ? "primary" : ""}">${e.solved ? "Again" : "Start"}</span></a>`).join("")}</div>`;
   Coach.react("viktor", "explain", "Endings. Every won game ends in one of these. Learn them once and they win games for the rest of your life.");
 }
 
@@ -858,7 +861,7 @@ async function prepView(user) {
       <h1 style="margin-top:6px">Prep before a game</h1>
       <p class="sub">How a chess.com player plays, from their public games of the last three months. Only before a game: Knightwise is never active during one.</p></div></div>
     <div class="box stack" style="padding:16px"><div class="row"><input class="field" id="who" placeholder="Their chess.com username" value="${esc(user || "")}" spellcheck="false" style="max-width:280px">
-      <button class="btn primary" id="look">Look them up</button></div><div class="err" id="prepmsg"></div></div>
+      <button class="btn" id="look">Look them up</button></div><div class="err" id="prepmsg"></div></div>
     <div id="prep"></div>`;
   const look = async () => {
     const who = $("#who").value.trim().toLowerCase();
@@ -872,8 +875,8 @@ async function prepView(user) {
         <span class="tree-score"><i style="width:${r.share}%"></i><b class="num">${r.share}%</b></span></div>`).join("") : `<p class="small muted">Not enough games.</p>`;
     const ends = Object.entries(s.endings).sort((a, b) => b[1] - a[1]);
     $("#prep").innerHTML = `
-      <div class="grid" style="margin-top:16px">
-        <div class="box stack" style="padding:16px"><h2 style="margin:0">${esc(s.user)} <span class="faint num">${s.rating}</span></h2>
+      <div class="prep-grid">
+        <div class="box stack prep-who" style="padding:16px"><h2 style="margin:0">${esc(s.user)} <span class="faint num">${s.rating}</span></h2>
           <p class="small muted" style="margin:0">${s.games} games in three months, mostly ${esc(s.time_class)}.</p>
           ${s.advice.map(a => `<p style="margin:0">${esc(a)}</p>`).join("")}</div>
         <div class="box stack" style="padding:16px"><h2 style="margin:0">As White, they start with</h2>
@@ -881,7 +884,7 @@ async function prepView(user) {
         <div class="box stack" style="padding:16px"><h2 style="margin:0">As Black, they answer</h2>
           ${list(s.as_black, r => { const [a, b] = r.what.split(" "); return `1. ${esc(a)} ${esc(b)} <span class="small muted">· after ${esc(plainMove(a))}: ${esc(plainMove(b))}</span>`; })}</div>
         <div class="box stack" style="padding:16px"><h2 style="margin:0">How their games end</h2>
-          ${ends.map(([k, n]) => `<div class="row spread"><span>${esc(cap(k))}</span><b class="num">${n}</b></div>`).join("")}</div>
+          ${ends.map(([k, n]) => `<div class="pend"><span>${esc(cap(k))}</span><i><b style="width:${100 * n / Math.max(...ends.map(e => e[1]))}%"></b></i><b class="num">${n}</b></div>`).join("")}</div>
       </div>`;
     $("#prep").insertAdjacentHTML("beforeend", `<div class="box row" style="padding:16px;margin-top:16px"><div style="flex:1"><b>Spar against them</b>
       <div class="small muted">They open the way they really do, then play like players of their rating.</div></div>
@@ -2246,3 +2249,20 @@ api("/api/settings").then(s => {
 api("/api/status").then(s => { STATUS = s; if (!s.player && !location.hash.includes("welcome")) go("welcome"); else route(); })
   .catch(() => route());
 pollStatus();
+
+// Long page intros fold into a small ? by the title, on every page (22 Oct: "keep as less text as possible, with
+// some space to breathe"). Short lines, like a game's date and result, stay as they are.
+const HINT_LEN = 90;
+function foldIntros() {
+  document.querySelectorAll("#page .page-head .sub:not([data-folded])").forEach(p => {
+    p.dataset.folded = "1";
+    const h1 = p.closest(".page-head").querySelector("h1");
+    if (!h1 || p.textContent.trim().length <= HINT_LEN || h1.querySelector(".help-q")) return;
+    const q = document.createElement("button");
+    q.className = "help-q"; q.textContent = "?"; q.title = p.textContent.trim(); q.setAttribute("aria-label", "What is this page?");
+    p.hidden = true;
+    q.onclick = e => { e.preventDefault(); p.hidden = !p.hidden; };
+    h1.appendChild(q);
+  });
+}
+new MutationObserver(() => foldIntros()).observe(document.getElementById("root") || document.body, { childList: true, subtree: true });
