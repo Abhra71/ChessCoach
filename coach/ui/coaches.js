@@ -7,9 +7,11 @@ const COACHES = {
   viktor: { name: "Viktor", voice: "am_michael", role: "Your progress and plan" },
 };
 const TAB_SECTION = { home: "home", games: "games", practice: "puzzles", daily: "puzzles", plan: "plan", progress: "progress", level: "plan", endgames: "plan", calc: "plan", repertoire: "plan", course: "plan" };
+// whose page it is (the same split as coach/coaches.py): Viktor has progress and the plan, Maya the rest
+const tabCoach = tab => TAB_SECTION[tab] ? (["progress", "plan", "lessons"].includes(TAB_SECTION[tab]) ? "viktor" : "maya") : null;
 
 const Coach = (() => {
-  let box = null, said = null, foldTimer = null, quiet = null;
+  let box = null, said = null, foldTimer = null, quiet = null, held = null;
   const remember = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const today = () => new Date().toISOString().slice(0, 10);
 
@@ -59,7 +61,7 @@ const Coach = (() => {
 
   // say something now (open, with voice)
   function show(s, { speak = true } = {}) {
-    if (Conv.on && !s.talking) return;  // in a conversation, only the conversation speaks
+    if (Conv.on && !s.talking) { held = s; return; }  // in a conversation, only the conversation speaks (kept for a handover)
     said = s; clearTimeout(foldTimer); render(true); if (speak) talk();
   }
   // a quick reaction on a board: pose (worried, celebrate, explain...) and one line
@@ -68,7 +70,7 @@ const Coach = (() => {
   function hide() { clearTimeout(foldTimer); if (box) box.remove(); box = null; said = null; }
 
   // the tab's coach comes up by themselves: open and speaking once a day, folded after that
-  async function arrive(tab) {
+  async function arrive(tab, force) {  // force: a handover in a conversation, so the new coach speaks
     if (Conv.on) return;  // talking: the coach stays with the conversation
     const section = TAB_SECTION[tab];
     if (!section) return hide();
@@ -77,10 +79,12 @@ const Coach = (() => {
     if (!r || TAB_SECTION[location.hash.replace(/^#\/?/, "").split("/")[0] || "home"] !== section) return;
     said = { ...r, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
     render(true);  // never silent: the full welcome first, later just where things stand
-    if (first) { remember(`kw-app-greeted-${section}`, today()); talk(); }
+    if (first || force) { remember(`kw-app-greeted-${section}`, today()); talk(); }
     else { const now = said; clearTimeout(quiet); quiet = setTimeout(() => { if (said === now) render(false); }, 20000); }
   }
-  return { show, react, hide, arrive };
+  // what the page itself said while the conversation spoke (the page's own coach line), taken once
+  const takeHeld = () => { const h = held; held = null; return h; };
+  return { show, react, hide, arrive, takeHeld };
 })();
 
 // ---------- talking with your coach by voice (0.6, flagship 2) ----------
@@ -119,13 +123,24 @@ const Conv = (() => {
     try { r = await api("/api/talk", { coach, text, history, where: where() }); }
     catch (e) { r = { text: "I can't reach the Knightwise app right now.", mood: "calm" }; }
     if (!on) return;
-    let speech = r.text;
-    if (r.action && r.action.route) { go(r.action.route); await wait(400); }
+    let speech = r.text, handover = null;
+    Coach.takeHeld();
+    if (r.action && r.action.route) {
+      go(r.action.route); await wait(400);
+      // the page belongs to the other coach: they take over, as two coaches in one room (22 Oct test: Maya opened
+      // the course, Viktor's page, and Viktor never came)
+      const tab = r.action.route.split("/")[0], owner = tabCoach(tab);
+      if (owner && owner !== coach) { handover = { tab, owner }; speech = `${speech} Here's ${COACHES[owner].name}.`; }
+    }
     if (r.action && r.action.next && window.kwNextStep) speech = window.kwNextStep() || speech;  // the review's next step
     history.push(["player", text], ["coach", speech]);
     on = false;  // her answer; Talk again to say more
     Coach.show({ coach, pose: r.mood || "explain", mood: r.mood || "explain", lines: [speech], actions: [], ai: !!r.ai }, { speak: false });
-    Voice.speak(speech, true, (COACHES[coach] || {}).voice);
+    await Voice.speak(speech, true, (COACHES[coach] || {}).voice);
+    if (!handover || on || location.hash.replace(/^#\/?/, "").split("/")[0] !== handover.tab) return;
+    const page = Coach.takeHeld();  // the page's own line, if it said one, else the coach's greeting for it
+    if (page && page.coach === handover.owner) Coach.show(page);
+    else Coach.arrive(handover.tab, true);
   }
   function stop() {  // closing the box or leaving: stop listening, nothing is sent
     clearTimeout(limit);

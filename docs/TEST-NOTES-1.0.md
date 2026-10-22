@@ -47,6 +47,19 @@ Each one: what was seen, then the fix.
     "delete all my games" opens Settings. Free keys allow about 4 turns a minute with all the facts: fewer games
     sent (12) to stretch it.
 
+14. (see "Done during the test")
+15. **The coaches greet unpredictably** (owner: sometimes twice, sometimes on every tab, sometimes silent until the
+    face is clicked, sometimes the coach switches without a word; e.g. Learn it on Home opened Your plan and Viktor
+    showed "Good, you're back…" without speaking). Cause: two things race when a page opens: `Coach.arrive` (the
+    section greeting: spoken only on the first visit today, silent after) and the page's own `Coach.react` line
+    (spoken every time); whichever lands last wins. Fix: one rule, the coach speaks exactly once per page opened
+    (the greeting the first time today, else the page's line), never twice, never silent. Owner's detailed notes to come.
+16. **Talking: "what was my first ever game?"** She only knows the last 12 games. Fix: give her the record's
+    totals and first game, or say plainly she sees the last 12.
+17. **Talking: Maya opened Viktor's page and Viktor never came.** Fixed 22 Oct: a handover; the page's coach takes
+    over, speaks, and the next Talk is with them (the conversation carries over).
+18. **Report it did nothing** (the global feedbackBox called itself). Fixed 22 Oct.
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)
