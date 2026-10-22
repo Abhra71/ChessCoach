@@ -83,6 +83,10 @@ Each one: what was seen, then the fix.
     greys; one title and one short line per card, details on demand or spoken; a clear first thing on each page.
     Home first (mockup first), then the review, then the rest.
 
+23. **The Ask bar feels underrated and doesn't look like a place to type** (Home and the review). Fix later: a
+    clear input look (a search icon or the coach's face on the left, a visible field, the mic as an icon), the
+    Talk and Ask buttons as icons inside the bar, a warmer placeholder.
+
 Also asked: Home after the newest 20 games, the rest checked in the background (offered, not yet decided).
 
 ## Done during the test (22 Oct)
