@@ -1676,7 +1676,7 @@ async function gameView(id) {
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
       <h1 style="margin-top:6px">vs ${esc(g.opponent)} <span class="faint num">${g.opponent_rating}</span></h1>
-      <p class="sub">${cap(g.result)} · ${esc(g.date)} · ${esc(g.time_class)} · you were ${g.color}${g.opening ? " · " + esc(g.opening) : ""}</p></div>
+      <p class="sub">${cap(g.result)} · ${esc(g.time_class)} · you were ${g.color}${g.opening ? " · " + esc(g.opening) : ""}</p></div>
       <div class="row">${g.result === "win" && g.positions.length > 20 ? `<a class="btn" href="#/film/${g.id}">▶ Watch it as a film</a>` : ""}
         <a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener">Open on chess.com ↗</a></div></div>
     <div class="game-layout">
@@ -1841,7 +1841,7 @@ async function gameView(id) {
   window.kwNextStep = () => location.hash.includes(`games/${g.id}`) ? step(1) : null;
   window.kwPly = () => location.hash.includes(`games/${g.id}`) ? ply : null;
   window.kwBackStep = () => location.hash.includes(`games/${g.id}`) ? step(-1) : null;
-  askBox($("#askbox"), { placeholder: "Ask Maya about this position", coach: "maya", chips: ASK_CHIPS.review, enabled: aiReady, listen: cfg.talk_ready,
+  askBox($("#askbox"), { placeholder: "Ask Maya about this position", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
     onAsk: q => { const k = moments[momentAt(ply)]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: k ? k.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go, was = ply;
