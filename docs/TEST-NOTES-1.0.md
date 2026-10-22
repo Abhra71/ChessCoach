@@ -67,6 +67,10 @@ Also asked: Home after the newest 20 games, the rest checked in the background (
 - 14, the owner: "we need to say that AI can make mistakes, report issues to my email". Every AI answer (the coach's
   bubble after Talk, the Ask boxes on Home and in a review) now ends with a small "AI can make mistakes. Report it";
   Report it opens the feedback box, which emails FEEDBACK_TO. The chess.com bubble (extension/buddy.js) still needs it.
+- Feedback, the owner: "as easy as just a send button". One-click Send through Web3Forms (free, 250 a month; key in
+  coach/feedback.key, packed, never in the repo), at most 4 a day per PC, an optional "your email, if you'd like a
+  reply" (reply-to), no Copy text button. Auto-replies are a paid Web3Forms feature: the owner replies by hand for
+  now and may set up a free Gmail Apps Script auto-reply later.
 
 ## Where we stopped (22 Oct, 01:05)
 Session 0 done; Session A: A1 done (A1.3 checked from the record; A1.4 is the button being removed), next is **A2.1
