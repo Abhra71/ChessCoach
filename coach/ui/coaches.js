@@ -15,7 +15,8 @@ const Coach = (() => {
   const remember = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const today = () => new Date().toISOString().slice(0, 10);
 
-  let more = false;  // one line and one button (22 Oct, the approved look); More shows the rest, the voice says it all
+  let more = false;
+  const brief = t => { const parts = String(t).split(/(?<=[.!?])\s+/); return parts.length > 2 ? parts.slice(0, 2).join(" ") : t; };  // one line and one button (22 Oct, the approved look); More shows the rest, the voice says it all
   function render(open) {
     if (!said) return;
     if (!box || !document.body.contains(box)) {
@@ -29,11 +30,11 @@ const Coach = (() => {
         <div class="kw-head"><b>${esc(who.name)}</b><span>${esc(who.role)}</span>
           ${TALK && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(who.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
-        ${(more ? s.lines : s.lines.slice(0, 1)).map(l => `<p>${esc(l)}</p>`).join("")}
+        ${(more ? s.lines : [brief(s.lines[0] || "")]).map(l => `<p>${esc(l)}</p>`).join("")}
         ${s.ai ? `<p class="kw-ai-note">AI can make mistakes. <button class="kw-report">Report it</button></p>` : ""}
         ${(s.actions || []).length ? `<div class="kw-actions">${(more ? s.actions : s.actions.slice(0, 1)).map((a, i) =>
           `<button data-i="${i}">${esc(a.label)}</button>`).join("")}</div>` : ""}
-        ${!more && (s.lines.length > 1 || (s.actions || []).length > 1) ? `<button class="kw-more" title="Show everything">More</button>` : ""}
+        ${!more && (s.lines.length > 1 || (s.actions || []).length > 1 || brief(s.lines[0] || "") !== (s.lines[0] || "")) ? `<button class="kw-more" title="Show everything">More</button>` : ""}
       </div>` : `${face}<button class="kw-tab">${esc(who.name)}</button>`;
     box.querySelector(".kw-char").onclick = () => open ? fold() : (render(true), talk());
     const tab = box.querySelector(".kw-tab");
@@ -168,7 +169,7 @@ function trainer(drills, opts) {
   const state = drills.map(() => null), briefed = drills.map(() => false);  // per position: right, missed, shown
   const answered = drills.map(() => false);  // has today's answer: right, missed or shown
   const right = () => state.filter(x => x === "right").length;
-  const counter = () => { $("#count").textContent = `${i + 1} of ${drills.length} · today: ${right()} right first time`; };
+  const counter = () => { $("#count").innerHTML = `<b class="num">${i + 1}</b>/${drills.length} <span class="count-ok" title="Right first time today">${svg("check")} ${right()}</span>`; };
   function save(x, result) {  // the day's first answer to this position; the server ignores later ones
     if (opts.record) api("/api/practice", { id: x.id, kind: x.kind, right: result === "right", shown: result === "shown" })
       .then(stats).catch(() => {});
@@ -183,27 +184,29 @@ function trainer(drills, opts) {
   }
   const group = x => x.pattern || x.kind;
   const groupName = x => (x.pattern && (HABIT[x.pattern] || [])[1]) || { opening: "Your opening", puzzle: "Puzzles", game: "Your games" }[x.kind] || "Practice";
-  function paintDots() {  // every position as a numbered dot, grouped by habit: click one to go there
+  function paintDots() {  // one thin bar: a segment per position, grouped by habit (22 Oct: "why so many circles")
     const el = $("#dots");
     if (!el) return;
     if (drills.length < 2) { el.innerHTML = ""; return; }
     let html = "", n = 0;
     while (n < drills.length) {
-      const g = group(drills[n]), start = n;
+      const g = group(drills[n]), first = n, x0 = drills[n];
       while (n < drills.length && group(drills[n]) === g) n++;
-      html += `<div class="dot-group"><span class="dot-name">${esc(groupName(drills[start]))}</span><div class="dot-row">${
-        drills.slice(start, n).map((x, j) => `<button class="pdot ${start + j === i ? "on" : ""} ${state[start + j] || ""} ${x.kind === "puzzle" ? "puz" : ""}"
-          data-n="${start + j}" title="${x.kind === "puzzle" ? "Puzzle" : x.kind === "opening" ? "Opening" : "From your game"}">${start + j + 1}</button>`).join("")}</div></div>`;
+      const icon = (x0.pattern && (HABIT[x0.pattern] || [])[0]) || (x0.kind === "opening" ? "book" : "practice");
+      html += `<div class="pgroup" title="${esc(groupName(x0))}">${svg(icon)}<div class="psegs">${
+        drills.slice(first, n).map((x, j) => `<button class="pseg ${first + j === i ? "on" : ""} ${state[first + j] || ""}"
+          data-n="${first + j}" title="${first + j + 1} · ${x.kind === "puzzle" ? "Puzzle" : x.kind === "opening" ? "Opening" : "From your game"}"></button>`).join("")}</div></div>`;
     }
     el.innerHTML = html;
-    el.querySelectorAll(".pdot").forEach(b => b.onclick = () => { i = Number(b.dataset.n); show(); });
+    el.querySelectorAll(".pseg").forEach(b => b.onclick = () => { i = Number(b.dataset.n); show(); });
   }
   function paintBrief(x) {  // before the board: where this comes from, what's going on, how to think
     const b = x.brief, el = $("#briefbox");
-    el.innerHTML = `<div class="label">${x.kind === "game" ? "From your game" : x.kind === "opening" ? "Opening" : "Puzzle"}</div>
-      <h3 class="brief-title">${esc(b.title)}</h3>
-      <div class="chips">${b.facts.map(f => `<span class="chip-fact">${esc(f)}</span>`).join("")}</div>
-      <div class="brief-mind"><span class="label">Mindset</span><div>${esc(b.mindset)}</div></div>
+    const title = String(b.title || "").replace(/^Your game /, "");
+    el.innerHTML = `<div class="brief-head">${svg(x.kind === "game" ? "games" : x.kind === "opening" ? "book" : "practice")}
+        <h3 class="brief-title">${esc(title)}</h3></div>
+      <div class="muted small">${b.facts.map(esc).join(" · ")}</div>
+      <div class="brief-mind">${svg("bolt")}<span>${esc(b.mindset)}</span></div>
       <button class="btn primary" id="go">I'm ready</button>`;
     $("#go").onclick = () => { briefed[i] = true; show(); };
   }
