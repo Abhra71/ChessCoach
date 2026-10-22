@@ -38,3 +38,17 @@
 .chess-coach-panel .kw-clock { margin-top: 12px; color: #c8c8c8; font-size: 12px; }
 .chess-coach-panel .kw-clock summary { cursor: pointer; font-weight: 650; color: #f2f2f2; }
 .chess-coach-panel .kw-clock div { margin-top: 5px; }
+
+/* the calm look on chess.com (22 Oct): warm grey, no bars, chips for the steps, one green button */
+.chess-coach-panel { background: #3a3733; border: 0; border-radius: 14px; color: #f3f1ee; }
+.chess-coach-panel p, .chess-coach-panel .head small { color: #a6a19a; }
+.kw-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.kw-chip { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 5px 11px; background: #4a4641;
+  color: #f3f1ee; font: inherit; font-size: 12.5px; cursor: pointer; }
+.kw-chip i { width: 8px; height: 8px; border-radius: 50%; } .kw-chip.on { box-shadow: inset 0 0 0 1.5px #f3f1ee; }
+.chess-coach-panel .kw-say { color: #f3f1ee; font-size: 13px; margin: 10px 0 0; }
+.chess-coach-panel .kw-humans { color: #a6a19a; }
+.chess-coach-panel .kw-go { background: #81b64c; color: #13210a; border-radius: 8px; box-shadow: inset 0 -3px 0 #5d8a35; }
+.chess-coach-panel .kw-row .kw-open { background: #4a4641; border: 0; border-radius: 8px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.3); }
+.chess-coach-panel .kw-dots button { border-color: #807a72; } .chess-coach-panel .kw-dots button.on { background: #f3f1ee; border-color: #f3f1ee; }
+.kw-review .pill { background: #312e2b; color: #f3f1ee; }

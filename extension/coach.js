@@ -124,9 +124,11 @@
     const pose = st ? (st.kind === "mine" ? "worried" : "explain") : maya.mood;
     const char = `<button class="kw-char" title="Maya, game reviews">${KnightwiseFaces.figure("maya", pose)}</button>`;
     const broken = fallback ? `<p class="kw-broken">${escapeHtml(fallback)}</p>` : "";
-    const steps = k ? k.steps.slice(0, shown + 1).map((x, i) => `<li class="${i === si ? "on" : ""}" data-s="${i}">
-        <span class="kw-step"><i style="background:${COLORS[x.kind]}"></i>${escapeHtml(x.title)}${x.san ? ` <b>${escapeHtml(x.san)}</b>` : ""}</span>
-        <div class="say">${escapeHtml(x.text)}</div></li>`).join("") : "";
+    // the steps as chips, the one on show in two sentences, the rest on hover (22 Oct test: "so much written, old UI")
+    const two = t => { const p = String(t).split(/(?<=[.!?])\s+/); return p.length > 2 ? p.slice(0, 2).join(" ") : t; };
+    const steps = k ? `<div class="kw-chips">${k.steps.slice(0, shown + 1).map((x, i) => `<button class="kw-chip ${i === si ? "on" : ""}" data-s="${i}" title="${escapeHtml(x.text)}">
+        <i style="background:${COLORS[x.kind]}"></i>${escapeHtml(x.title.replace(/^You played$/, "You").replace(/^They replied$/, "They"))}${x.san ? ` <b>${escapeHtml(x.san)}</b>` : ""}</button>`).join("")}</div>
+        ${st ? `<p class="kw-say" title="${escapeHtml(st.text)}">${escapeHtml(two(st.text))}</p>` : ""}` : "";
     const last = k && shown >= k.steps.length - 1;
     const clock = extra.clock && extra.clock.lines.length ? `<details class="kw-clock"><summary>Your clock</summary>
         ${extra.clock.lines.map(l => `<div>${escapeHtml(l)}</div>`).join("")}</details>` : "";
@@ -138,14 +140,13 @@
       <p>${escapeHtml(maya.line)}</p>${broken}
       ${k ? `<div class="kw-moment"><b>Key moment ${mi + 1} of ${moments.length}</b> · move ${k.move_number}
         <span class="kw-dots">${moments.map((m, i) => `<button class="${i === mi ? "on" : ""}" data-m="${i}" title="Move ${m.move_number}"></button>`).join("")}</span></div>
-        <ol>${steps}</ol>
-        ${last && k.hard ? `<p class="kw-humans"><b>How hard was it?</b> ${escapeHtml(k.hard)}</p>` : ""}
-        ${last && k.humans ? `<p class="kw-humans"><b>Real players:</b> ${escapeHtml(k.humans)}</p>` : ""}
+        ${steps}
+        ${last && k.hard ? `<p class="kw-humans" title="${escapeHtml([k.hard, k.humans].filter(Boolean).join(" "))}">${escapeHtml(String(k.hard).split(/(?<=\.)\s/)[0])}</p>` : ""}
         <div class="kw-row">${!last ? `<button class="kw-go" data-next>Next: ${escapeHtml(k.steps[shown + 1].title)} ▶</button>`
           : mi < moments.length - 1 ? `<button class="kw-go" data-nextm>Next moment ▶</button>` : ""}
-          ${last && k.lesson ? `<button class="kw-open" data-lesson title="The Knightwise lesson on this idea">Learn it: ${escapeHtml(k.lesson.title)}</button>` : ""}
-          ${last && extra.rematch ? `<button class="kw-open" data-rematch title="Play it on from here in Knightwise, at their level">Rematch from move ${extra.rematch.move_number}</button>` : ""}
-          <button class="kw-open" data-open>Open in Knightwise</button></div>` : ""}
+          ${last && k.lesson ? `<button class="kw-open" data-lesson title="The lesson: ${escapeHtml(k.lesson.title)}">Learn it</button>` : ""}
+          ${last && extra.rematch ? `<button class="kw-open" data-rematch title="Play on from move ${extra.rematch.move_number} in Knightwise, at their level">Rematch</button>` : ""}
+          <button class="kw-open" data-open title="The full review in Knightwise">Open in Knightwise</button></div>` : ""}
       ${clock}</div>`;
     panel.querySelector(".kw-char").onclick = () => setSmall(!small);
     const setSmall = v => {
@@ -163,8 +164,8 @@
     on("[data-next]", () => pick(shown + 1));
     on("[data-nextm]", () => { mi++; shown = 0; pick(0); });
     on("[data-m]", el => { mi = Number(el.dataset.m); shown = 0; pick(0); });
-    on("li[data-s]", el => pick(Number(el.dataset.s)));
-    const box = panel.querySelector(".chess-coach-panel"), cur = panel.querySelector("li.on");
+    on("[data-s]", el => pick(Number(el.dataset.s)));
+    const box = panel.querySelector(".chess-coach-panel"), cur = panel.querySelector(".kw-chip.on");
     if (box && cur) box.scrollTop = Math.max(0, cur.offsetTop - 90);  // the step on show stays in view
   }
   const send = type => { try { chrome.runtime.sendMessage({ type }); } catch (e) {} };
