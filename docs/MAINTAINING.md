@@ -204,7 +204,14 @@ fix file. Upgrade only when there's a reason (a bug fixed upstream, a security f
 2. **Tests:** all pass.
 3. **Get the parts** (only once on a new PC, or after upgrading one):
    `python -m coach.get_engine` · `python -m coach.get_voice` · `python -m coach.get_assets`
+   **Two files that are never in the repo, but must be next to the code before a build:**
+   - `coach/puzzles-pack.json`: the puzzle set packed in the app, so a new player doesn't wait for a 300 MB download.
+     Make it with `python -m coach.puzzles` (it writes `data/puzzles.json`) and copy that file to
+     `coach/puzzles-pack.json`. If you change `KEEP_THEMES` in `coach/puzzles.py`, raise `VERSION` there and remake it.
+   - `coach/feedback.key`: the Web3Forms access key (one line) that lets Send feedback email you in one click. It's on
+     web3forms.com, signed in as nanotech.mark.robots@gmail.com. Without it, Send opens the player's email app instead.
 4. **Build the app:** `python -m PyInstaller installer/Knightwise.spec --noconfirm` → `dist\Knightwise`
+   (the trailer's 225 MB in `coach/ui/vendor/trailer` is left out by the spec on purpose)
 5. **Build the Store package:** `python installer/make_msix.py` → `dist\Knightwise-<version>.msix` (about 300 MB).
    It needs Microsoft's free Windows SDK Build Tools unpacked in `build\sdktools` (nuget.org package
    `Microsoft.Windows.SDK.BuildTools`).
@@ -220,6 +227,15 @@ fix file. Upgrade only when there's a reason (a bug fixed upstream, a security f
 Store has signed it. Test from the source with `try.bat` instead; the Store build is tested after certification.
 
 ---
+
+## 7b. The look: rules every screen follows (approved 22 Oct 2026)
+- Warm layered greys (sidebar #1e1c1a, page #262421, cards #312e2b), never pure black. No outlines, no coloured bar on
+  a card's edge (the owner: "every AI tool has that bar").
+- One green button per screen, for the one thing to do. Red or orange only for danger, like a blunder.
+- Pictures and numbers instead of sentences: small boards, bars, dots, a ✓. A card has a title and at most one short
+  line; anything longer goes on hover (a `title`), behind the small **?** by the page title, or is spoken by the coach.
+- The coach's bubble shows two sentences and one button; More shows the rest. The voice says it all.
+- Long page intros (`<p class="sub">` over 90 characters) fold into the **?** by themselves (`foldIntros` in app.js).
 
 ## 8. After 1.0: ideas kept for later, with how to start
 Each is a separate, small piece of work. Paste this section with the files named.

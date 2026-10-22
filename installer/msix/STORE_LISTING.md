@@ -2,14 +2,14 @@
 
 ## Pricing and availability
 - **Markets:** all markets
-- **Visibility (first release):** *Private audience*: only the testers listed; switch to *Public* when testing is done
+- **Visibility:** *Public* (1.0 launch, 22 Oct 2026)
 - **Pricing:** Free. No free trial needed.
 
 ## Properties
 - **Category:** Education (subcategory: none). Secondary: Games / Board
 - **Privacy policy URL:** https://github.com/Abhra71/ChessCoach/blob/main/PRIVACY.md
 - **Website:** https://github.com/Abhra71/ChessCoach
-- **Support contact:** https://github.com/Abhra71/ChessCoach/issues
+- **Support contact:** nanotech.mark.robots@gmail.com (also Send feedback inside the app)
 - **Product declarations:** tick "This app depends on non-Microsoft drivers or NT services": **no**.
   "Accessibility guidelines": leave unticked.
 - **System requirements:** Minimum: 8 GB memory, x64. Recommended: 16 GB.
@@ -24,9 +24,9 @@ no purchases, no location sharing). It does use the internet. Expected rating: 3
 Knightwise is a free chess coach that sits beside you on chess.com. It reads your finished games, finds the habits
 that really cost you, and trains you out of them, one thing at a time, at your level.
 
-- **Your real mistakes, explained.** Stockfish checks every move you played. Maya, your coach, goes through the moments
-  that mattered on chess.com's own board: what you played, what was better, and why. "How hard was it?" tells you how
-  many players at your level would have found the better move.
+- **A full game review, free.** Every move labelled like the big sites (Book, Best, Mistake, Blunder…), accuracy for
+  both players, who's winning move by move, and Maya talking you through it, forwards and back. The key moments explain
+  what you played, what was better, and how hard it was for players at your level.
 - **Practice made from your own games.** Positions where you went wrong come back until they stick, with puzzles on
   the same idea at your level. Today's 5 minutes, a course from beginner up, and your level, skill by skill.
 - **Rematch your loss.** Play a lost game again from the moment it went wrong, against a human-like opponent at about
@@ -35,8 +35,8 @@ that really cost you, and trains you out of them, one thing at a time, at your l
   spar against a player who plays like them.
 - **Talk to your coach.** Click Talk and ask Maya anything about your games, out loud. Needs a free key from Groq or
   Google Gemini.
-- **New ways to train:** Guess the human move, the weekly challenge; Blindfold, following your own games in your head;
-  an endgame trainer and calculation practice.
+- **Train:** Prep, your opening tree, a repertoire, sparring, In your head, Blindfold, Guess the human move and an
+  endgame trainer, all in one place.
 - **Your progress:** You vs you, a weekly report for a human coach, your month as Knightwise Wrapped, 20 badges, and
   your best game as a short 3D film.
 - **It shows you the way** on chess.com with a red ring around the right link, and never clicks for you.
@@ -46,10 +46,10 @@ that really cost you, and trains you out of them, one thing at a time, at your l
 Made by Abhra71. Knightwise is an independent app. It is not made by, endorsed by or connected with chess.com.
 
 **What's new in this version**
-1.0: The human-move model now plays like real players of any rating, beginners included. How hard was it? on every
-review moment. Guess the human move, the weekly challenge. Blindfold by voice. Your best game as a 3D film. A weekly
-report for your coach and your month as Wrapped. Talk: click to talk, click Stop to send, answers in about two
-seconds. The red ring guides you step by step on chess.com. Coaches never say the same line twice in a row.
+1.0: A new, calmer look with pictures instead of walls of text. A full game review: every move labelled, accuracy,
+an eval bar and a game graph, and Maya speaking each move. Train, a new home for every training tool. Your level as a
+ladder you can see. Talking: Maya hands you to Viktor on his pages, and slows down when she teaches. One-click
+feedback. Puzzles come with the app, so the first start is quick.
 
 **Product features** (one per line)
 - Finds the habits that cost you, from your real chess.com games
