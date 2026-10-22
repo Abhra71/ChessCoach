@@ -230,8 +230,28 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, aga
     if again and said.get("lines") and section != "review":
         lines = said["lines"]
         keep = [lines[-1]] if lines[-1].startswith("My pick") else lines[1:2]  # where things stand, in one line
+        if keep and not fresh_today(keep[0]):  # the same stat once a day, not on every visit (22 Oct test)
+            return {**said, "lines": [], "again": True, "quiet": True}
         said = {**said, "lines": [line("again", said["coach"], rng)] + keep, "again": True}
     return said
+
+
+def fresh_today(text, today=None):
+    """True the first time this sentence is shown today (data/said.json remembers), then False until tomorrow."""
+    import datetime
+    today = today or datetime.date.today().isoformat()
+    with _SAID_LOCK:
+        said = _said()
+        shown = said.get("shown", {}) if said.get("shown_day") == today else {}
+        if text in shown:
+            return False
+        said["shown_day"], said["shown"] = today, {**shown, text: 1}
+        try:
+            SAID.parent.mkdir(parents=True, exist_ok=True)
+            SAID.write_text(json.dumps(said))
+        except OSError:
+            pass
+    return True
 
 
 def _for_app(said):
