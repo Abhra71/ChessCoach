@@ -1592,18 +1592,25 @@ async function home() {
 async function games() {
   shell("games", `<p class="muted">Loading…</p>`);
   const list = await api("/api/games");
+  // rows like chess.com's archive, by month: the result, who, what kind, and two numbers with icons (22 Oct)
+  const month = g => String(g.date).split(" ").slice(1).join(" ");
+  let html = "", last = null;
+  for (const g of list) {
+    if (month(g) !== last) { last = month(g); html += `<div class="gmonth">${esc(last)}</div>`; }
+    html += `<a class="grow" href="#/games/${g.id}">
+      <span class="chip ${g.result}">${g.result === "win" ? "W" : g.result === "loss" ? "L" : "D"}</span>
+      <span class="gside ${g.color}" title="You were ${g.color}"></span>
+      <b class="ellipsis">${esc(g.opponent)} <span class="faint num">${g.opponent_rating}</span></b>
+      <span class="muted small gtype">${esc(cap(g.time_class))}</span>
+      <span class="gstat ${g.checked && g.pieces_lost ? "bad" : ""}" title="Pieces given away">${svg("hang")}<span class="num">${g.checked ? g.pieces_lost : "–"}</span></span>
+      <span class="gstat" title="Key moments">${svg("bolt")}<span class="num">${g.checked ? g.moments : "–"}</span></span>
+      <span class="faint small num gdate">${esc(String(g.date).split(" ")[0])}</span></a>`;
+  }
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Games</h1><p class="sub">${list.length} finished games from chess.com. Click one to see its key moments.</p></div>
-      <div class="row"><a class="btn" href="#/prep">Prep for an opponent</a><a class="btn" href="#/openings">Your opening tree</a></div></div>
-    <div class="box" style="padding:8px 8px 0"><table><thead><tr><th>Date</th><th>Opponent</th><th>Result</th><th>Type</th>
-      <th class="num">Pieces given away</th><th class="num">Key moments</th></tr></thead><tbody>
-      ${list.map(g => `<tr class="click" data-id="${g.id}"><td class="muted num">${esc(g.date)}</td>
-        <td>${esc(g.opponent)} <span class="faint num">${g.opponent_rating}</span></td>
-        <td><span class="chip ${g.result}">${g.result === "win" ? "W" : g.result === "loss" ? "L" : "D"}</span></td>
-        <td class="muted">${esc(cap(g.time_class))} · ${g.color}</td>
-        <td class="num">${g.checked ? g.pieces_lost : "–"}</td><td class="num">${g.checked ? g.moments : "–"}</td></tr>`).join("")}
-    </tbody></table></div>`;
-  document.querySelectorAll("tr.click").forEach(tr => tr.onclick = () => go(`games/${tr.dataset.id}`));
+    <div class="page-head"><div><h1>Games <span class="faint num" style="font-size:16px">${list.length}</span></h1></div>
+      <div class="row"><a class="ltool" href="#/prep" title="See how a player plays before you face them">${svg("practice")}<span>Prep</span></a>
+        <a class="ltool" href="#/openings" title="Every opening you've played, as a tree">${svg("book")}<span>Opening tree</span></a></div></div>
+    <div class="box glist">${html}</div>`;
 }
 
 // Game review, one key moment at a time (debrief points 17, 18 and 42): You played, Better, They replied, Their

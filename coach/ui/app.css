@@ -706,3 +706,16 @@ a.tile:hover { filter: brightness(1.05); }
 .story-next { display: flex; align-items: center; gap: 8px; } .story-next svg { width: 16px; height: 16px; color: var(--accent); flex: none; }
 .ltool { white-space: nowrap; }
 .badge-group, .badge-source { text-transform: none; letter-spacing: 0; }
+
+/* Games, the calm way (22 Oct): rows by month, a chip, icons and numbers */
+.glist { padding: 6px; }
+.gmonth { padding: 12px 10px 6px; font-size: 12.5px; font-weight: 600; color: var(--faint); }
+.grow { display: grid; grid-template-columns: 26px 12px minmax(0, 1fr) 70px 52px 52px 30px; align-items: center; gap: 12px;
+  padding: 9px 10px; border-radius: 8px; text-decoration: none; color: inherit; }
+.grow:hover { background: var(--raised); }
+.gside { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line-strong); }
+.gside.white { background: #f0eee9; } .gside.black { background: #1b1a18; }
+.gstat { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 13.5px; }
+.gstat svg { width: 15px; height: 15px; } .gstat.bad { color: #e5734f; }
+.gdate { text-align: right; }
+@media (max-width: 700px) { .grow { grid-template-columns: 26px 12px minmax(0, 1fr) 52px 52px; } .gtype, .gdate { display: none; } }
