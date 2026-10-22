@@ -250,7 +250,13 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, aga
     "welcoming is an art"; the coach was greeting every time, then folding silently)."""
     said = _speak(section, home, hour, moments, rng, extra, in_app)
     if section == "home" and not in_app and said.get("lines"):  # on chess.com: the place there that fits your habit
-        pick = chesscom_pick(home if home is not None else {})
+        if home is None:  # chess.com asks without the player's facts: look them up (22 Oct: the pick never showed)
+            try:
+                from coach import insights
+                home = insights.home()
+            except Exception:
+                home = {}
+        pick = chesscom_pick(home)
         acts = said.get("actions") or []
         if pick and not any((a.get("guide") or {}).get("id") == pick["guide"]["id"] for a in acts):
             said = {**said, "actions": [a for a in acts if a is not OPEN_APP] + [pick] + [a for a in acts if a is OPEN_APP]}
