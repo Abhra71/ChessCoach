@@ -34,3 +34,13 @@ def test_todays_5_minutes_stay_the_same_all_day(tmp_path, monkeypatch):
     assert out["drills"] == kept and out["theme"] == "Forks"
     other = daily.challenge({"focus": {"pattern": "left a piece hanging"}}, today=day + datetime.timedelta(days=1))
     assert other["drills"] != kept  # a new day, a new set
+
+
+def test_a_days_set_is_kept_until_midnight(tmp_path, monkeypatch):
+    import datetime
+    from coach import daylock
+    monkeypatch.setattr(daylock, "FILE", tmp_path / "today-sets.json")
+    day = datetime.date(2026, 10, 23)
+    assert daylock.keep("course:x", [{"id": 1}], day) == [{"id": 1}]
+    assert daylock.keep("course:x", [{"id": 2}], day) == [{"id": 1}]  # remade later that day: the same set
+    assert daylock.keep("course:x", [{"id": 2}], day + datetime.timedelta(days=1)) == [{"id": 2}]  # a new day

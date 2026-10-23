@@ -361,9 +361,10 @@ class Handler(BaseHTTPRequestHandler):
             from coach import live_engine, plan
             with live_engine.LOCK:
                 out = plan.plan(engine=live_engine.get())
-            from coach import brief
-            for item in list((out.get("items") or {}).values()) + [out.get("novelty")]:
-                if item and item.get("drills"):
+            from coach import brief, daylock
+            for kind, item in list((out.get("items") or {}).items()) + [("novelty", out.get("novelty"))]:
+                if item and item.get("drills"):  # the day's positions stay the same until midnight
+                    item["drills"] = daylock.keep(f"plan:{kind}:{item.get('id') or item.get('title')}", item["drills"])
                     brief.add(item["drills"])
             return self.send(200, json.dumps(out), "application/json")
         if path.startswith("/api/film/"):  # your game as a short 3D film: its script (1.0)
@@ -399,6 +400,8 @@ class Handler(BaseHTTPRequestHandler):
                 items = [{**drills.drill(live_engine.get(), r["pattern"], r),
                           "where": f"From your game: you played this in {clock.say_time(r['seconds'])}"} for r in rows]
             idea = next(i for i in plan.IDEAS if i["id"] == "idea:slow-down")
+            from coach import daylock
+            items = daylock.keep("clockdrill", items)  # the same positions all day
             lesson = {**idea, "id": "idea:rushed", "kind": "idea", "coach": "viktor", "drills": brief.add(items),
                       "title": "Slow down when it matters",
                       "intro": "Each of these you played in a rush, and it cost you. This time, tick the checks first: the board waits for you."}
@@ -429,6 +432,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(404, json.dumps({"message": "No such lesson yet."}), "application/json")
             with live_engine.LOCK:
                 item = course.lesson(lid, live_engine.get(), insights.home().get("rating"))
+            from coach import daylock
+            item["drills"] = daylock.keep(f"course:{lid}", item["drills"])  # the same positions all day
             brief.add(item["drills"])
             return self.send(200, json.dumps(item), "application/json")
         if path.startswith("/api/spar/"):  # spar against a player: their openings, then human moves (0.11)
@@ -473,6 +478,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(404, json.dumps({"message": "No such lesson."}), "application/json")
             kind = plan.endgame if theme.endswith("Endgame") else plan.tactic
             item = kind(theme, insights.home().get("rating"), _random.Random(theme + time.strftime("%Y-%m-%d")))
+            from coach import daylock
+            item["drills"] = daylock.keep(f"lesson:{theme}", item["drills"])  # the same positions all day
             brief.add(item["drills"])
             return self.send(200, json.dumps(item), "application/json")
         if path.startswith("/api/rematch/"):  # Rematch your loss: where it starts (/api/rematch/<game>/<ply>)

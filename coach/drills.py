@@ -337,6 +337,8 @@ def build():
     puzzles = pick_puzzles(by_pattern, top, seed=date.today().isoformat(), rating=insights.home().get("rating"))
     # organised by habit, biggest first: your own positions, then puzzles on the same habit, easiest first
     drills = [d for p in top for d in drills + puzzles if d["pattern"] == p]
+    from coach import daylock
+    drills = daylock.keep("practice", drills)  # a restart or new games keep today's set; new ones come tomorrow
     page = (TEMPLATES / "drills_template.html").read_text(encoding="utf-8")
     OUT.write_text(page.replace("/*DRILLS*/[]", json.dumps(drills)), encoding="utf-8")
     OUT_JSON.write_text(json.dumps(drills), encoding="utf-8")
