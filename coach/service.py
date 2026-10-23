@@ -994,6 +994,9 @@ def coach_says(url):
     return said
 
 
+HUBS = ("home", "games", "train", "progress", "plan", "course", "level")  # app pages where the coach may suggest
+
+
 def with_point(said, q):
     from coach import insights, nudge, talk
     in_app, section = q.get("in") == "app", q.get("section", "home")
@@ -1001,6 +1004,10 @@ def with_point(said, q):
         nudge.seen(q["tab"])
     if not said.get("lines") and not said.get("quiet"):
         return said  # a page where the coach says nothing at all (someone's profile)
+    # in the app, only on a page that gives an overview, never where you're working (practice, a lesson, a drill), and
+    # not right after she opened that page for you (23 Oct test: "the coach says something, opens something else")
+    if in_app and (q.get("nopoint") == "1" or q.get("tab", "home") not in HUBS):
+        return said
     home = insights.home()
     g = home.get("last_game") or {}
     rematch = insights.extras_for(g["id"]).get("rematch") if in_app and g.get("checked") and g.get("result") != "win" else None

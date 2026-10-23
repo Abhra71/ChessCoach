@@ -81,7 +81,9 @@ const Coach = (() => {
     api(`/api/seen?route=${encodeURIComponent(location.hash.replace(/^#\/?/, "") || "home")}`).catch(() => {});  // what they've opened
     if (!section) return hide();
     const first = remember(`kw-app-greeted-${section}`) !== today();  // the first visit to this section today
-    const r = await api(`/api/coach?section=${section}&in=app&hour=${new Date().getHours()}${first || force ? "" : "&again=1"}`).catch(() => null);
+    const full = location.hash.replace(/^#\/?/, "") || "home", hub = full.includes("/") ? "" : full;  // a page, not a game or a lesson
+    const quietPoint = Date.now() < (window.kwOpenedFor || 0);  // she just opened this for you: no new suggestion on it
+    const r = await api(`/api/coach?section=${section}&in=app&tab=${encodeURIComponent(hub || "-")}${quietPoint ? "&nopoint=1" : ""}&hour=${new Date().getHours()}${first || force ? "" : "&again=1"}`).catch(() => null);
     if (!r || TAB_SECTION[location.hash.replace(/^#\/?/, "").split("/")[0] || "home"] !== section) return;
     said = { ...r, casual: true, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
     more = false;
@@ -140,7 +142,7 @@ const Conv = (() => {
     let speech = r.text, handover = null;
     Coach.takeHeld();
     if (r.action && r.action.route) {
-      go(r.action.route); await wait(400);
+      window.kwOpenedFor = Date.now() + 8000; go(r.action.route); await wait(400);
       // the page belongs to the other coach: they take over, as two coaches in one room (22 Oct test: Maya opened
       // the course, Viktor's page, and Viktor never came)
       const tab = r.action.route.split("/")[0], owner = tabCoach(tab);

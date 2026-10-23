@@ -1674,7 +1674,7 @@ async function home() {
     onAsk: async q => {  // the same brain as Talk (19 Oct): typing "open my last review" opens it
       const r = await api("/api/talk", { coach: "maya", text: q, history: homeTalk.slice(-4), where: { section: "home" } });
       homeTalk.push(["player", q], ["coach", r.text]);  // so "please do" knows what she offered
-      if (r.action && r.action.route) setTimeout(() => go(r.action.route), 1200);
+      if (r.action && r.action.route) { window.kwOpenedFor = Date.now() + 8000; setTimeout(() => go(r.action.route), 1200); }
       return r;
     } }));
 }
