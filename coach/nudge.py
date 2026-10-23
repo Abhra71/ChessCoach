@@ -64,7 +64,7 @@ TOUR = [
     ("report", "viktor", "report/week", "report", None,
      "In Progress, press Report: one page about your week, ready to print for a coach or a parent."),
     ("wrapped", "maya", "report/month", "report/month", None,
-     "In Progress, press Your month, Wrapped: your chess story in cards, with music."),
+     "In Progress, open Report and press Play it as Wrapped: your chess story in cards, with music."),
     ("talk", "maya", "settings", "settings", None,
      "You can talk to us out loud: press the mic and speak. Settings, at the bottom left, has the switch."),
     ("extension", "maya", "extension", "extension", "no_extension",

@@ -1485,8 +1485,7 @@ async function progressView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Progress</h1></div>
       <div class="row"><a class="ltool" href="#/report/week" title="A report for your coach or a parent">${svg("plan")}<span>Report</span></a>
-        <a class="ltool" href="#/film/month" title="Your game of the month, as a film">${svg("practice")}<span>Film</span></a>
-        <a class="btn primary" href="#/report/month">▶ Your month, Wrapped</a></div></div>
+        <a class="ltool" href="#/film/month" title="Your game of the month, as a film">${svg("practice")}<span>Film</span></a></div></div>
     <div class="grid">
       ${s ? `<div class="box story rise" id="story">
         <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>
