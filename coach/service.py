@@ -661,6 +661,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(404, json.dumps({"message": "No such lesson."}), "application/json")
             course.studied(lid, body.get("right", 0), body.get("total", 0))
             return self.send(200, "{}", "application/json")
+        if path == "/api/badges/shown":  # the badge pop-up was seen: never again, here or on chess.com
+            from coach import progress
+            progress.gold_shown(str(body.get("id", "")))
+            return self.send(200, "{}", "application/json")
         if path == "/api/plan/progress":  # a plan set answered part-way: kept for In progress (23 Oct test)
             from coach import plan
             plan.progress(str(body.get("id", ""))[:200], body.get("item"), body.get("state"))
@@ -1056,6 +1060,15 @@ def coach_says(url):
         said = with_point(said, q)
     except Exception:
         log.exception("the coach's pick")
+    # a badge just completed: shown once, only where it's calm (an overview page in the app; on chess.com only its
+    # home, puzzles, lessons and stats, never a game page)
+    calm = q.get("tab", "home") in HUBS if q.get("in") == "app" else q.get("section") in ("home", "puzzles", "lessons", "progress")
+    if calm:
+        try:
+            from coach import progress
+            said["badge"] = progress.new_gold()
+        except Exception:
+            log.exception("badge pop-up")
     return said
 
 

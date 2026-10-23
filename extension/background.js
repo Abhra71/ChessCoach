@@ -103,6 +103,11 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     player().then(() => chrome.runtime.sendMessage({ type: "play", url: `${COACH}/api/say`, text: msg.text, voice: msg.voice, slow: !!msg.slow }));
     return false;
   }
+  if (msg.type === "badge-shown" && /^[a-z0-9]{1,40}$/.test(msg.id || "")) {  // the badge pop-up was seen here
+    fetch(`${COACH}/api/badges/shown`, { method: "POST", headers: { "Content-Type": "application/json" },
+                                         body: JSON.stringify({ id: msg.id }) }).catch(() => {});
+    return false;
+  }
   if (msg.type === "open-app" && /^[a-z][a-z0-9/]*$/.test(msg.route || "")) {  // bring the Knightwise window forward
     fetch(`${COACH}/api/show`, { method: "POST", headers: { "Content-Type": "application/json" },
                                  body: JSON.stringify({ route: msg.route }) }).catch(() => {});

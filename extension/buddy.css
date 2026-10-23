@@ -107,3 +107,20 @@
 .kw-ask button { background: #4a4641; color: #f3f1ee; border-radius: 999px; }
 .kw-more, .kw-report { display: block; margin: 8px 0 0; padding: 0; border: 0; background: none; cursor: pointer; color: #a6a19a; font: inherit; font-size: 12.5px; text-decoration: underline; }
 .kw-report { display: inline; margin: 0; }
+
+/* a badge completed (23 Oct): in the middle of a calm page, once */
+.kw-unlock { position: fixed; inset: 0; z-index: 2147483001; display: grid; place-items: center; background: rgba(0,0,0,.55);
+  font: 14px "Segoe UI", system-ui, sans-serif; animation: kwfade .25s ease; }
+.kw-unlock-card { width: min(380px, calc(100vw - 32px)); text-align: center; padding: 24px 22px 20px; border-radius: 18px;
+  background: #2b2926; color: #f3f1ee; box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: kwpop .45s cubic-bezier(.2,1.4,.4,1); }
+.kw-unlock-label { font-size: 12px; font-weight: 600; letter-spacing: .02em; color: #a6a19a; }
+.kw-unlock-card h2 { margin: 10px 0 6px; font-size: 22px; color: #fff; }
+.kw-unlock-card p { margin: 4px 0; line-height: 1.4; }
+.kw-unlock-small { color: #a6a19a; font-size: 13px; }
+.kw-unlock-medal { width: 92px; height: 92px; margin: 14px auto 4px; border-radius: 50%; display: grid; place-items: center;
+  border: 3px solid #f2c94c; color: #f2c94c; box-shadow: 0 0 34px rgba(242,201,76,.45); animation: kwshine 2.4s ease-in-out infinite; }
+.kw-unlock-ok { margin-top: 14px; font: 600 14px "Segoe UI", system-ui, sans-serif; color: #111; background: #81b64c; border: 0;
+  border-radius: 10px; padding: 9px 22px; cursor: pointer; }
+@keyframes kwpop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes kwfade { from { opacity: 0; } }
+@keyframes kwshine { 50% { box-shadow: 0 0 52px rgba(242,201,76,.7); } }

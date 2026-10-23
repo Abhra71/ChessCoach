@@ -1465,7 +1465,8 @@ async function calcView() {
 
 // ---------- progress: Viktor's story of your week, and badges from your real games ----------
 // chess.com games and Knightwise practice counted apart, never blended (13 Oct test, point 16)
-const BADGE_SOURCES = [["From your chess.com games", ["Habits", "Clean play", "Results"]], ["From your Knightwise practice", ["Practice"]]];
+const BADGE_SOURCES = [["From your chess.com games", ["Habits", "Clean play", "Results", "Big moments", "Accuracy", "Clock", "Rating", "Openings"]],
+  ["From your Knightwise training", ["Practice", "Training"]]];
 const TIERS = ["Bronze", "Silver", "Gold"];
 function badgeCard(b) {  // what you have, what's next, and whether it's complete: one look
   const state = b.tier === 3 ? "Complete" : b.tier ? `${b.tier_name} · Gold at ${b.tiers[2]}` : `Not started · Bronze at ${b.tiers[0]}`;
@@ -2436,3 +2437,24 @@ function foldIntros() {
   });
 }
 new MutationObserver(() => foldIntros()).observe(document.getElementById("root") || document.body, { childList: true, subtree: true });
+
+// A badge completed (Gold): once, in the middle of a calm page, never over practice or a lesson (23 Oct test). The
+// server picks when; this only shows it, and says it was seen so chess.com doesn't show it again.
+function badgeUnlocked(b) {
+  if (!b || document.querySelector(".kw-unlock")) return;
+  api("/api/badges/shown", { id: b.id }).catch(() => {});
+  const layer = document.createElement("div");
+  layer.className = "kw-unlock";
+  layer.innerHTML = `<div class="kw-unlock-card" role="dialog" aria-label="Badge complete">
+      <div class="label">Badge complete</div>
+      <div class="kw-unlock-medal">${svg(b.icon)}</div>
+      <h2>${esc(b.name)}</h2>
+      <p><b class="num">${b.gold}</b> ${esc(b.what)}.</p>
+      <p class="muted small">Earned in ${esc(b.from)}. That's real.</p>
+      <div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="#/progress" data-x>See your badges</a>
+        <button class="btn primary" data-x>Nice</button></div></div>`;
+  layer.querySelectorAll("[data-x]").forEach(x => x.addEventListener("click", () => layer.remove()));
+  layer.addEventListener("click", e => { if (e.target === layer) layer.remove(); });
+  document.body.appendChild(layer);
+  try { confetti(); Sound.play("done"); } catch (e) {}
+}

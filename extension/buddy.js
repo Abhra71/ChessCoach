@@ -455,6 +455,26 @@
     }
   });
 
+  // A badge completed (Gold), once, in the middle of a calm chess.com page (home, puzzles, lessons, stats: the app only
+  // sends it there, never on a game page). Seen here: the app won't show it again.
+  function badgeUnlocked(b) {
+    if (!b || document.querySelector(".kw-unlock") || !section(location.pathname)) return;
+    send({ type: "badge-shown", id: b.id });
+    const layer = document.createElement("div");
+    layer.className = "kw-unlock";
+    layer.innerHTML = `<div class="kw-unlock-card" role="dialog" aria-label="Badge complete">
+        <div class="kw-unlock-label">Knightwise · badge complete</div>
+        <div class="kw-unlock-medal"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M8.5 3h7l-2 5.5h-3z"/><path d="m12 11.5.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z"/></svg></div>
+        <h2>${esc(b.name)}</h2>
+        <p><b>${esc(String(b.gold))}</b> ${esc(b.what)}.</p>
+        <p class="kw-unlock-small">Earned in ${esc(b.from)}. That's real.</p>
+        <button class="kw-unlock-ok">Nice</button></div>`;
+    layer.querySelector(".kw-unlock-ok").onclick = () => layer.remove();
+    layer.addEventListener("click", e => { if (e.target === layer) layer.remove(); });
+    document.body.appendChild(layer);
+  }
+
   async function arrive() {
     const here = section(location.pathname), path = location.pathname;
     if (!here) setTimeout(() => {  // the self-check: a game page at an address the review doesn't know yet?
@@ -482,6 +502,7 @@
     const who = here === "member" ? location.pathname.split("/")[2] : undefined;
     const r = await send({ type: "coach", section: here, hour: new Date().getHours(), again: !first, who });
     if (current !== here) return;
+    if (r && r.ok && r.data.badge) setTimeout(() => badgeUnlocked(r.data.badge), 1200);  // a badge completed (calm pages only)
     // a repeat visit with nothing new: the coach waits as a folded tab, one click away (22 Oct test: "where are you")
     if (r && r.ok && r.data.quiet && loadGuide()) { said = { ...r.data, lines: ["This way: follow the red ring."] }; render(true); guideArrive(); return; }  // on the way with the ring first
     if (r && r.ok && r.data.quiet) { said = { ...r.data, lines: ["I'm here if you need anything."] }; render(false); return; }

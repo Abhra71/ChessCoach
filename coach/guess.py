@@ -90,7 +90,7 @@ def challenge(today=None):
     if d.get("week") != wk or len(d.get("positions") or []) < COUNT:
         if not maia.enabled():
             return {"week": wk, "positions": [], "best": None, "off": True}
-        d = {"week": wk, "positions": build(wk), "best": None, "tries": 0}
+        d = {"week": wk, "positions": build(wk), "best": None, "tries": 0, "ever": d.get("ever")}
         _save(d)
     return {"week": wk, "positions": d["positions"], "best": d.get("best"), "tries": d.get("tries", 0)}
 
@@ -110,6 +110,7 @@ def done(total, today=None):
         return {"best": total, "record": True}
     record = d.get("best") is None or total > d["best"]
     d["tries"] = d.get("tries", 0) + 1
+    d["ever"] = max(d.get("ever") or 0, total)  # your best of all weeks: the Mind reader badge (23 Oct)
     if record:
         d["best"] = total
     _save(d)

@@ -939,3 +939,16 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .lstepbox.sel:not(.now) { outline: 2px solid var(--line-strong); outline-offset: -2px; }
 .lskills.ahead .lskill { opacity: .85; }
 .lstepbox.sel { opacity: 1; }
+
+/* a badge completed (23 Oct) */
+.kw-unlock { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(0,0,0,.55); animation: kwfade .25s ease; }
+.kw-unlock-card { width: min(380px, calc(100vw - 32px)); text-align: center; padding: 26px 24px 22px; border-radius: 18px;
+  background: var(--surface, #2b2926); box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: kwpop .45s cubic-bezier(.2,1.4,.4,1); }
+.kw-unlock-card h2 { margin: 10px 0 6px; font-size: 22px; }
+.kw-unlock-card p { margin: 4px 0; }
+.kw-unlock-medal { width: 92px; height: 92px; margin: 14px auto 4px; border-radius: 50%; display: grid; place-items: center;
+  border: 3px solid #f2c94c; color: #f2c94c; box-shadow: 0 0 34px rgba(242,201,76,.45); animation: kwshine 2.4s ease-in-out infinite; }
+.kw-unlock-medal svg { width: 40px; height: 40px; }
+@keyframes kwpop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes kwfade { from { opacity: 0; } }
+@keyframes kwshine { 50% { box-shadow: 0 0 52px rgba(242,201,76,.7); } }
