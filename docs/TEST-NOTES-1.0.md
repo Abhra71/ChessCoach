@@ -178,3 +178,4 @@ Every statistic recounted from the raw files (only one move's label borrowed) an
 - 42. Today's 5 minutes changed mid-day after a restart or new games (its position came from the rebuilt practice list). Fixed: the day's set is kept as first made until midnight.
 
 - 43 (23 Oct, daily): "Back home" button showed on Home after finishing Today's 5 minutes; an opening question got a Practice offer. Fixed: no button when already home; opening questions offer the opening tree.
+- 44 (23 Oct, plan): the opening's explanations only flashed in the bubble, and a finished page had no clear way back. Fixed: each move's why stays on the page; every finished set shows a green "Back to …" button. (The Italian card turning into Four Knights was correct: it was done, and the next opening took its place.)

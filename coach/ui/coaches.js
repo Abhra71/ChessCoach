@@ -186,7 +186,14 @@ function trainer(drills, opts) {
   function allDone(already) {  // every position answered: say so clearly, once
     if (finishedAll) return;
     finishedAll = true;
-    result("ok-text", `<b>All ${drills.length} done${opts.record ? " for today" : ""}.</b> ${right()} of ${drills.length} right first time.<div data-helpful></div>`);
+    // a clear way out once everything is done (23 Oct test: "nothing to return to the main page"); with one position,
+    // its last explanation stays above
+    const back = document.querySelector("#page .page-head a[href^='#/']");
+    const to = back ? back.getAttribute("href").slice(2) : "home", name = back ? back.textContent.replace(/^\W+/, "").trim() : "Home";
+    const keep = drills.length === 1 ? $("#result").innerHTML : "";
+    $("#result").innerHTML = `${keep}<div class="ok-text"${keep ? ' style="margin-top:8px"' : ""}><b>All ${drills.length} done${opts.record ? " for today" : ""}.</b> ${right()} of ${drills.length} right first time.</div>
+      <button class="btn primary" id="finished" style="margin-top:10px">${to === "home" ? "Back home" : "Back to " + esc(name.toLowerCase())}</button><div data-helpful></div>`;
+    $("#finished").onclick = () => go(to);
     helpful($("#result [data-helpful]"), `practice ${location.hash.replace(/^#\/?/, "")}`);
     if (!already) setTimeout(() => { Sound.play("done"); confetti(); }, 900);
     if (opts.onDone) opts.onDone(right(), already);
@@ -274,7 +281,7 @@ function trainer(drills, opts) {
     const more = k + 1 < x.steps.length;  // the last step of an opening line can end with their answer too
     if (s.reply) {
       done = true;
-      result("ok-text", `<b>${esc(m.san)}</b>: yes. Now they play ${esc(s.reply.san)}.${more ? " Keep going." : ""}`);
+      result("ok-text", `<b>${esc(m.san)}</b>: yes. Now they play ${esc(s.reply.san)}.${more ? " Keep going." : ""}${s.idea ? `<div class="muted small" style="margin-top:4px">${esc(s.idea)}</div>` : ""}`);  // the why stays on the page (23 Oct test)
       if (s.idea) Coach.react(coach, "explain", s.idea);
       await wait(900); if (d() !== x) return;
       pieces = s.reply.board; last = mark([s.reply.uci.slice(0, 2), s.reply.uci.slice(2, 4)], "hl-last"); draw();
@@ -294,7 +301,7 @@ function trainer(drills, opts) {
     counter();
     const note = x.kind === "game" ? `In the game you played ${esc(x.played)}.${m.san === x.best ? "" : " The engine's top move was " + esc(x.best) + "."}`
       : x.kind === "opening" ? "That's the whole line. Play it in your next games." : (x.end || "Puzzle solved.");
-    result("ok-text", `<b>${esc(m.san)}</b>: ${shown ? "that's the answer." : "right."}<div class="muted small" style="margin-top:4px">${esc(x.kind === "puzzle" ? (x.end || "Puzzle solved.") : note)}</div>`);
+    result("ok-text", `<b>${esc(m.san)}</b>: ${shown ? "that's the answer." : "right."}<div class="muted small" style="margin-top:4px">${s.idea && x.kind === "opening" ? esc(s.idea) + " " : ""}${esc(x.kind === "puzzle" ? (x.end || "Puzzle solved.") : note)}</div>`);
     // what the move achieved in this exact position: for your own game, what your game move cost; for a puzzle,
     // why it ends there
     const played = x.kind === "game" && Object.values(x.steps[0].moves).find(e => e.san === x.played);
