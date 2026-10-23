@@ -203,7 +203,10 @@ const NAV_OF = { prep: "train", openings: "train", repertoire: "train", spar: "t
 // moves to the next step; arrive and it's done; open something else and it goes at once.
 let kwPointTimer = null, kwPointing = null;
 function kwUnpoint() { clearTimeout(kwPointTimer); kwPointing = null; document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point")); }
-function kwPoint(route) { kwUnpoint(); kwPointing = route; kwRing(0); }
+// No rings in the app (23 Oct test: one pointed at Your plan for Blindfold; a wrong ring is worse than none): the coach
+// says where things are instead. chess.com keeps its red ring. The ring code stays for a later, tested return.
+const KW_RINGS = false;
+function kwPoint(route) { kwUnpoint(); if (!KW_RINGS) return; kwPointing = route; kwRing(0); }
 function kwRing(tries) {  // the step on this page: the thing itself if it's here, else its menu item
   if (!kwPointing) return;
   document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point"));

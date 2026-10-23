@@ -277,8 +277,11 @@ Store has signed it. Test from the source with `try.bat` instead; the Store buil
   own practice is not chess.com. On chess.com itself, the red ring shows the way.
 - **Small talk gets small talk.** Her habit tip only when it answers the question (finding 38 is still open).
 - **Teaching pace:** reviews, training and numbers are spoken slower than greetings.
-- **The tour: the coaches show the whole app** (`TOUR` in `coach/nudge.py`). Every feature has a line, its coach and
-  a path to point along ("plan@.explore-box": the menu, then the page, then that part of it, `kwRing()` in app.js).
+- **The tour: the coaches show the whole app** (`TOUR` in `coach/nudge.py`). Every feature has a line that says where
+  it is ("In Train, open Blindfold"), its coach, and a path. **No rings in the app** since 23 Oct (`KW_RINGS = false`
+  in app.js: one pointed at the wrong place in the owner's window; a wrong ring is worse than none). The other app
+  suggestions add where in words (`WHERE`). chess.com keeps its red ring. To bring app rings back, test `kwRing()`
+  in the real window first.
   At most `TOUR_A_DAY` (3) new things a day, `TOUR_GAP` (20 min) apart; any two suggestions in the app at least
   `GAP` (10 min) apart, except a new game. Never what has been opened (`seen`, also "ask", "plan/explore",
   "plan/done" when used); one shown but not opened comes back another day, after the never-shown ones. A line that

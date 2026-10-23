@@ -30,45 +30,45 @@ TOUR_GAP = 20 * 60  # seconds between two of them
 GAP = 10 * 60  # seconds between any two suggestions in the app ("not together"); a new game is never held back
 TOUR = [
     ("level", "viktor", "level", "level", None,
-     "Do you know your level? Five steps from beginner to 2,000, each one counted in your real games. Have a look."),
+     "Do you know your level? Open Your level in the menu: five steps from beginner to 2,000, each counted in your real games."),
     ("practice", "maya", "practice", "practice", None,
-     "Practice is built from your own mistakes. Each position comes back after 1, 3 and 7 days until it sticks."),
+     "Practice, in the menu, is built from your own mistakes. Each position comes back after 1, 3 and 7 days until it sticks."),
     ("plan", "viktor", "plan", "plan", None,
-     "Your plan: a few cards picked for you from thousands of Lichess puzzles and openings. Finish one, the next takes its place."),
+     "Open Your plan in the menu: a few cards picked for you from thousands of Lichess puzzles and openings."),
     ("ask", "maya", "home@.askbar", "ask", None,
-     "You can ask me anything about your chess, right here: why you lose, what to practise, what a move does."),
+     "You can ask me anything about your chess: type it in the box at the bottom of Home. Why you lose, what to practise, anything."),
     ("blindfold", "viktor", "blindfold", "blindfold", None,
-     "Something fun in Train: Blindfold. I read out a game, you follow it in your head. It sharpens seeing ahead."),
+     "Something fun: in Train, open Blindfold. A game is read out and you follow it in your head. It sharpens seeing ahead."),
     ("course", "viktor", "course", "course", None,
-     "Your course: lessons in order, each one passed only when your games show it. Your next one is waiting."),
+     "Open Your course in the menu: lessons in order, each one passed only when your games show it."),
     ("explore", "viktor", "plan@.explore-box", "plan/explore", "plan",
-     "Want something specific? Type any opening or tactic into Explore in Your plan: 3,160 opening lines are in there."),
+     "Want something specific? In Your plan, type any opening or tactic into the Explore bar under the cards."),
     ("repertoire", "viktor", "repertoire", "repertoire", None,
-     "Your repertoire: the openings you play, as lines you can drill until they're automatic."),
+     "In Train, open Repertoire: the openings you play, as lines you can drill until they're automatic."),
     ("guess", "viktor", "guess", "guess", None,
-     "Try Guess the move: five real positions a week. What would players of that rating play?"),
+     "In Train, try Guess the move: five real positions a week. What would players of that rating play?"),
     ("progress", "viktor", "progress", "progress", None,
-     "Your Progress page tells your week as a story, with badges you earn in real games."),
+     "Open Progress in the menu: your week as a story, and badges you earn in real games."),
     ("done", "viktor", "plan@.plan-done-sec", "plan/done", "has_done",
      "Everything you finish is kept in Done, at the bottom of Your plan. Play any of it again whenever you like."),
     ("prep", "viktor", "prep", "prep", None,
-     "Before a game, try Prep: type a chess.com name and see how they open and how their games end."),
+     "Before a game, open Prep in Train: type a chess.com name and see how they open and how their games end."),
     ("calc", "viktor", "calc", "calc", None,
-     "Try In your head: put a whole line in as arrows before the board moves. It trains calculation."),
+     "In Train, try In your head: put a whole line in as arrows before the board moves. It trains calculation."),
     ("endgames", "viktor", "endgames", "endgames", None,
-     "The endgame trainer: the endings every player must know, against perfect defence. Learn them once, keep them."),
+     "In Train, open Endgames: the endings every player must know, against perfect defence."),
     ("openings", "viktor", "openings", "openings", None,
-     "Your opening tree shows where your games go well and where they go wrong, from move one."),
+     "In Train, the Opening tree shows where your games go well and where they go wrong, from move one."),
     ("spar", "viktor", "prep", "spar", "prep",
-     "In Prep there's Spar: play the opening against someone's real moves from their own games, before you meet them."),
+     "In Train, Spar lets you play the opening against someone's real moves from their own games."),
     ("report", "viktor", "report/week", "report", None,
-     "There's a one-page report of your week, ready to print for a coach or a parent."),
+     "In Progress, press Report: one page about your week, ready to print for a coach or a parent."),
     ("wrapped", "maya", "report/month", "report/month", None,
-     "Your month can play as Wrapped: your chess story in cards, with music. Press play."),
+     "In Progress, press Your month, Wrapped: your chess story in cards, with music."),
     ("talk", "maya", "settings", "settings", None,
-     "You can talk to us out loud: press the mic, speak, and we answer in our own voices. Settings has the switch."),
+     "You can talk to us out loud: press the mic and speak. Settings, at the bottom left, has the switch."),
     ("extension", "maya", "extension", "extension", "no_extension",
-     "Do you play on chess.com? I can sit beside you there too: reviews with arrows on the real board."),
+     "Do you play on chess.com? I can sit beside you there too. Settings, at the bottom left, sets it up."),
 ]
 
 
@@ -98,6 +98,13 @@ def seen(route):
         if route not in done:
             m["seen"] = (done + [route])[-500:]
             _save(m)
+
+
+# where things are, said in words (23 Oct test: a ring in the app pointed at the wrong place; words can't)
+WHERE = {"daily": "It's the first card on Home.", "games": "It's on Home, or in Games.",
+         "rematch": "It's in that game's review, in Games.", "progress": "It's in Progress, in the menu.",
+         "clockdrill": "In Progress, press Slow down.", "prep": "It's in Train, under Prep.",
+         "course": "It's in Your course, in the menu."}
 
 
 def tour_next(coach=None, today=None, now=None, extension=False):
@@ -148,6 +155,8 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
         return any(d == route or d.startswith(route + "/") for d in done)
 
     def add(kind, cid, line, route=None, guide=None):
+        if app and route and WHERE.get(route.split("/")[0]):  # in the app she says where it is (no rings there)
+            line = f"{line} {WHERE[route.split('/')[0]]}"
         c = {"kind": kind, "id": cid, "line": line}
         if app and route:
             c["route"] = route
