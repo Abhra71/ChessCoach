@@ -963,6 +963,67 @@ async function endgameView(id) {
   Coach.react("viktor", "explain", `${s.name}. ${s.idea}`);
 }
 
+// How to beat them (24 Oct, owner's idea): Stockfish checks their last games (about 10-30 s), then one view: their
+// weak spot, where they go wrong, three tips, and their real mistakes as puzzles to punish
+async function scoutBox(user) {
+  const el = () => document.getElementById("scout");
+  if (!el()) return;
+  el().innerHTML = `<div class="box scout-wait"><b>How to beat ${esc(user)}</b><span class="muted small" id="scoutn">Stockfish is checking their games…</span>
+    <div class="bar"><div id="scoutbar" style="width:3%"></div></div></div>`;
+  let r;
+  for (;;) {
+    r = await api(`/api/scout/${encodeURIComponent(user)}`).catch(() => null);
+    if (!el()) return;  // they moved on
+    if (!r || r.state !== "running") break;
+    if (r.total) {
+      $("#scoutbar").style.width = `${Math.max(3, 100 * r.done / r.total)}%`;
+      $("#scoutn").textContent = `Stockfish is checking their games… ${Math.round(100 * r.done / r.total)}%`;
+    }
+    await new Promise(ok => setTimeout(ok, 1200));
+  }
+  if (!r || r.state !== "done") { el().innerHTML = `<p class="small muted">${esc((r && r.message) || "The deeper look didn't work this time.")}</p>`; return; }
+  const x = r.result, h = x.habits[0], ph = x.phases, total = ph.opening + ph.middlegame + ph.endgame;
+  const seg = (k, c) => total && ph[k] ? `<i style="flex:${ph[k]};background:${c}" title="${cap(k)}: ${ph[k]}"></i>` : "";
+  el().innerHTML = `<h2 class="scout-title">How to beat ${esc(user)} <span class="muted small" style="font-weight:400">from their last ${x.games} ${esc(x.time_class)} games</span></h2>
+    <div class="scout-grid">
+      <div class="box scout-card"><div class="label">Their weak spot</div>
+        ${h ? `<div class="scout-big"><b class="num">${h.per_game}</b><span>${esc(h.what)} a game</span></div>
+          ${x.habits[1] ? `<div class="small muted">then ${esc(x.habits[1].what)}: ${x.habits[1].per_game} a game</div>` : ""}`
+          : `<div class="scout-big"><b class="num">${x.big_per_game}</b><span>big mistakes a game</span></div>`}</div>
+      <div class="box scout-card"><div class="label">When they go wrong</div>
+        ${total ? `<div class="scout-phase">${seg("opening", "#5ea4e8")}${seg("middlegame", "#e9a23b")}${seg("endgame", "#b48ce0")}</div>
+        <div class="scout-keys small"><span><i style="background:#5ea4e8"></i>Opening ${ph.opening}</span><span><i style="background:#e9a23b"></i>Middlegame ${ph.middlegame}</span><span><i style="background:#b48ce0"></i>Endgame ${ph.endgame}</span></div>`
+          : `<div class="small muted">Hardly any big mistakes.</div>`}
+        ${x.clock.of ? `<div class="small">${x.clock.low} of ${x.clock.of} with their clock low</div>` : ""}
+        ${x.slipped.of ? `<div class="small">${x.slipped.lost} of ${x.slipped.of} winning games let slip</div>` : ""}</div>
+      <div class="box scout-card scout-tips"><div class="label">Your plan</div>
+        <ol>${x.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>
+    </div>
+    ${x.puzzles.length ? `<div class="box row scout-go"><div style="flex:1"><b>Punish their mistakes</b>
+      <div class="small muted">${x.puzzles.length} real positions where ${esc(user)} went wrong. Find the move that punishes it.</div></div>
+      <a class="btn primary" href="#/punish/${esc(user)}">${svg("practice")} Punish ${x.puzzles.length}</a></div>` : ""}`;
+  Coach.react("maya", "explain", `${user}: ${x.tips[0]}`, x.puzzles.length ? [{ label: "Punish their mistakes", app: `punish/${user}` }] : []);
+}
+
+// their real mistakes as puzzles, from the deeper look (kept an hour; if it's gone, it runs again first)
+async function punishView(user) {
+  shell("train", `<p class="muted">Loading…</p>`);
+  let r;
+  for (let n = 0; n < 120; n++) {
+    r = await api(`/api/scout/${encodeURIComponent(user)}`).catch(() => null);
+    if (!r || r.state !== "running") break;
+    if (!location.hash.startsWith("#/punish/")) return;
+    $("#page").innerHTML = `<p class="muted">Stockfish is checking ${esc(user)}'s games… ${r.total ? Math.round(100 * r.done / r.total) + "%" : ""}</p>`;
+    await new Promise(ok => setTimeout(ok, 1200));
+  }
+  if (!location.hash.startsWith("#/punish/")) return;
+  const drills = (r && r.result && r.result.puzzles) || [];
+  if (!drills.length) { $("#page").innerHTML = `<div class="empty">No positions to punish this time. <a href="#/prep/${esc(user)}">Back to Prep</a></div>`; return; }
+  $("#page").innerHTML = trainerPage(`Punish ${user}'s mistakes`,
+    { back: `<a href="#/prep/${esc(user)}" class="small muted" style="text-decoration:none">← Prep</a>`, text: "" });
+  trainer(drills, { coach: "maya" });
+}
+
 // ---------- prep before a game: how a chess.com player plays, from their public games (0.8, flagship 1) ----------
 async function prepView(user) {
   shell("train", `<p class="muted">Loading…</p>`);
@@ -996,10 +1057,11 @@ async function prepView(user) {
         <div class="box stack" style="padding:16px"><h2 style="margin:0">How their games end</h2>
           ${ends.map(([k, n]) => `<div class="pend ${k === "won" ? "won" : k === "drew" ? "" : "lost"}"><span>${esc(cap(k))}</span><i><b style="width:${100 * n / Math.max(...ends.map(e => e[1]))}%"></b></i><b class="num">${n}</b></div>`).join("")}</div>
       </div>`;
+    $("#prep").insertAdjacentHTML("afterbegin", `<div id="scout" class="scout"></div>`);
     $("#prep").insertAdjacentHTML("beforeend", `<div class="box row" style="padding:16px;margin-top:16px"><div style="flex:1"><b>Spar against them</b>
       <div class="small muted">They open the way they really do, then play like players of their rating.</div></div>
-      <a class="btn primary" href="#/spar/${esc(s.user)}/white">As White</a><a class="btn" href="#/spar/${esc(s.user)}/black">As Black</a></div>`);
-    Coach.react("maya", "explain", `${s.user}: ${s.advice[0]}`);
+      <a class="btn" href="#/spar/${esc(s.user)}/white">As White</a><a class="btn" href="#/spar/${esc(s.user)}/black">As Black</a></div>`);
+    scoutBox(s.user);
   };
   $("#look").onclick = look;
   $("#who").onkeydown = e => { if (e.key === "Enter") look(); };
@@ -2305,6 +2367,7 @@ async function screen(name, arg) {
   if (name === "repertoire" && arg) { shell("train", `<p class="muted">Loading…</p>`); return lessonView({ ...(await api(`/api/repertoire/${arg}`)), back: "repertoire" }); }
   if (name === "repertoire") return await repertoireView();
   if (name === "prep") return await prepView(arg && decodeURIComponent(arg));
+  if (name === "punish") return await punishView(decodeURIComponent(arg || ""));
   if (name === "feedback") { history.replaceState(null, "", "#/home"); setTimeout(feedbackBox, 400); return await home(); }  // from chess.com
   if (name === "clockdrill") { shell("level", `<p class="muted">Finding your rushed moves…</p>`); return lessonView({ ...(await api("/api/clockdrill")), back: "level" }); }
   if (name === "endgame") return await endgameView(arg);

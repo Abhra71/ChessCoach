@@ -44,7 +44,8 @@ def open_engine():
     return chess.engine.SimpleEngine.popen_uci(str(ENGINE), **quiet)
 
 
-def analyse_game(game_json, player):
+def analyse_game(game_json, player, depth=DEPTH):
+    """One record per move `player` made. depth: lighter for an opponent's games in Prep (coach/scout.py)."""
     game = chess.pgn.read_game(io.StringIO(game_json["pgn"]))
     me = chess.WHITE if game_json["white"]["username"].lower() == player else chess.BLACK
     out = []
@@ -56,7 +57,7 @@ def analyse_game(game_json, player):
             nxt = node.variations[0]
             move = nxt.move
             if board.turn == me:
-                before = eng.analyse(board, chess.engine.Limit(depth=DEPTH))
+                before = eng.analyse(board, chess.engine.Limit(depth=depth))
                 best = before["pv"][0]
                 cp_before = score_cp(before["score"].pov(me))
                 mat_before = material(board, me) - material(board, not me)
@@ -67,7 +68,7 @@ def analyse_game(game_json, player):
                     after_score = 0 if not board.is_checkmate() else 10000
                     reply_pv = []
                 else:
-                    after = eng.analyse(board, chess.engine.Limit(depth=DEPTH))
+                    after = eng.analyse(board, chess.engine.Limit(depth=depth))
                     after_score = score_cp(after["score"].pov(me))
                     reply_pv = [m.uci() for m in after.get("pv", [])[:4]]
                     mate_against = after["score"].pov(me).is_mate() and after["score"].pov(me).mate() < 0

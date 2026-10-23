@@ -998,3 +998,16 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 /* Prep (24 Oct, owner: too black and white): openings in blue; how they lose in orange (your chance), wins in green */
 .prep-colour .tree-score i { background: color-mix(in srgb, #5ea4e8 55%, transparent); }
 .pend.won i b { background: var(--accent); } .pend.lost i b { background: #e9a23b; }
+/* How to beat them (24 Oct): Prep's deeper look, one view */
+.scout { margin-bottom: 16px; }
+.scout-wait { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.scout-wait .bar { height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden; } .scout-wait .bar > div { height: 100%; background: var(--accent); transition: width .5s; }
+.scout-title { margin: 0 0 10px; }
+.scout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.scout-card { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.scout-card .label { color: var(--muted); }
+.scout-big { display: flex; align-items: baseline; gap: 8px; } .scout-big b { font-size: 34px; line-height: 1; color: #e9a23b; } .scout-big span { font-weight: 600; }
+.scout-phase { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; background: var(--raised); }
+.scout-keys { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); } .scout-keys i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.scout-tips ol { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.scout-go { padding: 16px; margin-top: 12px; }

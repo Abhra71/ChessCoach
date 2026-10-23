@@ -440,6 +440,12 @@ class Handler(BaseHTTPRequestHandler):
                       "title": "Slow down when it matters",
                       "intro": "Each of these you played in a rush, and it cost you. This time, tick the checks first: the board waits for you."}
             return self.send(200, json.dumps(lesson), "application/json")
+        if path.startswith("/api/scout/"):  # how to beat them: Prep's deeper look, started here, polled (24 Oct)
+            from coach import scout
+            user = path.rsplit("/", 1)[-1].lower()
+            if not user or len(user) > 30 or not all(c.isalnum() or c in "-_" for c in user):
+                return self.send(400, json.dumps({"message": "That doesn't look like a chess.com username."}), "application/json")
+            return self.send(200, json.dumps(scout.status(user)), "application/json")
         if path.startswith("/api/prep/"):  # prep before a game: how a player plays, from their public games (0.8)
             from coach import prep
             user = path.rsplit("/", 1)[-1].lower()
