@@ -21,7 +21,7 @@ const LOUD = { moves: 0.32, caption: 0.24, last: 0.45, end: 0 };
 const INTRO = 2.6, ENDING = 4.5;
 const SLOW = { length: 1.9, hold: 3.4 };  // a winning move: played slowly, then held with its caption
 const CLOSE_SHOTS = 3;  // close shots at most: the last winning move and the two before it
-const MUSIC_WAIT = 12;  // the film may begin quiet for this long, so the song's build-up leads into the first close shot
+const MUSIC_WAIT = 1;  // the music comes in at once (23 Oct test: "starts too late"); the song starts further in instead
 
 const quietStep = q => ({ length: Math.max(0.35, q * 0.7), hold: q * 0.3 });
 
@@ -33,7 +33,7 @@ function timeline(script) {
 
 // music: {url, peak} (peak: the second the song's main part starts) or null.
 // autoplay false: a still preview (the board and the title card) until resume().
-function play(el, script, { record = false, music = null, autoplay = true, onEnd = () => {} } = {}) {
+function play(el, script, { record = false, music = null, autoplay = true, muted = false, onEnd = () => {} } = {}) {
   const W = 1280, H = 720;  // the film's own size: the same on every screen and in the saved video
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(1);
@@ -230,7 +230,7 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
   }
   function loudness(dt) {
     if (!gain) return;
-    const want = phase === "end" ? LOUD.end : !musicOn ? 0
+    const want = phase === "end" || muted ? 0 : !musicOn ? 0
       : moving && moving.s.slow ? (moving.n === lastSlow ? LOUD.last : LOUD.caption) : LOUD.moves;
     gain.gain.value += (want - gain.gain.value) * (1 - Math.exp(-dt * (phase === "end" ? 0.9 : 1.6)));
   }
@@ -322,6 +322,8 @@ function play(el, script, { record = false, music = null, autoplay = true, onEnd
     if (track && musicOn) track.play().catch(() => {});
     if (recorder && recorder.state === "paused") recorder.resume();
   };
+  // the music on or off while it plays: the film carries on where it is (23 Oct test: it used to start again)
+  stop.mute = on => { muted = !!on; if (gain && muted) gain.gain.value = 0; };
   Object.defineProperty(stop, "paused", { get: () => paused });
   Object.defineProperty(stop, "shot", { get: () => (lean > 0.5 ? "close" : CUTS[cut % CUTS.length]) });  // which shot is on, for checks
   // step(seconds): jump the film on, for screenshots and checks (a hidden window draws almost no frames)

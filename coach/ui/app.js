@@ -1137,25 +1137,24 @@ async function filmView(id) {
   for (const x of FILM_SONGS) if (await fetch(x.url, { method: "HEAD" }).then(r => r.ok).catch(() => false)) songs.push(x);
   // a different song each time: the next one in the list (20 Oct, the owner: rotated, no choosing)
   const pick = songs.length ? (Number(remember("kw-film-song") || -1) + 1) % songs.length : -1;
-  let musicOn = songs.length > 0 && remember("kw-film-music") !== "off", stop = null;
+  let musicOn = songs.length > 0, stop = null;  // music on by default, every time (23 Oct test)
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/progress" class="small muted" style="text-decoration:none">← Progress</a>
       <h1 style="margin-top:6px">${esc(s.title)}</h1>
       <p class="sub">Against ${esc(s.opponent)}, ${esc(s.date)}</p></div></div>
     <div class="film-wrap" id="film"></div>
     <div class="row film-controls"><button class="btn primary" id="filmgo">▶ Play</button>
-      <button class="btn" id="filmsave">Save as a video</button>
       ${songs.length ? `<button class="btn ghost" id="filmmusic" title="Music on or off">${musicOn ? "♪ On" : "♪ Off"}</button>` : ""}
       <span class="small muted" id="filmmsg"></span></div>`;
   const ready = () => window.Film ? Promise.resolve() : new Promise(r => window.addEventListener("film-ready", r, { once: true }));
-  const song = () => (musicOn && pick >= 0 ? songs[pick] : null);
+  const song = () => (pick >= 0 ? songs[pick] : null);  // always loaded; the switch only mutes it
   const go = $("#filmgo");
   const started = () => { remember("kw-film-song", String(pick)); Voice.stop(); Coach.hide(); };  // nothing in front of the film
   async function mount(autoplay, record) {  // the film: a still preview first, or playing (and recording)
     await ready();
     if (stop) stop();
-    window.kwFilm = stop = window.Film.play($("#film"), s, { record, autoplay, music: song(), onEnd: async r => {
-      go.textContent = "▶ Play again"; go.dataset.state = "ended"; $("#filmsave").disabled = false;
+    window.kwFilm = stop = window.Film.play($("#film"), s, { record, autoplay, music: song(), muted: !musicOn, onEnd: async r => {
+      go.textContent = "▶ Play again"; go.dataset.state = "ended";
       if (r.error) { $("#filmmsg").textContent = r.error; return; }
       if (!r.video) return;
       $("#filmmsg").textContent = "Saving…";
@@ -1167,8 +1166,7 @@ async function filmView(id) {
     } });
     if (autoplay) started();
     go.textContent = autoplay ? "❚❚ Pause" : "▶ Play"; go.dataset.state = autoplay ? "playing" : "preview";
-    $("#filmsave").disabled = !!record;
-    $("#filmmsg").textContent = record ? "Recording. Let it play to the end." : "";
+    $("#filmmsg").textContent = "";
   }
   go.onclick = () => {  // one button: play, pause, carry on, play again
     const st = go.dataset.state;
@@ -1178,12 +1176,10 @@ async function filmView(id) {
     else mount(true, false);
   };
   $("#film").onclick = () => go.click();  // the picture itself plays and pauses too
-  $("#filmsave").onclick = () => mount(true, true);
   const mb = $("#filmmusic");
   if (mb) mb.onclick = () => {
-    musicOn = !musicOn; remember("kw-film-music", musicOn ? "on" : "off"); mb.textContent = musicOn ? "♪ On" : "♪ Off";
-    if (go.dataset.state === "preview" || go.dataset.state === "ended") mount(false, false);
-    else if (stop) { stop(); mount(false, false); }  // it starts again from the preview, with or without music
+    musicOn = !musicOn; mb.textContent = musicOn ? "♪ On" : "♪ Off";
+    if (stop && stop.mute) stop.mute(!musicOn);  // the film carries on where it is
   };
   window.addEventListener("hashchange", () => { if (stop) stop(); stop = null; }, { once: true });
   mount(false, false);  // the preview: the board and the title, waiting
