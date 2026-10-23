@@ -880,13 +880,13 @@ async function repertoireView(fresh) {
       <h1 style="margin-top:6px">Your repertoire</h1>
       <p class="sub">Three lines to know by heart, chosen from what you already play: from the Lichess opening catalogue, checked by Stockfish. They stay until you ask for new ones.</p></div>
       <button class="btn" id="newlines">Choose new lines</button></div>
-    <div class="plan-cards">${lines.map((l, i) => `<a class="box pcard" href="#/repertoire/${i}" title="${esc(l.kept ? "It works for you: now learn it to move 6." : l.why)}">
-      <div class="row spread"><span class="pkind"><span class="gside ${l.side}"></span>${l.side === "white" ? "As White" : `Against 1. ${esc(l.against)}`}</span>
+    <div class="plan-cards rep-cards">${lines.map((l, i) => `<a class="box pcard" href="#/repertoire/${i}" title="${esc(l.kept ? "You already play this, and it works for you." : l.why)}">
+      <div class="row spread"><span class="pkind rep-${l.side}">${svg("pawn")}${l.side === "white" ? "You play White" : `You play Black, against 1. ${esc(l.against)}`}</span>
         ${l.kept ? `<span class="pdone" title="You already play this">${svg("check")}</span>` : ""}</div>
-      <h3>${esc(l.name)}</h3>${l.stale ? `<span class="small bad-text">Out of date: ${esc(l.stale)}. Choose new lines?</span>` : ""}
+      <h3>${esc(l.name)}</h3><span class="rep-moves num">${esc((l.moves || []).map((m, j) => (j % 2 ? "" : `${j / 2 + 1}. `) + m).join(" "))}</span>${l.stale ? `<span class="small bad-text">Out of date: ${esc(l.stale)}. Choose new lines?</span>` : ""}
       <span class="btn ${i === 0 ? "primary" : ""}">Practise</span></a>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
   $("#newlines").onclick = () => repertoireView(true);
-  Coach.react("viktor", "explain", "Three lines. Know them to move six without thinking, and every game starts on your terms.");
+  Coach.react("viktor", "explain", "Your three openings: one as White, two as Black. Practise each one until you can play its first moves without thinking.");
 }
 
 // ---------- the endgame trainer: the endings every player must know, against the best defence (0.7) ----------

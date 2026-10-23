@@ -1040,3 +1040,9 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .hw-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
 .hw-bar { height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden; } .hw-bar i { display: block; height: 100%; background: #e9a23b; border-radius: 3px; }
 .scout-spar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px; margin-top: 12px; }
+/* Repertoire (24 Oct, owner: confusing): cards not underlined, a king for your colour, the line's moves shown */
+.rep-cards a.pcard, .rep-cards a.pcard * { text-decoration: none; }
+.rep-cards a.pcard { color: inherit; } .rep-cards .btn.primary { color: var(--on-accent); }
+.rep-cards .pkind svg { width: 15px; height: 15px; margin-right: 6px; vertical-align: -2px; }
+.rep-moves { font-size: 13px; color: var(--muted); }
+.rep-white svg { color: #f3f1ee; filter: drop-shadow(0 0 1px #000); } .rep-black svg { color: #1a1816; filter: drop-shadow(0 0 1px #aaa); }
