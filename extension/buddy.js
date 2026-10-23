@@ -455,24 +455,64 @@
     }
   });
 
-  // A badge completed (Gold), once, in the middle of a calm chess.com page (home, puzzles, lessons, stats: the app only
-  // sends it there, never on a game page). Seen here: the app won't show it again.
+  // A badge completed (Gold): the banner at the top, once, only on a calm chess.com page (home, puzzles, lessons, stats:
+  // the app only sends it there, never on a game page). Seen here: the app won't show it again.
   function badgeUnlocked(b) {
-    if (!b || document.querySelector(".kw-unlock") || !section(location.pathname)) return;
+    if (!b || !section(location.pathname)) return;
     send({ type: "badge-shown", id: b.id });
-    const layer = document.createElement("div");
-    layer.className = "kw-unlock";
-    layer.innerHTML = `<div class="kw-unlock-card" role="dialog" aria-label="Badge complete">
-        <div class="kw-unlock-label">Knightwise · badge complete</div>
-        <div class="kw-unlock-medal"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.8"
-          stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M8.5 3h7l-2 5.5h-3z"/><path d="m12 11.5.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z"/></svg></div>
-        <h2>${esc(b.name)}</h2>
-        <p><b>${esc(String(b.gold))}</b> ${esc(b.what)}.</p>
-        <p class="kw-unlock-small">Earned in ${esc(b.from)}. That's real.</p>
-        <button class="kw-unlock-ok">Nice</button></div>`;
-    layer.querySelector(".kw-unlock-ok").onclick = () => layer.remove();
-    layer.addEventListener("click", e => { if (e.target === layer) layer.remove(); });
+    kwBadgeBanner(b, { esc });
+  }
+  const MEDAL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M8.5 3h7l-2 5.5h-3z"/><path d="m12 11.5.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z"/></svg>`;
+  // A badge completed (Gold): a banner slides down at the top, nothing blurred or covered (23 Oct test). The medal
+  // fills from silver to gold, a chime and confetti; the close button appears when that's done, and the banner goes
+  // by itself 5 seconds later.
+  function kwBadgeBanner(b, opts) {
+    if (!b || document.querySelector(".kwb")) return;
+    const o = opts || {}, FILL_AT = 650, FILL = 950, DONE = FILL_AT + FILL + 150, STAY = 5000;
+    const el = document.createElement("div");
+    el.className = "kwb";
+    el.setAttribute("role", "status");
+    el.innerHTML = `<div class="kwb-medal"><div class="kwb-m kwb-silver">${MEDAL}</div><div class="kwb-m kwb-gold">${MEDAL}</div></div>
+      <div class="kwb-text"><div class="kwb-label">Badge complete · <b>Gold</b></div>
+        <div class="kwb-name">${o.esc(b.name)}</div>
+        <div class="kwb-what"><b>${o.esc(String(b.gold))}</b> ${o.esc(b.what)} · earned in ${o.esc(b.from)}</div></div>
+      <button class="kwb-x" aria-label="Close" title="Close">✕</button>`;
+    document.body.appendChild(el);
+    let gone = false;
+    const close = () => { if (gone) return; gone = true; el.classList.add("out"); setTimeout(() => el.remove(), 350); };
+    el.querySelector(".kwb-x").onclick = close;
+    requestAnimationFrame(() => el.classList.add("in"));
+    setTimeout(() => { el.classList.add("fill"); if (o.sound !== false) kwChime(); }, FILL_AT);
+    setTimeout(() => { el.classList.add("gold"); kwBurst(el); }, FILL_AT + FILL);
+    setTimeout(() => el.classList.add("done"), DONE);  // the close button only now
+    setTimeout(close, DONE + STAY);
+  }
+  function kwChime() {  // three rising notes and a shimmer, made here: no sound file
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)(), t0 = ac.currentTime + 0.02;
+      [[659.25, 0], [830.61, 0.12], [987.77, 0.24], [1318.5, 0.38]].forEach(([f, at], i) => {
+        const osc = ac.createOscillator(), g = ac.createGain();
+        osc.type = i === 3 ? "sine" : "triangle"; osc.frequency.value = f;
+        g.gain.setValueAtTime(0, t0 + at); g.gain.linearRampToValueAtTime(i === 3 ? 0.12 : 0.18, t0 + at + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + at + (i === 3 ? 1.2 : 0.5));
+        osc.connect(g).connect(ac.destination); osc.start(t0 + at); osc.stop(t0 + at + 1.3);
+      });
+      setTimeout(() => ac.close(), 1800);
+    } catch (e) {}
+  }
+  function kwBurst(el) {  // confetti from the medal, falling over the page
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const r = el.querySelector(".kwb-medal").getBoundingClientRect(), layer = document.createElement("div");
+    layer.className = "kwb-confetti";
+    const colours = ["#f2c94c", "#81b64c", "#ffffff", "#e5734f", "#5ea4e8"];
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement("i");
+      p.style.cssText = `left:${r.left + r.width / 2}px;top:${r.top + r.height / 2}px;background:${colours[i % colours.length]};` +
+        `--dx:${(Math.random() - .3) * 700}px;--dy:${120 + Math.random() * 420}px;--r:${Math.random() * 720}deg;animation-delay:${Math.random() * .12}s`;
+      layer.appendChild(p);
+    }
     document.body.appendChild(layer);
+    setTimeout(() => layer.remove(), 2000);
   }
 
   async function arrive() {

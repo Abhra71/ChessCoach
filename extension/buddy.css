@@ -108,19 +108,34 @@
 .kw-more, .kw-report { display: block; margin: 8px 0 0; padding: 0; border: 0; background: none; cursor: pointer; color: #a6a19a; font: inherit; font-size: 12.5px; text-decoration: underline; }
 .kw-report { display: inline; margin: 0; }
 
-/* a badge completed (23 Oct): in the middle of a calm page, once */
-.kw-unlock { position: fixed; inset: 0; z-index: 2147483001; display: grid; place-items: center; background: rgba(0,0,0,.55);
-  font: 14px "Segoe UI", system-ui, sans-serif; animation: kwfade .25s ease; }
-.kw-unlock-card { width: min(380px, calc(100vw - 32px)); text-align: center; padding: 24px 22px 20px; border-radius: 18px;
-  background: #2b2926; color: #f3f1ee; box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: kwpop .45s cubic-bezier(.2,1.4,.4,1); }
-.kw-unlock-label { font-size: 12px; font-weight: 600; letter-spacing: .02em; color: #a6a19a; }
-.kw-unlock-card h2 { margin: 10px 0 6px; font-size: 22px; color: #fff; }
-.kw-unlock-card p { margin: 4px 0; line-height: 1.4; }
-.kw-unlock-small { color: #a6a19a; font-size: 13px; }
-.kw-unlock-medal { width: 92px; height: 92px; margin: 14px auto 4px; border-radius: 50%; display: grid; place-items: center;
-  border: 3px solid #f2c94c; color: #f2c94c; box-shadow: 0 0 34px rgba(242,201,76,.45); animation: kwshine 2.4s ease-in-out infinite; }
-.kw-unlock-ok { margin-top: 14px; font: 600 14px "Segoe UI", system-ui, sans-serif; color: #111; background: #81b64c; border: 0;
-  border-radius: 10px; padding: 9px 22px; cursor: pointer; }
-@keyframes kwpop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes kwfade { from { opacity: 0; } }
-@keyframes kwshine { 50% { box-shadow: 0 0 52px rgba(242,201,76,.7); } }
+/* a badge completed (23 Oct test): a banner at the top, nothing blurred; silver fills to gold */
+.kwb { position: fixed; top: 14px; left: 50%; z-index: 2147483001; width: min(760px, calc(100vw - 32px));
+  display: flex; align-items: center; gap: 16px; padding: 12px 16px 12px 14px; border-radius: 16px;
+  background: #2b2926; color: #f3f1ee; font: 14px "Segoe UI", system-ui, sans-serif; text-align: left;
+  box-shadow: 0 10px 34px rgba(0,0,0,.45), inset 0 0 0 1px rgba(242,201,76,.25);
+  transform: translate(-50%, -140%); transition: transform .45s cubic-bezier(.2,1.2,.4,1), opacity .3s; }
+.kwb.in { transform: translate(-50%, 0); }
+.kwb.out { transform: translate(-50%, -140%); opacity: 0; }
+.kwb-medal { position: relative; width: 58px; height: 58px; flex: none; }
+.kwb-m { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; border: 3px solid; }
+.kwb-m svg { width: 28px; height: 28px; }
+.kwb-silver { color: #c7ccd4; border-color: #c7ccd4; }
+.kwb-gold { color: #f2c94c; border-color: #f2c94c; background: #2b2926; clip-path: inset(100% 0 0 0);
+  transition: clip-path .95s cubic-bezier(.5,0,.3,1); }
+.kwb.fill .kwb-gold { clip-path: inset(0 0 0 0); }
+.kwb.gold .kwb-gold { animation: kwbshine 1.6s ease-in-out 2; }
+@keyframes kwbshine { 50% { box-shadow: 0 0 26px rgba(242,201,76,.75); transform: scale(1.08); } }
+.kwb-text { flex: 1; min-width: 0; }
+.kwb-label { font-size: 12px; color: #a6a19a; } .kwb-label b { color: #f2c94c; }
+.kwb-name { font-size: 18px; font-weight: 700; color: #fff; margin: 1px 0 2px; }
+.kwb-what { font-size: 13px; color: #cfcac3; }
+.kwb-x { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: #f3f1ee;
+  font-size: 14px; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.kwb.done .kwb-x { opacity: 1; pointer-events: auto; }
+.kwb-x:hover { background: rgba(255,255,255,.16); }
+.kwb-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 2147483000; overflow: hidden; }
+.kwb-confetti i { position: absolute; width: 8px; height: 13px; border-radius: 2px; opacity: 0;
+  animation: kwbpop 1.8s cubic-bezier(.15,.7,.3,1) forwards; }
+@keyframes kwbpop { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); } }
+@media (max-width: 520px) { .kwb { gap: 10px; padding: 10px 12px; } .kwb-medal { width: 46px; height: 46px; } .kwb-name { font-size: 16px; } }
