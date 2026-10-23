@@ -721,7 +721,10 @@ async function levelView() {
   const p = await api("/api/ladder");
   if (!p.player) return go("welcome");
   if (!p.levels || !p.levels.length) { $("#page").innerHTML = `<div class="empty">Your level appears once your games are checked.</div>`; return; }
-  const cur = p.levels[p.current], next = cur.skills.find(s => s.met === false), up = p.levels[p.current + 1];
+  // a lesson already learnt is being watched in your games: the green button goes to the next thing to do (23 Oct)
+  const learnt = s => ["watching", "passed"].includes(s.lesson);
+  const cur = p.levels[p.current], up = p.levels[p.current + 1];
+  const next = cur.skills.find(s => s.met === false && !learnt(s)) || cur.skills.find(s => s.met === false);
   // the purpose at a glance (22 Oct: "clean, but I did not understand its purpose"): a ladder of five levels, and
   // each skill counted in games you can picture, not decimals
   // one view, no sentences (23 Oct test): each card one big number against its aim, Done or how many too many; the
@@ -740,7 +743,8 @@ async function levelView() {
       <b>${esc(s.name)}</b>
       <div class="lnum"><b class="num">${v(c.n)}</b><span class="muted">aim ${low ? "≤" : "≥"} ${v(c.aim)}</span></div>
       ${s.met ? `<span class="lstate ok">${svg("check")} Done</span>` : `<span class="lstate">${v(gap)} ${low ? "too many" : "to go"}</span>`}
-      ${mine && s.met === false ? `<a class="btn ${s === next ? "primary" : ""}" href="#/${esc(s.train.route)}">${esc(s.train.label.replace(/ it$/, ""))}</a>` : ""}</div>`;
+      ${mine && s.met === false && learnt(s) ? `<span class="muted small" title="Only the games you play after a lesson judge it">Learnt · watching your next games</span>` : ""}
+      ${mine && s.met === false ? `<a class="btn ${s === next ? "primary" : ""}" href="#/${esc(s.train.route)}">${learnt(s) ? "Learn again" : esc(s.train.label.replace(/ it$/, ""))}</a>` : ""}</div>`;
   };
   const draw = sel => {
     const lv = p.levels[sel], mine = sel === p.current, total = lv.skills.length, doneN = lv.skills.filter(x => x.met).length;

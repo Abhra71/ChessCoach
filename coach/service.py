@@ -502,8 +502,18 @@ class Handler(BaseHTTPRequestHandler):
             brief.add(item["drills"])
             return self.send(200, json.dumps(item), "application/json")
         if path == "/api/ladder":  # your level: every skill from beginner to 2,000+, on your last 20 games (0.6)
-            from coach import ladder
-            return self.send(200, json.dumps(ladder.page()), "application/json")
+            from coach import course, ladder
+            out = ladder.page()
+            try:  # a skill taught by a course lesson says whether that lesson is already learnt (23 Oct test)
+                lessons = {l["id"]: l["status"] for l in course.course(current=course.LEVEL_ORDER[out.get("current") or 0])["lessons"]}
+                for lv in out.get("levels") or []:
+                    for s in lv["skills"]:
+                        route = (s.get("train") or {}).get("route", "")
+                        if route.startswith("course/"):
+                            s["lesson"] = lessons.get(route.split("/", 1)[1])
+            except Exception as e:  # the level page never fails over this
+                log.warning("ladder lessons: %s", e)
+            return self.send(200, json.dumps(out), "application/json")
         if path.startswith("/api/lesson/"):  # a lesson on one Lichess theme at your level, for the ladder's skills
             from coach import brief, plan, puzzles
             import random as _random
