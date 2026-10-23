@@ -360,12 +360,23 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/plan":  # "Your plan": one opening, tactic, idea, endgame, and the new thing if it's needed now
             from coach import live_engine, plan
             with live_engine.LOCK:
-                out = plan.plan(engine=live_engine.get())
+                out_home = insights.home()
+                out = plan.plan(home=out_home, engine=live_engine.get())
             from coach import brief, daylock
             for kind, item in list((out.get("items") or {}).items()) + [("novelty", out.get("novelty"))]:
                 if item and item.get("drills"):  # the day's positions stay the same until midnight
                     item["drills"] = daylock.keep(f"plan:{kind}:{item.get('id') or item.get('title')}", item["drills"])
                     brief.add(item["drills"])
+            import random
+            from datetime import date
+            done_cards = []  # finished topics as cards in the Done row, newest first, ready to play again (23 Oct test)
+            for x in reversed(out.get("done_items") or []):
+                again = plan.replay(x["id"], out_home, random.Random(date.today().isoformat() + x["id"])) if len(done_cards) < 12 else None
+                if again and again.get("drills"):
+                    again["drills"] = daylock.keep(f"replay:{x['id']}", again["drills"])
+                    brief.add(again["drills"])
+                    done_cards.append({**again, "title": x["title"]})
+            out["done_cards"] = done_cards
             return self.send(200, json.dumps(out), "application/json")
         if path == "/api/plan/replay":  # a done plan topic, to play again (the same positions all day)
             import random

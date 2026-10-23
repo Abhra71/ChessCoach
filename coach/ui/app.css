@@ -856,3 +856,7 @@ a.kw-point:not(.nav a) { box-shadow: 0 0 0 2px var(--accent); animation: kwpoint
 .plan-done .chip svg { width: 14px; height: 14px; opacity: .7; }
 #synced.spin svg { animation: kwspin .8s linear infinite; }
 @keyframes kwspin { to { transform: rotate(360deg); } }
+.done-cards .pcard.small { opacity: .78; }
+.done-cards .pcard.small:hover { opacity: 1; }
+.done-cards .pcard.small h3 { font-size: 14px; }
+.done-cards { grid-template-columns: repeat(auto-fill, minmax(150px, 170px)); }

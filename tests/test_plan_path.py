@@ -4,7 +4,7 @@ from coach import plan
 
 def test_path_walks_on_and_rounds_again():
     ids = ["tactic:fork", "tactic:pin", "tactic:skewer"]
-    assert plan._path(ids, set()) == {"now": "tactic:fork", "at": 1, "of": 3, "next": "The pin"}
+    assert plan._path(ids, set()) == {"now": "tactic:fork", "at": 1, "of": 3, "more": 2, "next": "The pin"}
     assert plan._path(ids, {"tactic:fork"})["now"] == "tactic:pin"
     assert plan._path(ids, {"tactic:fork"})["at"] == 2
     every = plan._path(ids, set(ids))

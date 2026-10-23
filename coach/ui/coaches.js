@@ -435,8 +435,9 @@ async function planView(arg) {
   const p = await api("/api/plan");
   if (!p.player) { $("#page").innerHTML = `<div class="empty">Your plan appears once your games are checked.</div>`; return; }
   const all = [...(p.novelty ? [p.novelty] : []), ...Object.values(p.items).filter(Boolean)];
+  const doneCards = (p.done_cards || []).filter(x => !all.some(y => y.id === x.id));
   if (arg) {
-    const id = decodeURIComponent(arg), item = all.find(x => x.id === id);
+    const id = decodeURIComponent(arg), item = all.find(x => x.id === id) || doneCards.find(x => x.id === id);
     if (item) return lessonView(item);
     if (p.done.includes(id)) {  // a done topic, once more
       const again = await api(`/api/plan/replay?id=${encodeURIComponent(id)}`).catch(() => null);
@@ -446,8 +447,11 @@ async function planView(arg) {
   // a picture of each thing, not a sentence (22 Oct: "what is the plan and why so less in it"): its board, how many
   // positions, done or not; one Viktor in his bubble, not on every card
   const ICONS = { opening: "book", tactic: "bolt", idea: "sparkles", endgame: "mate" };
-  const card = (x, isNew) => {
+  const card = (x, isNew, small) => {
     const n = (x.drills || []).length, done = p.done.includes(x.id);
+    if (small) return `<div class="box pcard small" data-id="${esc(x.id)}" title="Play it again">
+      <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span><span class="pdone">${svg("check")}</span></div>
+      <h3>${esc(x.title)}</h3><div class="mini-board" data-board="${esc(x.id)}"></div><button class="btn">Again</button></div>`;
     return `<div class="box pcard ${isNew ? "new" : ""}" data-id="${esc(x.id)}" title="${esc(x.why || x.intro || "")}">
       <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span>
         ${isNew ? `<span class="pnew">New</span>` : done ? `<span class="pdone">${svg("check")}</span>` : ""}</div>
@@ -458,14 +462,15 @@ async function planView(arg) {
         x.path.next ? ` · next: ${esc(x.path.next)}` : ""}</div>` : ""}
       <button class="btn ${isNew ? "primary" : ""}">${done ? "Again" : "Start"}</button></div>`;
   };
-  // what you've finished stays here, to play again (23 Oct test: "I lose track of what I've done")
-  const doneRow = (p.done_items || []).length ? `<h3 class="plan-done-head">Done ${svg("check")} ${p.done_items.length}</h3>
-    <div class="plan-done">${p.done_items.map(x => `<button class="chip" data-again="${esc(x.id)}" title="Play it again">
-      ${svg(ICONS[x.kind] || "plan")}${esc(x.title)}</button>`).join("")}</div>` : "";
+  // a finished card moves down here and the next topic takes its place (23 Oct test: "I lose track of what I've done")
+  const doneRow = doneCards.length ? `<h3 class="plan-done-head">Done ${svg("check")} ${(p.done_items || []).length}</h3>
+    <div class="plan-cards done-cards">${doneCards.map(x => card(x, false, true)).join("")}</div>` : "";
+  const more = Object.values(p.items).filter(Boolean).reduce((s, x) => s + ((x.path && x.path.more) || 0), 0);
+  const tally = `${all.length} now · ${(p.done_items || []).length} done · ${more} more to come, and new openings from your games`;
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Your plan</h1></div></div>
+    <div class="page-head"><div><h1>Your plan</h1><p class="sub">${esc(tally)}</p></div></div>
     <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${doneRow}`;
-  all.forEach(x => {  // the position each one starts from
+  [...all, ...doneCards].forEach(x => {  // the position each one starts from
     const el = document.querySelector(`[data-board="${CSS.escape(x.id)}"]`), d0 = (x.drills || [])[0];
     if (!el) return;
     if (x.fen) Board.render(el, { fen: x.fen, flip: x.side === "black" });
@@ -473,7 +478,6 @@ async function planView(arg) {
     else el.remove();
   });
   document.querySelectorAll("[data-id]").forEach(b => b.onclick = () => go(`plan/${encodeURIComponent(b.dataset.id)}`));
-  document.querySelectorAll("[data-again]").forEach(b => b.onclick = () => go(`plan/${encodeURIComponent(b.dataset.again)}`));
   if (p.novelty && !p.novelty.again) api("/api/plan/mark", { id: p.novelty.id, novelty: true }).catch(() => {});
   if (p.novelty) AiCard.maybe("novelty");
 }

@@ -378,6 +378,7 @@ def _path(ids, done):
     left = [t for t in seq if t not in done]
     after = left[1] if len(left) > 1 else None
     return {"now": left[0] if left else seq[0], "at": min(len(seq) - len(left) + 1, len(seq)), "of": len(seq),
+            "more": max(len(left) - 1, 0),
             "next": (done_item(after) or {}).get("title") if after else None}
 
 
