@@ -31,7 +31,7 @@ from coach.review import explain, move_number
 
 PORT = int(os.environ.get("KNIGHTWISE_PORT", "8765"))  # another port only for a second copy while developing
 URL = f"http://127.0.0.1:{PORT}"
-EVERY = 600  # seconds between checks for new games
+EVERY = 300  # seconds between checks for new games: fresh, and gentle on chess.com (23 Oct)
 MOMENTS = 3  # key moments shown per game
 FEEDBACK_TO = "nanotech.mark.robots@gmail.com"  # where feedback goes (the user's choice, 19 Oct)
 # notifications say "Knightwise": the Store app's own id, or the id the installer gives the Start menu shortcut
@@ -1020,6 +1020,7 @@ def player():
 def status():
     return {"version": VERSION, "player": player(), "last_update": STATE.get("last_update"), "phase": STATE.get("phase"),
             "done": STATE.get("done", 0), "total": STATE.get("total", 0), "error": STATE.get("error"),
+            "data_version": STATE.get("data_version", 0),
             "review_ready": (DATA / "review.html").exists(), "extension_seen": STATE.get("extension_seen"),
             "extension_in": STATE.get("extension_in", {}), "health": health.summary(),
             # connected only if seen lately: it checks in every minute (22 Oct test: "connected" after it was removed)
@@ -1122,6 +1123,8 @@ def update_once():
         drills.build()
         STATE["practice_day"] = today
     STATE.update(phase="ready", last_update=time.strftime("%Y-%m-%d %H:%M"))
+    if checked:  # new numbers: open pages redraw themselves (only then, not after every check)
+        STATE["data_version"] = STATE.get("data_version", 0) + 1
     if checked or first:
         warm_up()
     return checked, first

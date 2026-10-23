@@ -164,3 +164,13 @@ Practice**. Then A3–A8, Session B (on chess.com, with the 0.6 extension now lo
 
 ## 23 Oct: launch postponed
 The owner called off the same-day launch. The test goes on in order next session (above); build only after it.
+
+## 23 Oct: the number check (tools/number_check.py)
+Every statistic recounted from the raw files (only one move's label borrowed) and compared with the app: 482 match.
+- 39. Home's graph ended on a part-window (3 games, 0.67) next to "0.7 in your last 20". Fixed: full windows counted back from the newest game.
+- 40. "Missed a free capture" was said of 5 in 25 pieces that weren't free (a trade or a tactic). Fixed: only when the capture wins 2+ after every recapture (static exchange).
+- "Left a piece hanging": 24 of 25 really lose material at once (the odd one is a quiet move the engine's line punishes later).
+- Level and course: 24 of 24 match (the teacher's reasons, mistakes of 10+ points, last 20 games).
+- One game unchecked: resigned before move 1 (right).
+- Open: Home's hanging tile (big mistakes only, 0.45 a game) and Level's "Keep every piece safe" (every mistake of 10+, 0.4) measure one skill two ways.
+- Fresh: new games every 5 minutes, at once when a finished game is opened on chess.com; open pages of numbers redraw when new games are checked.

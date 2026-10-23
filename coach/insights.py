@@ -101,8 +101,10 @@ def home():
     counts = collections.Counter(r["pattern"] for r in rows if r["pattern"] in ABOUT)
     focus = counts.most_common(1)[0][0] if counts else None
     lost = [sum(1 for r in moves[g["url"]] if r["pattern"] in LOSING_MATERIAL) for g in reversed(checked)]  # oldest first
-    trend = [round(sum(lost[i:i + TREND_WINDOW]) / len(lost[i:i + TREND_WINDOW]), 2)
-             for i in range(0, len(lost), TREND_WINDOW)]
+    # each point a full window, counted back from the newest game, so the last point is always your last games
+    # (23 Oct number check: it ended on a window of 3 games, 0.67, next to "0.7 in your last 20")
+    window = TREND_WINDOW if len(lost) >= 2 * TREND_WINDOW else max(1, len(lost) // 4)
+    trend = [round(sum(lost[i:i + window]) / window, 2) for i in range(len(lost) % window, len(lost) - window + 1, window)]
     results = collections.Counter(_result(g, _side(g, player)[0]) for g in checked)
     rapid = next((g for g in games if g["time_class"] == "rapid"), games[0] if games else None)
     last = game_row(checked[0], moves[checked[0]["url"]], player) if checked else None
@@ -126,7 +128,7 @@ def home():
         "rating_change": rating_change(games, player, rapid["time_class"]) if rapid else None,
         "pieces_per_game": round(sum(lost) / len(lost), 2) if lost else 0,
         "pieces_last20": round(sum(lost[-20:]) / len(lost[-20:]), 2) if lost else 0,
-        "trend": trend, "trend_window": TREND_WINDOW,
+        "trend": trend, "trend_window": window,
         "last_game": last, "practice": {**memory.practice_stats(), "seen": due},
         "week": week(checked, moves),
         "you_vs_you": you_vs_you(checked, moves, player),

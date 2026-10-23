@@ -412,12 +412,16 @@ function paintStatus() {
   const me = $("#mename"); if (me && s.player && !me.textContent) me.textContent = s.player;
 }
 
-let lastPhase = null;
+let lastPhase = null, lastVersion = null;
+const LIVE_PAGES = ["home", "games", "progress", "level", "plan", "course", "practice", "train"];
 async function pollStatus() {
   try { STATUS = await api("/api/status"); } catch (e) { STATUS = {}; }
   paintStatus();
-  // the check just finished: Home shows the new numbers by itself (22 Oct test, finding 5)
-  if (lastPhase && lastPhase !== "ready" && STATUS.phase === "ready" && /^#?\/?(home)?$/.test(location.hash.replace("#/", "")) && $(".home-head")) home();
+  // new games checked: a page of numbers shows the new numbers by itself (22 Oct finding 5; 23 Oct: every page of
+  // stats, not only Home, and never in the middle of practice, a review or training)
+  const page = (location.hash.replace(/^#\/?/, "") || "home");
+  if (lastVersion !== null && STATUS.data_version !== lastVersion && LIVE_PAGES.includes(page)) route();
+  lastVersion = STATUS.data_version ?? lastVersion;
   lastPhase = STATUS.phase;
   setTimeout(pollStatus, STATUS.phase && STATUS.phase !== "ready" ? 1500 : 6000);
 }
