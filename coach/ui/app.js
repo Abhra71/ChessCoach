@@ -963,28 +963,42 @@ async function endgameView(id) {
   Coach.react("viktor", "explain", `${s.name}. ${s.idea}`);
 }
 
-// How to beat them (24 Oct, owner's idea): Stockfish checks their last games (about 10-30 s), then one view: their
-// weak spot, where they go wrong, three tips, and their real mistakes as puzzles to punish
+// How to beat them (24 Oct, owner's idea): Stockfish checks their last 30 games (about 20-40 s), then one view, in
+// order: the killer insights, their weak spot / where they go wrong / your plan, then practice against them
+const KILLER_ICON = { opening: "book", king: "mate", clock: "clock", tilt: "bolt" };
 async function scoutBox(user) {
   const el = () => document.getElementById("scout");
   if (!el()) return;
   el().innerHTML = `<div class="box scout-wait"><b>How to beat ${esc(user)}</b><span class="muted small" id="scoutn">Stockfish is checking their games…</span>
     <div class="bar"><div id="scoutbar" style="width:3%"></div></div></div>`;
-  let r;
+  let r, drawn = false;
   for (;;) {
     r = await api(`/api/scout/${encodeURIComponent(user)}`).catch(() => null);
     if (!el()) return;  // they moved on
+    if (r && r.result) { paintScout(user, r); drawn = true; }
     if (!r || r.state !== "running") break;
-    if (r.total) {
+    if (!drawn && r.total) {
       $("#scoutbar").style.width = `${Math.max(3, 100 * r.done / r.total)}%`;
       $("#scoutn").textContent = `Stockfish is checking their games… ${Math.round(100 * r.done / r.total)}%`;
     }
     await new Promise(ok => setTimeout(ok, 1200));
   }
   if (!r || r.state !== "done") { el().innerHTML = `<p class="small muted">${esc((r && r.message) || "The deeper look didn't work this time.")}</p>`; return; }
+  const x = r.result, k = x.killers[0];
+  Coach.react("maya", "explain", `${user}: ${k ? k.text : x.tips[0]}`, x.puzzles.length ? [{ label: "Punish their mistakes", app: `punish/${user}` }] : []);
+}
+
+function paintScout(user, r) {
   const x = r.result, h = x.habits[0], ph = x.phases, total = ph.opening + ph.middlegame + ph.endgame;
   const seg = (k, c) => total && ph[k] ? `<i style="flex:${ph[k]};background:${c}" title="${cap(k)}: ${ph[k]}"></i>` : "";
-  el().innerHTML = `<h2 class="scout-title">How to beat ${esc(user)} <span class="muted small" style="font-weight:400">from their last ${x.games} ${esc(x.time_class)} games</span></h2>
+  const puzzles = x.puzzles;  // null while they're still being made
+  const left = r.total ? Math.round(100 * r.done / r.total) : 0;
+  $("#scout").innerHTML = `
+    <div class="scout-head"><h2>How to beat ${esc(user)}</h2><span class="muted small">Stockfish, their last ${x.games} games</span></div>
+    ${x.killers.length ? `<div class="scout-killers">${x.killers.map(k => `<div class="box scout-killer ${k.kind}">
+        <div class="scout-k-top">${svg(KILLER_ICON[k.kind] || "bolt")}<span>${esc(k.title)}</span><b class="num">${esc(k.big)}</b></div>
+        <p>${esc(k.text)}</p>
+        ${k.practise ? `<a class="btn small-btn" href="#/${esc(k.practise)}">Practise this line</a>` : ""}</div>`).join("")}</div>` : ""}
     <div class="scout-grid">
       <div class="box scout-card"><div class="label">Their weak spot</div>
         ${h ? `<div class="scout-big"><b class="num">${h.per_game}</b><span>${esc(h.what)} a game</span></div>
@@ -994,15 +1008,18 @@ async function scoutBox(user) {
         ${total ? `<div class="scout-phase">${seg("opening", "#5ea4e8")}${seg("middlegame", "#e9a23b")}${seg("endgame", "#b48ce0")}</div>
         <div class="scout-keys small"><span><i style="background:#5ea4e8"></i>Opening ${ph.opening}</span><span><i style="background:#e9a23b"></i>Middlegame ${ph.middlegame}</span><span><i style="background:#b48ce0"></i>Endgame ${ph.endgame}</span></div>`
           : `<div class="small muted">Hardly any big mistakes.</div>`}
-        ${x.clock.of ? `<div class="small">${x.clock.low} of ${x.clock.of} with their clock low</div>` : ""}
         ${x.slipped.of ? `<div class="small">${x.slipped.lost} of ${x.slipped.of} winning games let slip</div>` : ""}</div>
       <div class="box scout-card scout-tips"><div class="label">Your plan</div>
         <ol>${x.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>
     </div>
-    ${x.puzzles.length ? `<div class="box row scout-go"><div style="flex:1"><b>Punish their mistakes</b>
-      <div class="small muted">${x.puzzles.length} real positions where ${esc(user)} went wrong. Find the move that punishes it.</div></div>
-      <a class="btn primary" href="#/punish/${esc(user)}">${svg("practice")} Punish ${x.puzzles.length}</a></div>` : ""}`;
-  Coach.react("maya", "explain", `${user}: ${x.tips[0]}`, x.puzzles.length ? [{ label: "Punish their mistakes", app: `punish/${user}` }] : []);
+    <div class="box scout-go"><div class="label">Practise against them</div>
+      <div class="scout-go-row">
+        <div class="scout-go-item"><b>Punish their mistakes</b><span class="small muted">${puzzles ? `${puzzles.length} real positions where ${esc(user)} went wrong. Find the move that punishes it.` : `Picking positions from their games… ${left}%`}</span>
+          ${puzzles && puzzles.length ? `<a class="btn primary" href="#/punish/${esc(user)}">${svg("practice")} Punish ${puzzles.length}</a>` : ""}</div>
+        <div class="scout-go-item"><b>Spar against them</b><span class="small muted">They open the way they really do, then play like players of their rating.</span>
+          <div class="row"><a class="btn" href="#/spar/${esc(user)}/white">As White</a><a class="btn" href="#/spar/${esc(user)}/black">As Black</a></div></div>
+      </div></div>
+    <h2 class="scout-details">The details</h2>`;
 }
 
 // their real mistakes as puzzles, from the deeper look (kept an hour; if it's gone, it runs again first)
@@ -1058,9 +1075,6 @@ async function prepView(user) {
           ${ends.map(([k, n]) => `<div class="pend ${k === "won" ? "won" : k === "drew" ? "" : "lost"}"><span>${esc(cap(k))}</span><i><b style="width:${100 * n / Math.max(...ends.map(e => e[1]))}%"></b></i><b class="num">${n}</b></div>`).join("")}</div>
       </div>`;
     $("#prep").insertAdjacentHTML("afterbegin", `<div id="scout" class="scout"></div>`);
-    $("#prep").insertAdjacentHTML("beforeend", `<div class="box row" style="padding:16px;margin-top:16px"><div style="flex:1"><b>Spar against them</b>
-      <div class="small muted">They open the way they really do, then play like players of their rating.</div></div>
-      <a class="btn" href="#/spar/${esc(s.user)}/white">As White</a><a class="btn" href="#/spar/${esc(s.user)}/black">As Black</a></div>`);
     scoutBox(s.user);
   };
   $("#look").onclick = look;

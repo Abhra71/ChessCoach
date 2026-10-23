@@ -19,9 +19,10 @@ from coach import clock, prep
 from coach.analyze import analyse_game, open_engine
 from coach.patterns import BLUNDER, classify
 
-GAMES = 12  # their latest games of the time class they play most
+GAMES = 30  # their latest games: the time class they play most first, then the others
 DEPTH = 10  # a quick check: enough to see pieces left hanging, forks and mates, in about half a minute
-PUZZLES = 5
+PUZZLES = 10
+PER_GAME = 2  # at most this many puzzles from one game
 KEEP = 3600  # an hour, like Prep's games
 _JOBS, _LOCK = {}, threading.Lock()
 
@@ -69,7 +70,9 @@ def _run(user):
                 rows[g["url"]] = out
                 _set(user, done=n)
         result = summary(user, games, picked, rows)
-        result["puzzles"] = punish(user, picked, rows, lambda n: _set(user, done=len(picked) + n))
+        result["puzzles"] = None  # the page shows everything else now; the puzzles follow
+        _set(user, result=result, phase="puzzles")
+        result = {**result, "puzzles": punish(user, picked, rows, lambda n: _set(user, done=len(picked) + n))}
         _set(user, state="done", done=len(picked) + PUZZLES, result=result)
     except Exception as e:  # noqa: BLE001  (shown to the player in plain words; the page keeps the quick stats)
         import logging
@@ -82,12 +85,14 @@ def _side(g, user):
 
 
 def latest(games, user, n=GAMES):
-    """Their newest n games of the time class they play most, with a game record and at least 10 moves."""
+    """Their newest n games with a game record and at least 10 moves: the time class they play most first, then
+    the others (newest first), so the clock numbers mostly come from one kind of game."""
     if not games:
         return []
     kind = collections.Counter(g["time_class"] for g in games).most_common(1)[0][0]
-    ok = [g for g in games if g["time_class"] == kind and g.get("pgn") and g["pgn"].count(".") >= 10]
-    return sorted(ok, key=lambda g: g.get("end_time", 0), reverse=True)[:n]
+    ok = sorted((g for g in games if g.get("pgn") and g["pgn"].count(".") >= 10 and g["time_class"] != "daily"),
+                key=lambda g: (g["time_class"] == kind, g.get("end_time", 0)), reverse=True)
+    return ok[:n]
 
 
 def phase(r):
@@ -118,6 +123,7 @@ def summary(user, games, picked, rows):
     ahead = [g for g in picked if any(r["cp_before"] >= 300 for r in rows.get(g["url"], []))]
     slipped = [g for g in ahead if g[_side(g, user)]["result"] != "win"]
     out = {"games": n, "time_class": picked[0]["time_class"], "big_per_game": round(len(big) / n, 1),
+           "killers": killers(user, games, picked, rows, big),
            "habits": top, "phases": {k: phases.get(k, 0) for k in ("opening", "middlegame", "endgame")},
            "clock": {"low": low, "of": with_clock}, "slipped": {"lost": len(slipped), "of": len(ahead)},
            "worst_opening": worst_opening(games, user)}
@@ -180,8 +186,7 @@ def punish(user, picked, rows, progress=None):
     found = []
     for g in picked:
         cands = [r for r in rows.get(g["url"], []) if r["loss"] >= BLUNDER and r["cp_before"] > -300 and classify(r) in PUNISH]
-        if cands:
-            found.append((g, max(cands, key=lambda r: r["loss"])))
+        found += [(g, r) for r in sorted(cands, key=lambda r: -r["loss"])[:PER_GAME]]
     found = sorted(found, key=lambda x: -x[1]["loss"])[:PUZZLES]
     out = []
     with open_engine() as eng:
@@ -209,3 +214,139 @@ def punish(user, picked, rows, progress=None):
             if progress:
                 progress(n)
     return out
+
+
+# ---------- the killer insights: two or three things that give you an edge, each with a number ----------
+def _sans(pgn, n):
+    import io
+    import chess.pgn
+    game = chess.pgn.read_game(io.StringIO(pgn or ""))
+    if not game:
+        return []
+    board, out = game.board(), []
+    for move in list(game.mainline_moves())[:n]:
+        out.append(board.san(move))
+        board.push(move)
+    return out
+
+
+def line_text(sans):
+    return " ".join((f"{i // 2 + 1}. " if i % 2 == 0 else "") + m for i, m in enumerate(sans))
+
+
+def _score(g, user):
+    res = g[_side(g, user)]["result"]
+    return 1 if res == "win" else 0.5 if res in prep.DRAWS else 0
+
+
+def opening_line(games, user, their, least=3):
+    """The opening line (2 to 10 half-moves) where they score worst when they're `their` colour, from all their
+    games: {you, line, score, games, of}. None unless they score 40% or less there, in 3 games or more."""
+    mine = [g for g in games if _side(g, user) == their]
+    stats = collections.defaultdict(list)
+    for g in mine:
+        sans = _sans(g.get("pgn"), 10)
+        for k in range(2, len(sans) + 1):
+            stats[tuple(sans[:k])].append(_score(g, user))
+    least = max(least, round(0.1 * len(mine)))  # a line they really reach, not a one-off
+    rows = [(sum(v) / len(v), -len(v), -len(k), k) for k, v in stats.items() if len(v) >= least]
+    if not rows:
+        return None
+    score, n, _, key = min(rows)
+    if score > 0.4:
+        return None
+    return {"you": "black" if their == "white" else "white", "line": line_text(list(key)), "score": round(100 * score),
+            "games": -n, "of": len(mine)}
+
+
+def king(games, user):
+    """How often they castle, and when: {castled, of, median_move}."""
+    import io
+    import chess.pgn
+    moves, n = [], 0
+    for g in games:
+        game = chess.pgn.read_game(io.StringIO(g.get("pgn") or ""))
+        if not game:
+            continue
+        me = chess.WHITE if _side(g, user) == "white" else chess.BLACK
+        board, when = game.board(), None
+        for ply, move in enumerate(game.mainline_moves(), 1):
+            if board.turn == me and board.is_castling(move):
+                when = (ply + 1) // 2
+                break
+            board.push(move)
+            if ply > 80:
+                break
+        n += 1
+        if when:
+            moves.append(when)
+    moves.sort()
+    return {"castled": len(moves), "of": n, "median_move": moves[len(moves) // 2] if moves else None}
+
+
+def rush(picked, rows, user, big):
+    """Their big mistakes played in a rush, and games where they got short of time: {fast, of, short, games}."""
+    fast = timed = short = clocked = 0
+    bigs = collections.defaultdict(set)
+    for r in big:
+        bigs[r["url"]].add(r["ply"])
+    for g in picked:
+        tc = clock.base_and_increment(g.get("time_control"))
+        side = _side(g, user)
+        times = [(ply, s, left) for ply, who, s, left in clock.spent(g.get("pgn"), g.get("time_control")) if who == side]
+        if not tc or not times:
+            continue
+        clocked += 1
+        short += min(left for _, _, left in times) < tc[0] * 0.1
+        for ply, s, _ in times:
+            if ply in bigs[g["url"]]:
+                timed += 1
+                fast += s < clock.rushed_under(tc[0])
+    return {"fast": fast, "of": timed, "short": short, "games": clocked}
+
+
+def tilt(games, user):
+    """How they do in the game straight after a loss (within two hours), against their usual score."""
+    order = sorted(games, key=lambda g: g.get("end_time", 0))
+    after = [_score(b, user) for a, b in zip(order, order[1:])
+             if _score(a, user) == 0 and 0 < b.get("end_time", 0) - a.get("end_time", 0) < 7200]
+    usual = sum(_score(g, user) for g in games) / len(games) if games else 0
+    return {"after": round(100 * sum(after) / len(after)) if after else None, "n": len(after), "usual": round(100 * usual)}
+
+
+def killers(user, games, picked, rows, big):
+    """The two or three strongest edges, strongest first: [{kind, title, big, text, practise?}]."""
+    out = []
+    for their in ("white", "black"):
+        o = opening_line(games, user, their)
+        if o:
+            out.append((1 - o["score"] / 100 + min(o["games"], 8) / 20, {
+                "kind": "opening", "title": f"Your opening as {o['you'].capitalize()}", "big": f"{o['score']}%",
+                "text": f"Aim for {o['line']}. They reach it in {o['games']} of their {o['of']} games as "
+                        f"{'Black' if o['you'] == 'white' else 'White'}, and score only {o['score']}% from there.",
+                "practise": f"spar/{user}/{o['you']}"}))
+    k = king(games, user)
+    if k["of"] >= 5:
+        share = k["castled"] / k["of"]
+        late = k["median_move"] and k["median_move"] >= 12
+        if share < 0.6 or late:
+            out.append(((1 - share) + (0.3 if late else 0), {
+                "kind": "king", "title": "Their king", "big": f"{k['castled']}/{k['of']}",
+                "text": (f"They castle in only {k['castled']} of {k['of']} games" if share < 0.6 else
+                         f"They castle late, around move {k['median_move']}") +
+                        ". Their king stays in the middle: open the centre and go after it."}))
+    r = rush(picked, rows, user, big)
+    if r["of"] >= 4 and r["fast"] / r["of"] >= 0.35:
+        out.append((r["fast"] / r["of"], {
+            "kind": "clock", "title": "They rush", "big": f"{r['fast']}/{r['of']}",
+            "text": f"{r['fast']} of their {r['of']} big mistakes came in a few seconds. Keep it tricky: hasty moves are their weakness."}))
+    elif r["games"] >= 5 and r["short"] / r["games"] >= 0.3:
+        out.append((r["short"] / r["games"], {
+            "kind": "clock", "title": "Their clock", "big": f"{r['short']}/{r['games']}",
+            "text": f"They got short of time in {r['short']} of {r['games']} games. Keep it complicated and keep your own clock healthy."}))
+    t = tilt(games, user)
+    if t["after"] is not None and t["n"] >= 5 and t["usual"] - t["after"] >= 15:
+        out.append(((t["usual"] - t["after"]) / 100 + 0.2, {
+            "kind": "tilt", "title": "After a loss", "big": f"{t['after']}%",
+            "text": f"Straight after a loss they score {t['after']}% (usually {t['usual']}%). Beat them once and a rematch suits you."}))
+    return [x for _, x in sorted(out, key=lambda x: -x[0])][:3]

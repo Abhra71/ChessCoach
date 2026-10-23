@@ -1011,3 +1011,15 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .scout-keys { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); } .scout-keys i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
 .scout-tips ol { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .scout-go { padding: 16px; margin-top: 12px; }
+/* How to beat them, organised (24 Oct): killer insights, then the three cards, then practice, then the details */
+.scout-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 4px 0 12px; } .scout-head h2 { margin: 0; }
+.scout-killers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.scout-killer { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.scout-killer p { margin: 0; font-size: 14.5px; line-height: 1.45; }
+.scout-k-top { display: flex; align-items: center; gap: 8px; font-weight: 700; } .scout-k-top svg { width: 18px; height: 18px; color: var(--accent); }
+.scout-k-top b { margin-left: auto; font-size: 26px; line-height: 1; color: var(--accent); }
+.scout-killer .btn { align-self: flex-start; }
+.scout-go { display: flex; flex-direction: column; gap: 10px; }
+.scout-go-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.scout-go-item { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.scout-details { margin: 24px 0 10px; font-size: 18px; color: var(--muted); }

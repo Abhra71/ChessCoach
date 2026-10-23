@@ -39,3 +39,16 @@ def test_phase():
     assert scout.phase({"ply": 10, "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"}) == "opening"
     assert scout.phase({"ply": 60, "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"}) == "middlegame"
     assert scout.phase({"ply": 60, "fen": "4k3/pp3r2/8/8/8/8/PP2R3/4K3 w - - 0 1"}) == "endgame"
+
+
+def test_opening_line_finds_where_they_score_worst():
+    lost = [_g("me", "black", "resigned", end=i) for i in range(4)]  # 1. e4 e5 2. Nf3 Nc6 ... they lose
+    o = scout.opening_line(lost, "me", "black")
+    assert o["you"] == "white" and o["score"] == 0 and o["games"] == 4 and o["line"].startswith("1. e4 e5")
+    won = [_g("me", "black", "win", end=i) for i in range(4)]
+    assert scout.opening_line(won, "me", "black") is None  # no weak line
+
+
+def test_king_counts_castling():
+    k = scout.king([_g("me", "white", "win", end=i) for i in range(3)], "me")
+    assert k == {"castled": 0, "of": 3, "median_move": None}  # the sample game never castles
