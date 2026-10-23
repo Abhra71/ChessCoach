@@ -197,6 +197,14 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
             add("badge", f"badge-{b['id']}-{b['next']}", f"{need} more {b['what']} and you earn the next "
                 f"{b['name']} badge.", "progress")
             break
+    try:  # the repertoire re-check: your games moved away from a line (every 50 games and a month at most)
+        from coach import repertoire
+        old = repertoire.stale(games, player) if games and player else []
+    except Exception:
+        old = []
+    if old and not opened("repertoire"):
+        add("repertoire", f"repertoire-{old[0]['name']}", f"Your games have changed: {old[0]['name']}, {old[0]['why']}. "
+            "Want new repertoire lines? In Train, open Repertoire.", "repertoire")
     clk = (prog or {}).get("clock") or {}
     if clk.get("big", 0) >= 8 and clk.get("fast", 0) / clk["big"] >= 0.3 and not opened("clockdrill"):
         add("clock", "clock", f"{clk['fast']} of your {clk['big']} biggest mistakes lately were played in a rush. "

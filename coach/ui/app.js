@@ -883,7 +883,7 @@ async function repertoireView(fresh) {
     <div class="plan-cards">${lines.map((l, i) => `<a class="box pcard" href="#/repertoire/${i}" title="${esc(l.kept ? "It works for you: now learn it to move 6." : l.why)}">
       <div class="row spread"><span class="pkind"><span class="gside ${l.side}"></span>${l.side === "white" ? "As White" : `Against 1. ${esc(l.against)}`}</span>
         ${l.kept ? `<span class="pdone" title="You already play this">${svg("check")}</span>` : ""}</div>
-      <h3>${esc(l.name)}</h3>
+      <h3>${esc(l.name)}</h3>${l.stale ? `<span class="small bad-text">Out of date: ${esc(l.stale)}. Choose new lines?</span>` : ""}
       <span class="btn ${i === 0 ? "primary" : ""}">Practise</span></a>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
   $("#newlines").onclick = () => repertoireView(true);
   Coach.react("viktor", "explain", "Three lines. Know them to move six without thinking, and every game starts on your terms.");

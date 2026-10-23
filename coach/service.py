@@ -508,8 +508,9 @@ class Handler(BaseHTTPRequestHandler):
             with live_engine.LOCK:
                 lines = repertoire.build(live_engine.get(), fresh=fresh)
             if path == "/api/repertoire":
+                old = {x["name"]: x["why"] for x in repertoire.stale()}
                 return self.send(200, json.dumps([{**{k: l[k] for k in ("id", "name", "side", "against", "style", "kept")},
-                                                   "why": repertoire.why(l)} for l in lines]), "application/json")
+                                                   "why": repertoire.why(l), "stale": old.get(l["name"])} for l in lines]), "application/json")
             i = path.rsplit("/", 1)[-1]
             if not i.isdigit() or int(i) >= len(lines):
                 return self.send(404, json.dumps({"message": "No such line."}), "application/json")

@@ -12,6 +12,8 @@ from coach import insights, openings, plan
 from coach.paths import DATA
 
 FILE = DATA / "repertoire.json"
+CHECK = DATA / "repertoire-check.json"  # when the lines were last checked against your games, and what's out of date
+CHECK_GAMES, CHECK_DAYS = 50, 30  # re-check after 50 new games AND a month (24 Oct: openings need months, not days)
 SLOTS = [("white", None), ("black", "e4"), ("black", "d4")]
 
 
@@ -81,6 +83,7 @@ def build(engine, games=None, player=None, fresh=False):
     lines = [x for x in (_pick(seen, side, first, loose, engine) for side, first in SLOTS) if x]
     FILE.parent.mkdir(parents=True, exist_ok=True)
     FILE.write_text(json.dumps(lines))
+    _mark(len(games))  # new lines: the count starts again
     return lines
 
 
@@ -97,3 +100,61 @@ def lesson(line):
     reason = why(line)
     return {**line, "coach": "viktor", "title": f"{line['name']} (as {side})", "why": reason, "intro": reason,
             "drills": [plan.opening_drill(line)]}
+
+
+# ---------- the re-check (24 Oct, owner: "your gameplay changes; how can three lines stay fixed?") ----------
+def _mark(n_games, stale=(), now=None):
+    import time
+    try:
+        CHECK.write_text(json.dumps({"at": int(now or time.time()), "games": n_games, "stale": list(stale)}))
+    except OSError:
+        pass
+
+
+def stale(games=None, player=None, now=None):
+    """The lines your recent games have moved away from: [{name, why}]. Checked only after CHECK_GAMES new games
+    and CHECK_DAYS days; the answer is kept until the next check or until new lines are chosen."""
+    import time
+    from coach import prep
+    now = now or time.time()
+    try:
+        lines = json.loads(FILE.read_text())
+    except (OSError, ValueError):
+        return []
+    games = games if games is not None else insights._games()
+    player = (player or insights._player() or "").lower()
+    try:
+        m = json.loads(CHECK.read_text())
+    except (OSError, ValueError):
+        _mark(len(games), now=now)  # lines from before the re-check existed: start counting now
+        return []
+    if len(games) - m.get("games", 0) < CHECK_GAMES or now - m.get("at", 0) < CHECK_DAYS * 86400:
+        return m.get("stale", [])
+    recent = [g for g in games if g.get("end_time", 0) > m["at"]]
+    out = []
+    for line in lines:
+        sans = [s["san"] for s in line.get("steps", [])]
+        if len(sans) < 2:
+            continue
+        side = line["side"]
+        mine_at = 0 if side == "white" else 1  # your first move in the line
+        slot = []
+        for g in recent:
+            if insights._side(g, player)[0] != side:
+                continue
+            first = prep._first_moves(g.get("pgn"), 2)
+            if len(first) < 2 or (side == "black" and first[0] != sans[0]):
+                continue
+            slot.append((g, first[mine_at] == sans[mine_at]))
+        if len(slot) < 5:
+            continue
+        played = [g for g, same in slot if same]
+        if len(played) / len(slot) < 1 / 3:
+            out.append({"name": line["name"], "why": f"you played it in only {len(played)} of your last {len(slot)} games where it could come up"})
+            continue
+        if len(played) >= 5:
+            score = sum({"win": 1, "draw": 0.5}.get(insights._result(g, side), 0) for g in played) / len(played)
+            if score < 0.4:
+                out.append({"name": line["name"], "why": f"you scored {round(100 * score)}% with it in your last {len(played)} games"})
+    _mark(len(games), out, now)
+    return out
