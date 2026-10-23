@@ -1487,7 +1487,14 @@ async function calcView() {
   const items = await api("/api/calc");
   if (!items.length) { $("#page").innerHTML = `<div class="empty">The calculation puzzles appear once the puzzles are downloaded.</div>`; return; }
   let i = 0, line = [], picked = null, done = false;
+  // today's answers are kept in this app: leaving and coming back doesn't start the set again (24 Oct test)
+  const KEY = "kw-calc", today = new Date().toDateString();
+  let kept = {};
+  try { const k = JSON.parse(localStorage.getItem(KEY) || "{}"); kept = k.day === today ? k.answers || {} : {}; } catch (e) {}
+  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify({ day: today, answers: kept })); } catch (e) {} };
   const firstTry = {};
+  i = Math.max(0, items.findIndex(it => !(it.id in kept)));  // the first one not done today
+  if (items.every(it => it.id in kept)) i = items.length - 1;
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">See it in your head</h1>
@@ -1513,7 +1520,7 @@ async function calcView() {
     $("#calcline").innerHTML = Array.from({ length: need() }, (_, k) => `<div class="calc-slot ${yours(k) ? "mine" : "theirs"} ${line[k] ? "full" : k === line.length ? "now" : ""}">
         <span class="num">${k + 1}</span><b>${yours(k) ? "Your move" : "Their reply"}</b>
         <i class="num">${line[k] ? `${line[k].slice(0, 2)} → ${line[k].slice(2, 4)}` : k === line.length ? "click a piece, then its square" : "…"}</i></div>`).join("");
-    $("#calccount").textContent = `${i + 1} of ${items.length}`;
+    $("#calccount").textContent = `${i + 1} of ${items.length} · ${Object.keys(kept).filter(id => items.some(it => it.id === id)).length} done today`;
   }
   function show() {
     line = []; picked = null; done = false;
@@ -1522,6 +1529,10 @@ async function calcView() {
     $("#calcwhere").textContent = x().where || "";
     $("#calcmsg").innerHTML = "";
     draw();
+    if (x().id in kept) {  // done earlier today: say so, and show the line
+      done = true;
+      $("#calcmsg").innerHTML = `<span class="${kept[x().id].right ? "ok-text" : "muted"}"><b>Done today${kept[x().id].right ? ", seen all the way" : ""}.</b> The line: ${esc(kept[x().id].real)}.</span> <span class="muted">Press Next.</span>`;
+    }
   }
   function click(sq) {
     if (done) return;
@@ -1550,6 +1561,7 @@ async function calcView() {
       if (steps[s].reply) { Board.render($("#board"), { pieces: steps[s].reply.board, flip: x().flip }); Sound.move(steps[s].reply.san); await wait(650); }
     }
     const real = steps.flatMap(st => [Object.values(st.moves).find(m => m.good).san, st.reply ? st.reply.san : null]).filter(Boolean).join(", ");
+    kept[x().id] = { right, real }; keep();
     if (right) Sound.play("right");  // no confetti for each line: it stays rare (1.0 design rule)
     const where = wrong < 0 ? "" : yours(wrong) ? `Your move ${Math.floor(wrong / 2) + 1} wasn't the one.` : `You didn't see their answer: it's not what you expected.`;
     $("#calcmsg").innerHTML = right ? `<span class="ok-text"><b>You saw it all.</b> ${esc(real)}.</span>`
@@ -1558,7 +1570,13 @@ async function calcView() {
   }
   $("#calcundo").onclick = () => { if (!done && line.length) { line.pop(); draw(); } };
   $("#calccheck").onclick = check;
-  $("#calcnext").onclick = () => { if (i + 1 < items.length) { i++; show(); } else Coach.react("viktor", "celebrate", `All ${items.length} done: ${Object.values(firstTry).filter(Boolean).length} seen all the way first time.`); };
+  $("#calcnext").onclick = () => {
+    const left = items.findIndex((it, n) => n > i && !(it.id in kept));
+    if (left >= 0) { i = left; show(); return; }
+    const all = items.filter(it => it.id in kept);
+    if (all.length === items.length) Coach.react("viktor", "celebrate", `All ${items.length} done today: ${all.filter(it => kept[it.id].right).length} seen all the way first time. New ones tomorrow.`);
+    else { i = items.findIndex(it => !(it.id in kept)); show(); }
+  };
   show();
   Coach.react("viktor", "explain", "Don't move yet. See the whole line in your head first: your move, their best answer, your next. Then check.");
 }
