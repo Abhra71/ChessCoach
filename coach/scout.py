@@ -33,9 +33,20 @@ THEY = {"left a piece hanging": ("leave pieces hanging", "pieces left hanging"),
         "missed a checkmate": ("miss checkmates they have", "checkmates missed"),
         "missed a free capture": ("miss free pieces", "free pieces missed"),
         "stalemated a won game": ("stalemate won games", "won games stalemated")}
-HINT = {"left a piece hanging": "They just left something undefended. Find it and take it.",
-        "walked into a fork or trick": "Look for a move that attacks two things at once.",
-        "walked into checkmate": "Look at every check you can give."}
+HINT = {"left a piece hanging": ["Something of theirs has no defender now.", "Count what each of their pieces has guarding it.",
+                                 "One of their pieces is loose. Which one?"],
+        "walked into a fork or trick": ["Look for a move that attacks two things at once.", "A knight or queen move can hit two targets here.",
+                                        "There's a double attack waiting."],
+        "walked into checkmate": ["Look at every check you can give.", "Their king is short of squares.", "Checks first: one of them ends it."]}
+# the task line, a different one each puzzle (24 Oct, owner: "punish" every time was too much)
+INTRO = ["{u} just played {m}. You're {c}: punish it.",
+         "{u} played {m} here. Your move as {c}.",
+         "After {m}, something in {u}'s position gives way. You're {c}.",
+         "{m} was a mistake. Show why, as {c}.",
+         "{u} went {m}. What's your best reply as {c}?",
+         "This is {u}'s real game: they played {m}. Find the move that makes them pay.",
+         "{u} thought {m} was fine. As {c}, prove it wasn't.",
+         "Your move as {c}, after {u}'s {m}."]
 PUNISH = tuple(HINT)
 
 
@@ -201,19 +212,35 @@ def punish(user, picked, rows, progress=None):
             scores = drills.score_moves(eng, board.fen())
             good, close, best = drills.right_moves(eng, board, scores)
             colour = "White" if board.turn == chess.WHITE else "Black"
-            pattern = classify(r)
+            pattern, i = classify(r), len(out)
             out.append({"id": f"scout:{r['url']}#{r['ply']}", "kind": "puzzle", "flip": board.turn == chess.BLACK,
-                        "pattern": None, "hint": HINT[pattern],
-                        "intro": f"{user} just played {r['move']}. You are {colour}: punish it.",
+                        "pattern": None, "hint": HINT[pattern][i % len(HINT[pattern])],
+                        "intro": INTRO[i % len(INTRO)].format(u=user, m=r["move"], c=colour),
                         "played": r["move"], "best": board.san(best), "their_move": r["move"],
                         "where": f"From {user}'s game, move {(r['ply'] + 1) // 2}", "url": g["url"],
                         "link": "open game on chess.com", "start": drills.squares(before),
                         "last": [their.uci()[:2], their.uci()[2:4]],
-                        "end": "That's how you punish it. Next time they play like this, you'll see it.",
+                        "end": ending(board, best, user, i),
                         "steps": [drills.step(board, good, lambda m, b=board, s=scores: drills.why_wrong(b, m, s[m][1]), close=close)]})
             if progress:
                 progress(n)
     return out
+
+
+def ending(board, best, user, i):
+    """What the right move does, said plainly, in a different way each time."""
+    san, after = board.san(best), board.copy()
+    after.push(best)
+    if after.is_checkmate():
+        return ["Checkmate. Their mistake ended the game.", f"{san} is mate. That's what {user} missed."][i % 2]
+    taken = board.piece_at(best.to_square) if board.is_capture(best) else None
+    name = {chess.PAWN: "pawn", chess.KNIGHT: "knight", chess.BISHOP: "bishop", chess.ROOK: "rook", chess.QUEEN: "queen"}
+    if taken:
+        return [f"Right: {san} wins their {name[taken.piece_type]}.", f"{san}: their {name[taken.piece_type]} was there for the taking.",
+                f"That's it. {user} left the {name[taken.piece_type]} without enough cover."][i % 3]
+    if after.is_check():
+        return [f"{san}: a check, and something falls after it.", f"Right: {san} starts the attack they didn't see."][i % 2]
+    return [f"Right: after {san} they can't hold everything.", f"{san} is the move. Spot it in your game against them."][i % 2]
 
 
 # ---------- the killer insights: two or three things that give you an edge, each with a number ----------
