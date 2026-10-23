@@ -1491,13 +1491,13 @@ async function calcView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">See it in your head</h1>
-      <p class="sub">The board doesn't move. Put in the whole line as arrows first: your move, their best answer, your next move. Then check it.</p></div>
+      <p class="sub calc-sub">Plan moves ahead without moving the pieces: the skill of seeing ahead.</p></div>
       <span class="muted num" id="calccount"></span></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div><p class="small muted" id="calcwhere" style="margin-top:10px"></p></div>
       <div class="stack">
         <div class="box stack" style="padding:16px"><h3 style="margin:0" id="calctask"></h3><p class="small muted" style="margin:0" id="calchint"></p></div>
-        <div class="box stack" style="padding:16px"><div class="label">Your line</div><div id="calcline" class="small"></div><div id="calcmsg" class="small"></div>
+        <div class="box stack" style="padding:16px"><div class="label">Your plan, before anything moves</div><div id="calcline" class="calc-slots"></div><div id="calcmsg" class="small"></div>
           <div class="row"><button class="btn" id="calcundo">Take back</button><button class="btn primary" id="calccheck">Check my line</button>
             <button class="btn" id="calcnext">Next →</button></div></div>
       </div>
@@ -1509,14 +1509,16 @@ async function calcView() {
     const arrows = line.map((u, k) => ({ from: u.slice(0, 2), to: u.slice(2, 4), kind: yours(k) ? "mine" : "real" }));
     const hl = { ...(x().last ? { [x().last[0]]: "hl-last", [x().last[1]]: "hl-last" } : {}), ...(picked ? { [picked]: "hl-pick" } : {}) };
     Board.render($("#board"), { pieces: pieces || x().steps[0].board, flip: x().flip, highlights: hl, arrows: done ? [] : arrows, onClick: click });
-    $("#calcline").innerHTML = line.length ? line.map((u, k) => `${yours(k) ? "You" : "They"}: ${u.slice(0, 2)}→${u.slice(2, 4)}`).join(" · ")
-      : `<span class="muted">Click a piece, then where it goes. ${need()} moves in all: yours, theirs${need() > 3 ? ", yours, theirs" : ""}, yours.</span>`;
+    // one slot per move of the plan: yours, theirs, yours... filled as you click (24 Oct: "first glance doesn't say what this is")
+    $("#calcline").innerHTML = Array.from({ length: need() }, (_, k) => `<div class="calc-slot ${yours(k) ? "mine" : "theirs"} ${line[k] ? "full" : k === line.length ? "now" : ""}">
+        <span class="num">${k + 1}</span><b>${yours(k) ? "Your move" : "Their reply"}</b>
+        <i class="num">${line[k] ? `${line[k].slice(0, 2)} → ${line[k].slice(2, 4)}` : k === line.length ? "click a piece, then its square" : "…"}</i></div>`).join("");
     $("#calccount").textContent = `${i + 1} of ${items.length}`;
   }
   function show() {
     line = []; picked = null; done = false;
     $("#calctask").textContent = x().intro;
-    $("#calchint").textContent = `${x().steps.length} moves of yours to find. ${x().hint}`;
+    $("#calchint").textContent = `Clue: ${x().hint}`;
     $("#calcwhere").textContent = x().where || "";
     $("#calcmsg").innerHTML = "";
     draw();
@@ -2484,7 +2486,7 @@ const TRAIN = [
     ["repertoire", "book", "Repertoire", "Three lines, by heart", "viktor", "Three opening lines picked from what you already play. Learn them to move six and every game starts on your terms."],
   ]],
   ["Sharpen your eye", "#5ea4e8", [
-    ["calc", "sparkles", "In your head", "See the whole line first", "viktor", "The board won't move. Put the whole line in as arrows first: your move, their answer, your next. Then check."],
+    ["calc", "sparkles", "In your head", "See the whole line first", "viktor", "This trains seeing ahead. The pieces stay still: click your move, their best reply, then your next move. Then press Check my line."],
     ["blindfold", "ear", "Blindfold", "Hear it, see it, no board", "viktor", "I read out the start of one of your games. Follow it in your head, then answer on the board."],
     ["guess", "users", "Guess the move", "What would they play?", "viktor", "Five real positions a week. Guess what most players of that rating play: the closer, the more points."],
     ["endgames", "mate", "Endgames", "Win the won games", "viktor", "The endings every player must know, against perfect defence. Learn them once, keep them for life."],

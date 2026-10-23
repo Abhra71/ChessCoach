@@ -1049,3 +1049,10 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 /* Spar lives only in Prep now (24 Oct): it stands out there */
 .scout-spar { border: 1px solid color-mix(in srgb, #5ea4e8 50%, transparent); background: color-mix(in srgb, #5ea4e8 8%, var(--surface)); }
 .spar-ic { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, #5ea4e8 22%, transparent); color: #5ea4e8; flex: none; } .spar-ic svg { width: 20px; height: 20px; }
+/* In your head (24 Oct): the plan as numbered slots */
+.calc-slots { display: flex; flex-direction: column; gap: 6px; }
+.calc-slot { display: grid; grid-template-columns: 26px 96px 1fr; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--raised); font-size: 13.5px; opacity: .6; }
+.calc-slot > span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--line-strong); }
+.calc-slot.mine > span { background: var(--accent); color: var(--on-accent); } .calc-slot.theirs > span { background: #5ea4e8; color: #0c2340; }
+.calc-slot i { font-style: normal; color: var(--muted); } .calc-slot.full, .calc-slot.now { opacity: 1; } .calc-slot.full i { color: var(--text); font-weight: 600; }
+.calc-slot.now { box-shadow: inset 0 0 0 2px var(--accent); }
