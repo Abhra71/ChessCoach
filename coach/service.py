@@ -282,7 +282,8 @@ class Handler(BaseHTTPRequestHandler):
             body = {"known": rows is not None, "moments": key_moments(rows, path.rsplit("/", 1)[-1]) if rows else [],
                     "players": players_of(path.rsplit("/", 1)[-1]) if rows is not None else []}
             if rows:  # a finished, checked game only: the clock coach and the rematch
-                from coach import insights
+                from coach import insights, nudge
+                nudge.seen(f"games/{path.rsplit('/', 1)[-1]}")  # reviewed on chess.com: not "new" any more
                 body.update(insights.extras_for(path.rsplit("/", 1)[-1]))
                 try:  # every move, so the coach follows chess.com's own arrows too (22 Oct test)
                     d = insights.game_detail(path.rsplit("/", 1)[-1])
@@ -309,6 +310,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(fixes.current()), "application/json")
         if path == "/api/coach":  # what the coach of a chess.com section says (the extension shows it)
             return self.send(200, json.dumps(coach_says(self.path)), "application/json")
+        if path == "/api/seen":  # a page the player opened in the app: nothing "new" about it any more (23 Oct)
+            from coach import nudge
+            from urllib.parse import parse_qs, urlsplit
+            nudge.seen(parse_qs(urlsplit(self.path).query).get("route", [""])[0])
+            return self.send(200, "{}", "application/json")
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
             STATE["extension_seen"] = time.strftime("%Y-%m-%d %H:%M")
             STATE.setdefault("extension_in", {})[browser_of(self.headers.get("User-Agent"))] = STATE["extension_seen"]
@@ -328,6 +334,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(insights.games_list()), "application/json")
         if path.startswith("/api/games/"):
             detail = insights.game_detail(path.rsplit("/", 1)[-1])
+            if detail:
+                from coach import nudge
+                nudge.seen(f"games/{path.rsplit('/', 1)[-1]}")  # looked at: no "new game in" for it
             return self.send(200 if detail else 404, json.dumps(detail or {"message": "Game not found."}), "application/json")
         if path == "/api/warmup":  # chess.com home: three positions from today's practice, before you play
             from coach import drills
@@ -977,7 +986,30 @@ def coach_says(url):
     said["talk_ready"] = settings.public()["talk_ready"]  # Talk by voice on chess.com (0.6)
     if not said["ai_ready"]:  # tell everyone the conversation feature exists
         said["ai_hint"] = coaches.AI_HINT
+    try:  # her one new thing for this page: she comes up by herself and points at it (23 Oct test)
+        said = with_point(said, q)
+    except Exception:
+        log.exception("the coach's pick")
     return said
+
+
+def with_point(said, q):
+    from coach import insights, nudge, talk
+    in_app, section = q.get("in") == "app", q.get("section", "home")
+    if q.get("tab"):
+        nudge.seen(q["tab"])
+    if not said.get("lines") and not said.get("quiet"):
+        return said  # a page where the coach says nothing at all (someone's profile)
+    home = insights.home()
+    g = home.get("last_game") or {}
+    rematch = insights.extras_for(g["id"]).get("rematch") if in_app and g.get("checked") and g.get("result") != "win" else None
+    p = nudge.pick("app" if in_app else "chesscom", section, home=home, lesson=talk.next_lesson() if in_app else None,
+                   rematch=rematch)
+    if not p:
+        return said
+    lines = said.get("lines") or []
+    keep = lines[:1] if lines and not said.get("again") and not said.get("quiet") else []
+    return {**said, "point": p, "quiet": False, "lines": keep + [p["line"]]}
 
 
 def player():

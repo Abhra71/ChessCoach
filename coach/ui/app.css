@@ -822,3 +822,7 @@ a.tile:hover { filter: brightness(1.05); }
 .ask-go { margin-top: 8px; }
 .nav a.kw-point { box-shadow: inset 0 0 0 2px var(--accent); animation: kwpoint 1.2s ease-in-out infinite; }
 @keyframes kwpoint { 50% { box-shadow: inset 0 0 0 2px transparent; } }
+
+/* whatever the coach points at, anywhere on the page (23 Oct) */
+a.kw-point:not(.nav a) { box-shadow: 0 0 0 2px var(--accent); animation: kwpoint2 1.2s ease-in-out infinite; }
+@keyframes kwpoint2 { 50% { box-shadow: 0 0 0 2px transparent; } }

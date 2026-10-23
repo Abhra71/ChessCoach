@@ -246,9 +246,9 @@
     render(true); speak();
     if (ringFor && overlapsBox(ringFor)) render(false);  // fold to the face: the ring stays in view, her voice carries on
   }
-  function guideStart(route) {
+  function guideStart(route, intro) {  // intro: her own suggestion, said before the first step (23 Oct)
     guiding = { id: route.id, to: route.to, name: route.name, url: route.url, steps: steps(route), wrong: 0,
-                at: Date.now(), last: here() };
+                at: Date.now(), last: here(), intro: intro || null };
     saveGuide();
     guideStep(true);
   }
@@ -288,7 +288,8 @@
     // the words on chess.com's own button, so Maya says what the player sees ("View All Games", not our name for it)
     const label = (el.innerText || "").split(/\n/).map(t => t.trim()).filter(t => /[a-z]/i.test(t)).pop() || "";
     const name = label.length >= 2 && label.length <= 30 ? label : all[i].name, last = i === all.length - 1;
-    guideSay([first ? `Click "${name}" where the red ring is.${last ? "" : " I'll show you the next step there."}`
+    const intro = first && guiding.intro; if (intro) { guiding.intro = null; saveGuide(); }
+    guideSay([...(intro ? [intro] : []), first ? `Click "${name}" where the red ring is.${last ? "" : " I'll show you the next step there."}`
       : guiding.wrong ? `That's not it, no problem. Click "${name}" in the red ring.`
       : `Good. Now click "${name}".`]);
     nudge = setTimeout(() => {  // still here: point again, a little bigger
@@ -493,6 +494,13 @@
     if (r && r.ok && loadGuide()) { render(true); guideArrive(); return; }  // on the way with the red ring
     if (current !== here) return;
     if (first && r && r.ok) said = { ...said, pose: "greet" };
+    // something new for this player on chess.com: she comes up by herself, says it and the red ring starts (23 Oct test:
+    // "it never comes up and talks itself... a teacher comes up and teaches every day")
+    const pt = r && r.ok && r.data.point;
+    if (pt && pt.route_guide && !loadGuide()) {
+      render(true); if (first) send({ type: "greeted", section: here, set: today() });
+      guideStart(pt.route_guide, pt.line); return;
+    }
     // the first page of a visit: open and talk; the pages after it: the folded tab, open on click (22 Oct test)
     if (first || !(r && r.ok)) render(true); else render(false);
     if (first && r && r.ok) { send({ type: "greeted", section: here, set: today() }); speak(); }  // asleep: try again later

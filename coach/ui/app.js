@@ -194,6 +194,18 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turn
 })();
 
 // a question box with a microphone: onAsk(text) answers it
+// the coach points: every link to that page glows, and the menu item it lives under; gone after a minute or on a
+// click (23 Oct test: "a coach points at her suggestions by herself")
+const NAV_OF = { prep: "train", openings: "train", repertoire: "train", spar: "train", calc: "train", blindfold: "train",
+  guess: "train", endgames: "train", rematch: "games", daily: "home" };
+let kwPointTimer = null;
+function kwUnpoint() { clearTimeout(kwPointTimer); document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point")); }
+function kwPoint(route) {
+  kwUnpoint();
+  const top = route.split("/")[0], nav = NAV_OF[top] || top;
+  document.querySelectorAll(`a[href="#/${route}"], .nav a[href="#/${nav}"]`).forEach(a => a.classList.add("kw-point"));
+  kwPointTimer = setTimeout(kwUnpoint, 60000);
+}
 // Ask the coach: her face, a field that looks like one, the mic and send inside it, and a few questions to tap
 // (22 Oct test: "people won't click here to type, it's not understandable")
 const ASK_CHIPS = { home: ["Review my last game", "Why do I lose?", "What should I practise?"],
@@ -215,7 +227,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
   // the answer goes away after a minute, or when they do something else (23 Oct test), unless the mouse is on it
   let fade = null;
   const clearAnswer = () => { clearTimeout(fade); out.innerHTML = ""; q.value = "";
-    document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point"));
+    kwUnpoint();
     document.removeEventListener("pointerdown", elsewhere, true); };
   // only doing something else clears it (a button, a link, a field), not a click on empty space (23 Oct test)
   const elsewhere = e => { if (!el.contains(e.target) && e.target.closest("a,button,input,select,textarea,label,[onclick]")) clearAnswer(); };
@@ -224,9 +236,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
     clearAnswer(); }, 60000);
     document.addEventListener("pointerdown", elsewhere, true); };
   // her suggestion: the menu item it lives under glows, like a coach pointing; no button (23 Oct test)
-  const point = offer => {
-    if (!offer || !offer.route) return;
-    const nav = document.querySelector(`.nav a[href="#/${offer.route.split("/")[0]}"]`); if (nav) nav.classList.add("kw-point"); };
+  const point = offer => { if (offer && offer.route) kwPoint(offer.route); };
   let busy = false;  // a second press while she's answering is ignored: the first one counts (23 Oct test)
   const go = async () => {
     const text = q.value.trim(); if (!text || busy) return;

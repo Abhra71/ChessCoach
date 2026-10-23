@@ -61,6 +61,7 @@ the file you paste are its memory. If a change grows past three files, stop and 
 | What the AI coach is told, and what it may do (open, review, guide, offer…) | `coach/talk.py` (`RULES`, `ABOUT`, `VERBS`, `action()`) |
 | When Maya greets on chess.com, the folded tab, her suggestions there | `extension/buddy.js` (`kw-visit-greeted`), `coach/coaches.py` (`CHESSCOM_FOR`, `fresh_today()`) |
 | The Ask bars in the app (the answer fading, the glowing suggestion) | `coach/ui/app.js` (`askBox()`) |
+| The coach coming up by herself with one new thing per page (a new game, today's 5 minutes, a rematch, the next lesson, something untried, chess.com's place for the habit) | `coach/nudge.py` (`candidates()`, `UNTRIED`, `A_DAY`), shown by `with_point()` in `coach/service.py`, pointed at by `kwPoint()` in `coach/ui/app.js` and `guideStart()` in `extension/buddy.js` |
 | Send feedback (one click, 4 a day) | `coach/service.py` (`SENDS_A_DAY`, `feedback_send_allowed()`), key in `coach/feedback.key` |
 | Habits (hanging pieces, forks…) | `coach/patterns.py`, `coach/review.py` (`ABOUT`) |
 | Practice positions and puzzles | `coach/drills.py`, `coach/puzzles.py`, `coach/memory.py` |
@@ -263,6 +264,9 @@ Store has signed it. Test from the source with `try.bat` instead; the Store buil
 - Long page intros (`<p class="sub">` over 90 characters) fold into the **?** by themselves (`foldIntros` in app.js).
 
 ## 7c. How the coach behaves (decided in the 22–23 Oct hand test)
+- **She comes up by herself.** Opening a page in the app or on chess.com, she says the one new thing for it and points
+  (the app: it glows; chess.com: the red ring starts). Each suggestion once a day, three a day at most per place;
+  never in a game against a real person or in a review.
 - **A coach, not a tool.** Asked "what should I do?", she suggests one thing and the menu item for it glows. She opens
   it only when the player says yes, ok or please do (`offer` in `RULES`, `point()` in `askBox()`).
 - **Her typed answer goes away** after a minute, or when the player presses a button or link or types elsewhere; not

@@ -78,6 +78,7 @@ const Coach = (() => {
   async function arrive(tab, force) {  // force: a handover in a conversation, so the new coach speaks
     if (Conv.on) return;  // talking: the coach stays with the conversation
     const section = TAB_SECTION[tab];
+    api(`/api/seen?route=${encodeURIComponent(location.hash.replace(/^#\/?/, "") || "home")}`).catch(() => {});  // what they've opened
     if (!section) return hide();
     const first = remember(`kw-app-greeted-${section}`) !== today();  // the first visit to this section today
     const r = await api(`/api/coach?section=${section}&in=app&hour=${new Date().getHours()}${first || force ? "" : "&again=1"}`).catch(() => null);
@@ -85,6 +86,11 @@ const Coach = (() => {
     said = { ...r, casual: true, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
     more = false;
     if (r.quiet && !force) { said.lines = ["I'm here if you need anything."]; return render(false); }  // nothing new: just the tab
+    if (r.point && r.point.route) {  // something new for you: she comes up by herself, says it and points at it (23 Oct)
+      render(true); talk(); setTimeout(() => typeof kwPoint === "function" && kwPoint(r.point.route), 300);
+      if (first) remember(`kw-app-greeted-${section}`, today());
+      return;
+    }
     render(true);  // the full welcome first, later just where things stand (once a day)
     if (first || force) { remember(`kw-app-greeted-${section}`, today()); talk(); }
     else { const now = said; clearTimeout(quiet); quiet = setTimeout(() => { if (said === now) render(false); }, 20000); }
