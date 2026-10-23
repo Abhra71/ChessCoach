@@ -503,8 +503,8 @@ async function planView(arg) {
   const startedRow = started.length ? `<h3 class="plan-done-head">In progress · ${started.length}</h3>
     <div class="plan-cards done-cards">${started.map(x => card(x, false, true)).join("")}</div>` : "";
   // a finished card moves down here and the next topic takes its place (23 Oct test: "I lose track of what I've done")
-  const doneRow = doneCards.length ? `<h3 class="plan-done-head">Done ${svg("check")} ${(p.done_items || []).length}</h3>
-    <div class="plan-cards done-cards">${doneCards.map(x => card(x, false, true)).join("")}</div>` : "";
+  const doneRow = doneCards.length ? `<section class="plan-done-sec"><h3 class="plan-done-head">Done ${svg("check")} ${(p.done_items || []).length}</h3>
+    <div class="plan-cards done-cards">${doneCards.map(x => card(x, false, true)).join("")}</div></section>` : "";
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your plan</h1>
       <p class="plan-line">Everything in chess, picked for you. Finish a card and the next most important one for you takes its place; finished cards go to Done.</p></div></div>
@@ -521,7 +521,11 @@ async function planView(arg) {
     else if (d0 && d0.start) Board.render(el, typeof d0.start === "string" ? { fen: d0.start, flip: d0.flip } : { pieces: d0.start, flip: d0.flip });
     else el.remove();
   });
-  document.querySelectorAll("[data-id]").forEach(b => b.onclick = () => go(`plan/${encodeURIComponent(b.dataset.id)}`));
+  document.querySelectorAll("[data-id]").forEach(b => b.onclick = () => {
+    if (b.closest(".plan-done-sec"))
+      api("/api/seen?route=plan/done").catch(() => {});  // the tour: Done has been found
+    go(`plan/${encodeURIComponent(b.dataset.id)}`);
+  });
   explore();
   if (p.novelty && !p.novelty.again) api("/api/plan/mark", { id: p.novelty.id, novelty: true }).catch(() => {});
   if (p.novelty) AiCard.maybe("novelty");
@@ -583,7 +587,7 @@ function explore() {
   }
   let timer = null;
   q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(find, 200); });
-  q.addEventListener("focus", () => { if (!q.value.trim()) browse(); });
+  q.addEventListener("focus", () => { if (!q.value.trim()) browse(); api("/api/seen?route=plan/explore").catch(() => {}); });
   q.addEventListener("keydown", e => {
     if (e.key === "Escape") { q.value = ""; res.hidden = true; res.dataset.mode = ""; q.blur(); }
     if (e.key === "Enter") { const first = res.querySelector("[data-pick]"); if (first && q.value.trim()) first.click(); }

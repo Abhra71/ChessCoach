@@ -1084,7 +1084,8 @@ def with_point(said, q):
     except Exception:
         prog = None
     p = nudge.pick("app" if in_app else "chesscom", section, home=home, lesson=talk.next_lesson(), rematch=rematch,
-                   prog=prog, games=insights._games(), player=(insights._player() or "").lower())
+                   prog=prog, games=insights._games(), player=(insights._player() or "").lower(),
+                   coach=said.get("coach"), extension=bool(STATE.get("extension_in")))
     if not p:
         return said
     lines = said.get("lines") or []

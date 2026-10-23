@@ -20,14 +20,55 @@ DAILY = ("game", "daily")  # worth saying every day: never sent to the back for 
 CHESSCOM_SECTIONS = ("home", "puzzles", "lessons", "progress")  # never play, review or someone's profile
 _LOCK = threading.Lock()
 
-# things in Knightwise worth trying once, in this order; the first one never opened is offered (one at a time)
-UNTRIED = [
-    ("guess", "Something you haven't tried: guess what players at your rating play. Five positions, a few minutes."),
-    ("blindfold", "Something new: Blindfold. I read out a game and you follow it in your head. Great for seeing ahead."),
-    ("endgames", "Have you tried the endgame trainer? The endings every player must know, learned once for good."),
-    ("prep", "Before your next game, try Prep: type a chess.com name and see how they open and how they lose."),
-    ("calc", "Try In your head: put a whole line in as arrows before the board moves. It trains seeing ahead."),
-    ("openings", "Your opening tree shows where your games go well and where they go wrong, from move one."),
+# The tour (23 Oct test: "the coaches should navigate the user through every feature"): everything Knightwise has,
+# brought one at a time by the coach it belongs to, a few a day with space between them, until each one has been
+# opened. (id, coach, where to point, opened when the player has been to, needs, line). "where" can end in
+# "@selector": the ring goes on to that thing once the page is open.
+TOUR_A_DAY = 3  # new things a day
+IN_HER_VOICE = {"ask", "extension"}  # lines that say "I": only the coach they belong to says them
+TOUR_GAP = 20 * 60  # seconds between two of them
+GAP = 10 * 60  # seconds between any two suggestions in the app ("not together"); a new game is never held back
+TOUR = [
+    ("level", "viktor", "level", "level", None,
+     "Do you know your level? Five steps from beginner to 2,000, each one counted in your real games. Have a look."),
+    ("practice", "maya", "practice", "practice", None,
+     "Practice is built from your own mistakes. Each position comes back after 1, 3 and 7 days until it sticks."),
+    ("plan", "viktor", "plan", "plan", None,
+     "Your plan: a few cards picked for you from thousands of Lichess puzzles and openings. Finish one, the next takes its place."),
+    ("ask", "maya", "home@.askbar", "ask", None,
+     "You can ask me anything about your chess, right here: why you lose, what to practise, what a move does."),
+    ("blindfold", "viktor", "blindfold", "blindfold", None,
+     "Something fun in Train: Blindfold. I read out a game, you follow it in your head. It sharpens seeing ahead."),
+    ("course", "viktor", "course", "course", None,
+     "Your course: lessons in order, each one passed only when your games show it. Your next one is waiting."),
+    ("explore", "viktor", "plan@.explore-box", "plan/explore", "plan",
+     "Want something specific? Type any opening or tactic into Explore in Your plan: 3,160 opening lines are in there."),
+    ("repertoire", "viktor", "repertoire", "repertoire", None,
+     "Your repertoire: the openings you play, as lines you can drill until they're automatic."),
+    ("guess", "viktor", "guess", "guess", None,
+     "Try Guess the move: five real positions a week. What would players of that rating play?"),
+    ("progress", "viktor", "progress", "progress", None,
+     "Your Progress page tells your week as a story, with badges you earn in real games."),
+    ("done", "viktor", "plan@.plan-done-sec", "plan/done", "has_done",
+     "Everything you finish is kept in Done, at the bottom of Your plan. Play any of it again whenever you like."),
+    ("prep", "viktor", "prep", "prep", None,
+     "Before a game, try Prep: type a chess.com name and see how they open and how their games end."),
+    ("calc", "viktor", "calc", "calc", None,
+     "Try In your head: put a whole line in as arrows before the board moves. It trains calculation."),
+    ("endgames", "viktor", "endgames", "endgames", None,
+     "The endgame trainer: the endings every player must know, against perfect defence. Learn them once, keep them."),
+    ("openings", "viktor", "openings", "openings", None,
+     "Your opening tree shows where your games go well and where they go wrong, from move one."),
+    ("spar", "viktor", "prep", "spar", "prep",
+     "In Prep there's Spar: play the opening against someone's real moves from their own games, before you meet them."),
+    ("report", "viktor", "report/week", "report", None,
+     "There's a one-page report of your week, ready to print for a coach or a parent."),
+    ("wrapped", "maya", "report/month", "report/month", None,
+     "Your month can play as Wrapped: your chess story in cards, with music. Press play."),
+    ("talk", "maya", "settings", "settings", None,
+     "You can talk to us out loud: press the mic, speak, and we answer in our own voices. Settings has the switch."),
+    ("extension", "maya", "extension", "extension", "no_extension",
+     "Do you play on chess.com? I can sit beside you there too: reviews with arrows on the real board."),
 ]
 
 
@@ -57,6 +98,43 @@ def seen(route):
         if route not in done:
             m["seen"] = (done + [route])[-500:]
             _save(m)
+
+
+def tour_next(coach=None, today=None, now=None, extension=False):
+    """The next new thing to show, or None: at most TOUR_A_DAY a day, TOUR_GAP apart; never one already opened; one
+    shown before but not opened can come again on another day, after the ones never shown; the speaking coach's own
+    first when there's a choice."""
+    m = _load()
+    day = (today or datetime.date.today()).isoformat()
+    now = now or time.time()
+    t = m.get("tour", {})
+    if t.get("day") == day and (t.get("n", 0) >= TOUR_A_DAY or now - t.get("at", 0) < TOUR_GAP):
+        return None
+    done = set(m.get("seen", []))
+    opened = lambda key: any(d == key or d.startswith(key + "/") for d in done)
+    from coach import plan
+    needs = {None: True, "plan": opened("plan"), "no_extension": not extension,
+             "has_done": bool(plan._memory().get("done"))}
+    shown = t.get("shown", {})
+    needs["prep"] = opened("prep")
+    left = [x for x in TOUR if not opened(x[3]) and needs.get(x[4], True) and day not in shown.get(x[0], [])
+            and not (x[0] in IN_HER_VOICE and coach and coach != x[1])]  # "I can…" only from the coach it's about
+    left.sort(key=lambda x: len(shown.get(x[0], [])))  # never shown first; stable, so the tour's order otherwise
+    if not left:
+        return None
+    first = left[:3]
+    x = next((y for y in first if y[1] == coach), first[0]) if coach else first[0]
+    return {"kind": "tour", "id": f"tour-{x[0]}", "line": x[5], "route": x[2], "coach": x[1]}
+
+
+def _tour_shown(m, tid, day, now):
+    t = m.get("tour", {})
+    if t.get("day") != day:
+        t = {**t, "day": day, "n": 0}
+    t["n"] = t.get("n", 0) + 1
+    t["at"] = now
+    t.setdefault("shown", {}).setdefault(tid, []).append(day)
+    m["tour"] = t
 
 
 def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, player=None):
@@ -137,17 +215,13 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
                         "action": {"label": cc[1].split(":")[0], "url": coaches.ROUTES[cc[0]]["url"]}})
         else:
             add("chesscom", f"cc-{cc[0]}", f"Something for your habit: {where}. I'll show you the way.", guide=cc[0])
-    if app:
-        for route, line in UNTRIED:
-            if not opened(route):
-                add("try", f"try-{route}", line, route)
-                break
-    else:  # a warm-up before rated games, at your level
+    if not app:  # a warm-up before rated games, at your level (in the app, the tour brings new things)
         add("bots", "bots", "Before a rated game, warm up against a bot at your level. I'll show you where.", guide="bots")
     return out
 
 
-def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=None, games=None, player=None):
+def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=None, games=None, player=None,
+         coach=None, now=None, extension=False):
     """The one thing to point at on this page now, or None. Remembered, so it shows once a day; a kind shown
     yesterday goes to the back, so she doesn't say the same sort of thing two days running."""
     if place == "chesscom" and section not in CHESSCOM_SECTIONS:
@@ -161,21 +235,35 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
         home = insights.home()
     if not home.get("games"):
         return None
+    now = now or time.time()
     with _LOCK:
         m = _load()
         shown = m.get("shown", {}) if m.get("day") == today else {}
         mine = shown.get(place, [])
-        if len(mine) >= A_DAY:
-            return None
         kinds = m.get("kinds", {})
         before = set(kinds.get(yesterday, []))
         options = [c for c in candidates(place, home, lesson, rematch, prog, games, player)
                    if c["id"] not in mine and c.get("guide") != section]  # not "this way to puzzles" on that page
         options.sort(key=lambda c: c["kind"] in before and c["kind"] not in DAILY)  # stable: yesterday's kinds go last
-        if not options:
+        if len(mine) >= A_DAY:
+            options = []
+        spaced = now - (m.get("at") or {}).get(place, 0) >= GAP  # never two suggestions together
+        options = [c for c in options if spaced or c["kind"] == "game"]
+        new_thing = tour_next(coach, day, now, extension) if place == "app" and spaced else None
+        # the day's own things first (a new game, the 5 minutes), then something new, then the rest
+        if options and options[0]["kind"] in DAILY:
+            c = options[0]
+        else:
+            c = new_thing or (options[0] if options else None)
+        if not c:
             return None
-        c = options[0]
-        m["day"], m["shown"] = today, {**shown, place: mine + [c["id"]]}
+        if c["kind"] == "tour":
+            _tour_shown(m, c["id"][len("tour-"):], today, now)
+            m["shown"] = shown  # today's list only (a new day starts it again)
+        else:
+            m["shown"] = {**shown, place: mine + [c["id"]]}
+        m["day"] = today
+        m["at"] = {**(m.get("at") or {}), place: now}
         m["kinds"] = {d: k for d, k in kinds.items() if d in (today, yesterday)}
         m["kinds"][today] = m["kinds"].get(today, []) + [c["kind"]]
         _save(m)

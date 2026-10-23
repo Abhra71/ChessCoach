@@ -197,7 +197,8 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turn
 // the coach points: every link to that page glows, and the menu item it lives under; gone after a minute or on a
 // click (23 Oct test: "a coach points at her suggestions by herself")
 const NAV_OF = { prep: "train", openings: "train", repertoire: "train", spar: "train", calc: "train", blindfold: "train",
-  guess: "train", endgames: "train", rematch: "games", daily: "home" };
+  guess: "train", endgames: "train", rematch: "games", daily: "home", report: "progress", clockdrill: "progress",
+  extension: "settings" };
 // The ring follows the way (23 Oct test): 10 s on each step if nothing happens; follow it (Games, then the game) and it
 // moves to the next step; arrive and it's done; open something else and it goes at once.
 let kwPointTimer = null, kwPointing = null;
@@ -206,16 +207,24 @@ function kwPoint(route) { kwUnpoint(); kwPointing = route; kwRing(0); }
 function kwRing(tries) {  // the step on this page: the thing itself if it's here, else its menu item
   if (!kwPointing) return;
   document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point"));
-  const route = kwPointing, top = route.split("/")[0], nav = NAV_OF[top] || top;
-  const el = document.querySelector(`#page a[href="#/${route}"]`) || (tries < 15 && (location.hash.replace(/^#\/?/, "").split("/")[0] || "home") === nav
-    ? null : document.querySelector(`.nav a[href="#/${nav}"]`));
+  // "plan@#xq": the page, then that thing on it (the tour: the Explore box, the Done row, the ask bar)
+  const [route, inside] = kwPointing.split("@"), top = route.split("/")[0], nav = NAV_OF[top] || top;
+  const here = (location.hash.replace(/^#\/?/, "") || "home") === route;
+  const menu = () => document.querySelector(`.nav a[href="#/${nav}"]`) ||
+    [...document.querySelectorAll(`a[href="#/${nav}"]`)].find(a => !a.closest("#page"));  // Settings sits under the menu
+  const el = here && inside ? document.querySelector(`#page ${inside}`)
+    : document.querySelector(`#page a[href="#/${route}"]`) || (tries < 15 && (location.hash.replace(/^#\/?/, "").split("/")[0] || "home") === nav
+    ? null : menu());
+  if (!el && here && inside && tries >= 25) return kwUnpoint();  // not on this page after all
+  if (el && here && inside) setTimeout(() => el.scrollIntoView({ block: "center" }), 400);  // once the page has settled
   if (!el) { kwPointTimer = setTimeout(() => kwRing(tries + 1), 200); return; }  // the page is still loading
   el.classList.add("kw-point");
   clearTimeout(kwPointTimer); kwPointTimer = setTimeout(kwUnpoint, 10000);
 }
 addEventListener("hashchange", () => {
   if (!kwPointing) return;
-  const now = location.hash.replace(/^#\/?/, "") || "home", route = kwPointing, top = route.split("/")[0];
+  const now = location.hash.replace(/^#\/?/, "") || "home", [route, inside] = kwPointing.split("@"), top = route.split("/")[0];
+  if (now === route && inside) { clearTimeout(kwPointTimer); return kwRing(0); }  // arrived: now the thing on the page
   if (now === route || now.startsWith(route + "/")) return kwUnpoint();  // arrived: done
   if (now.split("/")[0] === (NAV_OF[top] || top)) { clearTimeout(kwPointTimer); return kwRing(0); }  // followed: the next step
   kwUnpoint();  // somewhere else: it goes
@@ -254,6 +263,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
   const go = async () => {
     const text = q.value.trim(); if (!text || busy) return;
     busy = true;
+    api("/api/seen?route=ask").catch(() => {});  // the tour: asking has been tried
     clearTimeout(fade);
     out.innerHTML = `<span class="muted">Thinking…</span>`;
     try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>` +

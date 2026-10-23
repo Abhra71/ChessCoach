@@ -834,7 +834,10 @@ a.kw-point:not(.nav a) { box-shadow: 0 0 0 2px var(--accent); animation: kwpoint
 .nav a.kw-point, a.kw-point:not(.nav a) { animation: none; box-shadow: none; background: rgba(129,182,76,.14); transition: background .4s; }
 
 /* the green ring is right (23 Oct test); only its timing was wrong */
-.nav a.kw-point, a.kw-point:not(.nav a) { background: none; box-shadow: inset 0 0 0 2px var(--accent); animation: kwpoint 1.2s ease-in-out infinite; }
+.nav a.kw-point, a.kw-point:not(.nav a), #page .kw-point:not(a) { background: none; box-shadow: inset 0 0 0 2px var(--accent); animation: kwpoint 1.2s ease-in-out infinite; }
+/* the tour's ring on a part of a page (the Explore bar, the Done row, the ask bar) */
+#page .kw-point:not(a) { border-radius: 12px; }
+.plan-done-sec.kw-point { padding: 4px 12px 12px; margin: 0 -12px; }
 
 /* a lesson: the habit, one number, your positions as boards (23 Oct) */
 .lhabit { padding: 20px 22px; display: flex; flex-direction: column; gap: 8px; max-width: 760px; }

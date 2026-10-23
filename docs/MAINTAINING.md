@@ -277,6 +277,13 @@ Store has signed it. Test from the source with `try.bat` instead; the Store buil
   own practice is not chess.com. On chess.com itself, the red ring shows the way.
 - **Small talk gets small talk.** Her habit tip only when it answers the question (finding 38 is still open).
 - **Teaching pace:** reviews, training and numbers are spoken slower than greetings.
+- **The tour: the coaches show the whole app** (`TOUR` in `coach/nudge.py`). Every feature has a line, its coach and
+  a path to point along ("plan@.explore-box": the menu, then the page, then that part of it, `kwRing()` in app.js).
+  At most `TOUR_A_DAY` (3) new things a day, `TOUR_GAP` (20 min) apart; any two suggestions in the app at least
+  `GAP` (10 min) apart, except a new game. Never what has been opened (`seen`, also "ask", "plan/explore",
+  "plan/done" when used); one shown but not opened comes back another day, after the never-shown ones. A line that
+  says "I" (`IN_HER_VOICE`) only from its own coach. The day's own things (a new game, the 5 minutes) come first.
+  A new feature needs one row in `TOUR`.
 - **Your plan is a book, curated** (`coach/plan.py`). Four cards (opening, tactic, way of thinking, ending) plus Maya's
   New card. Each card walks a road: tactics = the habit's themes, then `ROTATION`, then `LADDER` (all 26 Lichess tactic
   themes); endings = `ENDINGS_ALL` (5); ideas = `IDEAS` (5); openings = endless, picked from the player's games out of

@@ -14,8 +14,14 @@ HOME = {"games": 140, "daily": {"done_today": False, "streak": 3},
 REMATCH = {"ply": 32, "move_number": 16}
 
 
-def fresh(tmp_path, monkeypatch):
+def fresh(tmp_path, monkeypatch, tour=False):
+    """A clean memory. These tests are about the day's suggestions: no tour and no gap between picks, unless asked."""
+    from coach import plan
     monkeypatch.setattr(nudge, "FILE", tmp_path / "nudges.json")
+    monkeypatch.setattr(plan, "MEMORY", tmp_path / "novelty.json")
+    if not tour:
+        monkeypatch.setattr(nudge, "TOUR", [])
+        monkeypatch.setattr(nudge, "GAP", 0)
 
 
 def ids(place, home, n=4, day=DAY, **kw):
@@ -48,8 +54,7 @@ def test_already_done_or_opened_is_never_suggested_again(tmp_path, monkeypatch):
         nudge.seen(route)
     home = {**HOME, "daily": {"done_today": True}}
     got = ids("app", home, n=3, lesson={"id": "safe-checks", "title": "Look at their checks"}, rematch=REMATCH)
-    assert not {"game-111", "daily", "rematch-111", "lesson-Look at their checks", "try-guess"} & set(got)
-    assert "try-blindfold" in got
+    assert not {"game-111", "daily", "rematch-111", "lesson-Look at their checks"} & set(got)
 
 
 def test_app_things_on_chess_com_get_a_button_and_chess_com_things_in_the_app_a_link(tmp_path, monkeypatch):
@@ -102,3 +107,58 @@ def test_an_old_game_is_not_new(tmp_path, monkeypatch):
 def test_a_new_player_with_no_games_gets_nothing(tmp_path, monkeypatch):
     fresh(tmp_path, monkeypatch)
     assert nudge.pick("app", "home", {"games": 0}, DAY) is None
+
+
+# ---------- the tour: everything in Knightwise, a few new things a day, with space between them ----------
+T0 = 1_800_000_000.0
+QUIET = {**HOME, "daily": {"done_today": True, "streak": 3}, "last_game": {}, "focus": {}}  # nothing else to say today
+
+
+def test_the_tour_brings_a_new_thing_spaced_and_at_most_three_a_day(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch, tour=True)
+    first = nudge.pick("app", "home", QUIET, DAY, now=T0)
+    assert first["kind"] == "tour" and first["route"] == "level"
+    assert nudge.pick("app", "home", QUIET, DAY, now=T0 + 60) is None  # not together
+    second = nudge.pick("app", "home", QUIET, DAY, now=T0 + nudge.TOUR_GAP)
+    third = nudge.pick("app", "home", QUIET, DAY, now=T0 + 2 * nudge.TOUR_GAP)
+    assert second["kind"] == third["kind"] == "tour" and len({first["id"], second["id"], third["id"]}) == 3
+    assert nudge.pick("app", "home", QUIET, DAY, now=T0 + 3 * nudge.TOUR_GAP) is None  # three a day
+
+
+def test_the_tour_skips_what_was_opened_and_comes_back_to_what_was_not(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch, tour=True)
+    assert nudge.pick("app", "home", QUIET, DAY, now=T0)["id"] == "tour-level"
+    nudge.seen("practice")  # found on their own: never suggested
+    nxt = nudge.pick("app", "home", QUIET, DAY, now=T0 + nudge.TOUR_GAP)
+    assert nxt["id"] == "tour-plan"
+    tomorrow = nudge.pick("app", "home", QUIET, NEXT, now=T0 + 86400)
+    assert tomorrow["id"] not in ("tour-level", "tour-plan", "tour-practice")  # never shown ones before repeats
+
+
+def test_the_tour_points_on_into_the_page_and_waits_for_what_it_needs(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch, tour=True)
+    ids_ = [x[0] for x in nudge.TOUR]
+    nudge.seen("plan")
+    explore = next(x for x in nudge.TOUR if x[0] == "explore")
+    assert explore[2] == "plan@.explore-box"
+    left = nudge.tour_next(today=DAY, now=T0)
+    assert left["id"] == "tour-level"
+    for x in ids_:  # everything opened except Explore and Done
+        if x not in ("explore", "done"):
+            nudge.seen(next(t for t in nudge.TOUR if t[0] == x)[3])
+    assert nudge.tour_next(today=DAY, now=T0)["id"] == "tour-explore"
+    nudge.seen("plan/explore")
+    assert nudge.tour_next(today=DAY, now=T0) is None  # Done waits until something is done
+
+
+def test_the_speaking_coach_brings_her_own_first(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch, tour=True)
+    assert nudge.tour_next(coach="maya", today=DAY, now=T0)["coach"] == "maya"
+    assert nudge.tour_next(coach="viktor", today=DAY, now=T0)["coach"] == "viktor"
+
+
+def test_the_days_own_things_come_before_the_tour(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch, tour=True)
+    assert nudge.pick("app", "home", HOME, DAY, now=T0)["id"] == "game-111"
+    assert nudge.pick("app", "home", HOME, DAY, now=T0 + nudge.GAP)["id"] == "daily"
+    assert nudge.pick("app", "home", HOME, DAY, now=T0 + 2 * nudge.GAP)["kind"] == "tour"
