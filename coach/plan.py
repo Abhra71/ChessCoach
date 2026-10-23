@@ -335,23 +335,83 @@ def plan(home=None, engine=None, today=None):
     done = set(mem.get("done", []))
     focus = (home.get("focus") or {}).get("pattern") or HANG
     rating = home.get("rating")
-    theme = next((t for t in THEMES_FOR.get(focus, ROTATION) if f"tactic:{t}" not in done), ROTATION[0])
-    end = "queenEndgame" if any(r.get("pattern") == STALEMATE for rs in moves.values() for r in rs) else \
-        next((t for t in ENDGAMES if f"endgame:{t}" not in done), ENDGAMES[0])
+    # each card walks a fixed road, one topic after another; a done topic leaves the road and stays replayable
+    # (23 Oct test: "I lose track of what I've done and what's coming next")
+    tactics = _path(["tactic:" + t for t in THEMES_FOR.get(focus, []) + ROTATION], done)
+    stalemated = any(r.get("pattern") == STALEMATE for rs in moves.values() for r in rs)
+    endings = _path(["endgame:" + t for t in (["queenEndgame"] if stalemated else []) + ENDGAMES], done)
+    ideas = _path([i["id"] for i in sorted(IDEAS, key=lambda i: focus not in i["helps"])], done)
     done_families = {i.split(":", 2)[2].split(":")[0] for i in done if i.startswith("opening:")}
+    opening = opening_lesson(games, home["player"], focus in (HANG, FORK), engine, done_families) if engine else None
+    if opening and mem.get("openings", {}).get(opening["id"]) != opening["side"]:  # so a done one replays from its side
+        mem.setdefault("openings", {})[opening["id"]] = opening["side"]
+        _save(mem)
     items = {
-        "opening": opening_lesson(games, home["player"], focus in (HANG, FORK), engine, done_families) if engine else None,
-        "tactic": tactic(theme, rating, rng),
-        "idea": ai_idea(home, today, rating=rating, rng=rng) or idea_for(focus, done, rating, rng) or idea_lesson(IDEAS[0], rating, rng),
-        "endgame": endgame(end, rating, rng),
+        "opening": opening,
+        "tactic": tactic(tactics["now"].split(":")[1], rating, rng),
+        "idea": ai_idea(home, today, rating=rating, rng=rng) or idea_lesson(next(i for i in IDEAS if i["id"] == ideas["now"]), rating, rng),
+        "endgame": endgame(endings["now"].split(":")[1], rating, rng),
     }
+    if items["idea"].get("ai"):  # Maya's idea of the week comes first; the road's own next one after it
+        ideas = {**ideas, "next": (done_item(ideas["now"]) or {}).get("title")}
+    paths = {"tactic": tactics, "endgame": endings, "idea": ideas,
+             "opening": {"at": len(done_families) + 1, "of": None, "next": "another opening from your games"}}
     new = novelty(home, games, moves, engine, today, rng)
     if new and items.get(new["kind"]) and items[new["kind"]]["id"] == new["id"]:  # no duplicate: the card shows another one
         if new["kind"] == "endgame":
-            items["endgame"] = endgame(next(t for t in ENDGAMES if f"endgame:{t}" != new["id"]), rating, rng)
+            paths["endgame"] = _path(["endgame:" + t for t in ENDGAMES if "endgame:" + t != new["id"]], done)
+            items["endgame"] = endgame(paths["endgame"]["now"].split(":")[1], rating, rng)
         elif new["kind"] == "tactic":
-            items["tactic"] = tactic(next(t for t in ROTATION if f"tactic:{t}" != new["id"]), rating, rng)
-    return {"player": home["player"], "rating": rating, "items": items, "novelty": new, "done": sorted(done)}
+            paths["tactic"] = _path([t for t in dict.fromkeys(["tactic:" + t for t in THEMES_FOR.get(focus, []) + ROTATION])
+                                     if t != new["id"]], done)
+            items["tactic"] = tactic(paths["tactic"]["now"].split(":")[1], rating, rng)
+    for kind, item in items.items():
+        if item:
+            item["path"] = {k: v for k, v in paths[kind].items() if k != "now"}
+    return {"player": home["player"], "rating": rating, "items": items, "novelty": new, "done": sorted(done),
+            "done_items": [x for x in (done_item(i, mem) for i in mem.get("done", [])) if x]}
+
+
+def _path(ids, done):
+    """One card's road: the topic now, how far along it is, and the one after (all done: round again)."""
+    seq = list(dict.fromkeys(ids))
+    left = [t for t in seq if t not in done]
+    after = left[1] if len(left) > 1 else None
+    return {"now": left[0] if left else seq[0], "at": min(len(seq) - len(left) + 1, len(seq)), "of": len(seq),
+            "next": (done_item(after) or {}).get("title") if after else None}
+
+
+def done_item(item_id, mem=None):
+    """A topic's name for the Done row: {id, kind, title}."""
+    kind, _, rest = item_id.partition(":")
+    if kind in ("tactic", "endgame") and rest in THEME_NAME:
+        return {"id": item_id, "kind": kind, "title": THEME_NAME[rest][0].upper() + THEME_NAME[rest][1:]}
+    if kind == "idea":
+        idea = next((i for i in IDEAS if i["id"] == item_id), None)
+        if item_id.startswith("idea:ai:"):
+            idea = ((mem or _memory()).get("ai_idea") or {}).get("idea")
+            idea = idea if idea and idea.get("id") == item_id else None
+        return {"id": item_id, "kind": "idea", "title": idea["title"]} if idea else None
+    if kind == "opening":
+        side = (mem or _memory()).get("openings", {}).get(item_id, "white")
+        return {"id": item_id, "kind": "opening", "title": f"{rest.split(':', 1)[-1]} (as {side.title()})"}
+    return None
+
+
+def replay(item_id, home, rng):
+    """A done topic built again, to practise once more (new positions; the opening's line is the same)."""
+    kind, _, rest = item_id.partition(":")
+    if kind == "opening":
+        eco, _, name = rest.partition(":")
+        sans = next((x[2] for x in openings.catalogue() if x[0] == eco and x[1] == name), None)
+        if not sans:
+            return None
+        side = _memory().get("openings", {}).get(item_id, "white")
+        o = {"id": item_id, "kind": "opening", "title": f"{name} (as {side.title()})", "name": name, "eco": eco,
+             "side": side, "style": openings.style(name), **openings.teach(sans, side)}
+        return {**o, "coach": OPENING_COACH, "why": f"The {name} again: play your side, I'll answer.",
+                "intro": f"The {name} again.", "drills": [opening_drill(o)]}
+    return build(item_id, home, None, None, None, rng, set())
 
 
 def ai_idea(home, today=None, ask_ai=None, rating=None, rng=None):

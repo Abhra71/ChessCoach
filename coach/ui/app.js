@@ -359,7 +359,7 @@ function shell(active, body) {
           <button id="sideset" class="${active === "settings" ? "on" : ""}" title="Settings">${svg("settings")}</button>
           <button id="aiuse" title="AI use today">${svg("sparkles")}<i class="dot"></i></button>
           <button id="feedback" title="Send feedback">${svg("message")}</button>
-          <button id="synced" title="Checking…">${svg("sync")}<i class="dot"></i></button>
+          <button id="synced" title="Checking…" onclick="kwRefresh()">${svg("sync")}<i class="dot"></i></button>
         </div>
       </aside>
       <main><div class="page" id="page">${body}</div></main>
@@ -2254,6 +2254,12 @@ async function welcome() {
 
 // ---------- router ----------
 function go(route) { location.hash = "#/" + route; }
+// the round arrow, bottom left: look for new games now, then load the page again (23 Oct test: "reload is not working")
+async function kwRefresh() {
+  const b = $("#synced"); if (b) b.classList.add("spin");
+  await api("/api/check-now", {}).catch(() => {});
+  location.reload();
+}
 async function screen(name, arg) {
   if (name === "plan") return await planView(arg);
   if (name === "games" && arg) return await gameView(arg);

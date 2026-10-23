@@ -179,7 +179,27 @@ function trainer(drills, opts) {
   const answered = drills.map(() => false);  // has today's answer: right, missed or shown
   const right = () => state.filter(x => x === "right").length;
   const counter = () => { $("#count").innerHTML = `<b class="num">${i + 1}</b>/${drills.length} <span class="count-ok" title="Right first time today">${svg("check")} ${right()}</span>`; };
+  // sets that aren't recorded on the server (plan cards, lessons, drills) remember today's answers in this app, so
+  // leaving halfway doesn't start you again (23 Oct test: "it reset without saving my progress")
+  const SETS = "kw-sets", setKey = `${new Date().toDateString()}|${location.hash.split("?")[0]}`;
+  const ids = drills.map(x => x.id || "").join(",");
+  function remember() {
+    if (opts.record) return;
+    try {
+      const all = JSON.parse(localStorage.getItem(SETS) || "{}"), today = new Date().toDateString();
+      Object.keys(all).forEach(k => { if (!k.startsWith(today)) delete all[k]; });
+      all[setKey] = { ids, state };
+      localStorage.setItem(SETS, JSON.stringify(all));
+    } catch (e) {}
+  }
+  function recall() {
+    try {
+      const kept = JSON.parse(localStorage.getItem(SETS) || "{}")[setKey];
+      if (kept && kept.ids === ids) kept.state.forEach((t, n) => { if (t) { state[n] = t; answered[n] = true; } });
+    } catch (e) {}
+  }
   function save(x, result) {  // the day's first answer to this position; the server ignores later ones
+    remember();
     if (opts.record) api("/api/practice", { id: x.id, kind: x.kind, right: result === "right", shown: result === "shown" })
       .then(stats).catch(() => {});
   }
@@ -372,7 +392,14 @@ function trainer(drills, opts) {
   };
   $("#prev").onclick = () => { i = (i - 1 + drills.length) % drills.length; show(); };
   $("#prev").hidden = $("#next").hidden = drills.length < 2;
-  if (!opts.record) return show();
+  if (!opts.record) {
+    recall();
+    const first = answered.findIndex(a => !a);
+    i = first < 0 ? 0 : first;
+    show();
+    if (first < 0) allDone(true);
+    return;
+  }
   api("/api/stats").then(s => {  // pick up where you were today
     stats(s);
     drills.forEach((x, n) => { const t = s.today && s.today[x.id]; if (t) { state[n] = t; answered[n] = true; } });
@@ -408,7 +435,14 @@ async function planView(arg) {
   const p = await api("/api/plan");
   if (!p.player) { $("#page").innerHTML = `<div class="empty">Your plan appears once your games are checked.</div>`; return; }
   const all = [...(p.novelty ? [p.novelty] : []), ...Object.values(p.items).filter(Boolean)];
-  if (arg) { const item = all.find(x => x.id === decodeURIComponent(arg)); if (item) return lessonView(item); }
+  if (arg) {
+    const id = decodeURIComponent(arg), item = all.find(x => x.id === id);
+    if (item) return lessonView(item);
+    if (p.done.includes(id)) {  // a done topic, once more
+      const again = await api(`/api/plan/replay?id=${encodeURIComponent(id)}`).catch(() => null);
+      if (again && again.drills) return lessonView(again);
+    }
+  }
   // a picture of each thing, not a sentence (22 Oct: "what is the plan and why so less in it"): its board, how many
   // positions, done or not; one Viktor in his bubble, not on every card
   const ICONS = { opening: "book", tactic: "bolt", idea: "sparkles", endgame: "mate" };
@@ -420,11 +454,17 @@ async function planView(arg) {
       <h3>${esc(x.title)}</h3>
       <div class="mini-board" data-board="${esc(x.id)}"></div>
       ${n ? `<div class="psegs">${Array.from({ length: n }, () => `<i class="pseg ${done ? "right" : ""}"></i>`).join("")}</div>` : ""}
+      ${x.path ? `<div class="small muted ppath">${x.path.of ? `Topic ${x.path.at} of ${x.path.of}` : `Opening ${x.path.at}`}${
+        x.path.next ? ` · next: ${esc(x.path.next)}` : ""}</div>` : ""}
       <button class="btn ${isNew ? "primary" : ""}">${done ? "Again" : "Start"}</button></div>`;
   };
+  // what you've finished stays here, to play again (23 Oct test: "I lose track of what I've done")
+  const doneRow = (p.done_items || []).length ? `<h3 class="plan-done-head">Done ${svg("check")} ${p.done_items.length}</h3>
+    <div class="plan-done">${p.done_items.map(x => `<button class="chip" data-again="${esc(x.id)}" title="Play it again">
+      ${svg(ICONS[x.kind] || "plan")}${esc(x.title)}</button>`).join("")}</div>` : "";
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your plan</h1></div></div>
-    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>`;
+    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${doneRow}`;
   all.forEach(x => {  // the position each one starts from
     const el = document.querySelector(`[data-board="${CSS.escape(x.id)}"]`), d0 = (x.drills || [])[0];
     if (!el) return;
@@ -433,6 +473,7 @@ async function planView(arg) {
     else el.remove();
   });
   document.querySelectorAll("[data-id]").forEach(b => b.onclick = () => go(`plan/${encodeURIComponent(b.dataset.id)}`));
+  document.querySelectorAll("[data-again]").forEach(b => b.onclick = () => go(`plan/${encodeURIComponent(b.dataset.again)}`));
   if (p.novelty && !p.novelty.again) api("/api/plan/mark", { id: p.novelty.id, novelty: true }).catch(() => {});
   if (p.novelty) AiCard.maybe("novelty");
 }

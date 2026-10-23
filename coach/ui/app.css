@@ -844,3 +844,15 @@ a.kw-point:not(.nav a) { box-shadow: 0 0 0 2px var(--accent); animation: kwpoint
 /* Your focus: a calm icon, a green dot when it's going down (23 Oct test) */
 .hicon.calm svg { color: var(--muted); }
 .spark circle.last.good { fill: var(--accent); }
+
+/* Your plan: where each card is on its road, and what's done (23 Oct) */
+.ppath { margin: 6px 0 10px; }
+.plan-done-head { margin: 28px 0 10px; font-size: 15px; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.plan-done-head svg { width: 15px; height: 15px; color: var(--good, #81b64c); }
+.plan-done { display: flex; flex-wrap: wrap; gap: 8px; }
+.plan-done .chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+  background: var(--card, #2b2926); border: 1px solid var(--line, #3a3733); color: inherit; cursor: pointer; font: inherit; font-size: 13px; }
+.plan-done .chip:hover { border-color: var(--good, #81b64c); }
+.plan-done .chip svg { width: 14px; height: 14px; opacity: .7; }
+#synced.spin svg { animation: kwspin .8s linear infinite; }
+@keyframes kwspin { to { transform: rotate(360deg); } }

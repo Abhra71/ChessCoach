@@ -367,6 +367,18 @@ class Handler(BaseHTTPRequestHandler):
                     item["drills"] = daylock.keep(f"plan:{kind}:{item.get('id') or item.get('title')}", item["drills"])
                     brief.add(item["drills"])
             return self.send(200, json.dumps(out), "application/json")
+        if path == "/api/plan/replay":  # a done plan topic, to play again (the same positions all day)
+            import random
+            from datetime import date
+            from urllib.parse import parse_qs, urlsplit
+            from coach import brief, daylock, plan
+            item_id = (parse_qs(urlsplit(self.path).query).get("id") or [""])[0]
+            item = plan.replay(item_id, insights.home(), random.Random(date.today().isoformat() + item_id)) if item_id else None
+            if not item or not item.get("drills"):
+                return self.send(404, json.dumps({"message": "Not found."}), "application/json")
+            item["drills"] = daylock.keep(f"replay:{item_id}", item["drills"])
+            brief.add(item["drills"])
+            return self.send(200, json.dumps(item), "application/json")
         if path.startswith("/api/film/"):  # your game as a short 3D film: its script (1.0)
             from coach import film
             gid = path.rsplit("/", 1)[-1]
