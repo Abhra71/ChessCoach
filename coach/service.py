@@ -313,7 +313,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/seen":  # a page the player opened in the app: nothing "new" about it any more (23 Oct)
             from coach import nudge
             from urllib.parse import parse_qs, urlsplit
-            nudge.seen(parse_qs(urlsplit(self.path).query).get("route", [""])[0])
+            from urllib.parse import unquote
+            nudge.seen(unquote(parse_qs(urlsplit(self.path).query).get("route", [""])[0]))
             return self.send(200, "{}", "application/json")
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
             STATE["extension_seen"] = time.strftime("%Y-%m-%d %H:%M")

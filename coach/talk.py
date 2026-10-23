@@ -97,7 +97,7 @@ def next_lesson():
     try:
         c = course.course()
         row = next((r for r in c["lessons"] if r["id"] == c["next"]), None)
-        return {"title": row["title"], "why": course.reason(row), "habit": row["habit"]} if row else None
+        return {"id": row["id"], "title": row["title"], "why": course.reason(row), "habit": row["habit"]} if row else None
     except Exception:  # never let the course stop a conversation
         return None
 

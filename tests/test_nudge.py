@@ -68,3 +68,12 @@ def test_an_old_game_is_not_new(tmp_path, monkeypatch):
     fresh(tmp_path, monkeypatch)
     home = {**HOME, "last_game": {**HOME["last_game"], "end_time": time.time() - 5 * 86400}}
     assert nudge.pick("app", "home", home, DAY)["id"] == "daily"
+
+
+def test_a_rematch_or_lesson_already_opened_is_never_suggested_again(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch)
+    nudge.seen("games/111"); nudge.seen("rematch/111/32"); nudge.seen("course/safe-checks")
+    home = {**HOME, "daily": {"done_today": True}}
+    p = nudge.pick("app", "home", home, DAY, lesson={"id": "safe-checks", "title": "Look at their checks"},
+                   rematch={"ply": 32, "move_number": 16})
+    assert p["id"].startswith("try-")  # not the rematch, not the lesson: something untried

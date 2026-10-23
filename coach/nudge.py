@@ -78,11 +78,12 @@ def candidates(place, home, lesson=None, rematch=None):
         out.append({"id": "daily", "route": "daily",
                     "line": f"Today's 5 minutes are waiting. Keep your {streak}-day streak going." if streak > 1
                     else "Today's 5 minutes are waiting: three positions from your own games."})
-    if place == "app" and rematch and g.get("checked") and g.get("result") in ("loss", "draw"):
+    opened = lambda route: any(d == route or d.startswith(route + "/") for d in done)  # done or seen: never again
+    if place == "app" and rematch and g.get("checked") and g.get("result") in ("loss", "draw") and not opened(f"rematch/{g['id']}"):
         out.append({"id": f"rematch-{g['id']}", "route": f"rematch/{g['id']}/{rematch['ply']}",
                     "line": f"Against {opp} it went wrong at move {rematch['move_number']}. Play it again from there?"})
-    if place == "app" and lesson:
-        out.append({"id": f"lesson-{lesson['title']}"[:80], "route": "course",
+    if place == "app" and lesson and not (lesson.get("id") and opened(f"course/{lesson['id']}")):
+        out.append({"id": f"lesson-{lesson['title']}"[:80], "route": f"course/{lesson['id']}" if lesson.get("id") else "course",
                     "line": f"Your next lesson: {lesson['title']}."})
     if place == "app":
         for route, line in UNTRIED:
