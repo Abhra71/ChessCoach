@@ -1023,3 +1023,6 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .scout-go-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .scout-go-item { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .scout-details { margin: 24px 0 10px; font-size: 18px; color: var(--muted); }
+/* 24 Oct, owner: the medal filled the box; the boxes touched; an empty strip under the search */
+#prep { margin-top: 16px; } #prepmsg:empty { display: none; }
+.scout-go > .row svg { width: 15px; height: 15px; vertical-align: -3px; margin-right: 4px; } .scout-go .btn svg { width: 16px; height: 16px; }
