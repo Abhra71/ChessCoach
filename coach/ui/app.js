@@ -1012,7 +1012,8 @@ function paintScout(user, r) {
       <div class="box scout-card scout-tips"><div class="label">Your plan</div>
         <ol>${x.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>
     </div>
-    <div class="box scout-go"><div class="label">Practise against them</div>
+    <div class="box scout-go"><div class="row spread"><div class="label">Practise against them</div>
+      <span class="small muted" title="A badge in Progress">${svg("medal")} Win your next game against ${esc(user)}: Homework done</span></div>
       <div class="scout-go-row">
         <div class="scout-go-item"><b>Punish their mistakes</b><span class="small muted">${puzzles ? `${puzzles.length} real positions where ${esc(user)} went wrong. Find the move that punishes it.` : `Picking positions from their games… ${left}%`}</span>
           ${puzzles && puzzles.length ? `<a class="btn primary" href="#/punish/${esc(user)}">${svg("practice")} Punish ${puzzles.length}</a>` : ""}</div>

@@ -453,6 +453,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(400, json.dumps({"message": "That doesn't look like a chess.com username."}), "application/json")
             try:
                 out = prep.cached(user)
+                if out:
+                    prep.remember(user)  # for the Homework done badge
             except urllib.error.HTTPError as e:
                 return self.send(404, json.dumps({"message": "No chess.com player with that name." if e.code == 404
                                                   else "chess.com didn't answer. Try again."}), "application/json")

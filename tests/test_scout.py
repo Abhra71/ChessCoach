@@ -52,3 +52,15 @@ def test_opening_line_finds_where_they_score_worst():
 def test_king_counts_castling():
     k = scout.king([_g("me", "white", "win", end=i) for i in range(3)], "me")
     assert k == {"castled": 0, "of": 3, "median_move": None}  # the sample game never castles
+
+
+def test_homework_done_counts_the_next_game_against_them_only():
+    from coach import prep
+    def game(opp, end, my_result):
+        return {"white": {"username": "me", "result": my_result}, "black": {"username": opp, "result": "x"},
+                "end_time": end, "url": f"g{end}"}
+    mine = [game("bob", 50, "resigned"), game("ann", 150, "win"), game("bob", 200, "win"), game("bob", 300, "resigned")]
+    assert prep.beaten(mine, "me", [{"user": "bob", "at": 100}]) == 1  # next vs bob after prep: won (ann in between)
+    assert prep.beaten(mine, "me", [{"user": "bob", "at": 100}, {"user": "bob", "at": 120}]) == 1  # one game, once
+    assert prep.beaten(mine, "me", [{"user": "bob", "at": 250}]) == 0  # the next one was lost
+    assert prep.beaten(mine, "me", [{"user": "zed", "at": 0}]) == 0  # never played them

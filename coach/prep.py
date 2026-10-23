@@ -117,3 +117,49 @@ def cached(user, **kw):
     out = scout(key, **kw)
     _CACHE[key] = (time.time(), out)
     return out
+
+
+# ---------- the "Homework done" badge (24 Oct, owner): prep someone, then win your very next game against them ----------
+def _preps_file():
+    from coach.paths import DATA
+    return DATA / "preps.json"
+
+
+def remember(user):
+    """Note that you prepped against this player now (kept on this PC; the last 500)."""
+    import json
+    f = _preps_file()
+    try:
+        rows = json.loads(f.read_text())
+    except (OSError, ValueError):
+        rows = []
+    rows = (rows + [{"user": user.strip().lower(), "at": int(time.time())}])[-500:]
+    try:
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(rows))
+    except OSError:
+        pass
+
+
+def beaten(mine, me, preps=None):
+    """How many times you won the very next game against a player after prepping them. Each game counts once,
+    however many times you prepped before it; other games in between don't matter."""
+    import json
+    if preps is None:
+        try:
+            preps = json.loads(_preps_file().read_text())
+        except (OSError, ValueError):
+            preps = []
+    me = (me or "").lower()
+    won = set()
+    for p in preps:
+        theirs = [g for g in mine if g.get("end_time", 0) > p["at"] and p["user"] in
+                  (g["white"]["username"].lower(), g["black"]["username"].lower()) and me in
+                  (g["white"]["username"].lower(), g["black"]["username"].lower())]
+        if not theirs:
+            continue
+        nxt = min(theirs, key=lambda g: g["end_time"])
+        side = "white" if nxt["white"]["username"].lower() == me else "black"
+        if insights._result(nxt, side) == "win":
+            won.add(nxt["url"])
+    return len(won)

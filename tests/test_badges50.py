@@ -3,8 +3,8 @@ from coach import progress
 
 
 def test_fifty_badges_with_three_levels_each_and_unique_ids():
-    assert len(progress.BADGES) == 50
-    assert len({b[1] for b in progress.BADGES}) == 50
+    assert len(progress.BADGES) == 51  # 51st: Homework done (24 Oct)
+    assert len({b[1] for b in progress.BADGES}) == 51
     assert all(len(b[6]) == 3 and b[6][0] < b[6][1] < b[6][2] for b in progress.BADGES)
 
 

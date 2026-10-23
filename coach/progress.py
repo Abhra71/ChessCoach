@@ -13,7 +13,7 @@ from coach.review import ABOUT, LOSING_MATERIAL, biggest
 HANG, FORK, MATED = "left a piece hanging", "walked into a fork or trick", "walked into checkmate"
 FREE, MISSED_MATE, STALEMATE = "missed a free capture", "missed a checkmate", "stalemated a won game"
 TIER = ["Bronze", "Silver", "Gold"]
-# 50 badges. "run": games in a row without a habit; "count": a number from your games or your training. Each one says
+# 51 badges. "run": games in a row without a habit; "count": a number from your games or your training. Each one says
 # something true about your chess when it's earned (23 Oct test: "the user will know they are good at something").
 BADGES = [
     ("Habits", "safe", "Safe pieces", "hang", "games in a row without a hanging piece", ("run", HANG), [3, 5, 10]),
@@ -66,6 +66,7 @@ BADGES = [
     ("Training", "graduate", "Graduate", "plan", "course lessons passed, judged by your games", ("count", "graduate"), [2, 6, 15]),
     ("Training", "level", "Level up", "up", "your level on the ladder", ("count", "level"), [2, 3, 4]),
     ("Training", "dailyrun", "Streak keeper", "flame", "Today's 5 minutes, days in a row, best run", ("count", "streak"), [7, 30, 60]),
+    ("Training", "prepared", "Homework done", "search", "players beaten in your next game against them, after Prep", ("count", "prepared"), [1, 3, 10]),
     ("Training", "puzzlerun", "On target", "practice", "positions right first time in a row, best run", ("count", "puzzlerun"), [5, 15, 30]),
 ]
 LOSING = -300  # centipawns for you: about a quarter of a chance to win
@@ -318,6 +319,8 @@ def training(games, moves, player, days):
             best = max(best, now)
         return best
     safe("puzzlerun", run)
+    from coach import prep
+    safe("prepared", lambda: prep.beaten(games, player))
     return out
 
 
