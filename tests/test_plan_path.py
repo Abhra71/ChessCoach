@@ -35,3 +35,37 @@ def test_search_matches_word_starts(monkeypatch):
                                        "title": "Sicilian Defense", "side": "black", "moves": 2}
     assert plan.search("fork")[0]["id"] == "tactic:fork"
     assert plan.search("   ") == []
+
+
+def _item(i, n=4):
+    return {"id": i, "kind": "tactic", "title": i, "drills": [{"id": f"{i}-{k}", "steps": []} for k in range(n)]}
+
+
+def test_started_goes_to_in_progress_then_done(tmp_path, monkeypatch):
+    monkeypatch.setattr(plan, "MEMORY", tmp_path / "novelty.json")
+    plan.progress("tactic:skewer", _item("tactic:skewer"), [None, None, None, None])
+    assert plan.in_progress() == {}  # opened, nothing answered: not started
+    plan.progress("tactic:skewer", _item("tactic:skewer"), ["right", None, None, None])
+    started = plan.in_progress()
+    assert list(started) == ["tactic:skewer"] and started["tactic:skewer"]["state"] == ["right", None, None, None]
+    assert len(started["tactic:skewer"]["drills"]) == 4  # its own positions, to carry on with
+    plan.progress("tactic:skewer", None, ["right", "missed", None, None])  # later answers need no item
+    assert plan.in_progress()["tactic:skewer"]["state"][1] == "missed"
+    plan.mark("tactic:skewer", done=True)
+    assert plan.in_progress() == {} and "tactic:skewer" in plan._memory()["done"]
+
+
+def test_done_played_again_stays_done(tmp_path, monkeypatch):
+    monkeypatch.setattr(plan, "MEMORY", tmp_path / "novelty.json")
+    plan.mark("endgame:rookEndgame", done=True)
+    plan.progress("endgame:rookEndgame", _item("endgame:rookEndgame"), ["right", None, None, None])
+    assert plan.in_progress() == {}
+
+
+def test_in_progress_keeps_the_newest(tmp_path, monkeypatch):
+    import datetime
+    monkeypatch.setattr(plan, "MEMORY", tmp_path / "novelty.json")
+    for n in range(plan.IN_PROGRESS_MAX + 3):
+        plan.progress(f"tactic:t{n}", _item(f"tactic:t{n}"), ["right"], today=datetime.date(2026, 1, 1) + datetime.timedelta(days=n))
+    kept = plan.in_progress()
+    assert len(kept) == plan.IN_PROGRESS_MAX and "tactic:t0" not in kept and next(iter(kept)) == f"tactic:t{plan.IN_PROGRESS_MAX + 2}"

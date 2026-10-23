@@ -364,7 +364,7 @@ class Handler(BaseHTTPRequestHandler):
                 out = plan.plan(home=out_home, engine=live_engine.get())
             from coach import brief, daylock
             for kind, item in list((out.get("items") or {}).items()) + [("novelty", out.get("novelty"))]:
-                if item and item.get("drills"):  # the day's positions stay the same until midnight
+                if item and item.get("drills") and "state" not in item:  # a started one keeps its own positions  # the day's positions stay the same until midnight
                     item["drills"] = daylock.keep(f"plan:{kind}:{item.get('id') or item.get('title')}", item["drills"])
                     brief.add(item["drills"])
             import random
@@ -385,6 +385,9 @@ class Handler(BaseHTTPRequestHandler):
             from coach import brief, daylock, plan
             q = parse_qs(urlsplit(self.path).query)
             item_id, side = (q.get("id") or [""])[0], (q.get("side") or [None])[0]
+            started = plan.in_progress().get(item_id)
+            if started and (not side or started.get("side") in (None, side)):  # carry on with the same positions
+                return self.send(200, json.dumps(started), "application/json")
             item = plan.replay(item_id, insights.home(), random.Random(date.today().isoformat() + item_id), side) if item_id else None
             if not item or not item.get("drills"):
                 return self.send(404, json.dumps({"message": "Not found."}), "application/json")
@@ -572,7 +575,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, "forbidden", "text/plain")
         try:
             big = ("/api/save-picture", "/api/copy-picture")  # a picture of your week is bigger
-            limit = 4_000_000 if self.path in big else 10_000
+            # a picture of your week, or a plan set with its positions (In progress), is bigger
+            limit = 4_000_000 if self.path in big else 2_000_000 if self.path == "/api/plan/progress" else 10_000
             body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), limit)))
         except ValueError:
             return self.send(400, "bad json", "text/plain")
@@ -646,6 +650,10 @@ class Handler(BaseHTTPRequestHandler):
             if lid not in course.BY_ID:
                 return self.send(404, json.dumps({"message": "No such lesson."}), "application/json")
             course.studied(lid, body.get("right", 0), body.get("total", 0))
+            return self.send(200, "{}", "application/json")
+        if path == "/api/plan/progress":  # a plan set answered part-way: kept for In progress (23 Oct test)
+            from coach import plan
+            plan.progress(str(body.get("id", ""))[:200], body.get("item"), body.get("state"))
             return self.send(200, "{}", "application/json")
         if path == "/api/plan/mark":  # the player saw or finished a new thing
             from coach import plan

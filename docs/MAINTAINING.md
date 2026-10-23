@@ -284,8 +284,14 @@ Store has signed it. Test from the source with `try.bat` instead; the Store buil
   **Explore** (`library()`, `search()`, `/api/plan/library`) browses or searches the whole library: every theme with
   puzzles on this computer, and 3,160 catalogue opening lines in 140 families, by name (word starts, both sides) or in dropdowns. Everything is Lichess data,
   nothing made up. A new theme needs: puzzles in `KEEP_THEMES`, a name in `THEME_NAME`, a clue in `drills.CLUE`.
-- **Sets remember today's answers.** Practice and daily on the server (`/api/stats`); plan cards, lessons and Explore
-  picks in the app's own storage (`kw-sets`), cleared each new day. The same positions all day (`daylock`).
+- **Sets remember their answers.** Practice and daily on the server (`/api/stats`). Plan sets (top cards and Explore
+  picks) on the server too: answered part-way, a set is kept with its own positions (`plan.progress()`,
+  `/api/plan/progress`, memory `progress`, at most 30) and shows a bar; Explore picks show under **In progress**; all
+  answered → `mark(done)` moves it to **Done**. A done topic played again never goes back to In progress. Other
+  lessons use the app's own storage (`kw-sets`, today only). Writes to the plan memory go one at a time (`_LOCK`,
+  `_update()`): an older copy would undo a "done".
+- **Ask while you learn:** every learning page has the ask box (`/api/ask` with the position and the lesson). While
+  solving, Stockfish's moves are taken out of the facts before the AI sees them, so it can't give the answer away.
 
 ## 8. After 1.0: ideas kept for later, with how to start
 Each is a separate, small piece of work. Paste this section with the files named.

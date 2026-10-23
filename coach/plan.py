@@ -9,6 +9,7 @@ At most one new thing at a time; it stays until it is done (or a week passes), a
 import collections
 import json
 import random
+import threading
 import time
 from datetime import date
 
@@ -120,14 +121,30 @@ def _memory():
         return {"shown": {}, "done": []}
 
 
+def _update(change):
+    """Change the memory as it is on disk now, one writer at a time (an older copy would undo a "done")."""
+    with _LOCK:
+        mem = _memory()
+        change(mem)
+        _save(mem)
+
+
 def _save(mem):
     MEMORY.parent.mkdir(parents=True, exist_ok=True)
     MEMORY.write_text(json.dumps(mem))
 
 
+_LOCK = threading.Lock()  # the last answer and "finished" arrive together: one write at a time, none lost
+
+
 def mark(item_id, done=False, today=None, novelty=False):
     """The player saw (or finished) something. novelty: it was the coach's new thing (one at a time, with cooldown);
     opening a card in Your plan is not."""
+    with _LOCK:
+        _mark(item_id, done, today, novelty)
+
+
+def _mark(item_id, done, today, novelty):
     mem = _memory()
     day = (today or date.today()).isoformat()
     mem.setdefault("shown", {}).setdefault(item_id, day)
@@ -135,7 +152,52 @@ def mark(item_id, done=False, today=None, novelty=False):
         mem.setdefault("novelty", {}).setdefault(item_id, day)
     if done and item_id not in mem["done"]:
         mem["done"].append(item_id)
+    if done:  # finished: out of In progress, into Done
+        mem.get("progress", {}).pop(item_id, None)
     _save(mem)
+
+
+IN_PROGRESS_MAX = 30
+
+
+def progress(item_id, item, state, today=None):
+    with _LOCK:
+        _progress(item_id, item, state, today)
+
+
+def _progress(item_id, item, state, today=None):
+    """A set started and left part-way (23 Oct test): kept with its own positions, so it carries on exactly where it
+    was, any day, from the top cards or from Explore. All answered: it's done (mark does the rest). A done topic played
+    again isn't put back in progress."""
+    mem = _memory()
+    if item_id in mem.get("done", []) or not isinstance(state, list):
+        return
+    answered = sum(1 for x in state if x)
+    book = mem.setdefault("progress", {})
+    if not answered:
+        return
+    if item_id not in book:
+        if not isinstance(item, dict) or not item.get("drills"):
+            return
+        keep = {k: item[k] for k in ("id", "kind", "title", "coach", "why", "intro", "drills", "side", "fen", "checklist",
+                                     "theme", "name", "back") if k in item}
+        book[item_id] = {"item": keep}
+    rec = book[item_id]
+    rec["state"] = [x if x in ("right", "missed", "shown") else None for x in state][:len(rec["item"]["drills"])]
+    rec["day"] = (today or date.today()).isoformat()
+    if len(book) > IN_PROGRESS_MAX:  # the oldest go first
+        for old in sorted(book, key=lambda k: book[k].get("day", ""))[:len(book) - IN_PROGRESS_MAX]:
+            book.pop(old)
+    _save(mem)
+
+
+def in_progress(mem=None):
+    """{id: item with its saved answers}, newest first."""
+    mem = mem or _memory()
+    done = set(mem.get("done", []))
+    book = mem.get("progress", {})
+    order = sorted(book, key=lambda k: book[k].get("day", ""), reverse=True)
+    return {k: {**book[k]["item"], "state": book[k].get("state", [])} for k in order if k not in done}
 
 
 # ---------- the signals ----------
@@ -248,9 +310,7 @@ def novelty(home=None, games=None, moves=None, engine=None, today=None, rng=None
     """The one new thing to bring now, or None (its reason is remembered, so it reads the same when it comes back)."""
     new = _novelty(home, games, moves, engine, today, rng)
     if new and not new.get("again") and new.get("why"):
-        mem = _memory()
-        mem.setdefault("why", {})[new["id"]] = new["why"]
-        _save(mem)
+        _update(lambda m: m.setdefault("why", {}).__setitem__(new["id"], new["why"]))
     return new
 
 
@@ -353,8 +413,7 @@ def plan(home=None, engine=None, today=None):
     done_families = {i.split(":", 2)[2].split(":")[0] for i in done if i.startswith("opening:")}
     opening = opening_lesson(games, home["player"], focus in (HANG, FORK), engine, done_families) if engine else None
     if opening and mem.get("openings", {}).get(opening["id"]) != opening["side"]:  # so a done one replays from its side
-        mem.setdefault("openings", {})[opening["id"]] = opening["side"]
-        _save(mem)
+        _update(lambda m: m.setdefault("openings", {}).__setitem__(opening["id"], opening["side"]))
     items = {
         "opening": opening,
         "tactic": tactic(tactics["now"].split(":")[1], rating, rng),
@@ -373,11 +432,18 @@ def plan(home=None, engine=None, today=None):
         elif new["kind"] == "tactic":
             paths["tactic"] = _path([t for t in dict.fromkeys(tactic_road) if t != new["id"]], done)
             items["tactic"] = tactic(paths["tactic"]["now"].split(":")[1], rating, rng)
+    started = in_progress()
     for kind, item in items.items():
         if item:
             item["path"] = {k: v for k, v in paths[kind].items() if k != "now"}
+            if item["id"] in started:  # started: the same positions and answers as when it was left
+                items[kind] = {**item, **started[item["id"]], "path": item["path"]}
+    if new and new["id"] in started:
+        new = {**new, **started[new["id"]]}
+    on_top = {x["id"] for x in list(items.values()) + [new] if x}
     return {"player": home["player"], "rating": rating, "items": items, "novelty": new, "done": sorted(done),
-            "done_items": [x for x in (done_item(i, mem) for i in mem.get("done", [])) if x]}
+            "done_items": [x for x in (done_item(i, mem) for i in mem.get("done", [])) if x],
+            "in_progress": [x for k, x in started.items() if k not in on_top]}
 
 
 def _path(ids, done):
@@ -423,9 +489,8 @@ def replay(item_id, home, rng, side=None):
             return None
         mem = _memory()
         if side in ("white", "black"):
-            if mem.setdefault("openings", {}).get(item_id) != side:
-                mem["openings"][item_id] = side
-                _save(mem)
+            if mem.get("openings", {}).get(item_id) != side:
+                _update(lambda m: m.setdefault("openings", {}).__setitem__(item_id, side))
         else:
             side = mem.get("openings", {}).get(item_id) or default_side(name)
         if not any((i % 2 == 0) == (side == "white") for i in range(len(sans))) or \
@@ -558,8 +623,7 @@ def ai_idea(home, today=None, ask_ai=None, rating=None, rng=None):
         return None
     idea = {"id": f"idea:ai:{week}", "kind": "idea", "coach": "viktor", "title": title, "intro": body, "text": body,
             "why": "A new idea Maya wrote for you this week, from your games.", "ai": True}
-    mem["ai_idea"] = {"week": week, "idea": idea}
-    _save(mem)
+    _update(lambda m: m.__setitem__("ai_idea", {"week": week, "idea": idea}))
     return _practised(idea, rating, rng)
 
 

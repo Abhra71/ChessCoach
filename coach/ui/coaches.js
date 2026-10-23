@@ -185,6 +185,7 @@ function trainer(drills, opts) {
   const ids = drills.map(x => x.id || "").join(",");
   function remember() {
     if (opts.record) return;
+    if (opts.onAnswer) opts.onAnswer(state.slice());
     try {
       const all = JSON.parse(localStorage.getItem(SETS) || "{}"), today = new Date().toDateString();
       Object.keys(all).forEach(k => { if (!k.startsWith(today)) delete all[k]; });
@@ -416,7 +417,8 @@ function trainer(drills, opts) {
       why_last_move: done && step().idea ? step().idea : "",
       next_move_idea: !done && step().idea ? step().idea.replace(/^[^:]*:\s*/, "") : "" } }) })).catch(() => {});  // the idea, not the move
   if (!opts.record) {
-    recall();
+    if (Array.isArray(opts.restore)) opts.restore.forEach((t, n) => { if (t && n < drills.length) { state[n] = t; answered[n] = true; } });
+    else recall();
     const first = answered.findIndex(a => !a);
     i = first < 0 ? 0 : first;
     show();
@@ -465,9 +467,10 @@ async function planView(arg) {
   const p = await api("/api/plan");
   if (!p.player) { $("#page").innerHTML = `<div class="empty">Your plan appears once your games are checked.</div>`; return; }
   const all = [...(p.novelty ? [p.novelty] : []), ...Object.values(p.items).filter(Boolean)];
-  const doneCards = (p.done_cards || []).filter(x => !all.some(y => y.id === x.id));
+  const started = (p.in_progress || []).filter(x => !all.some(y => y.id === x.id));
+  const doneCards = (p.done_cards || []).filter(x => !all.some(y => y.id === x.id) && !started.some(y => y.id === x.id));
   if (arg) {
-    const id = decodeURIComponent(arg), item = all.find(x => x.id === id) || doneCards.find(x => x.id === id);
+    const id = decodeURIComponent(arg), item = all.find(x => x.id === id) || started.find(x => x.id === id) || doneCards.find(x => x.id === id);
     if (item) return lessonView(item);
     const again = await api(`/api/plan/replay?id=${encodeURIComponent(id)}`).catch(() => null);  // done or explored
     if (again && again.drills) return lessonView(again);
@@ -475,26 +478,35 @@ async function planView(arg) {
   // a picture of each thing, not a sentence (22 Oct: "what is the plan and why so less in it"): its board, how many
   // positions, done or not; one Viktor in his bubble, not on every card
   const ICONS = { opening: "book", tactic: "bolt", idea: "sparkles", endgame: "mate" };
+  const segs = (x, done) => {  // one segment a position: green right, orange missed, yellow shown, grey not yet
+    const n = (x.drills || []).length, st = x.state || [];
+    return n ? `<div class="psegs">${Array.from({ length: n }, (_, j) => `<i class="pseg ${done ? "right" : st[j] || ""}"></i>`).join("")}</div>` : "";
+  };
+  const answeredOf = x => `${(x.state || []).filter(Boolean).length} of ${(x.drills || []).length} done`;
   const card = (x, isNew, small) => {
-    const n = (x.drills || []).length, done = p.done.includes(x.id);
-    if (small) return `<div class="box pcard small" data-id="${esc(x.id)}" title="Play it again">
-      <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span><span class="pdone">${svg("check")}</span></div>
-      <h3>${esc(x.title)}</h3><div class="mini-board" data-board="${esc(x.id)}"></div><button class="btn">Again</button></div>`;
+    const done = p.done.includes(x.id), going = !done && (x.state || []).some(Boolean);
+    if (small) return `<div class="box pcard small" data-id="${esc(x.id)}" title="${going ? "Carry on" : "Play it again"}">
+      <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span>${going ? "" : `<span class="pdone">${svg("check")}</span>`}</div>
+      <h3>${esc(x.title)}</h3><div class="mini-board" data-board="${esc(x.id)}"></div>
+      ${going ? `${segs(x, false)}<div class="small muted">${answeredOf(x)}</div>` : ""}
+      <button class="btn ${going ? "primary" : ""}">${going ? "Continue" : "Again"}</button></div>`;
     return `<div class="box pcard ${isNew ? "new" : ""}" data-id="${esc(x.id)}" title="${esc(x.why || x.intro || "")}">
       <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span>
         ${isNew ? `<span class="pnew">New</span>` : done ? `<span class="pdone">${svg("check")}</span>` : ""}</div>
       <h3>${esc(x.title)}</h3>
       <div class="mini-board" data-board="${esc(x.id)}"></div>
-      ${n ? `<div class="psegs">${Array.from({ length: n }, () => `<i class="pseg ${done ? "right" : ""}"></i>`).join("")}</div>` : ""}
-      ${x.path ? `<div class="small muted ppath">${x.path.of ? `Topic ${x.path.at} of ${x.path.of}` : `Opening ${x.path.at}`}${
+      ${segs(x, done)}
+      ${going ? `<div class="small muted ppath">${answeredOf(x)}</div>` : x.path ? `<div class="small muted ppath">${x.path.of ? `Topic ${x.path.at} of ${x.path.of}` : `Opening ${x.path.at}`}${
         x.path.next ? ` · next: ${esc(x.path.next)}` : ""}</div>` : ""}
-      <button class="btn ${isNew ? "primary" : ""}">${done ? "Again" : "Start"}</button></div>`;
+      <button class="btn ${isNew || going ? "primary" : ""}">${done ? "Again" : going ? "Continue" : "Start"}</button></div>`;
   };
+  const startedRow = started.length ? `<h3 class="plan-done-head">In progress · ${started.length}</h3>
+    <div class="plan-cards done-cards">${started.map(x => card(x, false, true)).join("")}</div>` : "";
   // a finished card moves down here and the next topic takes its place (23 Oct test: "I lose track of what I've done")
   const doneRow = doneCards.length ? `<h3 class="plan-done-head">Done ${svg("check")} ${(p.done_items || []).length}</h3>
     <div class="plan-cards done-cards">${doneCards.map(x => card(x, false, true)).join("")}</div>` : "";
   const more = Object.values(p.items).filter(Boolean).reduce((s, x) => s + ((x.path && x.path.more) || 0), 0);
-  const tally = `${all.length} now · ${(p.done_items || []).length} done · ${more} more on the way, and new openings from your games`;
+  const tally = `${all.length} now · ${started.length ? `${started.length} in progress · ` : ""}${(p.done_items || []).length} done · ${more} more on the way, and new openings from your games`;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your plan</h1>
       <p class="plan-line">Everything in chess, picked for you. Finish a card and the next most important one for you takes its place; finished cards go to Done.</p>
@@ -504,8 +516,8 @@ async function planView(arg) {
       <label class="explore-box">${svg("search")}<input id="xq" type="search" autocomplete="off" spellcheck="false"
         placeholder="Explore on your own: an opening, a tactic, an ending…"></label>
       <div id="xres" hidden></div>
-    </div>${doneRow}`;
-  [...all, ...doneCards].forEach(x => {  // the position each one starts from
+    </div>${startedRow}${doneRow}`;
+  [...all, ...started, ...doneCards].forEach(x => {  // the position each one starts from
     const el = document.querySelector(`[data-board="${CSS.escape(x.id)}"]`), d0 = (x.drills || [])[0];
     if (!el) return;
     if (x.fen) Board.render(el, { fen: x.fen, flip: x.side === "black" });
@@ -582,13 +594,15 @@ function explore() {
 }
 
 function lessonView(item) {
+  // a plan set (top card or Explore) remembers its answers on this computer: In progress until all are answered
+  const keep = item.back ? {} : { restore: item.state, onAnswer: st => api("/api/plan/progress", { id: item.id, item, state: st }).catch(() => {}) };
   const back = item.back === "repertoire" ? `<a href="#/repertoire" class="small muted" style="text-decoration:none">← Your repertoire</a>`
     : item.back === "level" ? `<a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>`
     : `<a href="#/plan" class="small muted" style="text-decoration:none">← Your plan</a>`;
   api("/api/plan/mark", { id: item.id }).catch(() => {});
   if (item.kind === "idea") {  // a way of thinking, practised on your own positions with its checklist
     $("#page").innerHTML = trainerPage(item.title, { back, text: item.intro });
-    trainer(item.drills, { coach: item.coach, checklist: item.checklist || [], onDone: rightFirst => {
+    trainer(item.drills, { ...keep, coach: item.coach, checklist: item.checklist || [], onDone: rightFirst => {
       api("/api/plan/mark", { id: item.id, done: true }).catch(() => {});
       setTimeout(() => Coach.react(item.coach, "celebrate",
         `${rightFirst} of ${item.drills.length} right first time. Now do the same check in every game: after a week it becomes automatic.`,
@@ -597,7 +611,7 @@ function lessonView(item) {
     return;
   }
   $("#page").innerHTML = trainerPage(item.title, { back, text: item.why || item.intro });
-  trainer(item.drills, { coach: item.coach, onDone: rightFirst => {
+  trainer(item.drills, { ...keep, coach: item.coach, onDone: rightFirst => {
     api("/api/plan/mark", { id: item.id, done: true }).catch(() => {});
     setTimeout(() => Coach.react(item.coach, "celebrate",
       item.kind === "opening" ? "You know the line. Play it in your next games: I'll check how it goes." :
