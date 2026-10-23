@@ -423,14 +423,14 @@ async function pollStatus() {
 }
 
 // ---------- home ----------
-function spark(points) {  // a small line, no axes: is it going down?
+function spark(points, good) {  // a small line, no axes: is it going down? good: the last dot in green
   if (points.length < 2) return "";
   const W = 220, H = 56, max = Math.max(...points, 1) * 1.1;
   const x = i => 4 + i * (W - 8) / (points.length - 1), y = v => H - 6 - v / max * (H - 12);
   const d = points.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const n = points.length - 1;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}"><path class="line draw" d="${d}" pathLength="1"/>
-    <circle class="last" cx="${x(n)}" cy="${y(points[n])}" r="4"/></svg>`;
+    <circle class="last${good ? " good" : ""}" cx="${x(n)}" cy="${y(points[n])}" r="4"/></svg>`;
 }
 
 function ring(part, whole) {  // a progress ring that fills
@@ -1635,9 +1635,9 @@ async function home() {
           <span title="Pieces given away">${svg("hang")} ${last.pieces_lost}</span></div>
         <span class="btn">Review</span></a>` : ""}
       ${f ? `<a class="box hcard" href="#/practice/${encodeURIComponent(f.pattern)}">
-        <div class="row spread"><b>Your focus</b><span class="hicon" title="${esc(PATTERN_TITLE[f.pattern] || cap(f.pattern))}">${svg((HABIT[f.pattern] || ["hang"])[0])}</span></div>
-        <div class="hnum"><b class="num">${roll(h.pieces_last20, 1)}</b>${trend(better, h.pieces_per_game.toFixed(1))}</div>
-        ${spark(h.trend)}
+        <div class="row spread"><b>Your focus</b><span class="hicon calm" title="Practise: ${esc((PATTERN_TITLE[f.pattern] || cap(f.pattern)).toLowerCase())}">${svg("practice")}</span></div>
+        <div class="hnum"><b class="num">${roll(h.pieces_last20, 1)}</b>${trend(better, `from ${h.pieces_per_game.toFixed(1)}`)}</div>
+        <div title="Pieces lost a game, each point the average of ${h.trend_window || 10} games, oldest on the left. Now ${roll(h.pieces_last20, 1)}; over all your games ${h.pieces_per_game.toFixed(1)}.">${spark(h.trend, better)}</div>
         <span class="muted small">pieces lost a game</span>
         <span class="btn">Practise</span></a>` : ""}
     </div>
