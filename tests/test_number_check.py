@@ -20,3 +20,17 @@ def test_the_graph_ends_on_the_last_full_window(monkeypatch):
     window = insights.TREND_WINDOW
     trend = [round(sum(lost[i:i + window]) / window, 2) for i in range(len(lost) % window, len(lost) - window + 1, window)]
     assert trend[-1] == 0.0 and len(trend) == 2
+
+
+def test_todays_5_minutes_stay_the_same_all_day(tmp_path, monkeypatch):
+    import datetime
+    from coach import daily
+    monkeypatch.setattr(daily, "FILE", tmp_path / "daily.json")
+    day = datetime.date(2026, 10, 23)
+    kept = [{"id": "a"}, {"id": "b"}]
+    (tmp_path / "daily.json").write_text('{"days": [], "set": {"day": "2026-10-23", "theme": "Forks", "drills": %s}}'
+                                         % __import__("json").dumps(kept))
+    out = daily.challenge({"focus": {"pattern": "left a piece hanging"}}, today=day)
+    assert out["drills"] == kept and out["theme"] == "Forks"
+    other = daily.challenge({"focus": {"pattern": "left a piece hanging"}}, today=day + datetime.timedelta(days=1))
+    assert other["drills"] != kept  # a new day, a new set

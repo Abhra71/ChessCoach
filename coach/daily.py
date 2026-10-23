@@ -55,6 +55,13 @@ def challenge(home, games=None, engine=None, today=None):
     focus = (home.get("focus") or {}).get("pattern") or plan.HANG
     themes = plan.THEMES_FOR.get(focus, plan.ROTATION)
     theme = themes[today.toordinal() % len(themes)]
+    kept = _memory().get("set") or {}
+    if kept.get("day") == today.isoformat() and kept.get("drills"):  # today's set, exactly as first made (23 Oct test:
+        items = kept["drills"]                                         # a restart or new games changed it mid-day)
+        days = _memory().get("days", [])
+        return {"date": today.isoformat(), "theme": kept.get("theme") or plan.THEME_NAME[theme], "drills": items,
+                "done_today": today.isoformat() in days, "streak": streak(days, today), "total": len(set(days)),
+                "week": week_dots(days, today)}
     items = []
     own = _own(focus, rng, today)
     if own:
@@ -69,7 +76,15 @@ def challenge(home, games=None, engine=None, today=None):
             drill["steps"] = drill["steps"][:OPENING_MOVES]
             drill["intro"] = f"Your opening: the first moves of the {lesson['name']}."
             items.append(drill)
-    days = _memory().get("days", [])
+    mem = _memory()
+    if engine is not None and items:  # the full set (with your opening): kept for the rest of the day
+        mem["set"] = {"day": today.isoformat(), "theme": plan.THEME_NAME[theme], "drills": items}
+        try:
+            FILE.parent.mkdir(parents=True, exist_ok=True)
+            FILE.write_text(json.dumps(mem))
+        except OSError:
+            pass
+    days = mem.get("days", [])
     return {"date": today.isoformat(), "theme": plan.THEME_NAME[theme], "drills": items,
             "done_today": today.isoformat() in days, "streak": streak(days, today), "total": len(set(days)),
             "week": week_dots(days, today)}
