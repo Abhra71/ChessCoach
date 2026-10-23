@@ -266,8 +266,9 @@ function trainer(drills, opts) {
   const d = () => drills[i], step = () => d().steps[k];
   const mark = (sqs, cls) => Object.fromEntries(sqs.map(s => [s, cls]));
   const mine = sym => (sym === sym.toUpperCase()) === !d().flip;
-  function draw(hl = {}, targets = []) { Board.render($("#board"), { pieces, flip: d().flip, highlights: { ...last, ...hl }, targets, onClick: click }); }
-  function result(cls, html) { $("#result").innerHTML = `<div class="${cls}">${html}</div>`; }
+  // the page may be gone by the time a reply or an answer comes back (23 Oct chaos test): then there's nothing to draw
+  function draw(hl = {}, targets = []) { if (!$("#board")) return; Board.render($("#board"), { pieces, flip: d().flip, highlights: { ...last, ...hl }, targets, onClick: click }); }
+  function result(cls, html) { const el = $("#result"); if (el) el.innerHTML = `<div class="${cls}">${html}</div>`; }
   async function show() {
     k = 0; picked = null; done = false; missed = false; last = {};
     const x = d();
@@ -427,6 +428,7 @@ function trainer(drills, opts) {
     return;
   }
   api("/api/stats").then(s => {  // pick up where you were today
+    if (!$("#count")) return;  // left the page before today's answers came back (23 Oct chaos test)
     stats(s);
     drills.forEach((x, n) => { const t = s.today && s.today[x.id]; if (t) { state[n] = t; answered[n] = true; } });
     const first = answered.findIndex(a => !a);

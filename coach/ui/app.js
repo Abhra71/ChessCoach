@@ -2020,9 +2020,11 @@ async function extensionView() {
 
 // ---------- settings ----------
 async function settingsView() {
+  if (!location.hash.startsWith("#/settings")) return;  // a switch answered after you'd left: don't draw Settings over another page
   const was = ($("main") || {}).scrollTop || 0, again = location.hash.startsWith("#/settings") && $("#page .settings-row");
   if (!again) shell("settings", `<p class="muted">Loading…</p>`);
   const [s, st] = await Promise.all([api("/api/settings"), api("/api/status")]);
+  if (!location.hash.startsWith("#/settings")) return;
   const aiSet = Object.values(s.slots).some(x => x.set);  // the real key state, never a stale flag
   const slot = (id, n) => {
     const x = s.slots[id], prov = s.providers[x.provider];
@@ -2353,7 +2355,11 @@ async function route() {
       if (first) setTimeout(() => Coach.arrive("home"), 2500);  // the first Home: the coach comes once the cards have settled
       else Coach.arrive(name || "home");
     }
+    const asked = location.hash;
     await screen(name, arg);
+    // a slow page finished after you'd moved on: it may have drawn over the page you're on, so draw that one again
+    // (23 Oct chaos test)
+    if (location.hash !== asked) return route();
     if (!arg) intro(name || "home");
   } catch (e) {
     console.error(e);
