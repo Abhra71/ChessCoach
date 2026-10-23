@@ -44,3 +44,16 @@ def test_a_days_set_is_kept_until_midnight(tmp_path, monkeypatch):
     assert daylock.keep("course:x", [{"id": 1}], day) == [{"id": 1}]
     assert daylock.keep("course:x", [{"id": 2}], day) == [{"id": 1}]  # remade later that day: the same set
     assert daylock.keep("course:x", [{"id": 2}], day + datetime.timedelta(days=1)) == [{"id": 2}]  # a new day
+
+
+def test_the_ai_usage_bar_forgets_yesterdays_figure(monkeypatch):
+    """23 Oct test: the bar still showed 32% used the next day (the provider's figure was kept in memory)."""
+    import datetime
+    from coach import ai
+    monkeypatch.setattr(ai, "_usage", lambda: {})
+    ai._LAST["groq"] = {"x-ratelimit-remaining-requests": "680", "x-ratelimit-limit-requests": "1000",
+                        "_day": (datetime.date.today() - datetime.timedelta(days=1)).isoformat()}
+    assert ai.usage()["groq"]["requests_left"] is None  # yesterday's: gone
+    ai._LAST["groq"]["_day"] = datetime.date.today().isoformat()
+    assert ai.usage()["groq"]["requests_left"] == 680
+    ai._LAST.pop("groq")

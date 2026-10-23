@@ -45,8 +45,8 @@ def _post(url, body, headers, provider=None):
     with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
         if provider:  # Groq tells us exactly how much is left: kept for the usage panel
             limits = {k.lower(): v for k, v in resp.headers.items() if k.lower().startswith("x-ratelimit-")}
-            if limits:
-                _LAST[provider] = limits
+            if limits:  # with its day: the next day it no longer counts (23 Oct test: "still 32% the next day")
+                _LAST[provider] = {**limits, "_day": date.today().isoformat()}
         return json.load(resp)
 
 
@@ -236,6 +236,8 @@ def usage(now=None):
     out = {}
     for provider in settings.PROVIDERS:
         used, last = today.get(provider, {"requests": 0, "tokens": 0}), _LAST.get(provider, {})
+        if last.get("_day") != date.today().isoformat():  # yesterday's figure: a new day starts fresh
+            last = {}
 
         def num(k):
             return int(last[k]) if str(last.get(k, "")).isdigit() else None
