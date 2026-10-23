@@ -283,11 +283,15 @@ def explain(facts, rating):
     return cache[cache_key]
 
 
-def ask(question, context, rating):
-    """Answer the player's own question about a position, using only the engine facts in `context`."""
+def ask(question, context, rating, solving=False):
+    """Answer the player's own question about a position, using only the engine facts in `context`. solving: they
+    are still finding the move, so the facts carry no engine moves and the answer must not name one."""
     system = COACH_RULES.format(rating=rating or "unknown") + \
         "Answer the player's question in at most 4 short sentences, using only the facts. " \
-        "If the question can't be answered from the facts, say so kindly and suggest what to look at."
+        "If the question can't be answered from the facts, say so kindly and suggest what to look at." + \
+        (" They are still solving this position: never name a move or the square to move to. Help them think: which "
+         "pieces to look at, what to check, the idea the lesson teaches. When the lesson gives next_move_idea, "
+         "the hint follows it." if solving else "")
     prompt = f"Facts (from Stockfish and the board):\n{json.dumps(context, indent=1)}\n\nThe player asks: {question[:500]}"
     text, provider = complete(system, prompt)
     return {"text": text, "provider": provider}

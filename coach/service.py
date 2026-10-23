@@ -842,7 +842,16 @@ class Handler(BaseHTTPRequestHandler):
                                                                       "pieces_per_game", "pieces_last20", "trend")}}
                 if r:
                     context["key_moment"] = moment_facts(r, classify(r))
-                answer = ai.ask(str(body.get("question", "")), context, rating)
+                lesson = body.get("lesson")
+                if isinstance(lesson, dict):  # asked on a learning page: what it teaches (23 Oct test)
+                    context["lesson"] = {k: str(v)[:400] for k, v in lesson.items()
+                                         if k in ("title", "teaches", "opening", "line_so_far", "why_last_move", "next_move_idea") and v}
+                solving = bool(body.get("solving"))
+                if solving and "position" in context:  # still solving: the answer is held back, so it can't be given away
+                    p = context["position"]
+                    context["position"] = {k: v for k, v in p.items() if k != "engine_top_moves"}
+                    context["still_solving"] = True
+                answer = ai.ask(str(body.get("question", "")), context, rating, solving)
         except ai.NoKey as e:
             return self.send(400, json.dumps({"message": str(e), "no_key": True}), "application/json")
         except ValueError:

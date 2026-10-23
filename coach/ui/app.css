@@ -902,3 +902,6 @@ button.xrow:hover { border-color: var(--good, #81b64c); }
 .xlines { padding: 2px 0 6px 18px; display: flex; flex-direction: column; gap: 3px; }
 .xdrop .xrow { background: transparent; }
 .xdrop .xrow:hover { background: rgba(255,255,255,.04); }
+
+/* ask while you learn (23 Oct) */
+.trainer-ask { margin-top: 14px; }

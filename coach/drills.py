@@ -91,7 +91,7 @@ def step(board, good, say, reply=None, close=()):
             after.push(move)
             entry["after"] = squares(after)
         moves[move.uci()] = entry
-    out = {"board": squares(board), "moves": moves, "reply": None}
+    out = {"board": squares(board), "fen": board.fen(), "moves": moves, "reply": None}
     if reply:
         after = board.copy()
         after.push(next(iter(good)))

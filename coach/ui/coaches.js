@@ -392,6 +392,29 @@ function trainer(drills, opts) {
   };
   $("#prev").onclick = () => { i = (i - 1 + drills.length) % drills.length; show(); };
   $("#prev").hidden = $("#next").hidden = drills.length < 2;
+  // ask while you learn (23 Oct test): Stockfish's facts about this exact position, the lesson's own words; while
+  // you're still solving, the server holds the engine's moves back, so the answer is never given away
+  const fenNow = () => step().fen || (() => {  // sets kept from before 23 Oct carry no FEN: build it from the board
+    const rows = [];
+    for (let r = 8; r >= 1; r--) {
+      let row = "", gap = 0;
+      for (const f of "abcdefgh") { const p = pieces[f + r]; if (p) { row += (gap || "") + p; gap = 0; } else gap++; }
+      rows.push(row + (gap || ""));
+    }
+    return `${rows.join("/")} ${d().flip ? "b" : "w"} - - 0 1`;
+  })();
+  const lineSoFar = () => d().kind !== "opening" ? "" : d().steps.slice(0, k).map(st => {
+    const mv = Object.values(st.moves).find(m => m.good);
+    return [mv && mv.san, st.reply && st.reply.san].filter(Boolean).join(" ");
+  }).join(" ");
+  if ($("#trainask")) api("/api/settings").then(cfg => askBox($("#trainask"), {
+    placeholder: `Ask ${(COACHES[coach] || {}).name || "your coach"} about this position`, coach,
+    enabled: Object.values(cfg.slots || {}).some(x => x.set), listen: cfg.talk_ready,
+    onAsk: q => api("/api/ask", { question: q, fen: fenNow(), solving: !done, lesson: {
+      title: ($("#page h1") || {}).textContent || "", teaches: ($("#page .page-head .sub") || {}).textContent || d().hint || "",
+      opening: d().kind === "opening" ? d().where || "" : "", line_so_far: lineSoFar(),
+      why_last_move: done && step().idea ? step().idea : "",
+      next_move_idea: !done && step().idea ? step().idea.replace(/^[^:]*:\s*/, "") : "" } }) })).catch(() => {});  // the idea, not the move
   if (!opts.record) {
     recall();
     const first = answered.findIndex(a => !a);
@@ -423,7 +446,7 @@ function trainerPage(title, sub) {
         <div class="box play-only" id="result" style="min-height:84px"><span class="muted">Click a piece, then the square to move it to.</span></div>
         <div class="row"><button class="btn" id="prev">← Back</button><button class="btn play-only" id="show">Show answer</button>
           <button class="btn" id="next">Next →</button></div>
-        <p class="note" id="stats"></p></div>
+        <p class="note" id="stats"></p><div id="trainask" class="trainer-ask"></div></div>
     </div>`;
 }
 
