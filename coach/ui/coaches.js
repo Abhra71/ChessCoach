@@ -341,7 +341,11 @@ function trainer(drills, opts) {
     const pick = (d().kind === "game" && entries.find(([, m]) => m.san === d().best)) || entries[0];
     missed = true; ticked = checklist.length; good(pick[0], pick[1], true);
   }
-  function stats(s) { if (s && s.positions && $("#stats")) $("#stats").textContent = `All time: ${s.right_first} of ${s.positions} positions right the very first time you saw them · ${s.learned} learned for good.`; }  // not today's count: a position you see again adds to that (19 Oct)
+  function stats(s) {  // "learned for good" only once there is one: on day one "0 learned" read like failing (23 Oct test)
+    const el = $("#stats"); if (!(s && s.positions && el)) return;
+    el.textContent = `All time: ${s.right_first} of ${s.positions} right the first time${s.learned ? ` · ${s.learned} learned for good` : ""}.`;
+    el.title = "A position you get right comes back after 1 day, then 3, then 7. Right 3 times in a row, days apart: learned for good.";
+  }  // not today's count: a position you see again adds to that (19 Oct)
   $("#show").onclick = () => { if (!done) answer(); };
   $("#next").onclick = () => {  // from the last one: the next unanswered, or the end of the session, never a silent loop
     if (i === drills.length - 1 && answered.every(Boolean)) { finishedAll = false; return allDone(true); }
