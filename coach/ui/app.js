@@ -754,11 +754,11 @@ async function levelView() {
       <div class="page-head"><div><h1>Your level</h1></div></div>
       ${ladder}
       <p class="lgoal">${line}<span class="muted small" style="font-weight:400;margin-left:auto">your last ${p.games} games</span></p>
-      <div class="lskills rise ${mine ? "" : "ahead"}">${lv.skills.map(x => skill(x, mine)).join("")}</div>`;
+      <div class="lskills rise ${mine ? "" : "ahead"}">${lv.skills.slice().sort((a, b) => (a.met === true) - (b.met === true)).map(x => skill(x, mine)).join("")}</div>`;
     $(".lgoal svg") && ($(".lgoal svg").style.transform = "rotate(-90deg)");
     document.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => draw(Number(b.dataset.lv)));
   };
-  draw(p.current);
+  draw(p.current);  // cards with something to do come first; done ones go to the bottom (23 Oct test)
   Coach.react("viktor", "explain", next
     ? `You're on level ${p.current + 1} of 5, ${cur.name}. Each card counts something in your real games. The one to fix first: ${next.name.toLowerCase()}.`
     : `Every level done. Remarkable. Keep playing: the numbers keep watching.`,
