@@ -20,6 +20,25 @@ def _rating(games, player):
     return (rs[0], rs[-1]) if rs else (None, None)
 
 
+THIN = 5  # fewer games than this in the period: the numbers swing a lot, and the report says so
+
+
+def _ratings(period, every, player, start):
+    """Your rating for each kind of game you played in the period (23 Oct test: "293 to 100" mixed rapid and blitz):
+    from your last game of that kind before the period (or the first in it) to the last in it. Most played first."""
+    out = []
+    kinds = collections.Counter(g.get("time_class", "") for g in period)
+    mine = lambda g: g[insights._side(g, player)[0]].get("rating")
+    for kind, n in kinds.most_common():
+        these = sorted((g for g in period if g.get("time_class") == kind), key=lambda g: g["end_time"])
+        earlier = [g for g in every if g.get("time_class") == kind and g["end_time"] < start and mine(g)]
+        first = mine(max(earlier, key=lambda g: g["end_time"])) if earlier else mine(these[0])
+        last = mine(these[-1])
+        if first and last:
+            out.append({"kind": kind, "games": n, "from": first, "to": last})
+    return out
+
+
 def _practice(since, until):
     """Your practice in Knightwise in the period: answers, right first time, and the days you practised."""
     entries = [e for e in memory._first_each_day() if since <= e["day"] <= until]
@@ -53,8 +72,10 @@ def report(days=7, now=None):
     side = lambda g: insights._side(g, player)[0]
     out["results"] = dict(collections.Counter(insights._result(g, side(g)) for g in period))
     out["kinds"] = dict(collections.Counter(g.get("time_class", "") for g in period))
-    first, last = _rating(period, player)
-    out["rating"] = {"from": first, "to": last}
+    out["ratings"] = _ratings(period, insights._games(), player, now - span)
+    main = out["ratings"][0] if out["ratings"] else {}
+    out["rating"] = {"from": main.get("from"), "to": main.get("to"), "kind": main.get("kind")}  # the most played kind
+    out["thin"] = 0 < len(period) < THIN
     # habits: per game in this period against the one before, the biggest ones first
     habits = []
     for pattern, (what, habit) in ABOUT.items():
@@ -76,8 +97,11 @@ def report(days=7, now=None):
             rows = moves[g["url"]]
             return (insights._result(g, side(g)) == "win", -len(biggest(rows)), -sum(1 for r in rows if r["pattern"] in LOSING_MATERIAL))
         played = [g for g in period if insights._moves_played(g.get("pgn", "")) >= 10] or period
-        best = max(played, key=score)
-        out["best"] = insights.game_row(best, moves[best["url"]], player)
+        # the best game is a win, or a draw; a loss is never called your best (23 Oct test)
+        good = [g for g in played if insights._result(g, side(g)) in ("win", "draw")]
+        if good:
+            best = max(good, key=score)
+            out["best"] = insights.game_row(best, moves[best["url"]], player)
         worst = max(((r, g) for g in period for r in moves[g["url"]]), key=lambda x: x[0]["loss"], default=None)
         if worst and worst[0]["loss"] >= 15:
             r, g = worst
@@ -105,9 +129,12 @@ def lines(r):
     res = r["results"]
     w, d, l = res.get("win", 0), res.get("draw", 0), res.get("loss", 0)
     out = [f"{r['games']} game{'s' if r['games'] != 1 else ''}: {w} won, {d} drawn, {l} lost."]
-    rt = r["rating"]
-    if rt["from"] and rt["to"] and rt["from"] != rt["to"]:
-        out.append(f"Rating {rt['from']} to {rt['to']} ({rt['to'] - rt['from']:+d}).")
+    if r.get("thin"):
+        out.insert(0, f"Only {r['games']} game{'s' if r['games'] != 1 else ''} in these {r['days']} days, so these numbers "
+                      "can swing a lot." + (" The month view has more." if r["days"] <= 7 else ""))
+    moved = [x for x in r.get("ratings", []) if x["from"] != x["to"]]
+    if moved:
+        out.append("Rating: " + ", ".join(f"{x['kind']} {x['from']} to {x['to']} ({x['to'] - x['from']:+d})" for x in moved) + ".")
     p = r["pieces"]
     if p["before"] is not None:
         change = "fewer than" if p["now"] < p["before"] else "more than" if p["now"] > p["before"] else "the same as"

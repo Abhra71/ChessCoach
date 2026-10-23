@@ -1029,11 +1029,11 @@ async function reportView(arg) {
       <div class="report-grid">
         <div class="box stack"><div class="label">Games</div>
           <div class="row"><b class="big">${r.games}</b><span class="small">${res.win || 0} won · ${res.draw || 0} drawn · ${res.loss || 0} lost</span></div>
-          ${rt.from ? `<div class="small">Rating ${rt.from} → ${rt.to} <span class="delta ${rt.to >= rt.from ? "good" : "bad"}">${rt.to - rt.from >= 0 ? "+" : ""}${rt.to - rt.from}</span></div>` : ""}
-          <div class="small muted">${Object.entries(r.kinds || {}).map(([k, n]) => `${n} ${esc(k)}`).join(" · ")}</div></div>
+          ${(r.ratings || []).map(x => `<div class="small">${esc(cap(x.kind))} <span class="muted">(${x.games})</span> ${x.from} → ${x.to}
+            ${x.to !== x.from ? `<span class="delta ${x.to > x.from ? "good" : "bad"}">${x.to - x.from > 0 ? "+" : ""}${x.to - x.from}</span>` : `<span class="muted">same</span>`}</div>`).join("")}</div>
         <div class="box stack"><div class="label">Mistakes a game</div>
           <div class="small"><b>${per(r.pieces.now)}</b> pieces given away ${change(r.pieces.now, r.pieces.before)}</div>
-          <div class="small"><b>${per(r.big)}</b> big mistakes (a game's three costliest)</div>
+          <div class="small" title="The named mistakes (a piece left hanging, a missed mate and so on), the three costliest a game at most"><b>${per(r.big)}</b> big mistakes</div>
           ${r.clock && r.clock.lines.length ? r.clock.lines.map(l => `<div class="small muted">${esc(l)}</div>`).join("") : ""}</div>
         <div class="box stack"><div class="label">Practice in Knightwise</div>
           <div class="small"><b>${pr.days || 0}</b> day${pr.days === 1 ? "" : "s"} practised</div>
@@ -1069,7 +1069,7 @@ function wrapped(r) {
     [`${r.games}`, `game${r.games === 1 ? "" : "s"} played`, `${r.games} games.`],
     [`${res.win || 0}`, `won · ${res.draw || 0} drawn · ${res.loss || 0} lost`, `${res.win || 0} of them won.`],
   ];
-  if (rt.from && rt.to !== rt.from) cards.push([`${rt.to - rt.from > 0 ? "+" : ""}${rt.to - rt.from}`, `rating: ${rt.from} to ${rt.to}`, `Your rating went from ${rt.from} to ${rt.to}.`]);
+  if (rt.from && rt.to !== rt.from) cards.push([`${rt.to - rt.from > 0 ? "+" : ""}${rt.to - rt.from}`, `${rt.kind || ""} rating: ${rt.from} to ${rt.to}`, `Your ${rt.kind || ""} rating went from ${rt.from} to ${rt.to}.`]);
   if (r.pieces.before != null) cards.push([`${r.pieces.now}`, `pieces given away a game, ${r.pieces.now < r.pieces.before ? "down" : r.pieces.now > r.pieces.before ? "up" : "the same"} from ${r.pieces.before}`,
     r.pieces.now < r.pieces.before ? "Fewer pieces given away. That is the habit working." : "Pieces given away: that's our work for next time."]);
   if (r.best) cards.push([`vs ${esc(r.best.opponent)}`, `your best game · ${esc(r.best.date)}`, `Your best game: against ${r.best.opponent}.`]);
