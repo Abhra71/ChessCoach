@@ -503,6 +503,15 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
   body, .shell, .main, #page { background: #fff !important; color: #111 !important; }
   .report .box { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; break-inside: avoid; }
   .report .muted, .report .label { color: #555 !important; }
+  /* the menu is hidden, so the page takes the whole width and runs on over pages (23 Oct test: the PDF came out
+     squeezed into the menu's narrow column, every word cut off) */
+  .shell { display: block !important; height: auto !important; }
+  main { overflow: visible !important; height: auto !important; }
+  #page { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+  .report { max-width: none !important; }
+  .report-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .rise { animation: none !important; opacity: 1 !important; transform: none !important; }
+  @page { margin: 14mm; }
 }
 .film-controls { margin-top: 12px; align-items: center; }
 

@@ -1605,15 +1605,6 @@ function wrap(g, t, x, y, width, size) {
   g.fillText(line, x, y);
 }
 
-// what to say about your last game: never "0 key moments", and a game left after 2 moves isn't "a clean game" (19 Oct)
-function lastGameWords(last, who) {
-  if (last.moments) return `${who} ${last.moments} key moment${last.moments === 1 ? "" : "s"} to look at.`;
-  if (last.moves && last.moves < 10) return last.result === "win" && last.how === "abandoned"
-    ? `they left after ${last.moves} move${last.moves === 1 ? "" : "s"}, so there's nothing to learn from it.`
-    : `it ended after ${last.moves} move${last.moves === 1 ? "" : "s"}, too short to learn from.`;
-  return "there was nothing big to fix.";
-}
-
 async function home() {
   shell("home", `<p class="muted">Loading…</p>`);
   const h = await api("/api/home");
@@ -1646,7 +1637,6 @@ async function home() {
     ${STATUS.phase && !["ready", "starting"].includes(STATUS.phase) && STATUS.total ? `<div class="box checking">${svg("sync")}
       <span>Checking your games: <b class="num">${STATUS.done}</b> of ${STATUS.total}</span><div class="bar"><div style="width:${100 * STATUS.done / STATUS.total}%"></div></div></div>` : ""}
     <div class="home-head"><h1>${hello}, ${esc(h.player)}</h1>
-      <button class="btn ghost icon-btn" id="brief" title="Hear it from Maya">${svg("sound")}</button>
       <span class="home-streak" title="Days in a row of your five minutes">${svg("flame")}<b class="num">${d.streak || 0}</b></span></div>
     <div class="home-cards rise">
       <a class="box hcard" href="#/daily">
@@ -1690,12 +1680,7 @@ async function home() {
   if (last && last.fen) Board.render($("#lastboard"), { fen: last.fen, flip: last.flip });
   api("/api/warmup").then(w => { const x = (w.items || [])[0]; if (x && $("#todayboard")) Board.render($("#todayboard"), { pieces: x.board, flip: x.flip }); }).catch(() => {});
   countUp($("#page"));
-  // three sentences, not six (13 Oct test, point 1: "is it needed?"): your focus, the habit, your last game
-  const briefing = [`${hello}, ${h.player}.`,
-    f ? `Your focus is to ${(PATTERN_TITLE[f.pattern] || f.pattern).toLowerCase()}: ${f.times} times in ${f.games} games.` : "",
-    f ? f.habit : "",
-    last ? `In your last game, against ${last.opponent}, ${lastGameWords(last, "I found")}` : ""].join(" ");
-  $("#brief").onclick = () => Voice.speak(briefing, true, COACHES.maya.voice);  // Home is Maya's
+  // no "Hear it from Maya" button (23 Oct notes: unnecessary): Maya greets and talks by herself
   api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,
     onAsk: async q => {  // the same brain as Talk (19 Oct): typing "open my last review" opens it
