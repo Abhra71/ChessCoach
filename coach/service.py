@@ -722,7 +722,8 @@ class Handler(BaseHTTPRequestHandler):
             turns = body.get("history") if isinstance(body.get("history"), list) else []
             history = [(str(t[0]), str(t[1])) for t in turns[-6:] if isinstance(t, list) and len(t) == 2]
             where = body.get("where") if isinstance(body.get("where"), dict) else {}
-            where = {k: str(v)[:40] for k, v in where.items() if k in ("section", "game", "step", "chesscom", "ply")}
+            where = {k: str(v)[:400 if k == "on_screen" else 40] for k, v in where.items()
+                     if k in ("section", "game", "step", "chesscom", "ply", "on_screen", "line", "side")}  # on_screen: what the page shows
             t0 = time.time()
             r = talk.reply(str(body.get("coach", "maya")), str(body.get("text", "")), history, where)
             if (r.get("action") or {}).get("web", "").startswith("https://www.chess.com/"):

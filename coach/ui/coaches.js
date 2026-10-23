@@ -116,7 +116,10 @@ const Conv = (() => {
   const where = () => {
     const [name, arg] = location.hash.replace(/^#\/?/, "").split("/");
     // in a review, the move on screen too, so "why was that bad?" is about that move (22 Oct test)
-    return name === "games" && arg ? { section: "review", game: arg, ply: String(window.kwPly ? window.kwPly() : "") } : { section: name || "home" };
+    if (name === "games" && arg) return { section: "review", game: arg, ply: String(window.kwPly ? window.kwPly() : "") };
+    const on = window.kwOnScreen && window.kwOnScreen.route === name ? window.kwOnScreen.get() : "";  // what the page shows now
+    const extra = on && window.kwOnScreen.extra ? window.kwOnScreen.extra() : {};
+    return on ? { section: name || "home", on_screen: on, ...extra } : { section: name || "home" };
   };
   const show = (pose, lines, actions = []) => Coach.show({ coach, pose, mood: pose, lines, talking: true, actions }, { speak: false });
   async function start(who) {

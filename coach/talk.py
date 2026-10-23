@@ -231,6 +231,59 @@ def this_move(where):
         return {}
 
 
+def this_line(where):
+    """On the opening tree: the line on screen, from the player's own checked games (24 Oct test: "why do I lose from
+    this line?" got a guess). What they scored, which mistakes they made in those games and when, what came next."""
+    import collections
+    import io
+    import chess.pgn
+    where = where or {}
+    line, side = str(where.get("line", "")).split(), where.get("side")
+    if where.get("section") != "openings" or not line or side not in ("white", "black"):
+        return {}
+    try:
+        player = (insights._player() or "").lower()
+        moves = insights._moves()
+        hits, nxt_theirs, nxt_mine = [], collections.Counter(), collections.Counter()
+        for g in insights._games():
+            if insights._side(g, player)[0] != side:
+                continue
+            game = chess.pgn.read_game(io.StringIO(g.get("pgn") or ""))
+            if not game:
+                continue
+            board, sans = game.board(), []
+            for m in list(game.mainline_moves())[:len(line) + 1]:
+                sans.append(board.san(m))
+                board.push(m)
+            if sans[:len(line)] != line:
+                continue
+            hits.append(g)
+            if len(sans) > len(line):
+                mine = (len(line) % 2 == 0) == (side == "white")  # whose move comes next
+                (nxt_mine if mine else nxt_theirs)[sans[len(line)]] += 1
+        if not hits:
+            return {}
+        res = collections.Counter(insights._result(g, side) for g in hits)
+        habits, first_big = collections.Counter(), []
+        for g in hits:
+            rows = moves.get(g["url"], [])
+            habits.update(r["pattern"] for r in rows if r.get("pattern") and r["pattern"] != "other")
+            big = [r for r in rows if r["loss"] >= 25]
+            if big:
+                first_big.append((big[0]["ply"] + 1) // 2)
+        first_big.sort()
+        return {"this_line": {"line": " ".join(line), "you_are": side, "games": len(hits), "won": res["win"],
+                              "drawn": res["draw"], "lost": res["loss"],
+                              "your_mistakes_in_these_games": dict(habits.most_common(4)),
+                              "games_with_a_big_mistake": len(first_big),
+                              "first_big_mistake_move_typically": first_big[len(first_big) // 2] if first_big else None,
+                              "what_they_play_next": dict(nxt_theirs.most_common(3)),
+                              "what_you_play_next": dict(nxt_mine.most_common(3)),
+                              "note": "Counted from the player's own checked games that went this way. Use these numbers."}}
+    except Exception:
+        return {}
+
+
 def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=None):
     """{text, mood, ai, action}. Never fails: without a working AI, a written reply and no action."""
     from coach import ai
@@ -243,6 +296,7 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
              "level": level_now(), "next_lesson": next_lesson(), "knightwise": ABOUT,
              "all_games": {"checked": home.get("games"), "results": home.get("results")}}
     facts.update(this_move(where))
+    facts.update(this_line(where))
     facts_text = json.dumps(facts)
     system = (ai.COACH_RULES.format(rating=home.get("rating") or "unknown") + coaches.PERSONA[coach] + RULES)
     name = coaches.COACHES[coach]["name"]
