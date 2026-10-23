@@ -85,7 +85,10 @@ const Coach = (() => {
     const quietPoint = Date.now() < (window.kwOpenedFor || 0);  // she just opened this for you: no new suggestion on it
     const r = await api(`/api/coach?section=${section}&in=app&tab=${encodeURIComponent(hub || "-")}${quietPoint ? "&nopoint=1" : ""}&hour=${new Date().getHours()}${first || force ? "" : "&again=1"}`).catch(() => null);
     if (!r || TAB_SECTION[location.hash.replace(/^#\/?/, "").split("/")[0] || "home"] !== section) return;
-    if (r.badge && typeof badgeUnlocked === "function") setTimeout(() => badgeUnlocked(r.badge), 900);  // a badge completed
+    // a badge completed: only if they're still on that same overview page (24 Oct: asked on Games, the answer came
+    // after they'd opened a game, and the banner showed over the game)
+    const still = () => (location.hash.replace(/^#\/?/, "") || "home") === full;
+    if (r.badge && hub && typeof badgeUnlocked === "function") setTimeout(() => still() && badgeUnlocked(r.badge), 900);
     said = { ...r, casual: true, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
     more = false;
     if (r.quiet && !force) { said.lines = ["I'm here if you need anything."]; return render(false); }  // nothing new: just the tab
