@@ -1619,6 +1619,11 @@ async function home() {
   const trend = (good, text, rises = false) => `<span class="${good ? "up-good" : "up-bad"}">${svg(good === rises ? "up" : "down")}${text}</span>`;
   const short = { "left a piece hanging": "hanging", "walked into a fork or trick": "forks", "missed a free capture": "missed takes",
     "walked into checkmate": "walked into mate", "missed a checkmate": "missed mates", "stalemated a won game": "stalemates" };
+  // one green button: the first of the three not done today (5 minutes, then the latest game's review, then the
+  // focus); all done, all grey; after midnight it starts again from the 5 minutes (23 Oct test)
+  const td = { daily: !!d.done_today, ...(h.today_done || {}) };
+  const green = [["daily", true], ["review", !!last], ["practice", !!f]].find(([k, has]) => has && !td[k]);
+  const btn = k => `btn${green && green[0] === k ? " primary" : ""}`;
   $("#page").innerHTML = `
     ${STATUS.phase && !["ready", "starting"].includes(STATUS.phase) && STATUS.total ? `<div class="box checking">${svg("sync")}
       <span>Checking your games: <b class="num">${STATUS.done}</b> of ${STATUS.total}</span><div class="bar"><div style="width:${100 * STATUS.done / STATUS.total}%"></div></div></div>` : ""}
@@ -1634,20 +1639,20 @@ async function home() {
           const day = new Date(Date.now() - (6 - i) * 86400000);
           return `<span class="${i === 6 ? "today" : ""}" title="${day.toLocaleDateString(undefined, { weekday: "long" })}${i === 6 ? " (today)" : ""}: ${on ? "done" : "not done"}"><i class="${on ? "on" : ""}"></i><b>${"SMTWTFS"[day.getDay()]}</b></span>`;
         }).join("")}</div>
-        <span class="btn ${d.done_today ? "" : "primary"}">${d.done_today ? "Play again" : "Start"}</span></a>
+        <span class="${btn("daily")}">${d.done_today ? "Play again" : "Start"}</span></a>
       ${last ? `<a class="box hcard" href="#/games/${last.id}">
         <div class="row spread"><b class="ellipsis">${esc(last.opponent)} <span class="faint num">${last.opponent_rating}</span></b>
           <span class="chip ${last.result}">${last.result === "win" ? "W" : last.result === "loss" ? "L" : "D"}</span></div>
         <div class="mini-board" id="lastboard"></div>
         <div class="row spread muted small"><span title="Key moments">${svg("bolt")} ${last.moments}</span>
           <span title="Pieces given away">${svg("hang")} ${last.pieces_lost}</span></div>
-        <span class="btn">Review</span></a>` : ""}
+        <span class="${btn("review")}">Review</span></a>` : ""}
       ${f ? `<a class="box hcard" href="#/practice/${encodeURIComponent(f.pattern)}">
         <div class="row spread"><b>Your focus</b><span class="hicon calm" title="Practise: ${esc((PATTERN_TITLE[f.pattern] || cap(f.pattern)).toLowerCase())}">${svg("practice")}</span></div>
         <div class="hnum"><b class="num">${roll(h.pieces_last20, 1)}</b>${trend(better, `from ${h.pieces_per_game.toFixed(1)}`)}</div>
         <div title="Pieces lost a game, each point the average of ${h.trend_window || 10} games, oldest on the left. Now ${Number(h.pieces_last20).toFixed(1)}; over all your games ${h.pieces_per_game.toFixed(1)}.">${spark(h.trend, better)}</div>
         <span class="muted small">pieces lost a game</span>
-        <span class="btn">Practise</span></a>` : ""}
+        <span class="${btn("practice")}">Practise</span></a>` : ""}
     </div>
     <div class="home-tiles rise">
       ${tiles.map(p => { const [icon] = HABIT[p.pattern] || ["hang"], fewer = p.recent <= p.per_game;

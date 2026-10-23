@@ -330,7 +330,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps({**memory.practice_stats(), "today": memory.today()}), "application/json")
         from coach import insights
         if path == "/api/home":
-            return self.send(200, json.dumps(insights.home()), "application/json")
+            return self.send(200, json.dumps({**insights.home(), "today_done": today_done()}), "application/json")
         if path == "/api/games":
             return self.send(200, json.dumps(insights.games_list()), "application/json")
         if path.startswith("/api/games/"):
@@ -1088,6 +1088,27 @@ def with_point(said, q):
 def player():
     path = DATA / "player.txt"
     return path.read_text().strip() if path.exists() else None
+
+
+PRACTISED = 5  # positions answered on the Practice page today that count as "practised today"
+
+
+def today_done():
+    """Home's three cards, done or not today (23 Oct test: the green button moves to the first one not done):
+    Today's 5 minutes; the latest game opened for review; at least PRACTISED positions practised outside the 5 minutes."""
+    from datetime import date
+    from coach import daily, insights, memory, nudge
+    try:
+        h = insights.home()
+        last = (h.get("last_game") or {}).get("id")
+        kept = (daily._memory().get("set") or {})
+        mine = {d.get("id") for d in kept.get("drills", [])} if kept.get("day") == date.today().isoformat() else set()
+        return {"daily": bool((h.get("daily") or {}).get("done_today")),
+                "review": bool(last) and f"games/{last}" in set(nudge._load().get("seen", [])),
+                "practice": sum(1 for i in memory.today() if i not in mine) >= PRACTISED}
+    except Exception as e:  # never break Home over this
+        log.warning("today_done: %s", e)
+        return {}
 
 
 def status():
