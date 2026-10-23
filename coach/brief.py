@@ -9,14 +9,55 @@ from coach import insights
 
 VALUE = {"p": 1, "n": 3, "b": 3, "r": 5, "q": 9, "k": 0}
 NAME = {1: "a pawn", 2: "two pawns", 3: "a piece", 5: "a rook", 9: "a queen"}
-MINDSET = {  # per habit: how to think in this kind of position
-    "left a piece hanging": "Safety first. Before you look for attacks, check every one of your pieces: is it protected?",
-    "walked into a fork or trick": "Think like your opponent. After your move, what is their nastiest reply?",
-    "missed a free capture": "Be greedy. Look at every capture first: is something of theirs left unprotected?",
-    "walked into checkmate": "King first. Which checks can they give after your move?",
-    "missed a checkmate": "Attack mode. Look at every check you can give: one of them may be mate.",
-    "stalemated a won game": "You're winning. Finish calmly, and always leave their king a square.",
+MINDSET = {  # per habit: how to think in this kind of position; four ways to say it, so it doesn't repeat (23 Oct test)
+    "left a piece hanging": [
+        "Safety first. Before you look for attacks, check every one of your pieces: is it protected?",
+        "Count your pieces like a goalkeeper: which one could they take for free?",
+        "Before you move, ask: what does this move leave behind, unguarded?",
+        "A quiet look first: every piece that can be taken, is it defended at least as many times as it's attacked?",
+    ],
+    "walked into a fork or trick": [
+        "Think like your opponent. After your move, what is their nastiest reply?",
+        "Look for squares where one of their pieces could hit two of yours at once.",
+        "Knights love forks. Where can their knight jump next, and what would it hit?",
+        "Before you move, check their checks and captures first: that's where tricks hide.",
+    ],
+    "missed a free capture": [
+        "Be greedy. Look at every capture first: is something of theirs left unprotected?",
+        "Scan their pieces one by one: is any of them attacked and not defended?",
+        "Captures first. Before any plan, see if they left something hanging.",
+        "Something may be free here. Count attackers and defenders on each of their pieces.",
+    ],
+    "walked into checkmate": [
+        "King first. Which checks can they give after your move?",
+        "Look at your king's escape squares. Are any left after your move?",
+        "Before you move, play their best check in your head. Is it mate?",
+        "Their queen and rooks near your king? Count the checks before anything else.",
+    ],
+    "missed a checkmate": [
+        "Attack mode. Look at every check you can give: one of them may be mate.",
+        "Where can their king go? If nowhere, one check finishes it.",
+        "Checks first, every one of them, even the ones that look silly.",
+        "Their king is short of squares. Find the check it can't escape.",
+    ],
+    "stalemated a won game": [
+        "You're winning. Finish calmly, and always leave their king a square.",
+        "Before each move, ask: does their king still have a legal move?",
+        "Winning is the easy part now. Don't take away every square from their king.",
+        "Slow and safe: give check or leave a square. Never freeze their king.",
+    ],
 }
+
+
+def mindset_for(pattern, key):
+    """One of the habit's tips, the same one every time for this position."""
+    import zlib
+    tips = MINDSET.get(pattern)
+    if not tips:
+        return "Checks, captures and threats, in that order. Then decide."
+    return tips[zlib.crc32(str(key).encode()) % len(tips)]
+
+
 GOAL = [  # Lichess puzzle themes -> what the player is looking for
     ("mate", "There is a checkmate here."),
     ("crushing", "There is a move that wins big."),
@@ -72,7 +113,7 @@ def brief(d, games=None):
     w, b = material(pieces)
     diff = (w - b) if white else (b - w)
     side = "White" if white else "Black"
-    mindset = MINDSET.get(d.get("pattern")) or "Checks, captures and threats, in that order. Then decide."
+    mindset = mindset_for(d.get("pattern"), d.get("id"))
     if d.get("kind") == "game":
         g = (games or {}).get(d.get("url"))
         ply = int(str(d.get("id", "")).rsplit("#", 1)[-1]) if "#" in str(d.get("id", "")) else None
