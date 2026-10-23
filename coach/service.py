@@ -445,7 +445,14 @@ class Handler(BaseHTTPRequestHandler):
             user = path.rsplit("/", 1)[-1].lower()
             if not user or len(user) > 30 or not all(c.isalnum() or c in "-_" for c in user):
                 return self.send(400, json.dumps({"message": "That doesn't look like a chess.com username."}), "application/json")
-            return self.send(200, json.dumps(scout.status(user)), "application/json")
+            out = scout.status(user)
+            if out.get("state") == "done":  # the Homework done badge, drawn beside Punish
+                try:
+                    from coach import insights, prep
+                    out["homework"] = prep.beaten(insights._games(), insights._player())
+                except Exception:
+                    out["homework"] = 0
+            return self.send(200, json.dumps(out), "application/json")
         if path.startswith("/api/prep/"):  # prep before a game: how a player plays, from their public games (0.8)
             from coach import prep
             user = path.rsplit("/", 1)[-1].lower()

@@ -1012,15 +1012,29 @@ function paintScout(user, r) {
       <div class="box scout-card scout-tips"><div class="label">Your plan</div>
         <ol>${x.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>
     </div>
-    <div class="box scout-go"><div class="row spread"><div class="label">Practise against them</div>
-      <span class="small muted" title="A badge in Progress">${svg("medal")} Win your next game against ${esc(user)}: Homework done</span></div>
-      <div class="scout-go-row">
-        <div class="scout-go-item"><b>Punish their mistakes</b><span class="small muted">${puzzles ? `${puzzles.length} real positions where ${esc(user)} went wrong. Find the move that punishes it.` : `Picking positions from their games… ${left}%`}</span>
-          ${puzzles && puzzles.length ? `<a class="btn primary" href="#/punish/${esc(user)}">${svg("practice")} Punish ${puzzles.length}</a>` : ""}</div>
-        <div class="scout-go-item"><b>Spar against them</b><span class="small muted">They open the way they really do, then play like players of their rating.</span>
-          <div class="row"><a class="btn" href="#/spar/${esc(user)}/white">As White</a><a class="btn" href="#/spar/${esc(user)}/black">As Black</a></div></div>
-      </div></div>
+    <div class="scout-practice">
+      <div class="box scout-punish"><div class="label">Practise against them</div>
+        <b>Punish their mistakes</b><span class="small muted">${puzzles ? `${puzzles.length} real positions where ${esc(user)} went wrong. Find the right move.` : `Picking positions from their games… ${left}%`}</span>
+        ${puzzles && puzzles.length ? `<a class="btn primary" href="#/punish/${esc(user)}">${svg("practice")} Punish ${puzzles.length}</a>` : ""}</div>
+      ${homeworkCard(user, r.homework)}
+    </div>
+    <div class="box scout-spar"><div style="flex:1"><b>Spar against them</b>
+      <div class="small muted">They open the way they really do, then play like players of their rating.</div></div>
+      <a class="btn" href="#/spar/${esc(user)}/white">As White</a><a class="btn" href="#/spar/${esc(user)}/black">As Black</a></div>
     <h2 class="scout-details">The details</h2>`;
+}
+
+// the Homework done badge as a medal: win your very next game against them after Prep (levels 1, 3, 10)
+function homeworkCard(user, n) {
+  n = n || 0;
+  const levels = [1, 3, 10], next = levels.find(l => n < l), tier = levels.filter(l => n >= l).length;
+  const metal = ["none", "bronze", "silver", "gold"][tier];
+  return `<div class="box scout-badge ${metal}" title="A badge in Progress">
+    <div class="hw-medal">${svg("medal")}</div>
+    <div class="hw-text"><b>Homework done</b>
+      <span class="small muted">${next ? `Beat ${esc(user)} in your next game against them` : "Every level done"}</span>
+      <div class="hw-bar"><i style="width:${next ? Math.round(100 * n / next) : 100}%"></i></div>
+      <span class="small num">${n}${next ? ` / ${next}` : ""}</span></div></div>`;
 }
 
 // their real mistakes as puzzles, from the deeper look (kept an hour; if it's gone, it runs again first)

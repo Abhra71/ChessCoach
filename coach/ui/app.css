@@ -1026,3 +1026,17 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 /* 24 Oct, owner: the medal filled the box; the boxes touched; an empty strip under the search */
 #prep { margin-top: 16px; } #prepmsg:empty { display: none; }
 .scout-go > .row svg { width: 15px; height: 15px; vertical-align: -3px; margin-right: 4px; } .scout-go .btn svg { width: 16px; height: 16px; }
+/* Practise against them (24 Oct, owner): Punish with the badge drawn beside it; Spar its own block below */
+.scout-practice { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 12px; }
+@media (max-width: 760px) { .scout-practice { grid-template-columns: 1fr; } }
+.scout-punish { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 16px; }
+.scout-punish .btn svg { width: 16px; height: 16px; }
+.scout-badge { display: flex; align-items: center; gap: 14px; padding: 16px; }
+.hw-medal { flex: none; width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; border: 3px solid var(--line-strong); color: var(--muted); }
+.hw-medal svg { width: 28px; height: 28px; }
+.scout-badge.bronze .hw-medal { background: radial-gradient(circle at 35% 30%, #f3c9a0, #cd7f32 60%, #8a5220); border-color: #8a5220; color: #4a2a0c; }
+.scout-badge.silver .hw-medal { background: radial-gradient(circle at 35% 30%, #ffffff, #c7ccd4 55%, #9aa2ad); border-color: #9aa2ad; color: #4b5563; }
+.scout-badge.gold .hw-medal { background: radial-gradient(circle at 35% 30%, #fff6c9, #f9cf3a 50%, #e0a106); border-color: #e0a106; color: #7a4f00; }
+.hw-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.hw-bar { height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden; } .hw-bar i { display: block; height: 100%; background: #e9a23b; border-radius: 3px; }
+.scout-spar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px; margin-top: 12px; }
