@@ -1024,7 +1024,7 @@ function paintScout(user, r) {
         ${puzzles && puzzles.length ? `<a class="btn primary" href="#/punish/${esc(user)}">${svg("practice")} Punish ${puzzles.length}</a>` : ""}</div>
       ${homeworkCard(user, r.homework)}
     </div>
-    <div class="box scout-spar"><div style="flex:1"><b>Spar against them</b>
+    <div class="box scout-spar"><span class="spar-ic">${svg("users")}</span><div style="flex:1"><b>Spar against them</b>
       <div class="small muted">They open the way they really do, then play like players of their rating.</div></div>
       <a class="btn" href="#/spar/${esc(user)}/white">As White</a><a class="btn" href="#/spar/${esc(user)}/black">As Black</a></div>
     <h2 class="scout-details">The details</h2>`;
@@ -2482,7 +2482,6 @@ const TRAIN = [
     ["prep", "search", "Prep", "Know them before you play", "maya", "Type any chess.com name. I'll show how they open and how their games end, then you can spar their style."],
     ["openings", "tree", "Opening tree", "How your games start", "maya", "Every game you played, branching from move one. Green is where you score well, red where you lose."],
     ["repertoire", "book", "Repertoire", "Three lines, by heart", "viktor", "Three opening lines picked from what you already play. Learn them to move six and every game starts on your terms."],
-    ["spar", "games", "Spar", "Play their style first", "maya", "Pick a player in Prep first: then you play against their real openings, at their level."],
   ]],
   ["Sharpen your eye", "#5ea4e8", [
     ["calc", "sparkles", "In your head", "See the whole line first", "viktor", "The board won't move. Put the whole line in as arrows first: your move, their answer, your next. Then check."],

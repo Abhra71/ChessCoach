@@ -63,7 +63,7 @@ TOUR = [
     ("openings", "viktor", "openings", "openings", None,
      "In Train, the Opening tree shows where your games go well and where they go wrong, from move one."),
     ("spar", "viktor", "prep", "spar", "prep",
-     "In Train, Spar lets you play the opening against someone's real moves from their own games."),
+     "In Prep, after you look someone up, press Spar: play against their real openings, at their level."),
     ("report", "viktor", "report/week", "report", None,
      "In Progress, press Report: one page about your week, ready to print for a coach or a parent."),
     ("film", "maya", "progress", "film", None,
