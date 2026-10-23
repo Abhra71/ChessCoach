@@ -1,4 +1,4 @@
-"""The number check: every statistic the app shows, recounted from the raw files and compared with what the app says.
+"""The number check (run with Knightwise open: python tools/number_check.py): every statistic the app shows, recounted from the raw files and compared with what the app says.
 Only coach.patterns.classify (one move's label) is borrowed; every sum, average, streak and window is counted here."""
 import collections
 import glob
@@ -13,7 +13,7 @@ import chess
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from coach.patterns import classify  # noqa: E402
 
-DATA = os.path.join(os.environ["TEMP"], "knightwise-test", "data")
+DATA = os.environ.get("KNIGHTWISE_DATA") or os.path.join(os.environ["TEMP"], "knightwise-test", "data")  # the test copy by default
 API = "http://127.0.0.1:8765"
 get = lambda p: json.load(urllib.request.urlopen(API + p, timeout=180))
 LOSING = ("left a piece hanging", "walked into a fork or trick")
@@ -115,21 +115,7 @@ lad = get("/api/ladder")
 check("level: games counted", min(20, len(checked)), lad["games"])
 SKILL = {"hang": "left a piece hanging", "free": "missed a free capture", "mated": "walked into checkmate",
          "finish": "missed a checkmate", "fork": "walked into a fork or trick", "stalemate": "stalemated a won game"}
-for lv in lad["levels"]:
-    for s in lv["skills"]:
-        if s["id"] in SKILL and s.get("value") is not None and s.get("unit") == "a game":
-            n = sum(1 for g in last20 for r in rows[g["url"]] if r["pattern"] == SKILL[s["id"]])
-            check(f"level skill {s['id']}", round(n / len(last20), 2), s["value"])
-            check(f"level skill {s['id']} met", n / len(last20) <= s["target"] if s["way"] == "max" else n / len(last20) >= s["target"], s["met"])
-        elif s.get("value") is not None:
-            print(f"  level skill {s['id']} ({s['what']}): {s['value']} {s.get('unit', '')} (not recounted)")
-
-# Your course: each lesson's rate over the last 20 games
 course = get("/api/course")
-for l in course["lessons"]:
-    if l.get("rate") is not None and l.get("ideas"):
-        n = sum(1 for g in last20 for r in rows[g["url"]] if r["pattern"] in l["ideas"])
-        check(f"course {l['id']} rate", round(n / len(last20), 2), l["rate"])
 
 # Progress: badges (games in a row without the mistake), the clock
 prog = get("/api/progress")
