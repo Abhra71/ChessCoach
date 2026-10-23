@@ -590,6 +590,8 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(min(int(self.headers.get("Content-Length", 0)), limit)))
         except ValueError:
             return self.send(400, "bad json", "text/plain")
+        if not isinstance(body, dict):  # a list or a number: never an answer we expect (23 Oct security check)
+            return self.send(400, "bad json", "text/plain")
         path = self.path.split("?")[0].rstrip("/")
         if path == "/api/health":  # the extension's self-check: what it found on a chess.com page
             ok = health.record(str(body.get("check", "")), bool(body.get("ok")), str(body.get("detail", "")))
@@ -942,6 +944,7 @@ WAKE = threading.Event()  # set it to check for new games right now
 class Server(ThreadingHTTPServer):
     """Only one copy may run: no sharing the port (on Windows the default lets a second copy bind it too)."""
     allow_reuse_address = False
+    request_queue_size = 64  # a burst of requests waits its turn instead of being turned away (23 Oct security check)
 
     def server_bind(self):
         import socket
