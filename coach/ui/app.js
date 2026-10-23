@@ -761,8 +761,8 @@ async function levelView() {
   };
   const draw = sel => {
     const lv = p.levels[sel], mine = sel === p.current, total = lv.skills.length, doneN = lv.skills.filter(x => x.met).length;
-    const ladder = `<div class="ladder">${p.levels.map((l, i) => `<button class="lstepbox ${i < p.current || l.done ? "done" : i === p.current ? "now" : ""} ${i === sel ? "sel" : ""}" data-lv="${i}" title="${esc(l.band)}: see its cards">
-      <span class="lcircle num">${l.done ? svg("check") : i + 1}</span><b>${esc(l.name)}</b><span class="faint small">${esc(l.band.replace(/^about /, "").replace("up to ", "≤ "))}</span></button>`).join("")}</div>`;
+    const ladder = `<div class="ladder">${p.levels.map((l, i) => `<button class="lstepbox ${i < p.current || l.done ? "done" : i === p.current ? "now" : ""} ${i === sel ? "sel" : ""}" data-lv="${i}" title="Players here are usually rated ${esc(l.band)}. You move up by meeting the aims, not by rating.">
+      <span class="lcircle num">${l.done ? svg("check") : i + 1}</span><b>${esc(l.name)}</b><span class="faint small">${esc("rated " + l.band.replace(/^about /, "").replace("up to ", "≤ ").replace(" and above", "+"))}</span></button>`).join("")}</div>`;
     const line = mine
       ? (up ? `<b class="num">${doneN} of ${total}</b>&nbsp;done ${svg("down")} all ${total}: Level ${p.current + 2}` : "The top level. Keep it there.")
       : sel > p.current ? `Level ${sel + 1}: a look ahead. Your numbers today, against its aims.`
@@ -777,7 +777,7 @@ async function levelView() {
   };
   draw(p.current);  // cards with something to do come first; done ones go to the bottom (23 Oct test)
   Coach.react("viktor", "explain", next
-    ? `You're on level ${p.current + 1} of 5, ${cur.name}. Each card counts something in your real games. The one to fix first: ${next.name.toLowerCase()}.`
+    ? `You're on level ${p.current + 1} of 5, ${cur.name}. Meet every aim and you move up, whatever your rating. The one to fix first: ${next.name.toLowerCase()}.`
     : `Every level done. Remarkable. Keep playing: the numbers keep watching.`,
     next ? [{ label: next.train.label, app: next.train.route }] : []);
 }
