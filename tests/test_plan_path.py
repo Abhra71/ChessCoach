@@ -16,3 +16,22 @@ def test_done_items_have_names():
     assert plan.done_item("idea:cct")["title"] == "Checks, captures, threats"
     assert plan.done_item("opening:C47:Four Knights Game", {"openings": {}})["title"] == "Four Knights Game (as White)"
     assert plan.done_item("nonsense") is None
+
+
+def test_whose_opening_from_its_name():
+    assert plan.default_side("Sicilian Defense: Open") == "black"
+    assert plan.default_side("Queen's Gambit Declined") == "black"
+    assert plan.default_side("Italian Game: Two Knights Defense") == "white"
+    assert plan.default_side("London System") == "white"
+
+
+def test_search_matches_word_starts(monkeypatch):
+    monkeypatch.setattr(plan, "_catalogue", lambda: [("A00", "Polish Opening", ["b4"] * 2),
+                                                     ("B27", "Sicilian Defense", ["e4", "c5"]),
+                                                     ("C00", "Alekhine Defense: Brooklyn Variation", ["e4", "Nf6", "e5", "Ng8"])])
+    monkeypatch.setattr(plan, "_library_themes", lambda: {"rookEndgame", "fork"})
+    assert [x["title"] for x in plan.search("rook")] == ["Rook endings"]  # not Brooklyn
+    assert plan.search("sicil")[0] == {"id": "opening:B27:Sicilian Defense", "kind": "opening",
+                                       "title": "Sicilian Defense", "side": "black", "moves": 2}
+    assert plan.search("fork")[0]["id"] == "tactic:fork"
+    assert plan.search("   ") == []

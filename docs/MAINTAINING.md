@@ -277,6 +277,15 @@ Store has signed it. Test from the source with `try.bat` instead; the Store buil
   own practice is not chess.com. On chess.com itself, the red ring shows the way.
 - **Small talk gets small talk.** Her habit tip only when it answers the question (finding 38 is still open).
 - **Teaching pace:** reviews, training and numbers are spoken slower than greetings.
+- **Your plan is a book, curated** (`coach/plan.py`). Four cards (opening, tactic, way of thinking, ending) plus Maya's
+  New card. Each card walks a road: tactics = the habit's themes, then `ROTATION`, then `LADDER` (all 26 Lichess tactic
+  themes); endings = `ENDINGS_ALL` (5); ideas = `IDEAS` (5); openings = endless, picked from the player's games out of
+  the Lichess catalogue. A finished card goes to Done (replayable, `replay()`), the next topic takes its place.
+  **Explore** (`library()`, `search()`, `/api/plan/library`) browses or searches the whole library: every theme with
+  puzzles on this computer, and 3,865 catalogue openings by name (word starts, both sides). Everything is Lichess data,
+  nothing made up. A new theme needs: puzzles in `KEEP_THEMES`, a name in `THEME_NAME`, a clue in `drills.CLUE`.
+- **Sets remember today's answers.** Practice and daily on the server (`/api/stats`); plan cards, lessons and Explore
+  picks in the app's own storage (`kw-sets`), cleared each new day. The same positions all day (`daylock`).
 
 ## 8. After 1.0: ideas kept for later, with how to start
 Each is a separate, small piece of work. Paste this section with the files named.

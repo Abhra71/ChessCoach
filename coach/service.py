@@ -373,7 +373,7 @@ class Handler(BaseHTTPRequestHandler):
             for x in reversed(out.get("done_items") or []):
                 again = plan.replay(x["id"], out_home, random.Random(date.today().isoformat() + x["id"])) if len(done_cards) < 12 else None
                 if again and again.get("drills"):
-                    again["drills"] = daylock.keep(f"replay:{x['id']}", again["drills"])
+                    again["drills"] = daylock.keep(f"replay:{x['id']}:{again.get('side', '')}", again["drills"])
                     brief.add(again["drills"])
                     done_cards.append({**again, "title": x["title"]})
             out["done_cards"] = done_cards
@@ -383,13 +383,20 @@ class Handler(BaseHTTPRequestHandler):
             from datetime import date
             from urllib.parse import parse_qs, urlsplit
             from coach import brief, daylock, plan
-            item_id = (parse_qs(urlsplit(self.path).query).get("id") or [""])[0]
-            item = plan.replay(item_id, insights.home(), random.Random(date.today().isoformat() + item_id)) if item_id else None
+            q = parse_qs(urlsplit(self.path).query)
+            item_id, side = (q.get("id") or [""])[0], (q.get("side") or [None])[0]
+            item = plan.replay(item_id, insights.home(), random.Random(date.today().isoformat() + item_id), side) if item_id else None
             if not item or not item.get("drills"):
                 return self.send(404, json.dumps({"message": "Not found."}), "application/json")
-            item["drills"] = daylock.keep(f"replay:{item_id}", item["drills"])
+            item["drills"] = daylock.keep(f"replay:{item_id}:{item.get('side', '')}", item["drills"])
             brief.add(item["drills"])
             return self.send(200, json.dumps(item), "application/json")
+        if path == "/api/plan/library":  # Explore: everything in the Lichess library, or what matches the words typed
+            from urllib.parse import parse_qs, urlsplit
+            from coach import plan
+            words = (parse_qs(urlsplit(self.path).query).get("q") or [""])[0][:80]
+            return self.send(200, json.dumps({"results": plan.search(words)} if words.strip() else plan.library()),
+                             "application/json")
         if path.startswith("/api/film/"):  # your game as a short 3D film: its script (1.0)
             from coach import film
             gid = path.rsplit("/", 1)[-1]

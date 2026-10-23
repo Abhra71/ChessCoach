@@ -432,6 +432,13 @@ const KIND_LABEL = { opening: "Opening", tactic: "Tactic", idea: "Way of thinkin
 
 async function planView(arg) {
   shell("plan", `<p class="muted">Picking your plan…</p>`);
+  const [argId, argSide] = String(arg || "").split("@");
+  if (argSide) {  // something picked in Explore: straight to it, from the side chosen
+    const x = await api(`/api/plan/replay?id=${argId}&side=${encodeURIComponent(argSide)}`).catch(() => null);
+    if (x && x.drills) return lessonView(x);
+    $("#page").innerHTML = `<div class="empty">That one couldn't be set up. <a href="#/plan">Back to your plan</a></div>`;
+    return;
+  }
   const p = await api("/api/plan");
   if (!p.player) { $("#page").innerHTML = `<div class="empty">Your plan appears once your games are checked.</div>`; return; }
   const all = [...(p.novelty ? [p.novelty] : []), ...Object.values(p.items).filter(Boolean)];
@@ -439,10 +446,8 @@ async function planView(arg) {
   if (arg) {
     const id = decodeURIComponent(arg), item = all.find(x => x.id === id) || doneCards.find(x => x.id === id);
     if (item) return lessonView(item);
-    if (p.done.includes(id)) {  // a done topic, once more
-      const again = await api(`/api/plan/replay?id=${encodeURIComponent(id)}`).catch(() => null);
-      if (again && again.drills) return lessonView(again);
-    }
+    const again = await api(`/api/plan/replay?id=${encodeURIComponent(id)}`).catch(() => null);  // done or explored
+    if (again && again.drills) return lessonView(again);
   }
   // a picture of each thing, not a sentence (22 Oct: "what is the plan and why so less in it"): its board, how many
   // positions, done or not; one Viktor in his bubble, not on every card
@@ -466,10 +471,17 @@ async function planView(arg) {
   const doneRow = doneCards.length ? `<h3 class="plan-done-head">Done ${svg("check")} ${(p.done_items || []).length}</h3>
     <div class="plan-cards done-cards">${doneCards.map(x => card(x, false, true)).join("")}</div>` : "";
   const more = Object.values(p.items).filter(Boolean).reduce((s, x) => s + ((x.path && x.path.more) || 0), 0);
-  const tally = `${all.length} now · ${(p.done_items || []).length} done · ${more} more to come, and new openings from your games`;
+  const tally = `${all.length} now · ${(p.done_items || []).length} done · ${more} more on the way, and new openings from your games`;
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Your plan</h1><p class="sub">${esc(tally)}</p></div></div>
-    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${doneRow}`;
+    <div class="page-head"><div><h1>Your plan</h1>
+      <p class="plan-line">Everything in chess, picked for you. Finish a card and the next most important one for you takes its place; finished cards go to Done.</p>
+      <p class="small muted" style="margin-top:2px">${esc(tally)}</p></div></div>
+    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>
+    <div class="explore">
+      <label class="explore-box">${svg("search")}<input id="xq" type="search" autocomplete="off" spellcheck="false"
+        placeholder="Explore on your own: an opening, a tactic, an ending…"></label>
+      <div id="xres" hidden></div>
+    </div>${doneRow}`;
   [...all, ...doneCards].forEach(x => {  // the position each one starts from
     const el = document.querySelector(`[data-board="${CSS.escape(x.id)}"]`), d0 = (x.drills || [])[0];
     if (!el) return;
@@ -478,8 +490,58 @@ async function planView(arg) {
     else el.remove();
   });
   document.querySelectorAll("[data-id]").forEach(b => b.onclick = () => go(`plan/${encodeURIComponent(b.dataset.id)}`));
+  explore();
   if (p.novelty && !p.novelty.again) api("/api/plan/mark", { id: p.novelty.id, novelty: true }).catch(() => {});
   if (p.novelty) AiCard.maybe("novelty");
+}
+
+// Explore: the whole Lichess library (every tactic and ending theme, every catalogue opening), to browse before
+// typing or to search by name; a pick opens at once and goes to Done when finished (23 Oct test)
+function explore() {
+  const q = $("#xq"), res = $("#xres");
+  if (!q) return;
+  let lib = null, asked = 0;
+  const pick = (id, side) => go(`plan/${encodeURIComponent(id)}${side ? "@" + side : ""}`);
+  const wire = () => {
+    res.querySelectorAll("[data-pick]").forEach(b => b.onclick = e => { e.preventDefault(); pick(b.dataset.pick, b.dataset.side); });
+    res.querySelectorAll("[data-fam]").forEach(b => b.onclick = () => { q.value = b.dataset.fam; find(); q.focus(); });
+  };
+  const chips = (list, fam) => list.map(x => fam
+    ? `<button class="chip" data-fam="${esc(x)}">${esc(x)}</button>`
+    : `<button class="chip" data-pick="${esc(x.id)}">${esc(x.title)}</button>`).join("");
+  async function browse() {
+    lib = lib || await api("/api/plan/library").catch(() => null);
+    if (!lib || q.value.trim()) return;
+    res.hidden = false;
+    res.innerHTML = `<div class="xgroup"><div class="label">Tactics · ${lib.tactics.length}</div><div class="chips">${chips(lib.tactics)}</div></div>
+      <div class="xgroup"><div class="label">Endings · ${lib.endings.length}</div><div class="chips">${chips(lib.endings)}</div></div>
+      <div class="xgroup"><div class="label">Openings · ${lib.openings.toLocaleString()} lines from Lichess: type a name, or pick a family</div>
+        <div class="chips">${chips(lib.families, true)}</div></div>`;
+    wire();
+  }
+  async function find() {
+    const words = q.value.trim();
+    if (!words) return browse();
+    const mine = ++asked;
+    const r = await api(`/api/plan/library?q=${encodeURIComponent(words)}`).catch(() => null);
+    if (mine !== asked || !r || !r.results) return;  // a newer search is on its way
+    res.hidden = false;
+    const KIND = { tactic: "Tactic", endgame: "Ending", opening: "Opening" };
+    const side = (x, sd) => `<button class="btn small ${sd === x.side ? "primary" : ""}" data-pick="${esc(x.id)}" data-side="${sd}">as ${sd === "white" ? "White" : "Black"}</button>`;
+    res.innerHTML = r.results.length ? `<div class="xlist">${r.results.map(x => x.kind === "opening"
+      ? `<div class="xrow"><span class="xkind">${KIND.opening}</span><span class="xname">${esc(x.title)}</span>
+          <span class="xsides">${side(x, x.side)}${side(x, x.side === "white" ? "black" : "white")}</span></div>`
+      : `<button class="xrow" data-pick="${esc(x.id)}"><span class="xkind">${KIND[x.kind]}</span><span class="xname">${esc(x.title)}</span></button>`).join("")}</div>`
+      : `<p class="muted small" style="margin:8px 2px">Nothing by that name. Try a family like Sicilian, or a tactic like fork.</p>`;
+    wire();
+  }
+  let timer = null;
+  q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(find, 200); });
+  q.addEventListener("focus", () => { if (!q.value.trim()) browse(); });
+  q.addEventListener("keydown", e => {
+    if (e.key === "Escape") { q.value = ""; res.hidden = true; q.blur(); }
+    if (e.key === "Enter") { const first = res.querySelector("[data-pick]"); if (first && q.value.trim()) first.click(); }
+  });
 }
 
 function lessonView(item) {

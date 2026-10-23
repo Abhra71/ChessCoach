@@ -6,6 +6,7 @@ catalogue (coach/openings.py), a few core ideas below. The player's own games sa
 - and, when none of those, something fresh after a few days of playing.
 At most one new thing at a time; it stays until it is done (or a week passes), and nothing learned comes back.
 """
+import collections
 import json
 import random
 import time
@@ -36,6 +37,13 @@ THEMES_FOR = {
 }
 ROTATION = ["fork", "pin", "skewer", "discoveredAttack", "deflection", "backRankMate", "smotheredMate", "promotion"]
 ENDGAMES = ["pawnEndgame", "rookEndgame", "queenEndgame"]
+# the whole Lichess library on the roads (23 Oct test: "practise everything about chess, curated for us"): after the
+# player's own habit and the rotation, every other tactic theme, simplest first; every ending
+LADDER = ["mateIn1", "hangingPiece", "fork", "pin", "skewer", "mateIn2", "backRankMate", "trappedPiece",
+          "discoveredAttack", "capturingDefender", "defensiveMove", "deflection", "attraction", "doubleCheck",
+          "promotion", "smotheredMate", "opening", "quietMove", "intermezzo", "clearance", "interference",
+          "xRayAttack", "exposedKing", "kingsideAttack", "advancedPawn", "zugzwang"]
+ENDINGS_ALL = ["pawnEndgame", "rookEndgame", "queenEndgame", "bishopEndgame", "knightEndgame"]
 THEME_NAME = {
     "hangingPiece": "spotting free pieces", "trappedPiece": "trapping a piece", "defensiveMove": "the saving defence",
     "pin": "the pin", "capturingDefender": "removing the defender", "fork": "the fork", "skewer": "the skewer",
@@ -46,7 +54,7 @@ THEME_NAME = {
     "quietMove": "the quiet move", "zugzwang": "zugzwang: making them move", "intermezzo": "the in-between move",
     "clearance": "clearing the way", "interference": "cutting the line", "xRayAttack": "the X-ray attack",
     "exposedKing": "attacking an open king", "kingsideAttack": "the kingside attack", "advancedPawn": "the advanced pawn",
-    "bishopEndgame": "bishop endings", "knightEndgame": "knight endings",
+    "bishopEndgame": "bishop endings", "knightEndgame": "knight endings", "opening": "tricks in the opening",
 }
 # Core ways of thinking, each practised on the board: positions from the player's own games ("own": patterns) or
 # Lichess puzzles ("puzzles": themes), with a checklist the player ticks before every move (the habit itself).
@@ -337,9 +345,10 @@ def plan(home=None, engine=None, today=None):
     rating = home.get("rating")
     # each card walks a fixed road, one topic after another; a done topic leaves the road and stays replayable
     # (23 Oct test: "I lose track of what I've done and what's coming next")
-    tactics = _path(["tactic:" + t for t in THEMES_FOR.get(focus, []) + ROTATION], done)
+    tactic_road = ["tactic:" + t for t in THEMES_FOR.get(focus, []) + ROTATION + LADDER]
+    tactics = _path(tactic_road, done)
     stalemated = any(r.get("pattern") == STALEMATE for rs in moves.values() for r in rs)
-    endings = _path(["endgame:" + t for t in (["queenEndgame"] if stalemated else []) + ENDGAMES], done)
+    endings = _path(["endgame:" + t for t in (["queenEndgame"] if stalemated else []) + ENDINGS_ALL], done)
     ideas = _path([i["id"] for i in sorted(IDEAS, key=lambda i: focus not in i["helps"])], done)
     done_families = {i.split(":", 2)[2].split(":")[0] for i in done if i.startswith("opening:")}
     opening = opening_lesson(games, home["player"], focus in (HANG, FORK), engine, done_families) if engine else None
@@ -359,11 +368,10 @@ def plan(home=None, engine=None, today=None):
     new = novelty(home, games, moves, engine, today, rng)
     if new and items.get(new["kind"]) and items[new["kind"]]["id"] == new["id"]:  # no duplicate: the card shows another one
         if new["kind"] == "endgame":
-            paths["endgame"] = _path(["endgame:" + t for t in ENDGAMES if "endgame:" + t != new["id"]], done)
+            paths["endgame"] = _path(["endgame:" + t for t in ENDINGS_ALL if "endgame:" + t != new["id"]], done)
             items["endgame"] = endgame(paths["endgame"]["now"].split(":")[1], rating, rng)
         elif new["kind"] == "tactic":
-            paths["tactic"] = _path([t for t in dict.fromkeys(["tactic:" + t for t in THEMES_FOR.get(focus, []) + ROTATION])
-                                     if t != new["id"]], done)
+            paths["tactic"] = _path([t for t in dict.fromkeys(tactic_road) if t != new["id"]], done)
             items["tactic"] = tactic(paths["tactic"]["now"].split(":")[1], rating, rng)
     for kind, item in items.items():
         if item:
@@ -399,20 +407,103 @@ def done_item(item_id, mem=None):
     return None
 
 
-def replay(item_id, home, rng):
-    """A done topic built again, to practise once more (new positions; the opening's line is the same)."""
+def replay(item_id, home, rng, side=None):
+    """A done or explored topic built again, to practise (puzzles from Lichess; an opening's line from the Lichess
+    catalogue, played from side, or the side it was played from before)."""
     kind, _, rest = item_id.partition(":")
+    if kind in ("tactic", "endgame"):
+        theme = rest
+        if theme not in _library_themes():
+            return None
+        return (tactic if kind == "tactic" else endgame)(theme, home.get("rating"), rng)
     if kind == "opening":
         eco, _, name = rest.partition(":")
-        sans = next((x[2] for x in openings.catalogue() if x[0] == eco and x[1] == name), None)
+        sans = next((x[2] for x in _catalogue() if x[0] == eco and x[1] == name), None)
         if not sans:
             return None
-        side = _memory().get("openings", {}).get(item_id, "white")
+        mem = _memory()
+        if side in ("white", "black"):
+            if mem.setdefault("openings", {}).get(item_id) != side:
+                mem["openings"][item_id] = side
+                _save(mem)
+        else:
+            side = mem.get("openings", {}).get(item_id) or default_side(name)
+        if not any((i % 2 == 0) == (side == "white") for i in range(len(sans))) or \
+                (side == "black" and len(sans) < 2):  # nothing of their own to play
+            return None
         o = {"id": item_id, "kind": "opening", "title": f"{name} (as {side.title()})", "name": name, "eco": eco,
              "side": side, "style": openings.style(name), **openings.teach(sans, side)}
-        return {**o, "coach": OPENING_COACH, "why": f"The {name} again: play your side, I'll answer.",
-                "intro": f"The {name} again.", "drills": [opening_drill(o)]}
+        line = f"The {name}, as played on Lichess: make your moves as {side.title()}, I'll answer and explain."
+        return {**o, "coach": OPENING_COACH, "why": line, "intro": line, "drills": [opening_drill(o)]}
     return build(item_id, home, None, None, None, rng, set())
+
+
+# ---------- Explore: the whole library, to browse or search (23 Oct test) ----------
+_CATALOGUE = []
+
+
+def _catalogue():
+    """The Lichess opening catalogue, read once."""
+    if not _CATALOGUE:
+        _CATALOGUE.extend(openings.catalogue())
+    return _CATALOGUE
+
+
+def _library_themes():
+    """The Lichess puzzle themes this computer has puzzles for."""
+    try:
+        stock = json.loads(PUZZLES.read_text())
+    except (OSError, ValueError):
+        return set()
+    return {t for t, v in stock.items() if isinstance(v, list) and v and t in THEME_NAME}
+
+
+def default_side(name):
+    """Whose opening it is, from its Lichess name: a Defence, a Countergambit or a Declined/Accepted gambit is Black's."""
+    first = name.split(":")[0].lower()
+    return "black" if any(w in first for w in ("defense", "defence", "countergambit", "declined", "accepted")) else "white"
+
+
+def _plain(text):
+    return "".join(c for c in text.lower().replace("defence", "defense") if c.isalnum() or c == " ").split()
+
+
+def library():
+    """Everything there is, grouped, for Explore before anything is typed: every tactic and ending theme, and the
+    opening families with the most lines first."""
+    themes = _library_themes()
+    name = lambda t: THEME_NAME[t][0].upper() + THEME_NAME[t][1:]
+    ends = [t for t in ENDINGS_ALL if t in themes]
+    tactics = [t for t in dict.fromkeys(LADDER + ROTATION) if t in themes and t not in ENDINGS_ALL]
+    fams = collections.Counter(openings.family(n) for _, n, s in _catalogue() if len(s) >= 2)
+    return {"tactics": [{"id": "tactic:" + t, "title": name(t)} for t in tactics],
+            "endings": [{"id": "endgame:" + t, "title": name(t)} for t in ends],
+            "families": [f for f, _ in fams.most_common(30)],
+            "openings": len(_catalogue())}
+
+
+def search(q, limit=40):
+    """Everything whose name has every word typed: tactics and endings by their plain name, openings by their Lichess
+    name. Openings come back with the side they're usually learned from."""
+    words = _plain(q or "")
+    if not words:
+        return []
+    hit = lambda text: all(any(t.startswith(w) for t in _plain(text)) for w in words)  # word starts: "rook" is not "Brooklyn"
+    lib = library()
+    out = [{**x, "kind": "tactic"} for x in lib["tactics"] if hit(x["title"] + " " + x["id"].split(":")[1])]
+    out += [{**x, "kind": "endgame"} for x in lib["endings"] if hit(x["title"] + " " + x["id"].split(":")[1])]
+    found = [(eco, n, s) for eco, n, s in _catalogue() if len(s) >= 2 and hit(n)]
+    found.sort(key=lambda o: (not hit(openings.family(o[1])), o[1].count(":"), len(o[1])))
+    seen = set()
+    for eco, n, s in found:
+        if n in seen:
+            continue
+        seen.add(n)
+        out.append({"id": f"opening:{eco}:{n}", "kind": "opening", "title": n, "side": default_side(n),
+                    "moves": len(s)})
+        if len(out) >= limit:
+            break
+    return out
 
 
 def ai_idea(home, today=None, ask_ai=None, rating=None, rng=None):
