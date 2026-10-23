@@ -174,3 +174,4 @@ Every statistic recounted from the raw files (only one move's label borrowed) an
 - One game unchecked: resigned before move 1 (right).
 - Open: Home's hanging tile (big mistakes only, 0.45 a game) and Level's "Keep every piece safe" (every mistake of 10+, 0.4) measure one skill two ways.
 - Fresh: new games every 5 minutes, at once when a finished game is opened on chess.com; open pages of numbers redraw when new games are checked.
+- 41. Puzzles in lessons and the plan could repeat ones already solved; today's 5 minutes picked your own position at random (could repeat). Fixed: anything answered on an earlier day is never offered again while there are new ones. Checked: tomorrow's set shares nothing with today's answers. Progress is saved (practice.jsonl, 10 answers today) and badges count from it.

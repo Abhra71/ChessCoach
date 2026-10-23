@@ -33,14 +33,20 @@ def streak(days, today):
     return n
 
 
-def _own(focus, rng):
+def _own(focus, rng, today=None):
+    """One of your own positions, one you didn't answer on an earlier day (in Practice or here), so it doesn't repeat while
+    there are new ones (23 Oct test: "same puzzles shouldn't repeat")."""
     path = DATA / "drills.json"
     try:
         own = [d for d in json.loads(path.read_text()) if d.get("kind") == "game"]
     except (OSError, ValueError):
         return None
-    mine = [d for d in own if d.get("pattern") == focus] or own
-    return rng.choice(mine) if mine else None
+    done = memory.seen_before(today)  # earlier days only: today's set must not change once you answer it
+    for pool in ([d for d in own if d.get("pattern") == focus and d["id"] not in done], [d for d in own if d["id"] not in done],
+                 [d for d in own if d.get("pattern") == focus], own):
+        if pool:
+            return rng.choice(pool)
+    return None
 
 
 def challenge(home, games=None, engine=None, today=None):
@@ -50,7 +56,7 @@ def challenge(home, games=None, engine=None, today=None):
     themes = plan.THEMES_FOR.get(focus, plan.ROTATION)
     theme = themes[today.toordinal() % len(themes)]
     items = []
-    own = _own(focus, rng)
+    own = _own(focus, rng, today)
     if own:
         items.append({**own, "intro": "From your own game. " + own["intro"]})
     puzzle = plan._puzzles(theme, home.get("rating"), rng, avoid=memory.seen_before(today))[:1]

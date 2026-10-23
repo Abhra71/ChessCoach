@@ -157,9 +157,13 @@ def signals(home, games, moves, player):
 LESSON_NEEDS = {"queenEndgame": "mate"}
 
 
-def _puzzles(theme, rating, rng, avoid=()):
+def _puzzles(theme, rating, rng, avoid=None):
     """Puzzles on a theme at the player's level, easiest first. When there are too few at that level, the easiest
-    ones of the theme, never a random one (13 Oct test: a 1428 puzzle for a 254 player)."""
+    ones of the theme, never a random one (13 Oct test: a 1428 puzzle for a 254 player). A puzzle answered on an
+    earlier day is never offered again, in a lesson, the plan or today's 5 minutes (23 Oct test)."""
+    if avoid is None:
+        from coach import memory
+        avoid = memory.seen_before()
     stock = json.loads(PUZZLES.read_text()) if PUZZLES.exists() else {}
     every = [p for p in stock.get(theme, []) if p["id"] not in avoid] or stock.get(theme, [])
     need = LESSON_NEEDS.get(theme)
