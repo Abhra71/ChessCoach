@@ -61,7 +61,7 @@ the file you paste are its memory. If a change grows past three files, stop and 
 | What the AI coach is told, and what it may do (open, review, guide, offer…) | `coach/talk.py` (`RULES`, `ABOUT`, `VERBS`, `action()`) |
 | When Maya greets on chess.com, the folded tab, her suggestions there | `extension/buddy.js` (`kw-visit-greeted`), `coach/coaches.py` (`CHESSCOM_FOR`, `fresh_today()`) |
 | The Ask bars in the app (the answer fading, the glowing suggestion) | `coach/ui/app.js` (`askBox()`) |
-| The coach coming up by herself with one new thing per page (a new game, today's 5 minutes, a rematch, the next lesson, something untried, chess.com's place for the habit) | `coach/nudge.py` (`candidates()`, `UNTRIED`, `A_DAY`), shown by `with_point()` in `coach/service.py`, pointed at by `kwPoint()` in `coach/ui/app.js` and `guideStart()` in `extension/buddy.js` |
+| The coach coming up by herself with one new thing per page (one list for both places: a new game, today's 5 minutes, a rematch, close to a badge, rushed mistakes, a regular opponent to prep, the next lesson, a better week, chess.com's place for the habit, something untried, a bot warm-up; a different kind from yesterday's first) | `coach/nudge.py` (`candidates()`, `UNTRIED`, `A_DAY`), shown by `with_point()` in `coach/service.py`, pointed at by `kwPoint()` in `coach/ui/app.js` and `guideStart()` in `extension/buddy.js` |
 | Send feedback (one click, 4 a day) | `coach/service.py` (`SENDS_A_DAY`, `feedback_send_allowed()`), key in `coach/feedback.key` |
 | Habits (hanging pieces, forks…) | `coach/patterns.py`, `coach/review.py` (`ABOUT`) |
 | Practice positions and puzzles | `coach/drills.py`, `coach/puzzles.py`, `coach/memory.py` |

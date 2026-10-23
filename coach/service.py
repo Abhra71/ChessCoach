@@ -1004,13 +1004,23 @@ def with_point(said, q):
     home = insights.home()
     g = home.get("last_game") or {}
     rematch = insights.extras_for(g["id"]).get("rematch") if in_app and g.get("checked") and g.get("result") != "win" else None
-    p = nudge.pick("app" if in_app else "chesscom", section, home=home, lesson=talk.next_lesson() if in_app else None,
-                   rematch=rematch)
+    rematch = rematch if rematch is not None else (insights.extras_for(g["id"]).get("rematch")
+                                                   if g.get("checked") and g.get("result") != "win" else None)
+    try:
+        from coach import progress
+        prog = progress.page()
+    except Exception:
+        prog = None
+    p = nudge.pick("app" if in_app else "chesscom", section, home=home, lesson=talk.next_lesson(), rematch=rematch,
+                   prog=prog, games=insights._games(), player=(insights._player() or "").lower())
     if not p:
         return said
     lines = said.get("lines") or []
     keep = lines[:1] if lines and not said.get("again") and not said.get("quiet") else []
-    return {**said, "point": p, "quiet": False, "lines": keep + [p["line"]]}
+    acts = said.get("actions") or []
+    if p.get("action"):  # it lives in the other place: one button to it, first
+        acts = [p["action"]] + [a for a in acts if a.get("app") != p["action"].get("app") or not a.get("app")]
+    return {**said, "point": p, "quiet": False, "lines": keep + [p["line"]], "actions": acts}
 
 
 def player():

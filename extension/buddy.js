@@ -501,6 +501,9 @@
       render(true); if (first) send({ type: "greeted", section: here, set: today() });
       guideStart(pt.route_guide, pt.line); return;
     }
+    if (pt) {  // something new that lives in the app: she says it, with one button there
+      render(true); if (first) send({ type: "greeted", section: here, set: today() }); speak(); return;
+    }
     // the first page of a visit: open and talk; the pages after it: the folded tab, open on click (22 Oct test)
     if (first || !(r && r.ok)) render(true); else render(false);
     if (first && r && r.ok) { send({ type: "greeted", section: here, set: today() }); speak(); }  // asleep: try again later
