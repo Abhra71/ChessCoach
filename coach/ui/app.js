@@ -2262,7 +2262,13 @@ async function welcome() {
 }
 
 // ---------- router ----------
-function go(route) { location.hash = "#/" + route; }
+// a link to the page you're already on draws it again: a page that swaps its content in place (a lesson's practice,
+// a set finished) keeps the same address, so "← The lesson" or "Back to …" did nothing (23 Oct test)
+function go(to) { const h = "#/" + to; if (location.hash === h) route(); else location.hash = h; }
+document.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest('a[href^="#/"]');
+  if (a && !e.defaultPrevented && a.getAttribute("href") === location.hash) { e.preventDefault(); route(); }
+});
 // the round arrow, bottom left: look for new games now, then load the page again (23 Oct test: "reload is not working")
 async function kwRefresh() {
   const b = $("#synced"); if (b) b.classList.add("spin");
