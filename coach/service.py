@@ -1124,6 +1124,10 @@ def with_point(said, q):
     acts = said.get("actions") or []
     if p.get("action"):  # it lives in the other place: one button to it, first
         acts = [p["action"]] + [a for a in acts if a.get("app") != p["action"].get("app") or not a.get("app")]
+    elif in_app and p.get("route"):  # in the app: the suggestion's own button, alone, so it's clear what it opens
+        label = {"rematch": "Play it again", "game": "Open the game", "daily": "Start", "badge": "See your badges",
+                 "clock": "Slow-down drill", "tour": "Show me"}.get(p.get("kind"), "Open it")
+        acts = [{"label": label, "app": p["route"].split("@")[0], "best": True}]
     return {**said, "point": p, "quiet": False, "lines": keep + [p["line"]], "actions": acts}
 
 

@@ -162,3 +162,12 @@ def test_the_days_own_things_come_before_the_tour(tmp_path, monkeypatch):
     assert nudge.pick("app", "home", HOME, DAY, now=T0)["id"] == "game-111"
     assert nudge.pick("app", "home", HOME, DAY, now=T0 + nudge.GAP)["id"] == "daily"
     assert nudge.pick("app", "home", HOME, DAY, now=T0 + 2 * nudge.GAP)["kind"] == "tour"
+
+
+def test_a_suggestion_not_opened_stops_after_two_days(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch)
+    seen = []
+    for d in range(5):
+        day = DAY + datetime.timedelta(days=d)
+        seen += [x for x in ids("app", HOME, n=4, day=day, rematch=REMATCH) if x == "rematch-111"]
+    assert len(seen) == 2  # 24 Oct: the same rematch before and after midnight, again and again

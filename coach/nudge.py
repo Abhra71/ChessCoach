@@ -17,6 +17,7 @@ FILE = DATA / "nudges.json"  # what was suggested today, and which pages and gam
 A_DAY = 3
 NEW_FOR = 3 * 86400  # seconds a finished game counts as new
 DAILY = ("game", "daily")  # worth saying every day: never sent to the back for variety
+MAX_DAYS = 2  # any other suggestion: shown on 2 days at most, opened or not (24 Oct: the same rematch again and again)
 CHESSCOM_SECTIONS = ("home", "puzzles", "lessons", "progress")  # never play, review or someone's profile
 _LOCK = threading.Lock()
 
@@ -255,8 +256,10 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
         mine = shown.get(place, [])
         kinds = m.get("kinds", {})
         before = set(kinds.get(yesterday, []))
+        ever = m.get("ever", {})  # suggestion id -> the days it was shown
         options = [c for c in candidates(place, home, lesson, rematch, prog, games, player)
-                   if c["id"] not in mine and c.get("guide") != section]  # not "this way to puzzles" on that page
+                   if c["id"] not in mine and c.get("guide") != section
+                   and (c["kind"] in DAILY or len([d for d in ever.get(c["id"], []) if d != today]) < MAX_DAYS)]  # not "this way to puzzles" on that page
         options.sort(key=lambda c: c["kind"] in before and c["kind"] not in DAILY)  # stable: yesterday's kinds go last
         if len(mine) >= A_DAY:
             options = []
@@ -275,6 +278,8 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
             m["shown"] = shown  # today's list only (a new day starts it again)
         else:
             m["shown"] = {**shown, place: mine + [c["id"]]}
+            days = ever.get(c["id"], [])
+            m["ever"] = {**ever, c["id"]: days if today in days else (days + [today])[-MAX_DAYS - 1:]}
         m["day"] = today
         m["at"] = {**(m.get("at") or {}), place: now}
         m["kinds"] = {d: k for d, k in kinds.items() if d in (today, yesterday)}
