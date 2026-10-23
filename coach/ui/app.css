@@ -829,3 +829,6 @@ a.kw-point:not(.nav a) { box-shadow: 0 0 0 2px var(--accent); animation: kwpoint
 
 /* calmer (23 Oct test): a soft, still tint on the one thing, no pulsing, no outline */
 .nav a.kw-point, a.kw-point:not(.nav a) { animation: none; box-shadow: none; background: rgba(129,182,76,.14); transition: background .4s; }
+
+/* the green ring is right (23 Oct test); only its timing was wrong */
+.nav a.kw-point, a.kw-point:not(.nav a) { background: none; box-shadow: inset 0 0 0 2px var(--accent); animation: kwpoint 1.2s ease-in-out infinite; }

@@ -198,16 +198,28 @@ const Mic = (() => {  // records 16 kHz mono in the window; the coach's key turn
 // click (23 Oct test: "a coach points at her suggestions by herself")
 const NAV_OF = { prep: "train", openings: "train", repertoire: "train", spar: "train", calc: "train", blindfold: "train",
   guess: "train", endgames: "train", rematch: "games", daily: "home" };
-let kwPointTimer = null;
-function kwUnpoint() { clearTimeout(kwPointTimer); document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point")); }
-function kwPoint(route) {  // one calm highlight: the thing on this page if it's here, else its menu item (23 Oct test:
-  kwUnpoint();               // "pointing is kind of aggressive for someone who wants to do something else")
-  const top = route.split("/")[0], nav = NAV_OF[top] || top;
-  const here = document.querySelector(`#page a[href="#/${route}"]`) || document.querySelector(`.nav a[href="#/${nav}"]`);
-  if (here) here.classList.add("kw-point");
-  kwPointTimer = setTimeout(kwUnpoint, 10000);
-  document.addEventListener("pointerdown", kwUnpoint, { once: true, capture: true });
+// The ring follows the way (23 Oct test): 10 s on each step if nothing happens; follow it (Games, then the game) and it
+// moves to the next step; arrive and it's done; open something else and it goes at once.
+let kwPointTimer = null, kwPointing = null;
+function kwUnpoint() { clearTimeout(kwPointTimer); kwPointing = null; document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point")); }
+function kwPoint(route) { kwUnpoint(); kwPointing = route; kwRing(0); }
+function kwRing(tries) {  // the step on this page: the thing itself if it's here, else its menu item
+  if (!kwPointing) return;
+  document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point"));
+  const route = kwPointing, top = route.split("/")[0], nav = NAV_OF[top] || top;
+  const el = document.querySelector(`#page a[href="#/${route}"]`) || (tries < 15 && (location.hash.replace(/^#\/?/, "").split("/")[0] || "home") === nav
+    ? null : document.querySelector(`.nav a[href="#/${nav}"]`));
+  if (!el) { kwPointTimer = setTimeout(() => kwRing(tries + 1), 200); return; }  // the page is still loading
+  el.classList.add("kw-point");
+  clearTimeout(kwPointTimer); kwPointTimer = setTimeout(kwUnpoint, 10000);
 }
+addEventListener("hashchange", () => {
+  if (!kwPointing) return;
+  const now = location.hash.replace(/^#\/?/, "") || "home", route = kwPointing, top = route.split("/")[0];
+  if (now === route || now.startsWith(route + "/")) return kwUnpoint();  // arrived: done
+  if (now.split("/")[0] === (NAV_OF[top] || top)) { clearTimeout(kwPointTimer); return kwRing(0); }  // followed: the next step
+  kwUnpoint();  // somewhere else: it goes
+});
 // Ask the coach: her face, a field that looks like one, the mic and send inside it, and a few questions to tap
 // (22 Oct test: "people won't click here to type, it's not understandable")
 const ASK_CHIPS = { home: ["Review my last game", "Why do I lose?", "What should I practise?"],
@@ -229,7 +241,6 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
   // the answer goes away after a minute, or when they do something else (23 Oct test), unless the mouse is on it
   let fade = null;
   const clearAnswer = () => { clearTimeout(fade); out.innerHTML = ""; q.value = "";
-    kwUnpoint();
     document.removeEventListener("pointerdown", elsewhere, true); };
   // only doing something else clears it (a button, a link, a field), not a click on empty space (23 Oct test)
   const elsewhere = e => { if (!el.contains(e.target) && e.target.closest("a,button,input,select,textarea,label,[onclick]")) clearAnswer(); };
