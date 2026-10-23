@@ -956,7 +956,7 @@ class Server(ThreadingHTTPServer):
 def extension_stamp():
     """A fingerprint of the extension folder Chrome loads (names, sizes, times)."""
     import hashlib
-    h = hashlib.sha1()
+    h = hashlib.sha1(usedforsecurity=False)  # a fingerprint of files, not security
     for f in sorted(p for p in EXTENSION.rglob("*") if p.is_file()):
         st = f.stat()
         h.update(f"{f.relative_to(EXTENSION)}|{st.st_size}|{int(st.st_mtime)}".encode())

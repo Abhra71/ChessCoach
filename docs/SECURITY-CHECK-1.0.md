@@ -35,6 +35,15 @@ Settings could even redraw itself over another page. Fixed: the router draws the
 one finishes late; the practice board and Settings check they're still there. Re-run on the same pages: 0 errors.
 Never run on chess.com (random clicks there could start or resign a real game).
 
+## Libraries and code (23 Oct)
+- **pip-audit** (every Python library Knightwise uses, against the public vulnerability lists): none found.
+- **Bandit** (reads the code for risky patterns): 20 flags, 0 high. Fixed: 2 medium, SHA-1 used for cache names only,
+  now marked `usedforsecurity=False`. The other 18 checked and safe: the server binds to this PC only (127.0.0.1),
+  Stockfish and the browser are started with fixed arguments, the `try/except: pass` lines are deliberate.
+- **Accessibility** (axe-core 4.10.2, 13 pages, light and dark): fixed missing names on the 8 menu icons, missing
+  labels in Settings, and faint text (grey, green, red) below the 4.5 contrast rule. Re-scan: clean (two minor
+  heading-order notes left).
+
 ## Known, for 1.1
 - Any installed Chrome extension (not only Knightwise's) may talk to the server. A harmful extension could already do
   much worse inside the browser, so the risk is low; the fix is to allow only Knightwise's own extension ID.

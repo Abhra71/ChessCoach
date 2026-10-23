@@ -546,22 +546,22 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--raised); }
    one green for the one main action; colour lives in icons; no coloured bars on card edges. */
 :root {
   --bg: #f4f2ef; --surface: #ffffff; --raised: #ebe8e3; --line: #e2ded8; --line-strong: #d3cec6;
-  --text: #1f1d1a; --muted: #6a645c; --faint: #938c83; --accent: #5d8a35; --accent-edge: #456a26; --on-accent: #ffffff;
-  --side: #ebe8e3; --press: rgba(0,0,0,.16); --radius: 10px;
+  --text: #1f1d1a; --muted: #6a645c; --faint: #6e6861; --accent: #4f7a2a; --accent-edge: #3d6020; --on-accent: #ffffff;
+  --side: #ebe8e3; --press: rgba(0,0,0,.16); --radius: 10px; --better: #17803f; --red: #c0281c;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #262421; --surface: #312e2b; --raised: #3d3a36; --line: #3a3733; --line-strong: #4a4641;
-    --text: #f3f1ee; --muted: #a6a19a; --faint: #807a72; --invert: #f3f1ee; --on-invert: #262421;
+    --text: #f3f1ee; --muted: #b0aba4; --faint: #9c968e; --invert: #f3f1ee; --on-invert: #262421;
     --accent: #81b64c; --accent-edge: #5d8a35; --on-accent: #13210a; --side: #1e1c1a; --press: rgba(0,0,0,.32);
-    --red: #e5734f; --mine: #e5734f; --better: #81b64c;
+    --red: #f29274; --mine: #e5734f; --better: #81b64c;
   }
 }
 :root[data-theme="dark"] {
   --bg: #262421; --surface: #312e2b; --raised: #3d3a36; --line: #3a3733; --line-strong: #4a4641;
-  --text: #f3f1ee; --muted: #a6a19a; --faint: #807a72; --invert: #f3f1ee; --on-invert: #262421;
+  --text: #f3f1ee; --muted: #b0aba4; --faint: #9c968e; --invert: #f3f1ee; --on-invert: #262421;
   --accent: #81b64c; --accent-edge: #5d8a35; --on-accent: #13210a; --side: #1e1c1a; --press: rgba(0,0,0,.32);
-  --red: #e5734f; --mine: #e5734f; --better: #81b64c;
+  --red: #f29274; --mine: #e5734f; --better: #81b64c;
 }
 .side { background: var(--side); border-right: 0; padding: 18px 10px; }
 .nav a { border-radius: 8px; color: var(--text); opacity: .86; }
@@ -763,7 +763,7 @@ a.tile:hover { filter: brightness(1.05); }
 @media (max-width: 900px) { .tcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* Your level, made clear (22 Oct): a ladder of five, then each skill as ten games */
 .ladder { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; position: relative; }
-.lstepbox { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 12px 6px; border-radius: 12px; background: var(--surface); opacity: .55; }
+.lstepbox { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 12px 6px; border-radius: 12px; background: var(--surface); opacity: .72; }
 .lstepbox.now { opacity: 1; box-shadow: inset 0 0 0 1.5px var(--accent); } .lstepbox.done { opacity: .85; }
 .lcircle { width: 30px; height: 30px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
 .lstepbox.now .lcircle { background: var(--accent); color: var(--on-accent); } .lstepbox.done .lcircle { background: var(--accent); color: var(--on-accent); }

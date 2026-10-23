@@ -103,7 +103,7 @@ def say(text, voice=DEFAULT, slow=False):
     text = speakable(text)[:600]
     # teaching pace: never below SLOW itself (Viktor is 0.9 already; 0.9 x 0.86 was far too slow, 23 Oct test)
     speed = round(min(SPEED.get(voice, 1.0), SLOW) if slow else SPEED.get(voice, 1.0), 3)
-    key = hashlib.sha1(f"{voice}|{speed}|{text}".encode()).hexdigest()
+    key = hashlib.sha1(f"{voice}|{speed}|{text}".encode(), usedforsecurity=False).hexdigest()  # a cache name, not security
     cached = CACHE / f"{key}.wav"
     if cached.exists():
         return cached.read_bytes()

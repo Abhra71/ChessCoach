@@ -359,7 +359,7 @@ function helpful(el, where) {
 // ---------- shell ----------
 function shell(active, body) {
   const item = (route, name, icon) =>
-    `<a href="#/${route}" class="${active === route ? "on" : ""}">${svg(icon)}<span>${name}</span></a>`;
+    `<a href="#/${route}" class="${active === route ? "on" : ""}" aria-label="${name}" title="${name}">${svg(icon)}<span>${name}</span></a>`;
   $("#root").innerHTML = `
     <div class="shell">
       <aside class="side">
@@ -2030,9 +2030,9 @@ async function settingsView() {
     const x = s.slots[id], prov = s.providers[x.provider];
     return `<div class="box stack" data-slot="${id}"><div class="row spread"><h3>AI key ${n}</h3>
         <span class="small ${x.set ? "ok-text" : "faint"}">${x.set ? `Saved · ends with ••••${esc(x.ends)}` : "Not set"}</span></div>
-      <select class="field" data-provider>${Object.entries(s.providers).map(([k, p]) =>
+      <select class="field" data-provider aria-label="AI key ${n}: provider">${Object.entries(s.providers).map(([k, p]) =>
         `<option value="${k}" ${k === x.provider ? "selected" : ""}>${esc(p.name)}${p.free ? ", free" : ", paid"}</option>`).join("")}</select>
-      <input class="field" type="password" autocomplete="off" spellcheck="false" placeholder="${x.set ? "Paste a new key to replace it" : "Paste your API key"}" data-key>
+      <input class="field" type="password" autocomplete="off" spellcheck="false" placeholder="${x.set ? "Paste a new key to replace it" : "Paste your API key"}" aria-label="AI key ${n}" data-key>
       <div class="row"><button class="btn" data-save>Save key</button>${x.set ? `<button class="btn" data-test>Test key</button><button class="btn danger" data-remove>Remove</button>` : ""}
         <a class="small muted" data-get href="${esc(prov.get_key)}" target="_blank" rel="noopener">Get a ${esc(prov.name)} key ↗</a></div>
       <div class="err" data-msg></div></div>`;
@@ -2041,7 +2041,7 @@ async function settingsView() {
     <div class="page-head"><div><h1>Settings</h1></div></div>
     <div class="box">
       <div class="settings-row"><div><h3 title="Only public games are read. No password.">chess.com account</h3></div>
-        <div class="stack"><div class="row"><input class="field" id="user" value="${esc(st.player || "")}" spellcheck="false" style="max-width:280px">
+        <div class="stack"><div class="row"><input class="field" id="user" aria-label="Your chess.com username" value="${esc(st.player || "")}" spellcheck="false" style="max-width:280px">
           <button class="btn" id="saveuser">Change</button></div><div class="err" id="usermsg"></div></div></div>
       <div class="settings-row"><div><h3>Appearance</h3></div>
         <div><div class="seg" id="theme">${["system", "dark", "light"].map(t => `<button data-t="${t}" class="${s.theme === t ? "on" : ""}">${cap(t)}</button>`).join("")}</div></div></div>
