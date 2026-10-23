@@ -330,11 +330,22 @@ function trainer(drills, opts) {
     // the help grows: first why it's wrong, then the idea, then which piece, never the move itself
     const right = Object.entries(step().moves).find(([, e]) => e.good), from = right ? right[0].slice(0, 2) : null;
     const help = tries === 1 ? `${m.say} Try again.`
-      : tries === 2 ? `Here's a hint: ${d().hint || "look at every check and capture first."}`
+      : tries === 2 ? `Here's a hint: ${hintFor(right, d())}`
       : from ? `Look at your ${NAMES[pieces[from].toLowerCase()]} on ${from}. Where can it go?` : `${m.say} Try again.`;
     result("", `<b class="delta bad" style="font-size:14px">${esc(m.san)}: not quite.</b><div style="margin-top:4px">${esc(help)}</div>`);
     Coach.react(coach, tries === 1 ? "worried" : "encourage", tries === 1 ? `Not quite. ${help}` : help);
     draw({ ...mark([uci.slice(0, 2), uci.slice(2, 4)], "hl-no"), ...(tries >= 3 && from ? { [from]: "hl-pick" } : {}) });
+  }
+  // the second hint comes from this position: what kind of move wins it, never the move (23 Oct test: "why the same hints?")
+  function hintFor(right, item) {
+    const san = right && right[1] && right[1].san || "";
+    if (san.includes("#")) return "there's a checkmate here. Look at every check you can give.";
+    if (san.includes("+")) return "a check is the key. Look at every check you can give, even the odd-looking ones.";
+    if (san.includes("x")) return "something can be taken. Look at every capture, and count who defends it.";
+    const quiet = { "left a piece hanging": "no capture this time. Which of your pieces is in danger, and where is it safe?",
+      "walked into a fork or trick": "a quiet move. Before each move you consider, ask what their nastiest reply is.",
+      "walked into checkmate": "a quiet move that protects your king. Which of their checks must you stop?" };
+    return quiet[item.pattern] || item.hint || "look at every check and capture first.";
   }
   function answer() {
     const entries = Object.entries(step().moves).filter(([, m]) => m.good);
