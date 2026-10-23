@@ -1637,7 +1637,7 @@ async function home() {
       ${f ? `<a class="box hcard" href="#/practice/${encodeURIComponent(f.pattern)}">
         <div class="row spread"><b>Your focus</b><span class="hicon calm" title="Practise: ${esc((PATTERN_TITLE[f.pattern] || cap(f.pattern)).toLowerCase())}">${svg("practice")}</span></div>
         <div class="hnum"><b class="num">${roll(h.pieces_last20, 1)}</b>${trend(better, `from ${h.pieces_per_game.toFixed(1)}`)}</div>
-        <div title="Pieces lost a game, each point the average of ${h.trend_window || 10} games, oldest on the left. Now ${roll(h.pieces_last20, 1)}; over all your games ${h.pieces_per_game.toFixed(1)}.">${spark(h.trend, better)}</div>
+        <div title="Pieces lost a game, each point the average of ${h.trend_window || 10} games, oldest on the left. Now ${Number(h.pieces_last20).toFixed(1)}; over all your games ${h.pieces_per_game.toFixed(1)}.">${spark(h.trend, better)}</div>
         <span class="muted small">pieces lost a game</span>
         <span class="btn">Practise</span></a>` : ""}
     </div>
