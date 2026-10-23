@@ -917,3 +917,13 @@ button.xrow:hover { border-color: var(--good, #81b64c); }
 .lmeter em { position: absolute; top: -4px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: var(--text); }
 .lstate { white-space: nowrap; font-size: 12.5px; font-weight: 600; color: #e5734f; display: inline-flex; align-items: center; gap: 4px; }
 .lstate.ok { color: var(--accent); } .lstate svg { width: 14px; height: 14px; }
+
+/* Your level, one view (23 Oct) */
+.lnum { display: flex; align-items: baseline; gap: 10px; }
+.lnum b { font-size: 34px; line-height: 1; color: #e5734f; }
+.lskill.met .lnum b { color: var(--accent); }
+.lnum span { font-size: 14px; }
+button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
+.lstepbox.sel:not(.now) { outline: 2px solid var(--line-strong); outline-offset: -2px; }
+.lskills.ahead .lskill { opacity: .85; }
+.lstepbox.sel { opacity: 1; }
