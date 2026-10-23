@@ -2504,7 +2504,7 @@ function trainView() {
   shell("train", "");
   $("#page").innerHTML = `<div class="page-head"><div><h1>Train</h1></div></div>
     ${TRAIN.map(([group, colour, tools]) => `<div class="tgroup">${esc(group)}</div>
-      <div class="tcards">${tools.map(([route, icon, name, line]) => `<a class="box tcard" href="#/${route === "spar" ? "prep" : route}">
+      <div class="tcards" style="--n:${tools.length}">${tools.map(([route, icon, name, line]) => `<a class="box tcard" href="#/${route === "spar" ? "prep" : route}">
         <div class="tpic" data-pic="${route}"></div>
         <b class="tname"><span style="color:${colour}">${svg(icon)}</span>${esc(name)}</b><span class="muted small">${esc(line)}</span></a>`).join("")}</div>`).join("")}`;
   document.querySelectorAll("[data-pic]").forEach(el => {

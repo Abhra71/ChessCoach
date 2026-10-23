@@ -749,7 +749,7 @@ a.tile:hover { filter: brightness(1.05); }
 
 /* Train (22 Oct): every tool as a picture, a name and a few words */
 .tgroup { font-size: 12.5px; font-weight: 600; color: var(--faint); margin: 18px 0 8px; }
-.tcards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tcards { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 12px; }
 .tcard { display: flex; flex-direction: column; gap: 6px; padding: 12px; text-decoration: none; color: inherit; }
 .tcard:hover { filter: brightness(1.07); }
 .tpic { height: 112px; border-radius: 9px; background: var(--raised); display: grid; place-items: center; position: relative; overflow: hidden; margin-bottom: 4px; }
