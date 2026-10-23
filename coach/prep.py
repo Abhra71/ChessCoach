@@ -75,7 +75,7 @@ def scout(user, me=None, games=None, mine=None):
         s = side(g)
         res = g[s]["result"]
         results["won" if res == "win" else "drew" if res in DRAWS else
-                {"checkmated": "lost by checkmate", "timeout": "lost on time", "resigned": "resigned"}.get(res, "lost")] += 1
+                {"checkmated": "lost by checkmate", "timeout": "lost on time", "resigned": "resigned"}.get(res, "lost another way")] += 1
     latest = max(games, key=lambda g: g.get("end_time", 0))
     out = {"user": user, "games": len(games), "rating": latest[side(latest)]["rating"],
            "time_class": collections.Counter(g["time_class"] for g in games).most_common(1)[0][0],

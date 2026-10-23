@@ -673,7 +673,7 @@ a.tile:hover { filter: brightness(1.05); }
 /* Your level, the calm way (22 Oct): a ring for the level, a number and a bar per skill, one green button */
 .ltools { display: flex; gap: 6px; flex-wrap: wrap; }
 .ltool { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 999px; background: var(--surface); color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 600; }
-.ltool:hover { color: var(--text); filter: brightness(1.1); } .ltool svg { width: 16px; height: 16px; color: #b48ce0; }
+.ltool:hover { color: var(--text); filter: brightness(1.1); } .ltool svg { width: 16px; height: 16px; color: var(--accent); }
 .lcur { display: flex; align-items: center; gap: 16px; padding: 16px 18px; }
 .lring { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; flex: none; }
 .lring span { width: 50px; height: 50px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-size: 13px; color: var(--muted); }
@@ -995,3 +995,6 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 @media (max-width: 520px) { .kwb { gap: 10px; padding: 10px 12px; } .kwb-medal { width: 50px; height: 50px; } .kwb-name { font-size: 17px; } }
 @media (prefers-reduced-motion: reduce) { .kwb.in, .kwb.fill .kwb-coin, .kwb.gold .kwb-coin, .kwb.gold .kwb-star { animation: none !important; }
   .kwb.in { transform: translate(-50%, 0); } .kwb-medal { transform: none; } }
+/* Prep (24 Oct, owner: too black and white): openings in blue; how they lose in orange (your chance), wins in green */
+.prep-colour .tree-score i { background: color-mix(in srgb, #5ea4e8 55%, transparent); }
+.pend.won i b { background: var(--accent); } .pend.lost i b { background: #e9a23b; }

@@ -967,7 +967,7 @@ async function endgameView(id) {
 async function prepView(user) {
   shell("train", `<p class="muted">Loading…</p>`);
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/games" class="small muted" style="text-decoration:none">← Games</a>
+    <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Prep before a game</h1>
       <p class="sub">How a chess.com player plays, from their public games of the last three months. Only before a game: Knightwise is never active during one.</p></div></div>
     <div class="box stack" style="padding:16px"><div class="row"><input class="field" id="who" placeholder="Their chess.com username" value="${esc(user || "")}" spellcheck="false" style="max-width:280px">
@@ -985,7 +985,7 @@ async function prepView(user) {
         <span class="tree-score"><i style="width:${r.share}%"></i><b class="num">${r.share}%</b></span></div>`).join("") : `<p class="small muted">Not enough games.</p>`;
     const ends = Object.entries(s.endings).sort((a, b) => b[1] - a[1]);
     $("#prep").innerHTML = `
-      <div class="prep-grid">
+      <div class="prep-grid prep-colour">
         <div class="box stack prep-who" style="padding:16px"><h2 style="margin:0">${esc(s.user)} <span class="faint num">${s.rating}</span></h2>
           <p class="small muted" style="margin:0">${s.games} games in three months, mostly ${esc(s.time_class)}.</p>
           ${s.advice.map(a => `<p style="margin:0">${esc(a)}</p>`).join("")}</div>
@@ -994,7 +994,7 @@ async function prepView(user) {
         <div class="box stack" style="padding:16px"><h2 style="margin:0">As Black, they answer</h2>
           ${list(s.as_black, r => { const [a, b] = r.what.split(" "); return `1. ${esc(a)} ${esc(b)} <span class="small muted">· after ${esc(plainMove(a))}: ${esc(plainMove(b))}</span>`; })}</div>
         <div class="box stack" style="padding:16px"><h2 style="margin:0">How their games end</h2>
-          ${ends.map(([k, n]) => `<div class="pend"><span>${esc(cap(k))}</span><i><b style="width:${100 * n / Math.max(...ends.map(e => e[1]))}%"></b></i><b class="num">${n}</b></div>`).join("")}</div>
+          ${ends.map(([k, n]) => `<div class="pend ${k === "won" ? "won" : k === "drew" ? "" : "lost"}"><span>${esc(cap(k))}</span><i><b style="width:${100 * n / Math.max(...ends.map(e => e[1]))}%"></b></i><b class="num">${n}</b></div>`).join("")}</div>
       </div>`;
     $("#prep").insertAdjacentHTML("beforeend", `<div class="box row" style="padding:16px;margin-top:16px"><div style="flex:1"><b>Spar against them</b>
       <div class="small muted">They open the way they really do, then play like players of their rating.</div></div>
@@ -1064,7 +1064,7 @@ async function reportView(arg) {
   Coach.react("viktor", "explain", r.lines.slice(0, 2).join(" "));
 }
 
-// Wrapped: the same facts as big cards, one at a time, with Viktor saying each. Click, or the arrow keys, to move on.
+// Wrapped: the same facts as big cards, one at a time, with Viktor saying the last one. Click, or the arrow keys, to move on.
 function wrapped(r) {
   const res = r.results || {}, rt = r.rating || {}, pr = r.practice || {};
   const cards = [
@@ -1100,7 +1100,8 @@ function wrapped(r) {
       <div class="wrapped-dots">${cards.map((_, n) => `<i class="${n === k ? "on" : ""}"></i>`).join("")}</div>
       <button class="wrapped-x" title="Close">✕</button><div class="wrapped-foot">Knightwise Wrapped · click to go on</div>`;
     layer.querySelector(".wrapped-x").onclick = e => { e.stopPropagation(); close(); };
-    Voice.speak(say, false, COACHES.viktor.voice);
+    // Viktor speaks only on the last card; the others are read under the music (24 Oct, owner)
+    if (k === cards.length - 1) Voice.speak(say, false, COACHES.viktor.voice); else Voice.stop();
   }
   function close() {
     Voice.stop(); layer.remove(); removeEventListener("keydown", keys);
@@ -1485,7 +1486,7 @@ async function progressView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Progress</h1></div>
       <div class="row"><a class="ltool" href="#/report/week" title="A report for your coach or a parent">${svg("plan")}<span>Report</span></a>
-        <a class="ltool" href="#/film/month" title="Your game of the month, as a film">${svg("practice")}<span>Film</span></a></div></div>
+        <a class="btn primary" href="#/film/month" title="Your game of the month, as a film">▶ Game of the month</a></div></div>
     <div class="grid">
       ${s ? `<div class="box story rise" id="story">
         <div class="story-head"><div><div class="label">${esc(s.title)}</div><div class="small muted">${esc(s.from)} to ${esc(s.to)}</div></div>

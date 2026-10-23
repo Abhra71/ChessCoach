@@ -90,6 +90,7 @@ def speakable(text):
         return f"{piece} {rest}".strip()
 
     text = re.sub(r"\b(?:O-O(?:-O)?|[KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](?:=[QRBN])?)[+#]?", move, text)
+    text = re.sub(r"chess\.com", "chess dot com", text, flags=re.I)  # spoken "chess dot com"; written stays chess.com (24 Oct)
     return re.sub(r"\s+", " ", text).replace(" ,", ",")
 
 
