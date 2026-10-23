@@ -227,8 +227,10 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
   const point = offer => {
     if (!offer || !offer.route) return;
     const nav = document.querySelector(`.nav a[href="#/${offer.route.split("/")[0]}"]`); if (nav) nav.classList.add("kw-point"); };
+  let busy = false;  // a second press while she's answering is ignored: the first one counts (23 Oct test)
   const go = async () => {
-    const text = q.value.trim(); if (!text) return;
+    const text = q.value.trim(); if (!text || busy) return;
+    busy = true;
     clearTimeout(fade);
     out.innerHTML = `<span class="muted">Thinking…</span>`;
     try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>` +
@@ -236,6 +238,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
       const rep = $(".kw-report", out); if (rep) rep.onclick = feedbackBox; Voice.speak(r.text, false, (COACHES[coach] || {}).voice);
       point(r.offer); fadeLater(); }
     catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+    finally { busy = false; }
   };
   $("[data-ask]", el).onclick = go;
   el.querySelectorAll("[data-chip]").forEach(b => b.onclick = () => { q.value = b.textContent; go(); });
