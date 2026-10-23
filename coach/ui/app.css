@@ -908,3 +908,12 @@ button.xrow:hover { border-color: var(--good, #81b64c); }
 
 /* ask while you learn (23 Oct) */
 .trainer-ask { margin-top: 14px; }
+
+/* Your level: an exact count against the aim (23 Oct) */
+.lmeter { position: relative; height: 8px; border-radius: 4px; overflow: visible; margin: 4px 0 2px; }
+.lmeter i { position: absolute; top: 0; bottom: 0; }
+.lmeter i.good { background: color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 4px 0 0 4px; }
+.lmeter i.bad { background: color-mix(in srgb, #e5734f 45%, transparent); border-radius: 0 4px 4px 0; }
+.lmeter em { position: absolute; top: -4px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: var(--text); }
+.lstate { white-space: nowrap; font-size: 12.5px; font-weight: 600; color: #e5734f; display: inline-flex; align-items: center; gap: 4px; }
+.lstate.ok { color: var(--accent); } .lstate svg { width: 14px; height: 14px; }

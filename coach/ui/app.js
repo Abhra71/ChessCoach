@@ -726,29 +726,40 @@ async function levelView() {
   // each skill counted in games you can picture, not decimals
   const ladder = `<div class="ladder">${p.levels.map((l, i) => `<div class="lstepbox ${i < p.current || l.done ? "done" : i === p.current ? "now" : ""}" title="${esc(l.band)}">
       <span class="lcircle num">${l.done ? svg("check") : i + 1}</span><b>${esc(l.name)}</b><span class="faint small">${esc(l.band.replace(/^about /, "").replace("up to ", "≤ "))}</span></div>`).join("")}</div>`;
-  const dots = s => {  // ten games as ten dots: red when it happened; a mark where the goal is
-    if (s.value === null) return `<span class="muted small">Not enough games yet</span>`;
-    const per = s.unit === "a game" ? 10 : s.unit && s.unit.startsWith("in ") ? Number(s.unit.match(/\d+/)) || 20 : null;
-    if (!per) {  // a share or points: a bar with the goal marked
-      const max = Math.max(s.value, s.target) * 1.25 || 1;
-      return `<div class="lbar"><i style="width:${100 * s.value / max}%"></i><em style="left:${100 * s.target / max}%"></em></div>
-        <span class="muted small"><b class="num">${s.unit === "%" ? Math.round(s.value) + "%" : s.value}</b> · goal ${s.way === "max" ? "at most" : "at least"} ${s.unit === "%" ? s.target + "%" : s.target}</span>`;
-    }
-    const n = s.unit === "a game" ? Math.min(per, Math.round(s.value * per)) : Math.min(per, Math.round(s.value));
-    const goal = s.unit === "a game" ? Math.round(s.target * per) : s.target;
-    const shown = Math.min(per, 10), scale = per / shown, red = Math.round(n / scale), mark = Math.round(goal / scale);
-    return `<div class="ldots">${Array.from({ length: shown }, (_, i) => `${i === mark ? `<em title="goal"></em>` : ""}<i class="${i < red ? "hit" : ""}"></i>`).join("")}${mark >= shown ? "<em></em>" : ""}</div>
-      <span class="muted small"><b class="num">${n}</b> in your last ${per} games · goal ${goal}</span>`;
+  // each skill as an exact count over the games it was measured on, against its aim (23 Oct test: the dots were
+  // "confusing": a dot was a mistake, not a game, and red dots read like progress). A bar: green up to the aim, red
+  // past it, a white mark where you are; and a word: Done, or how many too many.
+  const count = s => {
+    if (s.value === null || s.value === undefined) return null;
+    if (s.unit === "a game") return { n: Math.round(s.value * p.games), aim: Math.floor(s.target * p.games + 1e-9), over: `in your last ${p.games} games` };
+    if (s.unit === "%") return { n: Math.round(s.value), aim: s.target, over: "", pct: true };
+    if (!s.unit || s.unit.startsWith("in ")) return { n: s.value, aim: s.target, over: `in your last ${(s.unit.match(/\d+/) || [p.games])[0]} games` };
+    return { n: s.value, aim: s.target, over: s.unit };
   };
-  const skill = s => `<div class="box lskill ${s.met ? "met" : ""}" title="${esc(s.what)}">
-      <div class="row spread"><b>${esc(s.name)}</b>${s.met ? `<span class="lmet">${svg("check")}</span>` : ""}</div>
-      ${dots(s)}
+  const meter = s => {
+    const c = count(s);
+    if (!c) return `<span class="muted small">Not enough games yet</span>`;
+    const low = s.way === "max", max = Math.max(c.n, c.aim, 1) * 1.3;
+    const at = 100 * Math.min(c.n, max) / max, aim = 100 * c.aim / max;
+    const zone = low ? `<i class="good" style="left:0;width:${aim}%"></i><i class="bad" style="left:${aim}%;right:0"></i>`
+      : `<i class="bad" style="left:0;width:${aim}%"></i><i class="good" style="left:${aim}%;right:0"></i>`;
+    const v = x => c.pct ? `${x}%` : x;
+    const gap = Math.abs(c.n - c.aim);
+    const word = s.met ? `<span class="lstate ok">${svg("check")} Done</span>`
+      : `<span class="lstate">${low ? `${v(gap)} too many` : `${v(gap)} to go`}</span>`;
+    return `<div class="lmeter" title="${esc(s.what)}">${zone}<em style="left:${at}%"></em></div>
+      <div class="row spread"><span class="small"><b class="num">${v(c.n)}</b> <span class="muted">${esc(c.over)}</span></span>${word}</div>
+      <span class="muted small">${esc(cap(s.what.replace(/, in \d+ games$/, "")))} · aim ${low ? `${v(c.aim)} or fewer` : `${v(c.aim)} or more`}</span>`;
+  };
+  const skill = s => `<div class="box lskill ${s.met ? "met" : ""}">
+      <b>${esc(s.name)}</b>
+      ${meter(s)}
       ${s.met === false ? `<a class="btn ${s === next ? "primary" : ""}" href="#/${esc(s.train.route)}">${esc(s.train.label.replace(/ it$/, ""))}</a>` : ""}</div>`;
-  const left = cur.skills.filter(s => !s.met).length;
+  const total = cur.skills.length, doneN = cur.skills.filter(s => s.met).length;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your level</h1></div></div>
     ${ladder}
-    <p class="lgoal">${up ? `${left ? `Get ${left === cur.skills.length ? "these" : `the last ${left}`} right in your games` : "All done here"} ${svg("down")} Level ${p.current + 2}, ${esc(up.name.toLowerCase())}` : "The top level. Keep it there."}</p>
+    <p class="lgoal">${up ? `<b class="num">${doneN} of ${total}</b>&nbsp;done ${svg("down")} all ${total}: Level ${p.current + 2}, ${esc(up.name.toLowerCase())}` : "The top level. Keep it there."}</p>
     <div class="lskills rise">${cur.skills.map(skill).join("")}</div>`;
   $(".lgoal svg") && ($(".lgoal svg").style.transform = "rotate(-90deg)");
   Coach.react("viktor", "explain", next
