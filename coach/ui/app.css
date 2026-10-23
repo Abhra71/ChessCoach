@@ -940,34 +940,58 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .lskills.ahead .lskill { opacity: .85; }
 .lstepbox.sel { opacity: 1; }
 
-/* a badge completed (23 Oct test): a banner at the top, nothing blurred; silver fills to gold */
+/* a badge completed (23 Oct test): a cartoon banner at the top, nothing blurred. Teal-blue, a thick outline; it drops
+   in with a bounce, the medal pops, spins from silver to gold, stars burst; the close button's ring runs down the
+   seconds it stays */
 .kwb { position: fixed; top: 14px; left: 50%; z-index: 2147483001; width: min(760px, calc(100vw - 32px));
-  display: flex; align-items: center; gap: 16px; padding: 12px 16px 12px 14px; border-radius: 16px;
-  background: #2b2926; color: #f3f1ee; font: 14px "Segoe UI", system-ui, sans-serif; text-align: left;
-  box-shadow: 0 10px 34px rgba(0,0,0,.45), inset 0 0 0 1px rgba(242,201,76,.25);
-  transform: translate(-50%, -140%); transition: transform .45s cubic-bezier(.2,1.2,.4,1), opacity .3s; }
-.kwb.in { transform: translate(-50%, 0); }
-.kwb.out { transform: translate(-50%, -140%); opacity: 0; }
-.kwb-medal { position: relative; width: 58px; height: 58px; flex: none; }
-.kwb-m { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; border: 3px solid; }
-.kwb-m svg { width: 28px; height: 28px; }
-.kwb-silver { color: #c7ccd4; border-color: #c7ccd4; }
-.kwb-gold { color: #f2c94c; border-color: #f2c94c; background: #2b2926; clip-path: inset(100% 0 0 0);
-  transition: clip-path .95s cubic-bezier(.5,0,.3,1); }
-.kwb.fill .kwb-gold { clip-path: inset(0 0 0 0); }
-.kwb.gold .kwb-gold { animation: kwbshine 1.6s ease-in-out 2; }
-@keyframes kwbshine { 50% { box-shadow: 0 0 26px rgba(242,201,76,.75); transform: scale(1.08); } }
+  display: flex; align-items: center; gap: 16px; padding: 12px 16px 12px 14px; border-radius: 22px;
+  background: linear-gradient(120deg, #19b3a6 0%, #1f7fd6 100%); color: #fff;
+  border: 3px solid #0c2340; box-shadow: 0 6px 0 #0c2340, 0 14px 30px rgba(0,0,0,.35);
+  font: 600 14px "Segoe UI", system-ui, sans-serif; text-align: left; transform: translate(-50%, -160%); }
+.kwb.in { animation: kwbdrop .7s cubic-bezier(.2,1.6,.4,1) forwards; }
+.kwb.out { animation: kwbup .35s ease-in forwards; }
+@keyframes kwbdrop { 0% { transform: translate(-50%, -160%) scaleY(1); } 60% { transform: translate(-50%, 6px) scaleY(.88); }
+  80% { transform: translate(-50%, -3px) scaleY(1.04); } 100% { transform: translate(-50%, 0) scaleY(1); } }
+@keyframes kwbup { from { transform: translate(-50%, 0); } to { transform: translate(-50%, -170%) rotate(-3deg); opacity: 0; } }
+.kwb-medal { position: relative; width: 64px; height: 64px; flex: none; transform: scale(0); perspective: 300px; }
+.kwb.in .kwb-medal { animation: kwbpopm .5s cubic-bezier(.2,1.8,.4,1) .35s forwards; }
+@keyframes kwbpopm { to { transform: scale(1); } }
+.kwb-coin { position: absolute; inset: 0; transform-style: preserve-3d; }
+.kwb.fill .kwb-coin { animation: kwbspin .95s cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes kwbspin { 0% { transform: rotateY(0) scale(1); } 50% { transform: rotateY(540deg) scale(1.25); } 100% { transform: rotateY(720deg) scale(1); } }
+.kwb.gold .kwb-coin { animation: kwbwobble .6s ease-in-out 2; }
+@keyframes kwbwobble { 25% { transform: rotate(-12deg) scale(1.08); } 75% { transform: rotate(10deg) scale(1.04); } }
+.kwb-m { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; border: 3px solid #0c2340;
+  box-shadow: inset 0 -5px 0 rgba(0,0,0,.18), 0 3px 0 #0c2340; backface-visibility: hidden; }
+.kwb-m svg { width: 30px; height: 30px; }
+.kwb-silver { background: radial-gradient(circle at 35% 30%, #ffffff, #c7ccd4 55%, #9aa2ad); color: #4b5563; }
+.kwb-gold { background: radial-gradient(circle at 35% 30%, #fff6c9, #f9cf3a 50%, #e0a106); color: #7a4f00; opacity: 0; }
+.kwb.gold .kwb-gold { opacity: 1; transition: opacity .2s; }
+.kwb-star { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px; opacity: 0; color: #fff27a;
+  filter: drop-shadow(0 2px 0 #0c2340); }
+.kwb.gold .kwb-star { animation: kwbstar .9s cubic-bezier(.2,1,.4,1) forwards; animation-delay: calc(var(--i) * .03s); }
+@keyframes kwbstar { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(.4); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-58px) scale(1.2) rotate(180deg); } }
 .kwb-text { flex: 1; min-width: 0; }
-.kwb-label { font-size: 12px; color: #a6a19a; } .kwb-label b { color: #f2c94c; }
-.kwb-name { font-size: 18px; font-weight: 700; color: #fff; margin: 1px 0 2px; }
-.kwb-what { font-size: 13px; color: #cfcac3; }
-.kwb-x { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: #f3f1ee;
-  font-size: 14px; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .25s; }
-.kwb.done .kwb-x { opacity: 1; pointer-events: auto; }
-.kwb-x:hover { background: rgba(255,255,255,.16); }
+.kwb-label { font-size: 12px; color: #d8f6ff; letter-spacing: .02em; } .kwb-label b { color: #fff27a; }
+.kwb-name { font-size: 21px; font-weight: 800; color: #fff; margin: 1px 0 2px; text-shadow: 0 2px 0 #0c2340; transform-origin: left center; }
+.kwb.gold .kwb-name { animation: kwbname .55s cubic-bezier(.2,1.8,.4,1); }
+@keyframes kwbname { 0% { transform: scale(1); } 40% { transform: scale(1.22) rotate(-2deg); } 100% { transform: scale(1); } }
+.kwb-what { font-size: 13px; font-weight: 500; color: #eafcff; }
+.kwb-x { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; padding: 0; cursor: pointer;
+  background: #0c2340; color: #fff; font: 700 15px "Segoe UI", system-ui, sans-serif; transform: scale(0); pointer-events: none; }
+.kwb.done .kwb-x { animation: kwbpopm .35s cubic-bezier(.2,1.8,.4,1) forwards; pointer-events: auto; }
+.kwb-x:hover { background: #163d6b; }
+.kwb-x svg { position: absolute; inset: -4px; width: 48px; height: 48px; transform: rotate(-90deg); pointer-events: none; }
+.kwb-x circle { fill: none; stroke: #fff27a; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 132; stroke-dashoffset: 0; }
+.kwb.done .kwb-x circle { animation: kwbring var(--stay, 5s) linear forwards; }
+@keyframes kwbring { to { stroke-dashoffset: 132; } }
 .kwb-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 2147483000; overflow: hidden; }
-.kwb-confetti i { position: absolute; width: 8px; height: 13px; border-radius: 2px; opacity: 0;
-  animation: kwbpop 1.8s cubic-bezier(.15,.7,.3,1) forwards; }
+.kwb-confetti i { position: absolute; width: 11px; height: 11px; border-radius: 3px; border: 2px solid #0c2340; opacity: 0;
+  animation: kwbpop 1.9s cubic-bezier(.15,.7,.3,1) forwards; }
+.kwb-confetti i:nth-child(3n) { border-radius: 50%; } .kwb-confetti i:nth-child(4n) { width: 7px; height: 16px; }
 @keyframes kwbpop { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 70% { opacity: 1; }
   100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); } }
-@media (max-width: 520px) { .kwb { gap: 10px; padding: 10px 12px; } .kwb-medal { width: 46px; height: 46px; } .kwb-name { font-size: 16px; } }
+@media (max-width: 520px) { .kwb { gap: 10px; padding: 10px 12px; } .kwb-medal { width: 50px; height: 50px; } .kwb-name { font-size: 17px; } }
+@media (prefers-reduced-motion: reduce) { .kwb.in, .kwb.fill .kwb-coin, .kwb.gold .kwb-coin, .kwb.gold .kwb-star { animation: none !important; }
+  .kwb.in { transform: translate(-50%, 0); } .kwb-medal { transform: none; } }

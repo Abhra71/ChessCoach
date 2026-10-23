@@ -2450,15 +2450,18 @@ const MEDAL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 // by itself 5 seconds later.
 function kwBadgeBanner(b, opts) {
   if (!b || document.querySelector(".kwb")) return;
-  const o = opts || {}, FILL_AT = 650, FILL = 950, DONE = FILL_AT + FILL + 150, STAY = 5000;
+  const o = opts || {}, FILL_AT = 900, FILL = 950, DONE = FILL_AT + FILL + 150, STAY = o.stay || 5000;
   const el = document.createElement("div");
   el.className = "kwb";
   el.setAttribute("role", "status");
-  el.innerHTML = `<div class="kwb-medal"><div class="kwb-m kwb-silver">${MEDAL}</div><div class="kwb-m kwb-gold">${MEDAL}</div></div>
+  const STAR = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.2l7.1-.6z"/></svg>`;
+  el.innerHTML = `<div class="kwb-medal"><div class="kwb-coin"><div class="kwb-m kwb-silver">${MEDAL}</div><div class="kwb-m kwb-gold">${MEDAL}</div></div>
+      ${Array.from({ length: 8 }, (_, i) => `<span class="kwb-star" style="--i:${i};--a:${i * 45}deg">${STAR}</span>`).join("")}</div>
     <div class="kwb-text"><div class="kwb-label">Badge complete · <b>Gold</b></div>
       <div class="kwb-name">${o.esc(b.name)}</div>
       <div class="kwb-what"><b>${o.esc(String(b.gold))}</b> ${o.esc(b.what)} · earned in ${o.esc(b.from)}</div></div>
-    <button class="kwb-x" aria-label="Close" title="Close">✕</button>`;
+    <button class="kwb-x" aria-label="Close" title="Close">✕<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="21"/></svg></button>`;
+  el.style.setProperty("--stay", STAY / 1000 + "s");  // the ring round the close button runs down these seconds
   document.body.appendChild(el);
   let gone = false;
   const close = () => { if (gone) return; gone = true; el.classList.add("out"); setTimeout(() => el.remove(), 350); };
