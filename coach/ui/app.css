@@ -826,3 +826,6 @@ a.tile:hover { filter: brightness(1.05); }
 /* whatever the coach points at, anywhere on the page (23 Oct) */
 a.kw-point:not(.nav a) { box-shadow: 0 0 0 2px var(--accent); animation: kwpoint2 1.2s ease-in-out infinite; }
 @keyframes kwpoint2 { 50% { box-shadow: 0 0 0 2px transparent; } }
+
+/* calmer (23 Oct test): a soft, still tint on the one thing, no pulsing, no outline */
+.nav a.kw-point, a.kw-point:not(.nav a) { animation: none; box-shadow: none; background: rgba(129,182,76,.14); transition: background .4s; }

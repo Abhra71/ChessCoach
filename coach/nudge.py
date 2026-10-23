@@ -7,11 +7,13 @@ never nags. Never in a game against a real person, and never in a review (it has
 import datetime
 import json
 import threading
+import time
 
 from coach.paths import DATA
 
 FILE = DATA / "nudges.json"  # what was suggested today, and which pages and games the player has already opened
 A_DAY = 3
+NEW_FOR = 3 * 86400  # seconds a finished game counts as new
 CHESSCOM_SECTIONS = ("home", "puzzles", "lessons", "progress")  # never play, review or someone's profile
 _LOCK = threading.Lock()
 
@@ -60,7 +62,8 @@ def candidates(place, home, lesson=None, rematch=None):
     out, done = [], set(_load().get("seen", []))
     g = home.get("last_game") or {}
     opp = g.get("opponent", "")
-    if g.get("checked") and f"games/{g['id']}" not in done:  # a new game nobody has looked at yet
+    fresh = time.time() - (g.get("end_time") or 0) < NEW_FOR  # only a game from the last few days is "new"
+    if g.get("checked") and fresh and f"games/{g['id']}" not in done:  # a new game nobody has looked at yet
         n = g.get("moments") or 0
         if place == "app":
             line = (f"New game in, against {opp}: {n} key moment{'s' if n != 1 else ''} to look at." if n

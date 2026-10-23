@@ -200,11 +200,13 @@ const NAV_OF = { prep: "train", openings: "train", repertoire: "train", spar: "t
   guess: "train", endgames: "train", rematch: "games", daily: "home" };
 let kwPointTimer = null;
 function kwUnpoint() { clearTimeout(kwPointTimer); document.querySelectorAll(".kw-point").forEach(a => a.classList.remove("kw-point")); }
-function kwPoint(route) {
-  kwUnpoint();
+function kwPoint(route) {  // one calm highlight: the thing on this page if it's here, else its menu item (23 Oct test:
+  kwUnpoint();               // "pointing is kind of aggressive for someone who wants to do something else")
   const top = route.split("/")[0], nav = NAV_OF[top] || top;
-  document.querySelectorAll(`a[href="#/${route}"], .nav a[href="#/${nav}"]`).forEach(a => a.classList.add("kw-point"));
-  kwPointTimer = setTimeout(kwUnpoint, 60000);
+  const here = document.querySelector(`#page a[href="#/${route}"]`) || document.querySelector(`.nav a[href="#/${nav}"]`);
+  if (here) here.classList.add("kw-point");
+  kwPointTimer = setTimeout(kwUnpoint, 10000);
+  document.addEventListener("pointerdown", kwUnpoint, { once: true, capture: true });
 }
 // Ask the coach: her face, a field that looks like one, the mic and send inside it, and a few questions to tap
 // (22 Oct test: "people won't click here to type, it's not understandable")

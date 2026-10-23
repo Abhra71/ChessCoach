@@ -1,12 +1,14 @@
 """The coach's one new thing per page: once a day each, at most A_DAY a day, never in a game or a review."""
 import datetime
+import time
 
 from coach import nudge
 
 DAY = datetime.date(2026, 10, 23)
 HOME = {"games": 140, "daily": {"done_today": False, "streak": 3},
         "focus": {"pattern": "left a piece hanging"},
-        "last_game": {"id": "111", "opponent": "RIP_Hansie", "moments": 2, "checked": True, "result": "loss"}}
+        "last_game": {"id": "111", "opponent": "RIP_Hansie", "moments": 2, "checked": True, "result": "loss",
+                      "end_time": time.time() - 3600}}
 
 
 def fresh(tmp_path, monkeypatch):
@@ -60,3 +62,9 @@ def test_not_the_way_to_puzzles_on_the_puzzles_page(tmp_path, monkeypatch):
 def test_a_new_player_with_no_games_gets_nothing(tmp_path, monkeypatch):
     fresh(tmp_path, monkeypatch)
     assert nudge.pick("app", "home", {"games": 0}, DAY) is None
+
+
+def test_an_old_game_is_not_new(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch)
+    home = {**HOME, "last_game": {**HOME["last_game"], "end_time": time.time() - 5 * 86400}}
+    assert nudge.pick("app", "home", home, DAY)["id"] == "daily"
