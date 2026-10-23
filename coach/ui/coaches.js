@@ -505,18 +505,15 @@ async function planView(arg) {
   // a finished card moves down here and the next topic takes its place (23 Oct test: "I lose track of what I've done")
   const doneRow = doneCards.length ? `<h3 class="plan-done-head">Done ${svg("check")} ${(p.done_items || []).length}</h3>
     <div class="plan-cards done-cards">${doneCards.map(x => card(x, false, true)).join("")}</div>` : "";
-  const more = Object.values(p.items).filter(Boolean).reduce((s, x) => s + ((x.path && x.path.more) || 0), 0);
-  const tally = `${all.length} now · ${started.length ? `${started.length} in progress · ` : ""}${(p.done_items || []).length} done · ${more} more on the way, and new openings from your games`;
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your plan</h1>
-      <p class="plan-line">Everything in chess, picked for you. Finish a card and the next most important one for you takes its place; finished cards go to Done.</p>
-      <p class="small muted" style="margin-top:2px">${esc(tally)}</p></div></div>
-    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>
+      <p class="plan-line">Everything in chess, picked for you. Finish a card and the next most important one for you takes its place; finished cards go to Done.</p></div></div>
+    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${startedRow}
     <div class="explore">
       <label class="explore-box">${svg("search")}<input id="xq" type="search" autocomplete="off" spellcheck="false"
         placeholder="Explore on your own: an opening, a tactic, an ending…"></label>
       <div id="xres" hidden></div>
-    </div>${startedRow}${doneRow}`;
+    </div>${doneRow}`;
   [...all, ...started, ...doneCards].forEach(x => {  // the position each one starts from
     const el = document.querySelector(`[data-board="${CSS.escape(x.id)}"]`), d0 = (x.drills || [])[0];
     if (!el) return;

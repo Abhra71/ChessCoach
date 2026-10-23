@@ -1629,7 +1629,11 @@ async function home() {
       <a class="box hcard" href="#/daily">
         <div class="row spread"><b>${d.done_today ? "Done today" : "Today"}</b><span class="muted">5 min</span></div>
         <div class="mini-board" id="todayboard"></div>
-        <div class="week-bars" title="This week">${(d.week || []).map(on => `<i class="${on ? "on" : ""}"></i>`).join("")}</div>
+        <div class="week-bars" title="Your last 7 days: green when your 5 minutes were done">${(d.week || []).map((on, i) => {
+          // the last 7 days, today on the right, each with its letter (23 Oct test: "why is the bar filled at the end?")
+          const day = new Date(Date.now() - (6 - i) * 86400000);
+          return `<span class="${i === 6 ? "today" : ""}" title="${day.toLocaleDateString(undefined, { weekday: "long" })}${i === 6 ? " (today)" : ""}: ${on ? "done" : "not done"}"><i class="${on ? "on" : ""}"></i><b>${"SMTWTFS"[day.getDay()]}</b></span>`;
+        }).join("")}</div>
         <span class="btn ${d.done_today ? "" : "primary"}">${d.done_today ? "Play again" : "Start"}</span></a>
       ${last ? `<a class="box hcard" href="#/games/${last.id}">
         <div class="row spread"><b class="ellipsis">${esc(last.opponent)} <span class="faint num">${last.opponent_rating}</span></b>
