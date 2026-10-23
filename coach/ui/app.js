@@ -799,7 +799,9 @@ async function courseLesson(id) {
   // the habit in one line, a number for where you are, your own positions as boards; the words on hover and in
   // Viktor's voice (23 Oct test: "see so much of text")
   const rate = typeof item.rate === "number" && typeof item.goal === "number"
-    ? `<div class="lrate" title="${esc(item.reason || "")}"><b class="num">${item.rate}</b><span class="faint">→</span><b class="num good">${item.goal}</b><span class="muted small">a game, your last 20</span></div>` : "";
+    ? (item.rate <= item.goal  // already under the goal: a tick, not an arrow that reads like getting worse
+      ? `<div class="lrate" title="${esc(item.reason || "")}"><b class="num good">✓ ${item.rate}</b><span class="muted small">a game, your last 20: under the goal of ${item.goal}</span></div>`
+      : `<div class="lrate" title="${esc(item.reason || "")}"><b class="num">${item.rate}</b><span class="faint">→</span><b class="num good">${item.goal}</b><span class="muted small">a game, your last 20</span></div>`) : "";
   $("#page").innerHTML = `
     <div class="page-head"><div>${back}<h1 style="margin-top:6px">${esc(item.title)}</h1></div></div>
     <div class="box lhabit" title="${esc(item.teach.join(" "))}"><span class="label">The habit</span><b>${esc(item.habit)}</b>${rate}</div>
