@@ -176,3 +176,5 @@ Every statistic recounted from the raw files (only one move's label borrowed) an
 - Fresh: new games every 5 minutes, at once when a finished game is opened on chess.com; open pages of numbers redraw when new games are checked.
 - 41. Puzzles in lessons and the plan could repeat ones already solved; today's 5 minutes picked your own position at random (could repeat). Fixed: anything answered on an earlier day is never offered again while there are new ones. Checked: tomorrow's set shares nothing with today's answers. Progress is saved (practice.jsonl, 10 answers today) and badges count from it.
 - 42. Today's 5 minutes changed mid-day after a restart or new games (its position came from the rebuilt practice list). Fixed: the day's set is kept as first made until midnight.
+
+- 43 (23 Oct, daily): "Back home" button showed on Home after finishing Today's 5 minutes; an opening question got a Practice offer. Fixed: no button when already home; opening questions offer the opening tree.

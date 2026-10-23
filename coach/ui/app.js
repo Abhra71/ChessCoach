@@ -480,7 +480,7 @@ async function daily() {
     const s = await api("/api/daily/done", {}).catch(() => ({}));
     setTimeout(() => Coach.react("maya", "celebrate",
       `Done for today: ${right} of ${d.drills.length} right first time.${s.streak > 1 ? ` That's ${s.streak} days in a row.` : ""} See you tomorrow.`,
-      [{ label: "Back home", app: "home" }]), 2500);
+      location.hash.startsWith("#/home") ? [] : [{ label: "Back home", app: "home" }]), 2500);  // no "Back home" on Home (23 Oct test)
   } });
 }
 
