@@ -1056,3 +1056,4 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .calc-slot.mine > span { background: var(--accent); color: var(--on-accent); } .calc-slot.theirs > span { background: #5ea4e8; color: #0c2340; }
 .calc-slot i { font-style: normal; color: var(--muted); } .calc-slot.full, .calc-slot.now { opacity: 1; } .calc-slot.full i { color: var(--text); font-weight: 600; }
 .calc-slot.now { box-shadow: inset 0 0 0 2px var(--accent); }
+.calc-sub { color: var(--text); font-size: 15.5px; font-weight: 500; }  /* the owner: this line is important */
