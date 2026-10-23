@@ -832,3 +832,11 @@ a.kw-point:not(.nav a) { box-shadow: 0 0 0 2px var(--accent); animation: kwpoint
 
 /* the green ring is right (23 Oct test); only its timing was wrong */
 .nav a.kw-point, a.kw-point:not(.nav a) { background: none; box-shadow: inset 0 0 0 2px var(--accent); animation: kwpoint 1.2s ease-in-out infinite; }
+
+/* a lesson: the habit, one number, your positions as boards (23 Oct) */
+.lhabit { padding: 20px 22px; display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.lhabit b { font-size: 20px; line-height: 1.35; }
+.lrate { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+.lrate b { font-size: 22px; } .lrate .good { color: var(--accent); }
+.lboards { display: flex; gap: 14px; flex-wrap: wrap; }
+.lb { display: flex; flex-direction: column; gap: 6px; } .lbb { width: 190px; height: 190px; border-radius: 8px; overflow: hidden; }

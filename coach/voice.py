@@ -101,7 +101,8 @@ def say(text, voice=DEFAULT, slow=False):
     greetings and casual talk keep the normal one."""
     voice = voice if voice in CHOICES or voice in COACH_VOICES else DEFAULT
     text = speakable(text)[:600]
-    speed = round(SPEED.get(voice, 1.0) * (SLOW if slow else 1.0), 3)
+    # teaching pace: never below SLOW itself (Viktor is 0.9 already; 0.9 x 0.86 was far too slow, 23 Oct test)
+    speed = round(min(SPEED.get(voice, 1.0), SLOW) if slow else SPEED.get(voice, 1.0), 3)
     key = hashlib.sha1(f"{voice}|{speed}|{text}".encode()).hexdigest()
     cached = CACHE / f"{key}.wav"
     if cached.exists():

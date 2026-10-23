@@ -796,20 +796,21 @@ async function courseLesson(id) {
   const back = `<a href="#/course" class="small muted" style="text-decoration:none">← Your course</a>`;
   const own = item.drills.filter(d => d.kind === "game" && d.why);
   const finish = (right, total) => api("/api/course/done", { id: item.id, right, total }).catch(() => {});
+  // the habit in one line, a number for where you are, your own positions as boards; the words on hover and in
+  // Viktor's voice (23 Oct test: "see so much of text")
+  const rate = typeof item.rate === "number" && typeof item.goal === "number"
+    ? `<div class="lrate" title="${esc(item.reason || "")}"><b class="num">${item.rate}</b><span class="faint">→</span><b class="num good">${item.goal}</b><span class="muted small">a game, your last 20</span></div>` : "";
   $("#page").innerHTML = `
-    <div class="page-head"><div>${back}<h1 style="margin-top:6px">${esc(item.title)}</h1>
-      ${item.reason ? `<p class="sub">${esc(item.reason)}</p>` : ""}</div></div>
-    <div class="grid course-learn">
-      <div class="box stack" style="padding:18px"><div class="label">The idea</div>
-        ${item.teach.map(t => `<p style="margin:0 0 4px">${esc(t)}</p>`).join("")}
-        <div class="coach-says"><b>The habit:</b> ${esc(item.habit)}</div></div>
-      ${own.length ? `<div class="box stack" style="padding:18px"><div class="label">In your games</div>
-        ${own.map(d => `<div><div class="small muted">${esc(d.where)}</div><p style="margin:2px 0 0">${esc(d.why)}</p></div>`).join("")}</div>` : ""}
-    </div>
+    <div class="page-head"><div>${back}<h1 style="margin-top:6px">${esc(item.title)}</h1></div></div>
+    <div class="box lhabit" title="${esc(item.teach.join(" "))}"><span class="label">The habit</span><b>${esc(item.habit)}</b>${rate}</div>
+    ${own.length ? `<div class="label" style="margin:18px 0 8px">In your games</div>
+      <div class="lboards">${own.map((d, i) => `<div class="lb" title="${esc(d.why)}"><div class="lbb" id="lb${i}"></div>
+        <div class="small muted">${esc(String(d.where).replace(/^From your game: /, "").replace(/, you are \w+$/, "").replace(/^m/, "M"))}</div></div>`).join("")}</div>` : ""}
     <div class="row" style="margin-top:16px">
       ${item.drills.length ? `<button class="btn primary" id="practise">Practise it: ${item.drills.length} positions</button>` : ""}
       ${item.train ? `<a class="btn ${item.drills.length ? "" : "primary"}" href="#/${esc(item.train[1])}" id="train">${esc(item.train[0])}</a>` : ""}
       ${!item.drills.length ? `<button class="btn" id="studied">I've studied it</button>` : ""}</div>`;
+  own.forEach((d, i) => { const el = $(`#lb${i}`); if (el && d.steps && d.steps[0]) Board.render(el, { pieces: d.steps[0].board, flip: d.flip }); });
   const tr = $("#train"); if (tr && !item.drills.length) tr.addEventListener("click", () => finish(0, 0));
   const st = $("#studied"); if (st) st.onclick = async () => { await finish(0, 0); go("course"); };
   const pr = $("#practise");
