@@ -475,11 +475,35 @@ def library():
     name = lambda t: THEME_NAME[t][0].upper() + THEME_NAME[t][1:]
     ends = [t for t in ENDINGS_ALL if t in themes]
     tactics = [t for t in dict.fromkeys(LADDER + ROTATION) if t in themes and t not in ENDINGS_ALL]
-    fams = collections.Counter(openings.family(n) for _, n, s in _catalogue() if len(s) >= 2)
+    lines = _lines()
+    fams = collections.Counter(_family(n) for _, n, _ in lines)
     return {"tactics": [{"id": "tactic:" + t, "title": name(t)} for t in tactics],
             "endings": [{"id": "endgame:" + t, "title": name(t)} for t in ends],
-            "families": [f for f, _ in fams.most_common(30)],
-            "openings": len(_catalogue())}
+            "families": [{"name": f, "lines": n} for f, n in sorted(fams.items(), key=lambda x: (-x[1], x[0]))],
+            "openings": len(lines)}
+
+
+def _family(name):
+    """Explore's family: "London System, with Bd3" belongs to London System."""
+    return name.split(":")[0].split(",")[0].strip()
+
+
+def _lines():
+    """Every playable catalogue line once (by name; at least two moves)."""
+    seen, out = set(), []
+    for eco, n, s in _catalogue():
+        if len(s) >= 2 and n not in seen:
+            seen.add(n)
+            out.append((eco, n, s))
+    return out
+
+
+def family_lines(family):
+    """One family's lines for its dropdown: the main line first, then its variations by name."""
+    rows = [(eco, n, s) for eco, n, s in _lines() if _family(n) == family]
+    rows.sort(key=lambda o: (o[1] != family, o[1]))
+    return [{"id": f"opening:{eco}:{n}", "kind": "opening", "title": n, "side": default_side(n), "moves": len(s)}
+            for eco, n, s in rows]
 
 
 def search(q, limit=40):

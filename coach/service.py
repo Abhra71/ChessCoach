@@ -394,9 +394,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/plan/library":  # Explore: everything in the Lichess library, or what matches the words typed
             from urllib.parse import parse_qs, urlsplit
             from coach import plan
-            words = (parse_qs(urlsplit(self.path).query).get("q") or [""])[0][:80]
-            return self.send(200, json.dumps({"results": plan.search(words)} if words.strip() else plan.library()),
-                             "application/json")
+            q = parse_qs(urlsplit(self.path).query)
+            words, fam = (q.get("q") or [""])[0][:80], (q.get("family") or [""])[0][:80]
+            out = {"results": plan.family_lines(fam)} if fam else {"results": plan.search(words)} if words.strip()                 else plan.library()
+            return self.send(200, json.dumps(out), "application/json")
         if path.startswith("/api/film/"):  # your game as a short 3D film: its script (1.0)
             from coach import film
             gid = path.rsplit("/", 1)[-1]

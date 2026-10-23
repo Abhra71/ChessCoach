@@ -886,3 +886,19 @@ button.xrow:hover { border-color: var(--good, #81b64c); }
 .xsides .btn.small { padding: 4px 10px; font-size: 12px; }
 @media (max-width: 600px) { .xrow { flex-wrap: wrap; } .xsides { width: 100%; } }
 .plan-line { margin: 6px 0 0; font-size: 14px; color: var(--muted, #a8a29a); max-width: 720px; }
+
+/* Explore dropdowns (23 Oct) */
+.xdrop { border: 1px solid var(--line, #3a3733); border-radius: 12px; margin: 8px 0; background: var(--card, #2b2926); }
+.xdrop > summary, .xfam > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; font-size: 14px; }
+.xdrop > summary::-webkit-details-marker, .xfam > summary::-webkit-details-marker { display: none; }
+.xdrop > summary::before, .xfam > summary::before { content: "▸"; opacity: .6; transition: transform .15s; }
+.xdrop[open] > summary::before, .xfam[open] > summary::before { transform: rotate(90deg); }
+.xdrop > .xlist { padding: 0 8px 8px; max-height: 340px; }
+.xfams { padding: 0 8px 8px; max-height: 420px; overflow-y: auto; }
+.xfam > summary { padding: 8px 10px; border-radius: 8px; }
+.xfam > summary:hover { background: rgba(255,255,255,.04); }
+.xfam > summary .small { margin-left: auto; }
+.xlines { padding: 2px 0 6px 18px; display: flex; flex-direction: column; gap: 3px; }
+.xdrop .xrow { background: transparent; }
+.xdrop .xrow:hover { background: rgba(255,255,255,.04); }

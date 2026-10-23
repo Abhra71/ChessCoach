@@ -502,44 +502,58 @@ function explore() {
   if (!q) return;
   let lib = null, asked = 0;
   const pick = (id, side) => go(`plan/${encodeURIComponent(id)}${side ? "@" + side : ""}`);
-  const wire = () => {
-    res.querySelectorAll("[data-pick]").forEach(b => b.onclick = e => { e.preventDefault(); pick(b.dataset.pick, b.dataset.side); });
-    res.querySelectorAll("[data-fam]").forEach(b => b.onclick = () => { q.value = b.dataset.fam; find(); q.focus(); });
-  };
-  const chips = (list, fam) => list.map(x => fam
-    ? `<button class="chip" data-fam="${esc(x)}">${esc(x)}</button>`
-    : `<button class="chip" data-pick="${esc(x.id)}">${esc(x.title)}</button>`).join("");
+  const wire = el => el.querySelectorAll("[data-pick]").forEach(b => b.onclick = e => {
+    e.preventDefault(); e.stopPropagation(); pick(b.dataset.pick, b.dataset.side);
+  });
+  const KIND = { tactic: "Tactic", endgame: "Ending", opening: "Opening" };
+  const sideBtn = (x, sd) => `<button class="btn small ${sd === x.side ? "primary" : ""}" data-pick="${esc(x.id)}" data-side="${sd}">as ${sd === "white" ? "White" : "Black"}</button>`;
+  const row = (x, short) => x.kind === "opening"
+    ? `<div class="xrow"><span class="xname">${esc(short ? x.title.replace(/^[^:]*:\s*/, "") || x.title : x.title)}</span>
+        <span class="xsides">${sideBtn(x, x.side)}${sideBtn(x, x.side === "white" ? "black" : "white")}</span></div>`
+    : `<button class="xrow" data-pick="${esc(x.id)}"><span class="xname">${esc(x.title)}</span></button>`;
+  // three closed dropdowns, so everything is there without a wall of names (23 Oct test: "use a dropdown")
   async function browse() {
     lib = lib || await api("/api/plan/library").catch(() => null);
     if (!lib || q.value.trim()) return;
     res.hidden = false;
-    res.innerHTML = `<div class="xgroup"><div class="label">Tactics · ${lib.tactics.length}</div><div class="chips">${chips(lib.tactics)}</div></div>
-      <div class="xgroup"><div class="label">Endings · ${lib.endings.length}</div><div class="chips">${chips(lib.endings)}</div></div>
-      <div class="xgroup"><div class="label">Openings · ${lib.openings.toLocaleString()} lines from Lichess: type a name, or pick a family</div>
-        <div class="chips">${chips(lib.families, true)}</div></div>`;
-    wire();
+    if (res.dataset.mode === "browse") return;  // already open: keep what they unfolded
+    res.dataset.mode = "browse";
+    const list = items => `<div class="xlist">${items.map(x => row({ ...x, kind: x.id.split(":")[0] })).join("")}</div>`;
+    res.innerHTML = `<details class="xdrop"><summary>Tactics <span class="muted">· ${lib.tactics.length}</span></summary>${list(lib.tactics)}</details>
+      <details class="xdrop"><summary>Endings <span class="muted">· ${lib.endings.length}</span></summary>${list(lib.endings)}</details>
+      <details class="xdrop"><summary>Openings <span class="muted">· ${lib.families.length} families · ${lib.openings.toLocaleString()} lines from Lichess</span></summary>
+        <div class="xlist xfams">${lib.families.map(f => `<details class="xfam" data-fam="${esc(f.name)}"><summary>${esc(f.name)}
+          <span class="muted small">${f.lines} line${f.lines === 1 ? "" : "s"}</span></summary><div class="xlines"></div></details>`).join("")}</div></details>`;
+    wire(res);
+    res.querySelectorAll(".xfam").forEach(d => d.addEventListener("toggle", async () => {
+      const box = d.querySelector(".xlines");
+      if (!d.open || box.dataset.loaded) return;
+      box.innerHTML = `<p class="muted small" style="margin:6px 10px">Loading…</p>`;
+      const r = await api(`/api/plan/library?family=${encodeURIComponent(d.dataset.fam)}`).catch(() => null);
+      if (!r || !r.results) { box.innerHTML = `<p class="muted small" style="margin:6px 10px">Couldn't load. Close and open it again.</p>`; return; }
+      box.dataset.loaded = "1";
+      box.innerHTML = r.results.map(x => row(x, true)).join("");
+      wire(box);
+    }));
   }
   async function find() {
     const words = q.value.trim();
     if (!words) return browse();
     const mine = ++asked;
     const r = await api(`/api/plan/library?q=${encodeURIComponent(words)}`).catch(() => null);
-    if (mine !== asked || !r || !r.results) return;  // a newer search is on its way
+    if (mine !== asked || !r || !r.results || !q.value.trim()) return;  // a newer search is on its way, or it was cleared
     res.hidden = false;
-    const KIND = { tactic: "Tactic", endgame: "Ending", opening: "Opening" };
-    const side = (x, sd) => `<button class="btn small ${sd === x.side ? "primary" : ""}" data-pick="${esc(x.id)}" data-side="${sd}">as ${sd === "white" ? "White" : "Black"}</button>`;
-    res.innerHTML = r.results.length ? `<div class="xlist">${r.results.map(x => x.kind === "opening"
-      ? `<div class="xrow"><span class="xkind">${KIND.opening}</span><span class="xname">${esc(x.title)}</span>
-          <span class="xsides">${side(x, x.side)}${side(x, x.side === "white" ? "black" : "white")}</span></div>`
-      : `<button class="xrow" data-pick="${esc(x.id)}"><span class="xkind">${KIND[x.kind]}</span><span class="xname">${esc(x.title)}</span></button>`).join("")}</div>`
+    res.dataset.mode = "search";
+    res.innerHTML = r.results.length ? `<div class="xlist">${r.results.map(x =>
+      row(x).replace('<span class="xname">', `<span class="xkind">${KIND[x.kind]}</span><span class="xname">`)).join("")}</div>`
       : `<p class="muted small" style="margin:8px 2px">Nothing by that name. Try a family like Sicilian, or a tactic like fork.</p>`;
-    wire();
+    wire(res);
   }
   let timer = null;
   q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(find, 200); });
   q.addEventListener("focus", () => { if (!q.value.trim()) browse(); });
   q.addEventListener("keydown", e => {
-    if (e.key === "Escape") { q.value = ""; res.hidden = true; q.blur(); }
+    if (e.key === "Escape") { q.value = ""; res.hidden = true; res.dataset.mode = ""; q.blur(); }
     if (e.key === "Enter") { const first = res.querySelector("[data-pick]"); if (first && q.value.trim()) first.click(); }
   });
 }
