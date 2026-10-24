@@ -26,8 +26,8 @@ FINE = 0.5  # a lesson's mistake at under half its goal: "you already do this"
 NEEDS_ELITE = "Needs strong players' games (coach/elite.py builds them from the Lichess Elite download)."
 REPERTOIRE_STRUCTURES = {"Italian": "italian", "Caro-Kann": "caro", "Queen's Gambit Declined": "carlsbad",
                          "Sicilian": "sicilian", "French": "french", "King's Indian": "kid"}
-LEVEL_ORDER = ["safe", "tactics", "club", "precise", "expert"]
-LEVEL_NAME = {"safe": "Safe pieces", "tactics": "Tactics and good starts", "club": "Fewer mistakes",
+LEVEL_ORDER = ["basics", "safe", "tactics", "club", "precise", "expert"]  # basics: level 0, before the ladder's five
+LEVEL_NAME = {"basics": "Basics", "safe": "Safe pieces", "tactics": "Tactics and good starts", "club": "Fewer mistakes",
               "precise": "Precision", "expert": "Expert"}
 
 
@@ -44,7 +44,7 @@ LESSONS = [
     # ---------- Safe pieces: up to about 800 ----------
     # the basics an academy starts with (24 Oct, owner): what pieces are worth, attack with the cheapest, basic mates.
     # Nothing to measure in your games: done once studied and practised.
-    L("basics-values", "safe", "What pieces are worth", [], 0, [
+    L("basics-values", "basics", "What pieces are worth", [], 0, [
         "Every piece has a value, counted in pawns: a pawn is 1, a knight 3, a bishop 3, a rook 5, a queen 9. "
         "The king can't be traded: lose it and the game is over.",
         "Use the numbers before every capture. Give a knight (3) for a rook (5) and you've won 2. Give a rook for a "
@@ -52,7 +52,7 @@ LESSONS = [
         "A trade is fair when both sides give the same: knight for bishop, rook for rook. When you're ahead, fair "
         "trades are good for you: fewer pieces, fewer tricks against you.",
     ], "Before every capture: what do I give, what do I get? Count it.", ["hangingPiece"]),
-    L("basics-cheapest", "safe", "Attack with your cheapest piece", [], 0, [
+    L("basics-cheapest", "basics", "Attack with your cheapest piece", [], 0, [
         "A pawn attacking their queen is a disaster for them: the queen must run, because a pawn (1) for a queen (9) "
         "is a terrible trade. A queen attacking their pawn is just a threat they can answer by defending it.",
         "So attack with your cheapest pieces first. A pawn or a knight that hits a rook or queen forces them to move, "
@@ -61,7 +61,7 @@ LESSONS = [
         "you've lost less.",
         "And the other way round: don't put your queen or rook where their pawn or knight can attack it.",
     ], "When I attack or take: am I using my cheapest piece? Can their cheap pieces attack my big ones?", ["fork", "hangingPiece"]),
-    L("basics-mates", "safe", "The basic checkmates", [], 0, [
+    L("basics-mates", "basics", "The basic checkmates", [], 0, [
         "Some checkmates every player must know by heart, so a won game always ends in a win.",
         "King and queen against a king: push their king to the edge with your queen, a knight's jump away, then bring "
         "your own king up and mate. Always leave their king a square until the mating move, or it's stalemate.",
@@ -346,7 +346,7 @@ def course(games=None, moves=None, player=None, current=None):
     if current is None:
         from coach import ladder
         lad = ladder.ladder(games, moves, player) if player and recent else None
-        current = LEVEL_ORDER[lad["current"]] if lad else "safe"
+        current = LEVEL_ORDER[lad["current"] + 1] if lad else "safe"  # the ladder's level 1 is "safe"
     top = LEVEL_ORDER.index(current)
     out = []
     for l in LESSONS:
@@ -384,6 +384,9 @@ def _next(rows, top):
     """The lesson to do now: the one whose mistake costs you most against its goal, at your level or below; else the
     first one not done in order."""
     able = [r for r in rows if r["status"] in ("open", "again") and LEVEL_ORDER.index(r["level"]) <= top]
+    basics = [r for r in able if r["level"] == "basics"]
+    if basics and top <= LEVEL_ORDER.index("safe"):  # like an academy: the basics first, for players on the first level
+        return basics[0]
     hurting = [r for r in able if r["rate"] is not None and r["rate"] > r["goal"]]
     if hurting:
         return max(hurting, key=lambda r: (r["rate"] / max(r["goal"], 0.05), -LESSONS.index(BY_ID[r["id"]])))

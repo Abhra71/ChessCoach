@@ -522,7 +522,7 @@ class Handler(BaseHTTPRequestHandler):
             from coach import course, ladder
             out = ladder.page()
             try:  # a skill taught by a course lesson says whether that lesson is already learnt (23 Oct test)
-                lessons = {l["id"]: l["status"] for l in course.course(current=course.LEVEL_ORDER[out.get("current") or 0])["lessons"]}
+                lessons = {l["id"]: l["status"] for l in course.course(current=course.LEVEL_ORDER[(out.get("current") or 0) + 1])["lessons"]}
                 for lv in out.get("levels") or []:
                     for s in lv["skills"]:
                         route = (s.get("train") or {}).get("route", "")

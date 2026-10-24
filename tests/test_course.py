@@ -25,6 +25,10 @@ def test_the_next_lesson_is_the_mistake_that_costs_most(setup):
     gs = games(20)
     moves = setup(gs, lambda g: {"hanging": 1, "threats": 0})
     c = course.course(gs, moves, "me", current="safe")
+    assert c["next"] == "basics-values"  # like an academy: the basics first, on the first level (24 Oct)
+    for lid in ("basics-values", "basics-cheapest", "basics-mates"):
+        course.studied(lid, 3, 3)
+    c = course.course(gs, moves, "me", current="safe")
     assert c["next"] == "safe-hanging"
     rows = {r["id"]: r for r in c["lessons"]}
     assert rows["safe-hanging"]["rate"] == 1.0

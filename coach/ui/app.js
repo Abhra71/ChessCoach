@@ -808,7 +808,7 @@ async function courseView() {
   const groups = Object.keys(c.levels).map((lv, i) => {
     const ls = c.lessons.filter(l => l.level === lv);
     const done = ls.filter(l => l.status === "passed" || l.status === "fine").length;
-    return `<div class="box cgroup rise"><div class="row spread"><b>Level ${i + 1} · ${esc(c.levels[lv])}</b>
+    return `<div class="box cgroup rise"><div class="row spread"><b>Level ${i} · ${esc(c.levels[lv])}</b>
         <span class="muted small num">${done}/${ls.length}</span></div>
       <div class="cpath">${ls.map(node).join("")}</div></div>`;
   }).join("");
