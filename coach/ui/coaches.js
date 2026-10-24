@@ -159,7 +159,9 @@ const Conv = (() => {
     if (r.action && r.action.back && window.kwBackStep) speech = window.kwBackStep() || speech;  // and back again
     history.push(["player", text], ["coach", speech]);
     on = false;  // her answer; Talk again to say more
-    Coach.show({ coach, pose: r.mood || "explain", mood: r.mood || "explain", lines: [speech], actions: [], ai: !!r.ai }, { speak: false });
+    // her suggestion, if she made one, as a button (rings are off in the app: 24 Oct)
+    const offerBtn = r.offer && r.offer.route && typeof offerLabel === "function" ? [{ label: offerLabel(r.offer.route), app: r.offer.route.split("@")[0] }] : [];
+    Coach.show({ coach, pose: r.mood || "explain", mood: r.mood || "explain", lines: [speech], actions: offerBtn, ai: !!r.ai }, { speak: false });
     await Voice.speak(speech, true, (COACHES[coach] || {}).voice, !!(r.action && (r.action.next || r.action.back)));  // review steps: teaching pace
     if (!handover || on || location.hash.replace(/^#\/?/, "").split("/")[0] !== handover.tab) return;
     const page = Coach.takeHeld();  // the page's own line, if it said one, else the coach's greeting for it

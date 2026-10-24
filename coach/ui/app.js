@@ -206,6 +206,18 @@ function kwUnpoint() { clearTimeout(kwPointTimer); kwPointing = null; document.q
 // No rings in the app (23 Oct test: one pointed at Your plan for Blindfold; a wrong ring is worse than none): the coach
 // says where things are instead. chess.com keeps its red ring. The ring code stays for a later, tested return.
 const KW_RINGS = false;
+// what a coach's suggestion opens, as a button (24 Oct: rings are off, so a suggestion showed nothing at all and
+// "Here is the review" opened nothing)
+function offerLabel(route) {
+  const [top, arg] = String(route || "").split("@")[0].split("/");
+  if (top === "games" && arg) return "Open the review";
+  if (top === "rematch") return "Play it again";
+  if (top === "prep" && arg) return `Prep ${arg}`;
+  const NAMES = { practice: "Practice", daily: "Today's 5 minutes", plan: "Your plan", course: "Your course", level: "Your level",
+    progress: "Progress", train: "Train", games: "Games", settings: "Settings", openings: "Opening tree", repertoire: "Repertoire",
+    blindfold: "Blindfold", guess: "Guess the move", endgames: "Endgames", calc: "In your head", prep: "Prep", home: "Home" };
+  return `Open ${NAMES[top] || "it"}`;
+}
 function kwPoint(route) { kwUnpoint(); if (!KW_RINGS) return; kwPointing = route; kwRing(0); }
 function kwRing(tries) {  // the step on this page: the thing itself if it's here, else its menu item
   if (!kwPointing) return;
@@ -272,8 +284,11 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips, section
     clearTimeout(fade);
     out.innerHTML = `<span class="muted">Thinking…</span>`;
     try { const r = await onAsk(text); out.innerHTML = `<div class="coach-says">${esc(r.text)}</div>` +
+      (r.offer && r.offer.route ? `<button class="btn small-btn" data-offer style="margin-top:6px">${esc(offerLabel(r.offer.route))} →</button>` : "") +
       (r.ai !== false ? `<p class="kw-ai-note">AI can make mistakes. <button class="kw-report">Report it</button></p>` : "");
-      const rep = $(".kw-report", out); if (rep) rep.onclick = feedbackBox; Voice.speak(r.text, false, (COACHES[coach] || {}).voice);
+      const rep = $(".kw-report", out); if (rep) rep.onclick = feedbackBox;
+      const off = $("[data-offer]", out); if (off) off.onclick = () => { location.hash = "#/" + r.offer.route.split("@")[0]; };
+      Voice.speak(r.text, false, (COACHES[coach] || {}).voice);
       point(r.offer); fadeLater(); }
     catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
     finally { busy = false; }
