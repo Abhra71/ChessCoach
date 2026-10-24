@@ -236,7 +236,7 @@ addEventListener("hashchange", () => {
 // (22 Oct test: "people won't click here to type, it's not understandable")
 const ASK_CHIPS = { home: ["Review my last game", "Why do I lose?", "What should I practise?"],
   review: ["Why was that bad?", "What should I have played?", "Next"] };
-function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
+function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips, section, where, extra }) {
   const face = typeof KnightwiseFaces !== "undefined" ? KnightwiseFaces.svg(coach || "maya", "pleased") : "";
   el.innerHTML = `<div class="askbar"><span class="ask-face">${face}</span>
       <input class="ask-in" data-q placeholder="${esc(enabled ? placeholder : "Add an AI key in Settings to ask the coach")}" ${enabled ? "" : "disabled"}>
@@ -244,11 +244,7 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
       <button class="ask-ic send" data-ask title="Ask" ${enabled ? "" : "disabled"}>${svg("send")}</button></div>
     ${enabled && chips && chips.length ? `<div class="ask-chips">${chips.map(c => `<button data-chip>${esc(c)}</button>`).join("")}</div>` : ""}
     <div data-a class="small" style="margin-top:8px"></div>`;
-  if (!enabled) {  // the feature is never hidden: say what a free key gives, and where to add it
-    el.innerHTML = `<p class="small" style="margin:0 0 10px">Talk with your coaches and get real replies with a free AI key.</p>
-      <a class="btn" href="#/settings">Set up now</a>`;
-    return;
-  }
+  if (!enabled) return askChips(el, { coach, section: section || "home", where, extra });
   const q = $("[data-q]", el), out = $("[data-a]", el), mic = $("[data-mic]", el);
   // the answer goes away after a minute, or when they do something else (23 Oct test), unless the mouse is on it
   let fade = null;
@@ -292,6 +288,30 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips }) {
       catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
     }
   };
+}
+
+// No AI key (24 Oct, owner: "most players won't use a key; they mustn't get bored"): questions to tap, answered from
+// the player's own numbers in several ways, with follow-ups. Typing needs a key (typed words aren't guessed at).
+function askChips(el, { coach, section, where, extra }) {
+  const face = typeof KnightwiseFaces !== "undefined" ? KnightwiseFaces.svg(coach || "maya", "pleased") : "";
+  const ask = async (id, label) => {
+    const out = $("[data-a]", el);
+    if (id) out.innerHTML = `<div class="ask-you">${esc(label)}</div><span class="muted">…</span>`;
+    let r;
+    try { r = await api("/api/answer", { id: id || "", where: { section, ...(where ? where() : {}) }, extra: extra ? extra() : {} }); }
+    catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; return; }
+    if (id) {
+      out.innerHTML = `<div class="ask-you">${esc(label)}</div><div class="coach-says">${esc(r.text)}</div>`;
+      Voice.speak(r.text, false, (COACHES[coach] || {}).voice);
+      api("/api/seen?route=ask").catch(() => {});
+    }
+    $("[data-chips]", el).innerHTML = (r.questions || []).map(q => `<button data-qid="${esc(q.id)}">${esc(q.label)}</button>`).join("");
+    el.querySelectorAll("[data-qid]").forEach(b => b.onclick = () => ask(b.dataset.qid, b.textContent));
+  };
+  el.innerHTML = `<div class="askbar askbar-chips"><span class="ask-face">${face}</span><span class="small muted">Ask ${esc((COACHES[coach] || {}).name || "your coach")}:</span></div>
+    <div class="ask-chips" data-chips></div><div data-a class="small" style="margin-top:8px"></div>
+    <p class="kw-ai-note">To type your own questions or talk out loud, add a free AI key in <a href="#/settings">Settings</a>.</p>`;
+  ask("", "");
 }
 
 // ---------- feedback from beta testers: three short questions, saved with the app version ----------
@@ -1802,7 +1822,7 @@ async function home() {
   api("/api/warmup").then(w => { const x = (w.items || [])[0]; if (x && $("#todayboard")) Board.render($("#todayboard"), { pieces: x.board, flip: x.flip }); }).catch(() => {});
   countUp($("#page"));
   // no "Hear it from Maya" button (23 Oct notes: unnecessary): Maya greets and talks by herself
-  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya",
+  api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya", section: "home",
     enabled: Object.values(cfg.slots).some(x => x.set), listen: cfg.talk_ready,
     onAsk: async q => {  // the same brain as Talk (19 Oct): typing "open my last review" opens it
       const r = await api("/api/talk", { coach: "maya", text: q, history: homeTalk.slice(-4), where: { section: "home" } });
@@ -2027,6 +2047,7 @@ async function gameView(id) {
   window.kwPly = () => location.hash.includes(`games/${g.id}`) ? ply : null;
   window.kwBackStep = () => location.hash.includes(`games/${g.id}`) ? step(-1) : null;
   askBox($("#askbox"), { placeholder: "Ask Maya about this position", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
+    section: "review", where: () => ({ game: g.id, ply: String(ply) }),
     onAsk: q => { const k = moments[momentAt(ply)]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: k ? k.ply : null }); } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go, was = ply;

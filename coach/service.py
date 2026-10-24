@@ -719,6 +719,16 @@ class Handler(BaseHTTPRequestHandler):
             if body.get("email") and not key:  # no form key in this build: the player's own email app, ready to send
                 webbrowser.open(feedback_mail(text))
             return self.send(200, json.dumps({"saved": True, "text": text, "key": key, "version": VERSION, "reply": reply or None}), "application/json")
+        if path == "/api/answer":  # no AI key: a tapped question, answered from the player's own numbers (24 Oct)
+            from coach import answers
+            where = body.get("where") if isinstance(body.get("where"), dict) else {}
+            where = {k: str(v)[:40] for k, v in where.items() if k in ("section", "game", "ply")}
+            extra = body.get("extra") if isinstance(body.get("extra"), dict) else {}
+            extra = {k: str(v)[:400] for k, v in extra.items() if k in ("hint", "habit", "title", "teaches")}
+            qid = str(body.get("id", ""))
+            if qid == "":  # just the questions for this page
+                return self.send(200, json.dumps({"questions": answers.questions(where.get("section") or "home")}), "application/json")
+            return self.send(200, json.dumps(answers.answer(qid, where, extra)), "application/json")
         if path == "/api/talk":  # a spoken turn with a coach: the reply, and one checked thing to do (0.6)
             from coach import talk
             turns = body.get("history") if isinstance(body.get("history"), list) else []

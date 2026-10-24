@@ -418,7 +418,9 @@ function trainer(drills, opts) {
   }).join(" ");
   if ($("#trainask")) api("/api/settings").then(cfg => askBox($("#trainask"), {
     placeholder: `Ask ${(COACHES[coach] || {}).name || "your coach"} about this position`, coach,
-    enabled: Object.values(cfg.slots || {}).some(x => x.set), listen: cfg.talk_ready,
+    enabled: Object.values(cfg.slots || {}).some(x => x.set), listen: cfg.talk_ready, section: "lesson",
+    extra: () => ({ hint: d().hint || "", habit: (checklist[0] || ""), title: ($("#page h1") || {}).textContent || "",
+      teaches: ($("#page .page-head .sub") || {}).textContent || (d().brief && d().brief.mindset) || "" }),
     onAsk: q => api("/api/ask", { question: q, fen: fenNow(), solving: !done, lesson: {
       title: ($("#page h1") || {}).textContent || "", teaches: ($("#page .page-head .sub") || {}).textContent || d().hint || "",
       opening: d().kind === "opening" ? d().where || "" : "", line_so_far: lineSoFar(),
