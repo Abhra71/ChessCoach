@@ -67,3 +67,12 @@ def test_the_key_says_whose_it_is():
     assert settings.provider_of("sk-ant-abcdefghijklmnop") == "anthropic"
     assert settings.provider_of("sk-proj-abcdefghijklmnop") == "openai"
     assert settings.provider_of("something-else-entirely") is None
+
+
+def test_the_same_key_twice_is_refused(monkeypatch):
+    import pytest
+    from coach import settings
+    saved = {"slot1": "gsk_abcdefghijklmnopqrst"}
+    monkeypatch.setattr(settings, "get_key", lambda slot: saved.get(slot))
+    with pytest.raises(ValueError, match="already saved as AI key 1"):
+        settings.set_key("slot2", "gemini", "gsk_abcdefghijklmnopqrst")

@@ -64,6 +64,11 @@ def set_key(slot, provider, key):
     if not 16 <= len(key) <= 300 or any(c.isspace() for c in key):
         raise ValueError("That doesn't look like an API key.")
     provider = provider_of(key) or provider
+    for other in SLOTS:  # the same key twice is no backup: both share one free limit (24 Oct, owner)
+        if other != slot and get_key(other) == key:
+            n = SLOTS.index(other) + 1
+            raise ValueError(f"That key is already saved as AI key {n}. A second key is a backup only if it's a "
+                             "different one, best from the other company (Groq and Google Gemini).")
     if PROVIDERS[provider].get("hidden"):
         raise ValueError(f"That's a {PROVIDERS[provider]['name']} key. Knightwise works with a free Groq or Google Gemini key.")
     keyring.set_password(VAULT, slot, key)
