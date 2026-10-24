@@ -2195,7 +2195,7 @@ async function settingsView() {
       <select class="field" data-provider aria-label="AI key ${n}: provider">${Object.entries(s.providers).filter(([k, p]) => !p.hidden || k === x.provider).map(([k, p]) =>
         `<option value="${k}" ${k === x.provider ? "selected" : ""}>${esc(p.name)}${p.free ? ", free" : ", paid"}</option>`).join("")}</select>
       <input class="field" type="password" autocomplete="off" spellcheck="false" placeholder="${x.set ? "Paste a new key to replace it" : "Paste your API key"}" aria-label="AI key ${n}" data-key>
-      <div class="row"><button class="btn" data-save>Save key</button>${x.set ? `<button class="btn" data-test>Test key</button><button class="btn danger" data-remove>Remove</button>` : ""}
+      <div class="row"><button class="btn ${x.set ? "" : "primary"}" data-save>Save key</button>${x.set ? `<button class="btn" data-test>Test key</button><button class="btn danger" data-remove>Remove</button>` : ""}
         <a class="small muted" data-get href="${esc(prov.get_key)}" target="_blank" rel="noopener">Get a ${esc(prov.name)} key ↗</a></div>
       <div class="err" data-msg></div></div>`;
   };
@@ -2306,6 +2306,8 @@ async function settingsView() {
     const id = box.dataset.slot, msg = $("[data-msg]", box);
     $("[data-provider]", box).onchange = e => { $("[data-get]", box).href = s.providers[e.target.value].get_key;
       $("[data-get]", box).textContent = `Get a ${s.providers[e.target.value].name} key ↗`; };
+    // green while there's a key to save: no key yet, or a new one pasted (24 Oct, owner)
+    $("[data-key]", box).oninput = e => $("[data-save]", box).classList.toggle("primary", !s.slots[id].set || !!e.target.value.trim());
     $("[data-save]", box).onclick = async () => {
       msg.textContent = "";
       msg.className = "muted small"; msg.textContent = "Saving and testing…";
