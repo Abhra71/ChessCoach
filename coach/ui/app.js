@@ -2204,7 +2204,7 @@ async function settingsView() {
     <div class="box">
       <div class="settings-row"><div><h3 title="Only public games are read. No password.">chess.com account</h3></div>
         <div class="stack"><b>${esc(st.player || "")}</b>
-          <button class="linkish small muted" id="startover">Wrong account? Start over</button></div></div>
+          <button class="linkish small bad-text" id="startover" style="margin-left:16px">Wrong account? Start over</button></div></div>
       <div class="settings-row"><div><h3>Appearance</h3></div>
         <div><div class="seg" id="theme">${["system", "dark", "light"].map(t => `<button data-t="${t}" class="${s.theme === t ? "on" : ""}">${cap(t)}</button>`).join("")}</div></div></div>
       <div class="settings-row"><div><h3 title="Your coaches speak. It runs on this computer, no internet needed.">Voice</h3></div>
