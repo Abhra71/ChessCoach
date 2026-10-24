@@ -2169,6 +2169,8 @@ async function settingsView() {
   const was = ($("main") || {}).scrollTop || 0, again = location.hash.startsWith("#/settings") && $("#page .settings-row");
   if (!again) shell("settings", `<p class="muted">Loading…</p>`);
   const [s, st] = await Promise.all([api("/api/settings"), api("/api/status")]);
+  // a key added or removed: Talk shows or goes at once, not after a restart (24 Oct test: all keys removed, Talk stayed)
+  if (TALK !== !!s.talk_ready) { TALK = !!s.talk_ready; Coach.hide(); }
   if (!location.hash.startsWith("#/settings")) return;
   const aiSet = Object.values(s.slots).some(x => x.set);  // the real key state, never a stale flag
   const slot = (id, n) => {

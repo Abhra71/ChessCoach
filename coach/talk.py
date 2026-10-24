@@ -310,6 +310,8 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
         return {"text": BUSY, "mood": "calm", "ai": False, "action": None}
     out = parse(text or "")
     if not out or not coaches.grounded(out["say"], facts_text):
+        import logging  # what the AI wrote that couldn't be used, to see why (24 Oct: Gemini failed on "open my last review")
+        logging.getLogger("knightwise").info("talk: unusable reply from %s: %r", _provider, (text or "")[:300])
         return fallback
     order = out if "what" in out or isinstance(out.get("do"), str) else out.get("do")  # flat (do, what) or the old shapes
     done = action(order, games, where)
