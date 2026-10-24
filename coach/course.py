@@ -42,6 +42,35 @@ def L(lid, level, title, ideas, goal, teach, habit, themes=(), train=None, comin
 
 LESSONS = [
     # ---------- Safe pieces: up to about 800 ----------
+    # the basics an academy starts with (24 Oct, owner): what pieces are worth, attack with the cheapest, basic mates.
+    # Nothing to measure in your games: done once studied and practised.
+    L("basics-values", "safe", "What pieces are worth", [], 0, [
+        "Every piece has a value, counted in pawns: a pawn is 1, a knight 3, a bishop 3, a rook 5, a queen 9. "
+        "The king can't be traded: lose it and the game is over.",
+        "Use the numbers before every capture. Give a knight (3) for a rook (5) and you've won 2. Give a rook for a "
+        "knight and you've lost 2, however good it felt.",
+        "A trade is fair when both sides give the same: knight for bishop, rook for rook. When you're ahead, fair "
+        "trades are good for you: fewer pieces, fewer tricks against you.",
+    ], "Before every capture: what do I give, what do I get? Count it.", ["hangingPiece"]),
+    L("basics-cheapest", "safe", "Attack with your cheapest piece", [], 0, [
+        "A pawn attacking their queen is a disaster for them: the queen must run, because a pawn (1) for a queen (9) "
+        "is a terrible trade. A queen attacking their pawn is just a threat they can answer by defending it.",
+        "So attack with your cheapest pieces first. A pawn or a knight that hits a rook or queen forces them to move, "
+        "and often wins time or material.",
+        "Capture the same way: when several of your pieces can take, take with the cheapest one. If they take back, "
+        "you've lost less.",
+        "And the other way round: don't put your queen or rook where their pawn or knight can attack it.",
+    ], "When I attack or take: am I using my cheapest piece? Can their cheap pieces attack my big ones?", ["fork", "hangingPiece"]),
+    L("basics-mates", "safe", "The basic checkmates", [], 0, [
+        "Some checkmates every player must know by heart, so a won game always ends in a win.",
+        "King and queen against a king: push their king to the edge with your queen, a knight's jump away, then bring "
+        "your own king up and mate. Always leave their king a square until the mating move, or it's stalemate.",
+        "King and rook: the same idea, slower. Your rook cuts off their king, your king faces theirs, and the rook "
+        "checks along the edge. Two rooks: the ladder, one rook checking, the other cutting off the next row.",
+        "The back-rank mate and the mate in one are the ones you'll meet most in games: look at every check first.",
+        "All three are in Train, under Endgames, against perfect defence: queen, rook, and two rooks.",
+    ], "When they only have a king left: push it to the edge, bring my king, and never stalemate.", ["mateIn1", "backRankMate"],
+      ("Mate with king and queen", "endgame/queen")),
     L("safe-hanging", "safe", "Keep every piece safe", ["hanging"], 0.3, [
         "Most games below 1,000 are decided by one thing: a piece left where it can be taken for free.",
         "A piece is safe when nothing attacks it, or when it's defended and nothing cheaper attacks it. A knight "
