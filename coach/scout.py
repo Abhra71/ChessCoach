@@ -25,6 +25,8 @@ PUZZLES = 10
 PER_GAME = 2  # at most this many puzzles from one game
 KEEP = 3600  # an hour, like Prep's games
 _JOBS, _LOCK = {}, threading.Lock()
+_ENGINE = threading.Lock()  # one player checked at a time (the PC stays usable); others wait their turn
+WAITING_MAX = 3  # more than this many waiting or running: say so instead of piling up engine work
 
 # their habit, said about them
 THEY = {"left a piece hanging": ("leave pieces hanging", "pieces left hanging"),
@@ -55,8 +57,10 @@ def status(user):
     user = user.strip().lower()
     with _LOCK:
         job = _JOBS.get(user)
-        if job and (job["state"] == "running" or time.time() - job["at"] < KEEP):
+        if job and (job["state"] == "running" or (job["state"] in ("done", "none") and time.time() - job["at"] < KEEP)):
             return dict(job)
+        if sum(1 for j in _JOBS.values() if j["state"] == "running") >= WAITING_MAX:
+            return {"state": "busy", "message": "Knightwise is checking other players right now. Try again in a minute."}
         job = _JOBS[user] = {"state": "running", "done": 0, "total": 0, "at": time.time()}
     threading.Thread(target=_run, args=(user,), daemon=True, name=f"scout-{user}").start()
     return dict(job)
@@ -68,6 +72,11 @@ def _set(user, **kw):
 
 
 def _run(user):
+    with _ENGINE:
+        _run_now(user)
+
+
+def _run_now(user):
     try:
         games = prep.games_of(user)
         picked = latest(games, user)
@@ -101,7 +110,8 @@ def latest(games, user, n=GAMES):
     if not games:
         return []
     kind = collections.Counter(g["time_class"] for g in games).most_common(1)[0][0]
-    ok = sorted((g for g in games if g.get("pgn") and g["pgn"].count(".") >= 10 and g["time_class"] != "daily"),
+    from coach import insights
+    ok = sorted((g for g in games if g.get("pgn") and insights._moves_played(g["pgn"]) >= 10 and g["time_class"] != "daily"),
                 key=lambda g: (g["time_class"] == kind, g.get("end_time", 0)), reverse=True)
     return ok[:n]
 

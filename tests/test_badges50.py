@@ -21,3 +21,15 @@ def test_history_is_quiet_and_a_new_gold_pops_up_once(tmp_path, monkeypatch):
     assert b["id"] == "comeback" and b["from"] == "your real chess.com games" and b["gold"] == 3
     progress.gold_shown("comeback")
     assert progress.new_gold(now=2001) is None  # once, in one place only
+
+
+def test_no_baseline_while_the_games_are_still_being_checked(tmp_path, monkeypatch):
+    monkeypatch.setattr(progress, "_golds_file", lambda: tmp_path / "golds.json")
+    gold = lambda bid: {"id": bid, "name": bid, "icon": "medal", "group": "Results", "what": "x", "tier": 3, "tiers": [1, 2, 3]}
+    held = []
+    monkeypatch.setattr(progress, "page", lambda: {"badges": held})
+    progress._LAST.update(at=0.0, badges=None)
+    assert progress.new_gold(now=1000, ready=False) is None and not (tmp_path / "golds.json").exists()
+    held.extend([gold("wins"), gold("mates")])  # the first check finishes: history found
+    progress._LAST.update(at=0.0, badges=None)
+    assert progress.new_gold(now=2000, ready=True) is None  # history stays quiet (cloud review: it all popped up)

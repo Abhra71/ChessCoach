@@ -335,7 +335,7 @@ def _golds_file():
     return DATA / "badges-golds.json"
 
 
-def new_gold(now=None):
+def new_gold(now=None, ready=True):
     """The first badge completed (Gold) and not shown yet, or None. The very first time, every Gold already held is
     recorded quietly: your history counts, and only what you complete from now on pops up (the owner's choice)."""
     import json
@@ -349,6 +349,8 @@ def new_gold(now=None):
         m = json.loads(f.read_text())
     except (OSError, ValueError):
         m = None
+    if m is None and not ready:  # still checking the games: the history isn't all there yet (cloud review)
+        return None
     if m is None:
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(json.dumps({"shown": [b["id"] for b in golds]}))

@@ -108,7 +108,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
                                          body: JSON.stringify({ id: msg.id }) }).catch(() => {});
     return false;
   }
-  if (msg.type === "open-app" && /^[a-z][a-z0-9/]*$/.test(msg.route || "")) {  // bring the Knightwise window forward
+  if (msg.type === "open-app" && /^[a-z][a-z0-9/_-]*$/.test(msg.route || "")) {  // lesson ids and names have - and _  // bring the Knightwise window forward
     fetch(`${COACH}/api/show`, { method: "POST", headers: { "Content-Type": "application/json" },
                                  body: JSON.stringify({ route: msg.route }) }).catch(() => {});
     return false;

@@ -64,3 +64,19 @@ def test_homework_done_counts_the_next_game_against_them_only():
     assert prep.beaten(mine, "me", [{"user": "bob", "at": 100}, {"user": "bob", "at": 120}]) == 1  # one game, once
     assert prep.beaten(mine, "me", [{"user": "bob", "at": 250}]) == 0  # the next one was lost
     assert prep.beaten(mine, "me", [{"user": "zed", "at": 0}]) == 0  # never played them
+
+
+def test_a_failed_look_up_can_be_tried_again_and_jobs_are_capped(monkeypatch):
+    import time
+    started = []
+    monkeypatch.setattr(scout.threading, "Thread", lambda target, args, **kw: type("T", (), {"start": lambda self: started.append(args)})())
+    monkeypatch.setattr(scout, "_JOBS", {"x": {"state": "error", "at": time.time(), "done": 0, "total": 0}})
+    assert scout.status("x")["state"] == "running" and started == [("x",)]  # an error isn't kept for an hour
+    for n in ("a", "b"):
+        scout.status(n)
+    assert scout.status("c")["state"] == "busy"  # three running: the next one is told to wait
+
+
+def test_short_games_are_left_out():
+    short = {**_g("me", "white", "win", end=1), "pgn": '[Date "2026.10.01"]\n[Link "https://www.chess.com/game/1"]\n\n1. e4 e5 2. Qh5 Nc6 *'}
+    assert scout.latest([short], "me") == []

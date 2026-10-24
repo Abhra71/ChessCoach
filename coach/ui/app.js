@@ -467,7 +467,7 @@ function paintStatus() {
 }
 
 let lastPhase = null, lastVersion = null;
-const LIVE_PAGES = ["home", "games", "progress", "level", "plan", "course", "practice", "train"];
+const LIVE_PAGES = ["home", "games", "progress", "level", "plan", "course", "train"];  // never Practice: it would reset the board (cloud review)
 async function pollStatus() {
   try { STATUS = await api("/api/status"); } catch (e) { STATUS = {}; }
   paintStatus();
@@ -1014,23 +1014,28 @@ async function endgameView(id) {
 // order: the killer insights, their weak spot / where they go wrong / your plan, then practice against them
 const KILLER_ICON = { opening: "book", king: "mate", clock: "clock", tilt: "bolt" };
 async function scoutBox(user) {
-  const el = () => document.getElementById("scout");
-  if (!el()) return;
+  const box = document.getElementById("scout");
+  if (!box) return;
+  const el = () => (box.isConnected ? box : null);  // this look-up's own box: a newer look-up has its own (cloud review)
   el().innerHTML = `<div class="box scout-wait"><b>How to beat ${esc(user)}</b><span class="muted small" id="scoutn">Stockfish is checking their games…</span>
     <div class="bar"><div id="scoutbar" style="width:3%"></div></div></div>`;
   let r, drawn = false;
   for (;;) {
-    r = await api(`/api/scout/${encodeURIComponent(user)}`).catch(() => null);
-    if (!el()) return;  // they moved on
+    r = await api("/api/scout", { user }).catch(() => null);
+    if (!el()) return;  // they moved on, or looked up someone else
     if (r && r.result) { paintScout(user, r); drawn = true; }
     if (!r || r.state !== "running") break;
-    if (!drawn && r.total) {
-      $("#scoutbar").style.width = `${Math.max(3, 100 * r.done / r.total)}%`;
-      $("#scoutn").textContent = `Stockfish is checking their games… ${Math.round(100 * r.done / r.total)}%`;
+    if (!drawn && r.total && $("#scoutbar", box)) {
+      $("#scoutbar", box).style.width = `${Math.max(3, 100 * r.done / r.total)}%`;
+      $("#scoutn", box).textContent = `Stockfish is checking their games… ${Math.round(100 * r.done / r.total)}%`;
     }
     await new Promise(ok => setTimeout(ok, 1200));
   }
-  if (!r || r.state !== "done") { el().innerHTML = `<p class="small muted">${esc((r && r.message) || "The deeper look didn't work this time.")}</p>`; return; }
+  if (!r || r.state !== "done") {
+    const note = `<p class="small muted">${esc((r && r.message) || "The deeper look didn't work this time.")}</p>`;
+    if (drawn) el().insertAdjacentHTML("beforeend", note); else el().innerHTML = note;  // keep what's already there
+    return;
+  }
   const x = r.result, k = x.killers[0];
   Coach.react("maya", "explain", `${user}: ${k ? k.text : x.tips[0]}`, x.puzzles.length ? [{ label: "Punish their mistakes", app: `punish/${user}` }] : []);
 }
@@ -1089,7 +1094,7 @@ async function punishView(user) {
   shell("train", `<p class="muted">Loading…</p>`);
   let r;
   for (let n = 0; n < 120; n++) {
-    r = await api(`/api/scout/${encodeURIComponent(user)}`).catch(() => null);
+    r = await api("/api/scout", { user }).catch(() => null);
     if (!r || r.state !== "running") break;
     if (!location.hash.startsWith("#/punish/")) return;
     $("#page").innerHTML = `<p class="muted">Stockfish is checking ${esc(user)}'s games… ${r.total ? Math.round(100 * r.done / r.total) + "%" : ""}</p>`;

@@ -440,19 +440,6 @@ class Handler(BaseHTTPRequestHandler):
                       "title": "Slow down when it matters",
                       "intro": "Each of these you played in a rush, and it cost you. This time, tick the checks first: the board waits for you."}
             return self.send(200, json.dumps(lesson), "application/json")
-        if path.startswith("/api/scout/"):  # how to beat them: Prep's deeper look, started here, polled (24 Oct)
-            from coach import scout
-            user = path.rsplit("/", 1)[-1].lower()
-            if not user or len(user) > 30 or not all(c.isalnum() or c in "-_" for c in user):
-                return self.send(400, json.dumps({"message": "That doesn't look like a chess.com username."}), "application/json")
-            out = scout.status(user)
-            if out.get("state") == "done":  # the Homework done badge, drawn beside Punish
-                try:
-                    from coach import insights, prep
-                    out["homework"] = prep.beaten(insights._games(), insights._player())
-                except Exception:
-                    out["homework"] = 0
-            return self.send(200, json.dumps(out), "application/json")
         if path.startswith("/api/prep/"):  # prep before a game: how a player plays, from their public games (0.8)
             from coach import prep
             user = path.rsplit("/", 1)[-1].lower()
@@ -667,7 +654,23 @@ class Handler(BaseHTTPRequestHandler):
             if out and out["over"]:
                 out["say"] = rematch.end_say(out["result"], str(body.get("real", "loss")))
             return self.send(200 if out else 400, json.dumps(out or {"message": "That move isn't legal here."}), "application/json")
+        if path == "/api/scout":  # how to beat them: Prep's deeper look, started here, polled (24 Oct). A POST with JSON,
+            # so no other website can start engine work with an <img> (cloud review, 24 Oct)
+            from coach import scout
+            user = str(body.get("user", "")).strip().lower()
+            if not user or len(user) > 30 or not all(c.isalnum() or c in "-_" for c in user):
+                return self.send(400, json.dumps({"message": "That doesn't look like a chess.com username."}), "application/json")
+            out = scout.status(user)
+            if out.get("state") == "done":  # the Homework done badge, drawn beside Punish
+                try:
+                    from coach import insights, prep
+                    out["homework"] = prep.beaten(insights._games(), insights._player())
+                except Exception:
+                    out["homework"] = 0
+            return self.send(200, json.dumps(out), "application/json")
         if path == "/api/start-over":  # Settings: "Wrong account? Start over", after a confirm in the page
+            if self.headers.get("Origin") != URL:  # only the app's own window, never an extension (cloud review)
+                return self.send(403, json.dumps({"message": "Only the Knightwise window can do this."}), "application/json")
             start_over()
             return self.send(200, "{}", "application/json")
         if path == "/api/player":
@@ -824,7 +827,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, "{}", "application/json")
         if path == "/api/show":  # a second Knightwise.exe (or a notification) asks the running one to show a screen
             route = str(body.get("route", "home"))[:100]
-            if SHOW and all(c.isascii() and (c.isalnum() or c == "/") for c in route):  # it goes into the window's JS
+            if SHOW and all(c.isascii() and (c.isalnum() or c in "/-_") for c in route):  # it goes into the window's JS
                 SHOW(route)
             return self.send(200, "{}", "application/json")
         self.send(404, "not found", "text/plain")
@@ -974,6 +977,8 @@ class Handler(BaseHTTPRequestHandler):
 
 STATE = {"phase": "starting"}
 WAKE = threading.Event()  # set it to check for new games right now
+UPDATE_LOCK = threading.Lock()  # the background check and Start over take turns
+GENERATION = [0]  # bumped by Start over: a check that started before it must not leave the old player's games
 
 
 class Server(ThreadingHTTPServer):
@@ -1104,7 +1109,7 @@ def coach_says(url):
     if calm:
         try:
             from coach import progress
-            said["badge"] = progress.new_gold()
+            said["badge"] = progress.new_gold(ready=STATE.get("phase") == "ready")
         except Exception:
             log.exception("badge pop-up")
     return said
@@ -1193,17 +1198,29 @@ APP_FILES = {"settings.json", "ai-usage.json", "puzzles.json", "opening-evals.js
              "feedback-sent.json", "feedback.jsonl", "voice-cache"}
 
 
-def start_over():
-    """Wrong account (24 Oct, owner): everything Knightwise knows about this player goes, nothing is mixed into the
-    next one. The AI keys and the app's settings stay."""
+def clear_player_files(keep_player=False):
     import shutil
     for f in DATA.iterdir() if DATA.exists() else []:
-        if f.name in APP_FILES:
+        if f.name in APP_FILES or (keep_player and f.name == "player.txt"):
             continue
-        if f.is_dir():
-            shutil.rmtree(f, ignore_errors=True)
-        else:
-            f.unlink(missing_ok=True)
+        try:
+            shutil.rmtree(f, ignore_errors=True) if f.is_dir() else f.unlink(missing_ok=True)
+        except OSError:  # still open by a check that's finishing: it's cleared again when that check ends
+            log.warning("start over: %s busy", f.name)
+
+
+def start_over():
+    """Wrong account (24 Oct, owner): everything Knightwise knows about this player goes, nothing is mixed into the
+    next one. The AI keys and the app's settings stay. A background check running now is told, and its files are
+    cleared again when it ends (cloud review)."""
+    GENERATION[0] += 1
+    clear_player_files()
+    try:  # what's kept in memory about the old player
+        from coach import prep, progress
+        progress._LAST.update(at=0.0, badges=None)
+        prep._CACHE.clear()
+    except Exception:
+        pass
     log.info("start over: the player's data cleared")
 
 
@@ -1353,7 +1370,13 @@ def loop():
             WAKE.clear()
             continue
         try:
-            n, first = update_once()
+            gen = GENERATION[0]
+            with UPDATE_LOCK:
+                n, first = update_once()
+            if gen != GENERATION[0]:  # Start over happened while it ran: what it wrote was the old player's
+                clear_player_files(keep_player=True)
+                WAKE.set()
+                continue
             if first:
                 notify(NAME, f"Your review is ready: {n} games checked. Click to open it.", open_link("home"))
             elif n:
