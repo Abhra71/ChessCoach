@@ -667,6 +667,9 @@ class Handler(BaseHTTPRequestHandler):
             if out and out["over"]:
                 out["say"] = rematch.end_say(out["result"], str(body.get("real", "loss")))
             return self.send(200 if out else 400, json.dumps(out or {"message": "That move isn't legal here."}), "application/json")
+        if path == "/api/start-over":  # Settings: "Wrong account? Start over", after a confirm in the page
+            start_over()
+            return self.send(200, "{}", "application/json")
         if path == "/api/player":
             ok, message = set_player(str(body.get("username", "")))
             return self.send(200 if ok else 400, json.dumps({"ok": ok, "message": message}), "application/json")
@@ -1183,6 +1186,25 @@ def status():
             # connected only if seen lately: it checks in every minute (22 Oct test: "connected" after it was removed)
             "extension_now": [b for b, t in STATE.get("extension_at", {}).items() if time.time() - t < 180],
             "extension_path": str(EXTENSION), "browsers": sorted(browsers()), "listen_install": STATE.get("listen_install")}
+
+
+# what isn't the player's: kept by Start over (the app's own settings and downloads, the AI use count, feedback sent)
+APP_FILES = {"settings.json", "ai-usage.json", "puzzles.json", "opening-evals.json", "health.json", "service.pid",
+             "feedback-sent.json", "feedback.jsonl", "voice-cache"}
+
+
+def start_over():
+    """Wrong account (24 Oct, owner): everything Knightwise knows about this player goes, nothing is mixed into the
+    next one. The AI keys and the app's settings stay."""
+    import shutil
+    for f in DATA.iterdir() if DATA.exists() else []:
+        if f.name in APP_FILES:
+            continue
+        if f.is_dir():
+            shutil.rmtree(f, ignore_errors=True)
+        else:
+            f.unlink(missing_ok=True)
+    log.info("start over: the player's data cleared")
 
 
 def set_player(username):

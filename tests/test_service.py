@@ -186,3 +186,14 @@ def test_feedback_by_email_is_a_ready_email_to_the_right_address():
     q = parse_qs(parts.query)
     assert q["subject"][0].startswith("Knightwise feedback") and q["body"][0].startswith("What went wrong: the arrow & the ring")
     assert len(url) < 6000  # Windows mail apps cut longer addresses
+
+
+def test_start_over_clears_the_player_but_keeps_the_app(tmp_path, monkeypatch):
+    from coach import service
+    monkeypatch.setattr(service, "DATA", tmp_path)
+    for name in ("player.txt", "moves.jsonl", "games-2026-10.json", "practice.jsonl", "novelty.json", "course.json",
+                 "settings.json", "puzzles.json", "ai-usage.json"):
+        (tmp_path / name).write_text("x")
+    (tmp_path / "voice-cache").mkdir()
+    service.start_over()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["ai-usage.json", "puzzles.json", "settings.json", "voice-cache"]

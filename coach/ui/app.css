@@ -1061,3 +1061,4 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .askbar-chips { display: flex; align-items: center; gap: 10px; }
 .ask-you { font-weight: 600; margin-bottom: 4px; color: var(--muted); }
 .ask-more { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.linkish { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; font: inherit; text-align: left; }

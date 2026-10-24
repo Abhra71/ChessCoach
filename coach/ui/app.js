@@ -2203,8 +2203,8 @@ async function settingsView() {
     <div class="page-head"><div><h1>Settings</h1></div></div>
     <div class="box">
       <div class="settings-row"><div><h3 title="Only public games are read. No password.">chess.com account</h3></div>
-        <div class="stack"><div class="row"><input class="field" id="user" aria-label="Your chess.com username" value="${esc(st.player || "")}" spellcheck="false" style="max-width:280px">
-          <button class="btn" id="saveuser">Change</button></div><div class="err" id="usermsg"></div></div></div>
+        <div class="stack"><b>${esc(st.player || "")}</b>
+          <button class="linkish small muted" id="startover">Wrong account? Start over</button></div></div>
       <div class="settings-row"><div><h3>Appearance</h3></div>
         <div><div class="seg" id="theme">${["system", "dark", "light"].map(t => `<button data-t="${t}" class="${s.theme === t ? "on" : ""}">${cap(t)}</button>`).join("")}</div></div></div>
       <div class="settings-row"><div><h3 title="Your coaches speak. It runs on this computer, no internet needed.">Voice</h3></div>
@@ -2295,12 +2295,13 @@ async function settingsView() {
     }
   };
   $("#folder").onclick = () => api("/api/open-folder", {}).catch(() => {});
-  $("#saveuser").onclick = async () => {
-    const name = $("#user").value.trim();
-    if (!name || name === st.player) return;
-    if (!confirm(`Switch to ${name}? The coach will check that player's games from the start.`)) return;
-    $("#usermsg").textContent = "Checking on chess.com…";
-    try { await api("/api/player", { username: name }); go("home"); } catch (e) { $("#usermsg").textContent = e.message; }
+  // no "Change" (24 Oct, owner: it mixed two players' progress): a wrong account starts over, cleanly
+  $("#startover").onclick = async () => {
+    if (!confirm(`Start over with another account?\n\nThis clears everything Knightwise knows about ${st.player}: games, practice, ` +
+      "your plan, course, badges and streak. Your AI keys and settings stay.")) return;
+    await api("/api/start-over", {});
+    try { Object.keys(localStorage).filter(k => k.startsWith("kw-")).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+    location.hash = "#/welcome"; location.reload();
   };
   document.querySelectorAll("[data-slot]").forEach(box => {
     const id = box.dataset.slot, msg = $("[data-msg]", box);
