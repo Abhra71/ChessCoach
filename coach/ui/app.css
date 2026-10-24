@@ -1060,3 +1060,4 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 /* no AI key: questions to tap (24 Oct) */
 .askbar-chips { display: flex; align-items: center; gap: 10px; }
 .ask-you { font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+.ask-more { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }

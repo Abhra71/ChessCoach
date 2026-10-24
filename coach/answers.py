@@ -21,8 +21,9 @@ QUESTIONS = {
     "hint": "Give me a hint",
     "about": "What is this teaching me?",
 }
-PAGE = {  # the questions offered on each page, the most useful first
-    "home": ["work", "how", "lose", "last", "opening"],
+PAGE = {  # the questions offered on each page, the most useful first. Without a key only Home's three are shown:
+    # a taste of the coach, so a free key is worth setting up (24 Oct, owner: option A)
+    "home": ["work", "how", "lose"],
     "review": ["move", "turn", "work", "how"],
     "lesson": ["hint", "about", "work"],
 }

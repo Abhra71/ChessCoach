@@ -244,7 +244,13 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips, section
       <button class="ask-ic send" data-ask title="Ask" ${enabled ? "" : "disabled"}>${svg("send")}</button></div>
     ${enabled && chips && chips.length ? `<div class="ask-chips">${chips.map(c => `<button data-chip>${esc(c)}</button>`).join("")}</div>` : ""}
     <div data-a class="small" style="margin-top:8px"></div>`;
-  if (!enabled) return askChips(el, { coach, section: section || "home", where, extra });
+  // no key: Home gives a taste (three questions to tap); everywhere else, what a free key gives (24 Oct, option A)
+  if (!enabled && section === "home") return askChips(el, { coach, section, where, extra });
+  if (!enabled) {
+    el.innerHTML = `<p class="small" style="margin:0 0 10px">Ask your coach anything about this, typed or out loud, with a free AI key.</p>
+      <a class="btn" href="#/settings">Set up now</a>`;
+    return;
+  }
   const q = $("[data-q]", el), out = $("[data-a]", el), mic = $("[data-mic]", el);
   // the answer goes away after a minute, or when they do something else (23 Oct test), unless the mouse is on it
   let fade = null;
@@ -310,7 +316,7 @@ function askChips(el, { coach, section, where, extra }) {
   };
   el.innerHTML = `<div class="askbar askbar-chips"><span class="ask-face">${face}</span><span class="small muted">Ask ${esc((COACHES[coach] || {}).name || "your coach")}:</span></div>
     <div class="ask-chips" data-chips></div><div data-a class="small" style="margin-top:8px"></div>
-    <p class="kw-ai-note">To type your own questions or talk out loud, add a free AI key in <a href="#/settings">Settings</a>.</p>`;
+    <div class="ask-more"><span class="small">Ask anything, out loud too, with a free AI key.</span><a class="btn small-btn" href="#/settings">Set up</a></div>`;
   ask("", "");
 }
 
