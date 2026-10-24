@@ -770,10 +770,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, audio, "audio/wav")
         if path == "/api/keys":
             try:
-                settings.set_key(str(body.get("slot")), str(body.get("provider")), str(body.get("key", "")))
+                used = settings.set_key(str(body.get("slot")), str(body.get("provider")), str(body.get("key", "")))
             except ValueError as e:
                 return self.send(400, json.dumps({"message": str(e)}), "application/json")
-            return self.send(200, json.dumps(settings.public()), "application/json")
+            from coach import ai  # tried at once, so a wrong or used-up key is known now, not in the middle of a question
+            ok, message = ai.test_key(str(body.get("slot")))
+            switched = used != str(body.get("provider"))
+            note = (f"That's a {settings.PROVIDERS[used]['name']} key, so it's saved as one. " if switched else "") + message
+            return self.send(200, json.dumps({**settings.public(), "ok": ok, "message": note}), "application/json")
         if path == "/api/keys/test":
             from coach import ai
             ok, message = ai.test_key(str(body.get("slot")))

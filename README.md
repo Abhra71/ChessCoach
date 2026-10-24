@@ -117,7 +117,7 @@ Your numbers will be different. That's the point: everything is worked out from 
 | Desktop app window: Home (your focus, score, trend, last game), Games, Practice, Settings; dark and light | works (beta) |
 | Settings: chess.com account, theme, voice, two optional AI key slots kept in Windows Credential Manager | works (AI use: next) |
 | The coach speaks (Kokoro, on this computer): briefing, key moments, practice feedback; 4 voices | works |
-| AI explanations and "Ask the coach" with your own key (Gemini, Groq, Claude or OpenAI), grounded in engine facts | works (beta) |
+| AI explanations and "Ask the coach" with your own key (free Groq or Google Gemini; Claude and OpenAI come in 1.1), grounded in engine facts | works (beta) |
 | Ask the coach by voice: Talk button, Whisper on this computer (one-time 485 MB download in Settings) | works (beta) |
 | Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
 | Microsoft Store package (MSIX, signed by Microsoft on upload, so Windows never blocks it): starts with Windows, notifications, extension copied to Documents\Knightwise | built, not yet submitted |

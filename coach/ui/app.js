@@ -2177,7 +2177,7 @@ async function settingsView() {
     const x = s.slots[id], prov = s.providers[x.provider];
     return `<div class="box stack" data-slot="${id}"><div class="row spread"><h3>AI key ${n}</h3>
         <span class="small ${x.set ? "ok-text" : "faint"}">${x.set ? `Saved · ends with ••••${esc(x.ends)}` : "Not set"}</span></div>
-      <select class="field" data-provider aria-label="AI key ${n}: provider">${Object.entries(s.providers).map(([k, p]) =>
+      <select class="field" data-provider aria-label="AI key ${n}: provider">${Object.entries(s.providers).filter(([k, p]) => !p.hidden || k === x.provider).map(([k, p]) =>
         `<option value="${k}" ${k === x.provider ? "selected" : ""}>${esc(p.name)}${p.free ? ", free" : ", paid"}</option>`).join("")}</select>
       <input class="field" type="password" autocomplete="off" spellcheck="false" placeholder="${x.set ? "Paste a new key to replace it" : "Paste your API key"}" aria-label="AI key ${n}" data-key>
       <div class="row"><button class="btn" data-save>Save key</button>${x.set ? `<button class="btn" data-test>Test key</button><button class="btn danger" data-remove>Remove</button>` : ""}
@@ -2293,8 +2293,14 @@ async function settingsView() {
       $("[data-get]", box).textContent = `Get a ${s.providers[e.target.value].name} key ↗`; };
     $("[data-save]", box).onclick = async () => {
       msg.textContent = "";
-      try { await api("/api/keys", { slot: id, provider: $("[data-provider]", box).value, key: $("[data-key]", box).value }); settingsView(); }
-      catch (e) { msg.textContent = e.message; }
+      msg.className = "muted small"; msg.textContent = "Saving and testing…";
+      try {
+        const r = await api("/api/keys", { slot: id, provider: $("[data-provider]", box).value, key: $("[data-key]", box).value });
+        await settingsView();  // the key saved, and the right provider shown; then whether it works, under it
+        const again = $(`[data-slot="${id}"] [data-msg]`);
+        if (again) { again.className = r.ok ? "ok-text" : "err"; again.textContent = r.message; }
+      }
+      catch (e) { msg.className = "err"; msg.textContent = e.message; }
     };
     const test = $("[data-test]", box);
     if (test) test.onclick = async () => {

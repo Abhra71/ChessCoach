@@ -19,9 +19,17 @@ SLOTS = ("slot1", "slot2")
 PROVIDERS = {  # what the player can choose for a slot; "free" means the provider has a free tier
     "gemini": {"name": "Google Gemini", "free": True, "get_key": "https://aistudio.google.com/apikey"},
     "groq": {"name": "Groq", "free": True, "get_key": "https://console.groq.com/keys"},
-    "anthropic": {"name": "Anthropic Claude", "free": False, "get_key": "https://console.anthropic.com/settings/keys"},
-    "openai": {"name": "OpenAI", "free": False, "get_key": "https://platform.openai.com/api-keys"},
+    # paid, and not tested yet: hidden in 1.0 (24 Oct, owner); back in 1.1, tested
+    "anthropic": {"name": "Anthropic Claude", "free": False, "hidden": True, "get_key": "https://console.anthropic.com/settings/keys"},
+    "openai": {"name": "OpenAI", "free": False, "hidden": True, "get_key": "https://platform.openai.com/api-keys"},
 }
+# each company's keys start their own way: the key says whose it is (24 Oct: a Gemini key saved as Groq just failed)
+KEY_STARTS = [("sk-ant-", "anthropic"), ("gsk_", "groq"), ("AIza", "gemini"), ("sk-", "openai")]
+
+
+def provider_of(key):
+    """The provider a key belongs to, from how it starts, or None if it doesn't say."""
+    return next((p for start, p in KEY_STARTS if key.strip().startswith(start)), None)
 DEFAULTS = {"theme": "system", "voice": True, "sounds": True, "voice_name": "af_heart", "human_moves": True,
             "slot1": {"provider": "groq"}, "slot2": {"provider": "gemini"}}  # Groq first: Gemini was often busy in Jarvis
 
@@ -48,16 +56,22 @@ def save(changes):
 
 
 def set_key(slot, provider, key):
+    """Save a key. The provider comes from the key itself when it says (a Gemini key saved as Groq is saved as Gemini).
+    Returns the provider used."""
     if slot not in SLOTS or provider not in PROVIDERS:
         raise ValueError("unknown slot or provider")
     key = key.strip()
     if not 16 <= len(key) <= 300 or any(c.isspace() for c in key):
         raise ValueError("That doesn't look like an API key.")
+    provider = provider_of(key) or provider
+    if PROVIDERS[provider].get("hidden"):
+        raise ValueError(f"That's a {PROVIDERS[provider]['name']} key. Knightwise works with a free Groq or Google Gemini key.")
     keyring.set_password(VAULT, slot, key)
     current = load()
     current[slot] = {"provider": provider}
     FILE.parent.mkdir(parents=True, exist_ok=True)
     FILE.write_text(json.dumps({k: v for k, v in current.items() if k in DEFAULTS}, indent=2))
+    return provider
 
 
 def remove_key(slot):

@@ -58,3 +58,12 @@ def test_a_test_copy_has_keys_of_its_own(monkeypatch):
     finally:
         monkeypatch.delenv("KNIGHTWISE_VAULT")
         importlib.reload(settings)
+
+
+def test_the_key_says_whose_it_is():
+    from coach import settings
+    assert settings.provider_of("gsk_abcdefghijklmnop") == "groq"
+    assert settings.provider_of("AIzaSyabcdefghijklmnop") == "gemini"
+    assert settings.provider_of("sk-ant-abcdefghijklmnop") == "anthropic"
+    assert settings.provider_of("sk-proj-abcdefghijklmnop") == "openai"
+    assert settings.provider_of("something-else-entirely") is None
