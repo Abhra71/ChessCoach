@@ -189,7 +189,7 @@ function trainer(drills, opts) {
   const right = () => state.filter(x => x === "right").length;
   // reset: "day" when this set turns over at midnight; a function for sets that stop resetting once started (plan cards)
   const resetKind = () => typeof opts.reset === "function" ? opts.reset(state) : opts.reset;
-  const counter = () => { $("#count").innerHTML = tiles([["Puzzle", `${i + 1} of ${drills.length}`], ["First try", right()]]) + resetNote(resetKind()); };
+  const counter = () => { $("#count").innerHTML = tiles([["Puzzle", `${i + 1} of ${drills.length}`], ["First try", right()]]) + resetMark(resetKind()); };
   // sets that aren't recorded on the server (plan cards, lessons, drills) remember today's answers in this app, so
   // leaving halfway doesn't start you again (23 Oct test: "it reset without saving my progress")
   const SETS = "kw-sets", setKey = `${new Date().toDateString()}|${location.hash.split("?")[0]}`;

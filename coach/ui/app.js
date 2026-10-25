@@ -95,6 +95,10 @@ function resetNote(kind) {
   const at = nextReset(kind);
   return `<span class="reset-note" data-reset="${at}">${CLOCK_ICON}<span>Resets in ${resetLeft(at - Date.now())}</span></span>`;
 }
+// inside a training page nothing shows (25 Oct, owner: "cards only"), but the page still loads the new set at midnight
+function resetMark(kind) {
+  return kind ? `<span class="reset-mark" hidden data-reset="${nextReset(kind)}"><span></span></span>` : "";
+}
 const localDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 let resetting = false;
 function tickResets() {
@@ -1509,7 +1513,7 @@ async function guessView() {
     const p = x(), targets = picked ? p.legal.filter(u => u.startsWith(picked)).map(u => u.slice(2, 4)) : [];
     Board.render($("#board"), { fen: extra.fen || p.fen, flip: !p.white, targets: answered ? [] : targets, arrows: extra.arrows || [],
       highlights: { [p.last[0]]: "hl-last", [p.last[1]]: "hl-last", ...(picked ? { [picked]: "hl-pick" } : {}) }, onClick: click });
-    $("#gcount").innerHTML = tiles([["Position", `${i + 1} of ${c.positions.length}`]]) + resetNote("week");
+    $("#gcount").innerHTML = tiles([["Position", `${i + 1} of ${c.positions.length}`]]) + resetMark("week");
     $("#gtotal").textContent = `${total} points`;
   }
   function show() {
@@ -1616,7 +1620,7 @@ async function calcView() {
   }
   function count() {
     $("#calccount").innerHTML = tiles([["Puzzle", `${i + 1} of ${items.length}`],
-      ["Done today", `${Object.keys(kept).filter(id => items.some(it => it.id === id)).length} of ${items.length}`]]) + resetNote("day");
+      ["Done today", `${Object.keys(kept).filter(id => items.some(it => it.id === id)).length} of ${items.length}`]]) + resetMark("day");
   }
   function show() {
     line = []; picked = null; done = false;
