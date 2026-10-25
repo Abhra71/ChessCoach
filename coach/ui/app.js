@@ -1632,7 +1632,10 @@ async function calcView() {
     const where = wrong < 0 ? "" : yours(wrong) ? `Your move ${Math.floor(wrong / 2) + 1} wasn't the one.` : `You didn't see their answer: it's not what you expected.`;
     $("#calcmsg").innerHTML = right ? `<span class="ok-text"><b>You saw it all.</b> ${esc(real)}.</span>`
       : `<span class="bad-text">${esc(where)}</span> The line: ${esc(real)}.`;
-    Coach.react("viktor", right ? "celebrate" : "explain", right ? "You saw it all before moving. That's calculation." : `${where} The line was ${real}. Try the next one: see the end first.`);
+    Coach.react("viktor", right ? "celebrate" : "explain", right ? bfLine(["You saw it all before moving. That's calculation.",
+        "The whole line, seen before a piece moved. Well done.", "Exactly right, start to finish.", "That's how strong players do it: see the end first."])
+      : `${where} The line was ${real}. ${bfLine(["Try the next one: see the end first.", "Next time, check their best answer before you commit.",
+        "Look at every check and capture for them, too.", "Slow down on their reply: that's where lines go wrong."])}`);
   }
   $("#calcundo").onclick = () => { if (!done && line.length) { line.pop(); draw(); } };
   $("#calccheck").onclick = check;
