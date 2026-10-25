@@ -1574,8 +1574,11 @@ async function calcView() {
     $("#calcline").innerHTML = Array.from({ length: need() }, (_, k) => `<div class="calc-slot ${yours(k) ? "mine" : "theirs"} ${line[k] ? "full" : k === line.length ? "now" : ""}">
         <span class="num">${k + 1}</span><b>${yours(k) ? "Your move" : "Their reply"}</b>
         <i class="num">${line[k] ? `${line[k].slice(0, 2)} → ${line[k].slice(2, 4)}` : k === line.length ? "click a piece, then its square" : "…"}</i></div>`).join("");
+    count();
+  }
+  function count() {
     $("#calccount").innerHTML = tiles([["Puzzle", `${i + 1} of ${items.length}`],
-      ["Done today", Object.keys(kept).filter(id => items.some(it => it.id === id)).length]]);
+      ["Done today", `${Object.keys(kept).filter(id => items.some(it => it.id === id)).length} of ${items.length}`]]);
   }
   function show() {
     line = []; picked = null; done = false;
@@ -1616,7 +1619,7 @@ async function calcView() {
       if (steps[s].reply) { Board.render($("#board"), { pieces: steps[s].reply.board, flip: x().flip }); Sound.move(steps[s].reply.san); await wait(650); }
     }
     const real = steps.flatMap(st => [Object.values(st.moves).find(m => m.good).san, st.reply ? st.reply.san : null]).filter(Boolean).join(", ");
-    kept[x().id] = { right, real }; keep();
+    kept[x().id] = { right, real }; keep(); count();
     if (right) Sound.play("right");  // no confetti for each line: it stays rare (1.0 design rule)
     const where = wrong < 0 ? "" : yours(wrong) ? `Your move ${Math.floor(wrong / 2) + 1} wasn't the one.` : `You didn't see their answer: it's not what you expected.`;
     $("#calcmsg").innerHTML = right ? `<span class="ok-text"><b>You saw it all.</b> ${esc(real)}.</span>`
