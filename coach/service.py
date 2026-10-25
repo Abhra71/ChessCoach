@@ -1408,7 +1408,8 @@ def loop():
                 notify(NAME, text, open_link(f"games/{newest}"))
         except Exception as e:
             log.exception("update failed")
-            STATE.update(phase="error", error=str(e)[:200])
+            # no internet (chess.com unreachable) is said plainly, not as an error code (26 Oct offline test)
+            STATE.update(phase="error", error="offline" if isinstance(e, OSError) else str(e)[:200])
         WAKE.wait(EVERY)
         WAKE.clear()
 

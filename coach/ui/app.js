@@ -501,7 +501,7 @@ function paintStatus() {
   if (!el) return;
   const s = STATUS, busy = s.phase && !["ready", "waiting for your chess.com username", "starting"].includes(s.phase);
   const text = !s.phase ? "Coach not running" : busy ? `${cap(s.phase)}${s.total ? ` ${s.done}/${s.total}` : "…"}`
-    : s.phase === "error" ? "Last check failed, retrying" : `Up to date${s.last_update ? " · " + s.last_update.slice(11) : ""}`;
+    : s.phase === "error" ? (s.error === "offline" ? "Offline · your games so far still work" : "Last check failed, retrying") : `Up to date${s.last_update ? " · " + s.last_update.slice(11) : ""}`;
   // quiet when all is well: a grey icon with a dot; words only while it's working on something or went wrong
   el.hidden = !busy && s.phase !== "error" && !!s.phase;
   el.innerHTML = `<i class="dot ${!s.phase ? "" : busy ? "busy" : "ok"}"></i><span>${esc(text)}</span>`;
@@ -2543,7 +2543,7 @@ async function welcome() {
     for (;;) {
       const s = await api("/api/status").catch(() => ({}));
       if (s.phase === "ready" && (s.review_ready || s.no_games)) { try { sessionStorage.setItem("kw-new", "1"); } catch (e) {} return go("home"); }
-      $("#phase").textContent = s.phase === "error" ? "Something went wrong. Retrying by itself." : cap(s.phase || "working") + "…";
+      $("#phase").textContent = s.phase === "error" ? (s.error === "offline" ? "Can't reach chess.com. Check your internet: it tries again by itself." : "Something went wrong. Retrying by itself.") : cap(s.phase || "working") + "…";
       $("#fill").style.width = (s.total ? Math.max(3, 100 * s.done / s.total) : s.phase === "building your pages" ? 100 : 3) + "%";
       $("#cnt").textContent = s.total ? `Game ${s.done} of ${s.total}` : "";
       await wait(1000);
