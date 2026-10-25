@@ -1461,7 +1461,7 @@ async function guessView() {
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
         <div class="box stack" style="padding:16px"><h3 style="margin:0" id="gtask"></h3>
-          <p class="small muted" style="margin:0">Click a piece, then where it goes. Ratings here are online (Lichess) ratings.</p></div>
+          <p class="small muted guess-hint" style="margin:0">Click a piece, then where it goes. Ratings here are online (Lichess) ratings.</p></div>
         <div class="box stack" style="padding:16px" id="gresult" hidden></div>
         <div class="row"><span class="num" id="gtotal"></span><button class="btn primary" id="gnext" hidden>Next →</button></div>
       </div>

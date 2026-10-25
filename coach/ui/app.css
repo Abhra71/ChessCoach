@@ -1071,3 +1071,6 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .stat-row { flex-shrink: 0; } .stat-tile b { white-space: nowrap; }
 .stat-tile { box-sizing: border-box; width: 150px; min-width: 0; padding: 6px 10px; }  /* every tile the same size, everywhere (25 Oct) */
 .brief-facts { margin: 6px 0 14px; }  /* breathing room under the title (25 Oct) */
+/* a little space between every title and the line under it (25 Oct: the date line sat right under the title) */
+.sub { margin-top: 6px; }
+#calchint, .guess-hint, .report-head h2 + .small, .brief-facts { margin-top: 6px !important; }
