@@ -254,7 +254,7 @@ def play(eid, fen, uci, made, limit=None):
     out["reply"] = {"uci": reply.uci(), "san": board.san(reply)}
     board.push(reply)
     if board.is_insufficient_material() and goal != "draw":
-        return end("lost", "They took your last piece that could win. Try again: the idea is in the box.")
+        return end("lost", "They took your last piece that could win. Try again.")
     if goal == "draw" and (board.is_insufficient_material() or made >= limit):
         return end("win", "Draw held. Exactly right: stay in front of the pawn.")
     if goal == "draw" and any(p.piece_type == chess.QUEEN for p in board.piece_map().values()):

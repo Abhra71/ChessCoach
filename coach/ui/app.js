@@ -713,6 +713,7 @@ async function sparView(user, color) {
     try { r = await api("/api/spar/move", { user, fen: cur().fen, uci, color, rating: s.rating }); }
     catch (e) { $("#smsg").textContent = e.message; busy = false; draw(); return; }
     last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
+    if (/[+#]/.test(r.mine.san)) Sound.play("check", 0.8);
     played.push(r.mine.san);
     await wait(r.reply ? Math.max(0, 550 - (Date.now() - shown)) : 0);
     if (r.reply) {
@@ -720,7 +721,7 @@ async function sparView(user, color) {
       played.push(r.reply.san);
     }
     history.push(r); tell(r); busy = false; draw();
-    if (r.over) { if (r.result === "win") confetti(); Coach.react("maya", r.result === "win" ? "celebrate" : "explain", r.say, [{ label: "New game", app: `spar/${user}/${color}` }]); }
+    if (r.over) { gameOver($("#smsg"), r); Coach.react("maya", r.result === "win" ? "celebrate" : "explain", r.say, [{ label: "New game", app: `spar/${user}/${color}` }]); }
   }
   $("#undo").onclick = () => { if (busy || history.length < 2) return; const r = history.pop(); played.splice(played.length - (r.reply ? 2 : 1)); last = {}; tell(cur()); draw(); };
   $("#again").onclick = () => sparView(user, color);
@@ -784,6 +785,7 @@ async function rematchView(gid, ply) {
     try { r = await api("/api/rematch/move", { fen: before.fen, uci, rating: s.rating, white, real: s.real }); }
     catch (e) { $("#rmsg").textContent = e.message; busy = false; draw(); return; }
     last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
+    if (/[+#]/.test(r.mine.san)) Sound.play("check", 0.8);
     played.push([r.mine.san, r.reply ? r.reply.san : null]);
     await wait(r.reply ? Math.max(0, 550 - (Date.now() - shown)) : 0);
     if (r.reply) { last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san); }
@@ -791,7 +793,7 @@ async function rematchView(gid, ply) {
     busy = false; draw();
     if (played.length === 1) Coach.react("maya", "pleased", `${r.mine.san} instead of ${s.real_move}. Now play it out.`);
     if (r.over) {
-      if (r.result === "win") confetti();
+      gameOver($("#rmsg"), r);
       Coach.react("maya", r.result === "win" ? "celebrate" : r.result === "loss" ? "encourage" : "explain", r.say,
         [{ label: "Start again", run: restart }, { label: "Back to the game", app: `games/${gid}` }]);
     } else if (r.check) Coach.react("maya", "worried", "Check. Your king first.");
@@ -988,6 +990,14 @@ async function endgamesView() {
   Coach.react("viktor", "explain", "Endings. Every won game ends in one of these. Learn them once and they win games for the rest of your life.");
 }
 
+// a played-out game ended (Spar, Rematch): said on the page and heard, not only in the coach's bubble (26 Oct test)
+function gameOver(el, r) {
+  const head = { win: ["ok-text", "You won"], loss: ["bad-text", "You lost"], lost: ["bad-text", "You lost"],
+    draw: ["muted", "A draw"], stalemate: ["bad-text", "Stalemate: a draw"] }[r.result] || ["muted", "Game over"];
+  if (el) el.innerHTML = `<span class="${head[0]}"><b>${head[1]}.</b></span> <span class="muted">${esc(r.say || "")}</span>`;
+  if (r.result === "win") { confetti(); Sound.play("done"); } else Sound.play(r.result === "draw" ? "move" : "wrong", 0.6);
+}
+
 async function endgameView(id) {
   shell("train", `<p class="muted">Setting up the position…</p>`);
   let s;
@@ -1031,13 +1041,17 @@ async function endgameView(id) {
     try { r = await api("/api/endgame/move", { id, fen: cur().fen, uci, made: cur().made, limit: s.limit }); }
     catch (e) { busy = false; draw(); return; }
     last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
+    if (/[+#]/.test(r.mine.san)) Sound.play("check", 0.8);  // the move sounded at once; a check is known now
     moves.push([r.mine.san, r.reply ? r.reply.san : null]);
     if (r.reply) { await wait(Math.max(0, 450 - (Date.now() - shown))); last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san); }
     history.push(r);
     busy = false; draw();
     $("#emsg").innerHTML = r.warn ? `<span class="bad-text">${esc(r.warn)}</span>` : "";
-    if (r.over) {
-      if (r.result === "win") { confetti(); Sound.play("done"); }
+    if (r.over) {  // the end, on the page and heard, not only in the coach's bubble (26 Oct test: a stalemate showed nothing)
+      const END = { win: ["ok-text", "Done"], stalemate: ["bad-text", "Stalemate: a draw"], lost: ["bad-text", "Not this time"],
+        limit: ["bad-text", "Out of moves"] }[r.result] || ["bad-text", "Over"];
+      $("#emsg").innerHTML = `<span class="${END[0]}"><b>${END[1]}.</b></span> <span class="muted">${esc(r.say)}</span>`;
+      if (r.result === "win") { confetti(); Sound.play("done"); } else Sound.play("wrong", 0.6);
       Coach.react("viktor", r.result === "win" ? "celebrate" : r.result === "stalemate" ? "worried" : "encourage",
         r.result === "win" ? r.say : `${r.say} The idea: ${s.idea}`,  // the idea itself, not "the box" (26 Oct test)
         [{ label: r.result === "win" ? "Another one" : "Try again", run: () => endgameView(id) }]);
