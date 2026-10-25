@@ -614,9 +614,6 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/blindfold/done":  # your blindfold answer: the next one longer or shorter
             from coach import blindfold
             return self.send(200, json.dumps(blindfold.done(body.get("right") is True, body.get("peeked") is True)), "application/json")
-        if path == "/api/blindfold/heard":  # the square you said out loud, worked out by the AI
-            from coach import blindfold
-            return self.send(200, json.dumps({"square": blindfold.heard_square(str(body.get("text", "")))}), "application/json")
         if path == "/api/guess/done":  # a finished try at this week's challenge: the best so far
             from coach import guess
             try:

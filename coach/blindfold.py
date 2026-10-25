@@ -1,7 +1,7 @@
 """Blindfold by voice (1.0): follow a game in your head, then answer on an empty board.
 
 The coach reads out the first moves of one of your own games, from the start. The board stays empty. Then one
-question, answered by clicking a square (or saying it, with an AI key): where a piece is now, which piece can be
+question, answered by clicking a square: where a piece is now, which piece can be
 taken, or which piece can give check. Every answer is worked out by python-chess from the real position, so it's
 never wrong. Right: the next one is a move longer; wrong: a move shorter. Your record is kept.
 Trains what "see it in your head" needs: holding a position without seeing it.
@@ -164,18 +164,3 @@ def done(right, peeked=False):
     d["plies"] = plies
     _save(d)
     return {"plies": plies, "best": d.get("best", 0), "record": record}
-
-
-def heard_square(text, ask_ai=None):
-    """The square the player named out loud ("I think it's on f three"), worked out by the AI (no word patterns for
-    understanding speech: CLAUDE.md), or None. Only a real square name comes back."""
-    from coach import ai
-    system = ("A chess player answered a question by naming one square of the board, out loud; speech-to-text wrote "
-              "down what they said, sometimes misheard. Reply with only that square in lower case, like f3, or the "
-              "word none if they named no square.")
-    try:
-        reply, _ = (ask_ai or ai.complete)(system, f"They said: {str(text)[:200]}", 10)
-    except Exception:  # no key, or the AI is busy: they click instead
-        return None
-    word = (reply or "").strip().lower().strip(".\"' ")
-    return word if word in chess.SQUARE_NAMES else None
