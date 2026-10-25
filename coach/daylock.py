@@ -8,6 +8,7 @@ from datetime import date
 from coach.paths import DATA
 
 FILE = DATA / "today-sets.json"
+KEPT = DATA / "kept-sets.json"  # sets kept until they're finished, not just for the day (lessons, 25 Oct)
 _LOCK = threading.Lock()
 
 
@@ -31,3 +32,37 @@ def keep(key, drills, today=None):
             except OSError:
                 pass
         return drills
+
+
+def keep_until_done(key, drills):
+    """A lesson's positions stay the same until it's finished (25 Oct, owner: a lesson left halfway goes on from the
+    next position, even on another day). release(key) when it's finished: the next go gets new ones."""
+    with _LOCK:
+        try:
+            m = json.loads(KEPT.read_text())
+        except (OSError, ValueError):
+            m = {}
+        if m.get(key):
+            return m[key]
+        if drills:
+            m[key] = drills
+            try:
+                KEPT.parent.mkdir(parents=True, exist_ok=True)
+                KEPT.write_text(json.dumps(m))
+            except OSError:
+                pass
+        return drills
+
+
+def release(key):
+    """The set is finished: the next time gets new positions."""
+    with _LOCK:
+        try:
+            m = json.loads(KEPT.read_text())
+        except (OSError, ValueError):
+            return
+        if m.pop(key, None) is not None:
+            try:
+                KEPT.write_text(json.dumps(m))
+            except OSError:
+                pass

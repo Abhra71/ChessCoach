@@ -1082,3 +1082,10 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 #gresult .guess-row { margin-bottom: 12px; }
 #gresult .guess-row .bar { margin-top: 6px; }
 #gresult .guess-engine { margin: 4px 0 0; line-height: 1.5; }
+/* Resets in 5h 10m: small, quiet, bottom right; only where a set turns over (25 Oct) */
+.reset-note { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 11.5px; color: var(--faint); white-space: nowrap; }
+.reset-note svg { width: 12px; height: 12px; flex: none; }
+.tcard .reset-note { margin-top: 8px; }
+.pcard .reset-note { margin-top: -2px; }
+.stat-row { flex-wrap: wrap; justify-content: flex-end; }
+.stat-row .reset-note { flex-basis: 100%; }

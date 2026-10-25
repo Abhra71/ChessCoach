@@ -187,7 +187,9 @@ function trainer(drills, opts) {
   const state = drills.map(() => null), briefed = drills.map(() => false);  // per position: right, missed, shown
   const answered = drills.map(() => false);  // has today's answer: right, missed or shown
   const right = () => state.filter(x => x === "right").length;
-  const counter = () => { $("#count").innerHTML = tiles([["Puzzle", `${i + 1} of ${drills.length}`], ["First try", right()]]); };
+  // reset: "day" when this set turns over at midnight; a function for sets that stop resetting once started (plan cards)
+  const resetKind = () => typeof opts.reset === "function" ? opts.reset(state) : opts.reset;
+  const counter = () => { $("#count").innerHTML = tiles([["Puzzle", `${i + 1} of ${drills.length}`], ["First try", right()]]) + resetNote(resetKind()); };
   // sets that aren't recorded on the server (plan cards, lessons, drills) remember today's answers in this app, so
   // leaving halfway doesn't start you again (23 Oct test: "it reset without saving my progress")
   const SETS = "kw-sets", setKey = `${new Date().toDateString()}|${location.hash.split("?")[0]}`;
@@ -505,11 +507,12 @@ async function planView(arg) {
   const answeredOf = x => `${(x.state || []).filter(Boolean).length} of ${(x.drills || []).length} done`;
   const card = (x, isNew, small) => {
     const done = p.done.includes(x.id), going = !done && (x.state || []).some(Boolean);
+    const resets = !going && ["tactic", "endgame", "idea"].includes(x.kind) && (x.drills || []).length ? resetNote("day") : "";
     if (small) return `<div class="box pcard small" data-id="${esc(x.id)}" title="${going ? "Carry on" : "Play it again"}">
       <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span>${going ? "" : `<span class="pdone">${svg("check")}</span>`}</div>
       <h3>${esc(x.title)}</h3><div class="mini-board" data-board="${esc(x.id)}"></div>
       ${going ? `${segs(x, false)}<div class="small muted">${answeredOf(x)}</div>` : ""}
-      <button class="btn ${going ? "primary" : ""}">${going ? "Continue" : "Again"}</button></div>`;
+      <button class="btn ${going ? "primary" : ""}">${going ? "Continue" : "Again"}</button>${resets}</div>`;
     return `<div class="box pcard ${isNew ? "new" : ""}" data-id="${esc(x.id)}" title="${esc(x.why || x.intro || "")}">
       <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span>
         ${isNew ? `<span class="pnew">New</span>` : done ? `<span class="pdone">${svg("check")}</span>` : ""}</div>
@@ -518,7 +521,7 @@ async function planView(arg) {
       ${segs(x, done)}
       ${going ? `<div class="small muted ppath">${answeredOf(x)}</div>` : x.path ? `<div class="small muted ppath">${x.path.of ? `Topic ${x.path.at} of ${x.path.of}` : `Opening ${x.path.at}`}${
         x.path.next ? ` · next: ${esc(x.path.next)}` : ""}</div>` : ""}
-      <button class="btn ${isNew || going ? "primary" : ""}">${done ? "Again" : going ? "Continue" : "Start"}</button></div>`;
+      <button class="btn ${isNew || going ? "primary" : ""}">${done ? "Again" : going ? "Continue" : "Start"}</button>${resets}</div>`;
   };
   const startedRow = started.length ? `<h3 class="plan-done-head">In progress · ${started.length}</h3>
     <div class="plan-cards done-cards">${started.map(x => card(x, false, true)).join("")}</div>` : "";
@@ -617,6 +620,10 @@ function explore() {
 function lessonView(item) {
   // a plan set (top card or Explore) remembers its answers on this computer: In progress until all are answered
   const keep = item.back ? {} : { restore: item.state, onAnswer: st => api("/api/plan/progress", { id: item.id, item, state: st }).catch(() => {}) };
+  // new positions at midnight: tactics, endings and ideas (picked at random each day) until started; never an opening's
+  // line or the slow-down drill (your own rushed moves), which stay the same
+  const daily = ["tactic", "endgame", "idea"].includes(item.kind) && item.id !== "idea:rushed";
+  keep.reset = !daily || item.back === "repertoire" ? null : item.back === "level" ? "day" : st => (st.some(Boolean) ? null : "day");
   const back = item.back === "repertoire" ? `<a href="#/repertoire" class="small muted" style="text-decoration:none">← Your repertoire</a>`
     : item.back === "level" ? `<a href="#/level" class="small muted" style="text-decoration:none">← Your level</a>`
     : `<a href="#/plan" class="small muted" style="text-decoration:none">← Your plan</a>`;

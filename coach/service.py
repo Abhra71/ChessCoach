@@ -344,6 +344,19 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(drills.warmup()), "application/json")
         if path == "/api/practice-set":
             from coach import brief
+            today = time.strftime("%Y-%m-%d")
+            if STATE.get("practice_day") not in (None, today):  # a new day: today's set now, not at the next check
+                if UPDATE_LOCK.acquire(blocking=False):
+                    try:
+                        from coach import drills
+                        drills.build()
+                        STATE["practice_day"] = today
+                    except Exception as e:
+                        log.warning("practice at midnight: %s", e)
+                    finally:
+                        UPDATE_LOCK.release()
+                else:  # a check is running: it builds today's set when it ends; the page asks again
+                    WAKE.set()
             practice = DATA / "drills.json"
             stock = json.loads(practice.read_text()) if practice.exists() else []
             return self.send(200, json.dumps(brief.add(stock)), "application/json")
@@ -469,7 +482,7 @@ class Handler(BaseHTTPRequestHandler):
             with live_engine.LOCK:
                 item = course.lesson(lid, live_engine.get(), insights.home().get("rating"))
             from coach import daylock
-            item["drills"] = daylock.keep(f"course:{lid}", item["drills"])  # the same positions all day
+            item["drills"] = daylock.keep_until_done(f"course:{lid}", item["drills"])  # the same positions until it's finished
             brief.add(item["drills"])
             return self.send(200, json.dumps(item), "application/json")
         if path.startswith("/api/spar/"):  # spar against a player: their openings, then human moves (0.11)
@@ -683,6 +696,8 @@ class Handler(BaseHTTPRequestHandler):
             if lid not in course.BY_ID:
                 return self.send(404, json.dumps({"message": "No such lesson."}), "application/json")
             course.studied(lid, body.get("right", 0), body.get("total", 0))
+            from coach import daylock
+            daylock.release(f"course:{lid}")  # finished: the next go gets new positions
             return self.send(200, "{}", "application/json")
         if path == "/api/badges/shown":  # the badge pop-up was seen: never again, here or on chess.com
             from coach import progress
@@ -1188,7 +1203,8 @@ def status():
             "extension_in": STATE.get("extension_in", {}), "health": health.summary(),
             # connected only if seen lately: it checks in every minute (22 Oct test: "connected" after it was removed)
             "extension_now": [b for b, t in STATE.get("extension_at", {}).items() if time.time() - t < 180],
-            "extension_path": str(EXTENSION), "browsers": sorted(browsers()), "listen_install": STATE.get("listen_install")}
+            "extension_path": str(EXTENSION), "browsers": sorted(browsers()), "listen_install": STATE.get("listen_install"),
+            "practice_day": STATE.get("practice_day")}
 
 
 # what isn't the player's: kept by Start over (the app's own settings and downloads, the AI use count, feedback sent)

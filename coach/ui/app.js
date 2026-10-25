@@ -75,6 +75,38 @@ function countUp(root = document) {
 // "3 moves each · your record…" read like junk). tiles([["Puzzle", "2 of 10"], ["Right", 3]])
 const tiles = list => list.filter(Boolean).map(([label, value]) =>
   `<span class="stat-tile"><span class="stat-l">${esc(label)}</span><b class="num">${value}</b></span>`).join("");
+// When daily and weekly sets turn over: midnight on this computer's clock, the player's own time zone (25 Oct, owner).
+// Weekly ones on Monday, the same ISO week as the server. A small clock and "Resets in 5h 10m", only where something
+// resets; the page loads the new set by itself when it's time.
+function nextReset(kind, now = new Date()) {
+  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);  // the next midnight, local
+  if (kind === "week") while (t.getDay() !== 1) t.setDate(t.getDate() + 1);
+  return t.getTime();
+}
+function resetLeft(ms) {
+  const m = Math.max(1, Math.ceil(ms / 60000)), h = Math.floor(m / 60);
+  if (h >= 48) return `${Math.floor(h / 24)} days`;
+  if (h >= 24) return `1d ${h - 24}h`;
+  return h ? `${h}h ${m % 60}m` : `${m}m`;
+}
+const CLOCK_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;
+function resetNote(kind) {
+  if (!kind) return "";
+  const at = nextReset(kind);
+  return `<span class="reset-note" data-reset="${at}">${CLOCK_ICON}<span>Resets in ${resetLeft(at - Date.now())}</span></span>`;
+}
+const localDay = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+let resetting = false;
+function tickResets() {
+  let due = false;
+  document.querySelectorAll("[data-reset]").forEach(el => {
+    const left = +el.dataset.reset - Date.now();
+    if (left <= 0) due = true; else el.lastElementChild.textContent = `Resets in ${resetLeft(left)}`;
+  });
+  if (due && !resetting) { resetting = true; Promise.resolve(route()).finally(() => { resetting = false; }); }  // the new set
+}
+setInterval(tickResets, 20000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) tickResets(); });  // back from sleep
 const roll = (v, dec = 0) => `<span class="num" data-to="${v}" data-dec="${dec}">${(0).toFixed(dec)}</span>`;
 
 let STATUS = {};
@@ -534,7 +566,7 @@ async function daily() {
   if (!d.drills.length) { $("#page").innerHTML = `<div class="empty">Today's challenge appears once your games are checked.</div>`; return; }
   $("#page").innerHTML = trainerPage("Today's 5 minutes", { back: `<a href="#/home" class="small muted" style="text-decoration:none">← Home</a>`,
     text: `Today's idea: ${d.theme}.` });
-  trainer(d.drills, { coach: "maya", record: true, onDone: async right => {
+  trainer(d.drills, { coach: "maya", record: true, reset: "day", onDone: async right => {
     const s = await api("/api/daily/done", {}).catch(() => ({}));
     setTimeout(() => Coach.react("maya", "celebrate",
       `Done for today: ${right} of ${d.drills.length} right first time.${s.streak > 1 ? ` That's ${s.streak} days in a row.` : ""} See you tomorrow.`,
@@ -1477,7 +1509,7 @@ async function guessView() {
     const p = x(), targets = picked ? p.legal.filter(u => u.startsWith(picked)).map(u => u.slice(2, 4)) : [];
     Board.render($("#board"), { fen: extra.fen || p.fen, flip: !p.white, targets: answered ? [] : targets, arrows: extra.arrows || [],
       highlights: { [p.last[0]]: "hl-last", [p.last[1]]: "hl-last", ...(picked ? { [picked]: "hl-pick" } : {}) }, onClick: click });
-    $("#gcount").innerHTML = tiles([["Position", `${i + 1} of ${c.positions.length}`]]);
+    $("#gcount").innerHTML = tiles([["Position", `${i + 1} of ${c.positions.length}`]]) + resetNote("week");
     $("#gtotal").textContent = `${total} points`;
   }
   function show() {
@@ -1584,7 +1616,7 @@ async function calcView() {
   }
   function count() {
     $("#calccount").innerHTML = tiles([["Puzzle", `${i + 1} of ${items.length}`],
-      ["Done today", `${Object.keys(kept).filter(id => items.some(it => it.id === id)).length} of ${items.length}`]]);
+      ["Done today", `${Object.keys(kept).filter(id => items.some(it => it.id === id)).length} of ${items.length}`]]) + resetNote("day");
   }
   function show() {
     line = []; picked = null; done = false;
@@ -2123,7 +2155,12 @@ async function practice(pattern) {
   if (!drills.length) { $("#page").innerHTML = `<div class="empty">Practice appears once your games are checked.</div>`; return; }
   $("#page").innerHTML = trainerPage(only.length ? (HABIT[pattern] || [])[1] || "Practice" : "Practice",
     { text: "" });
-  trainer(drills, { coach: "maya", record: true });
+  trainer(drills, { coach: "maya", record: true, reset: "day" });
+  // just after midnight, while a game check was running: today's set is built when it ends, so ask again then
+  if (STATUS.practice_day && STATUS.practice_day !== localDay()) {
+    const here = location.hash;
+    setTimeout(async () => { STATUS = await api("/api/status").catch(() => STATUS); if (location.hash === here) route(); }, 15000);
+  }
 }
 
 // Settings: the chess.com self-check (coach/health.py). All working, or what chess.com changed and what still works.
@@ -2589,6 +2626,7 @@ const TRAIN = [
     ["endgames", "mate", "Endgames", "Win the won games", "viktor", "The endings every player must know, against perfect defence. Learn them once, keep them for life."],
   ]],
 ];
+const TRAIN_RESET = { calc: "day", guess: "week" };  // the tools with a set that turns over; the rest are endless
 const TRAIN_PIC = {  // what each tool looks like, drawn small
   prep: `<div class="tp-bars"><i style="height:52px;background:#81b64c"></i><i style="height:20px;background:#a6a19a"></i><i style="height:34px;background:#e5734f"></i></div>`,
   openings: `<svg viewBox="0 0 110 70" width="110" height="70"><circle cx="12" cy="35" r="6" fill="#f3f1ee"/><path d="M18 35 48 15M18 35h30M18 35l30 20" stroke="#807a72" stroke-width="2"/><circle cx="52" cy="15" r="5" fill="#81b64c"/><circle cx="52" cy="35" r="5" fill="#a6a19a"/><circle cx="52" cy="55" r="5" fill="#e5734f"/><path d="M57 15 88 8M57 15l31 7" stroke="#807a72" stroke-width="2"/><circle cx="92" cy="8" r="4" fill="#81b64c"/><circle cx="92" cy="22" r="4" fill="#a6a19a"/></svg>`,
@@ -2605,7 +2643,7 @@ function trainView() {
     ${TRAIN.map(([group, colour, tools]) => `<div class="tgroup">${esc(group)}</div>
       <div class="tcards" style="--n:${tools.length}">${tools.map(([route, icon, name, line]) => `<a class="box tcard" href="#/${route === "spar" ? "prep" : route}">
         <div class="tpic" data-pic="${route}"></div>
-        <b class="tname"><span style="color:${colour}">${svg(icon)}</span>${esc(name)}</b><span class="muted small">${esc(line)}</span></a>`).join("")}</div>`).join("")}`;
+        <b class="tname"><span style="color:${colour}">${svg(icon)}</span>${esc(name)}</b><span class="muted small">${esc(line)}</span>${resetNote(TRAIN_RESET[route])}</a>`).join("")}</div>`).join("")}`;
   document.querySelectorAll("[data-pic]").forEach(el => {
     const p = TRAIN_PIC[el.dataset.pic];
     if (typeof p === "string") { el.innerHTML = p; return; }
