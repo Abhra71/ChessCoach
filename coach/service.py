@@ -600,7 +600,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, "forbidden", "text/plain")
         if self.path.startswith("/api/listen") and self.headers.get("Content-Type") == "application/octet-stream":
             return self.listen()
-        if self.path.startswith("/api/film/save") and self.headers.get("Content-Type") in ("video/webm", "video/mp4"):
+        if self.path.startswith("/api/film/save") and self.headers.get("Content-Type") in (("video/webm",) if FROZEN else ("video/webm", "video/mp4")):  # MP4 is the trailer tool's, never the shipped app's (cloud review)
             return self.save_film()
         if self.headers.get("Content-Type") != "application/json":
             return self.send(403, "forbidden", "text/plain")
@@ -1409,7 +1409,8 @@ def loop():
         except Exception as e:
             log.exception("update failed")
             # no internet (chess.com unreachable) is said plainly, not as an error code (26 Oct offline test)
-            STATE.update(phase="error", error="offline" if isinstance(e, OSError) else str(e)[:200])
+            offline = isinstance(e, (urllib.error.URLError, ConnectionError, TimeoutError)) and not isinstance(e, urllib.error.HTTPError)
+            STATE.update(phase="error", error="offline" if offline else str(e)[:200])  # chess.com busy or a file error is not "offline"
         WAKE.wait(EVERY)
         WAKE.clear()
 

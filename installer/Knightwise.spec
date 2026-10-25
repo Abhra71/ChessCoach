@@ -5,10 +5,13 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_all
 
 ROOT = Path(SPECPATH).parent
+# the trailer's songs (CC BY, credited in the trailer, not the app) and its MP4 writer: never in the app (26 Oct review)
+TRAILER_ONLY = {"hitman.mp3", "ready-aim-fire.mp3"}
 # the desktop app's screens, without the trailer's files (225 MB that players never see; 22 Oct test)
 UI = [(str(f), str(Path("coach/ui") / f.parent.relative_to(ROOT / "coach" / "ui")))
       for f in (ROOT / "coach" / "ui").rglob("*") if f.is_file()
-      and "trailer" not in f.relative_to(ROOT / "coach" / "ui").parts[:3] and f.name != "trailer.html"]
+      and "trailer" not in f.relative_to(ROOT / "coach" / "ui").parts[:3] and f.name != "trailer.html"
+      and f.name not in TRAILER_ONLY and "mp4-muxer" not in f.parts]
 VOICE = [collect_all(m) for m in ("kokoro_onnx", "espeakng_loader", "phonemizer", "language_tags", "segments",
                                   "faster_whisper", "ctranslate2", "tokenizers")]
 

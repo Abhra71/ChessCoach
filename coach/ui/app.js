@@ -1294,7 +1294,7 @@ function wrapped(r) {
   if (pr.answers) cards.push([`${pr.days}`, `day${pr.days === 1 ? "" : "s"} of practice · ${pr.answers} positions`, `You practised on ${pr.days} days.`]);
   if (r.habits.length) cards.push([esc(r.habits[0].pattern), "the habit that costs you most", `The habit that costs most: ${r.habits[0].pattern}.`]);
   if (r.next.habit) cards.push(["Next", esc(r.next.habit), r.next.habit]);
-  if (r.days > 7 && r.results && r.results.win) cards.push(["▶", "Your game of the month, as a film", "And now, your game of the month.", "film/month"]);
+  if (r.days > 7 && r.film) cards.push(["▶", "Your game of the month, as a film", "And now, your game of the month.", "film/month"]);
   const layer = document.createElement("div");
   layer.className = "wrapped";
   Coach.hide();  // nothing in front of the cards
@@ -1349,16 +1349,19 @@ const WRAPPED_SONGS = [
 ];
 async function filmView(id) {
   shell("progress", `<p class="muted">Setting up the film…</p>`);
+  const here = location.hash;  // moved on while it loaded: draw nothing (cloud review, 26 Oct)
   let s;
   try { s = await api(`/api/film/${encodeURIComponent(id || "month")}`); }
-  catch (e) { $("#page").innerHTML = `<div class="empty">No win to film yet this month. Win a game and it's here.</div>`; return; }
-  const songs = [];
-  for (const x of FILM_SONGS) if (await fetch(x.url, { method: "HEAD" }).then(r => r.ok).catch(() => false)) songs.push(x);
+  catch (e) { if (location.hash === here) $("#page").innerHTML = `<div class="empty">No win to film yet this month. Win a game and it's here.</div>`; return; }
+  const found = await Promise.all(FILM_SONGS.map(x => fetch(x.url, { method: "HEAD" }).then(r => r.ok).catch(() => false)));
+  const songs = FILM_SONGS.filter((x, i) => found[i]);
+  if (location.hash !== here) return;
   // a different song each time: the next one in the list (20 Oct, the owner: rotated, no choosing)
   const pick = songs.length ? (Number(remember("kw-film-song") || -1) + 1) % songs.length : -1;
   let musicOn = songs.length > 0, stop = null;  // music on by default, every time (23 Oct test)
   $("#page").innerHTML = `
-    <div class="page-head"><div><a href="#/progress" class="small muted" style="text-decoration:none">← Progress</a>
+    <div class="page-head"><div>${id && id !== "month" ? `<a href="#/games/${esc(s.id)}" class="small muted" style="text-decoration:none">← The game</a>`
+      : `<a href="#/progress" class="small muted" style="text-decoration:none">← Progress</a>`}
       <h1 style="margin-top:6px">${esc(s.title)}</h1>
       <p class="sub">Against ${esc(s.opponent)}, ${esc(s.date)}</p></div></div>
     <div class="film-wrap" id="film"></div>

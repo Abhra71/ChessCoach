@@ -157,3 +157,20 @@ def test_next_and_back_whatever_follows_the_word():
     for do in ({"do": "next", "what": "step"}, {"do": "next", "what": "move"}, {"next": 1}, "next"):
         assert talk.action(do, [], {"section": "review"}) == {"next": True}
     assert talk.action({"do": "back", "what": "previous move"}, [], {"section": "review"}) == {"back": True}
+
+
+def test_a_word_that_is_not_an_action_keeps_the_real_answer_and_prep_says_what_it_needs():
+    # cloud review 26 Oct: "do": "talk" used to replace the answer with "I can't open that from here"
+    for do in ("talk", "answer", "no action"):
+        r = talk.reply("maya", "how do I stop hanging pieces?", home=HOME, games=GAMES,
+                       ask_ai=ai_says({"say": "Keep every piece safe: check what they can take.", "do": do}))
+        assert r["text"].startswith("Keep every piece safe") and r["action"] is None
+    r = talk.reply("maya", "prep against Magnus Carlsen", home=HOME, games=GAMES,
+                   ask_ai=ai_says({"say": "Let's prep.", "do": "prep", "what": "Magnus Carlsen"}))
+    assert r["text"] == talk.REFUSED["prep"]
+
+
+def test_a_refused_key_and_no_internet_are_said_as_such():
+    def refused(*a):
+        raise RuntimeError("groq: HTTP 401")
+    assert talk.reply("maya", "hi", home=HOME, games=GAMES, ask_ai=refused)["text"] == talk.KEY_REFUSED

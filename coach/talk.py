@@ -69,8 +69,22 @@ REFUSED = {  # an action the coach asked for that isn't possible here: say so, n
     "back": "Open a game's review first, then say next or back to go through it.",
     "review": "I can't find that game in your recent games.",
     "guide": "I show the way on chess.com itself. Open chess.com, ask me there, and I'll ring it for you.",
+    "prep": "Tell me their exact chess.com username, and I'll get you ready for them.",
 }
 BUSY = "Give me a minute, I'm thinking too slowly right now. Ask me again in a moment."
+KEY_REFUSED = "My AI key was refused. Check it in Settings: it may be mistyped or switched off."
+NO_NET = "I can't reach my AI right now. Check your internet, then ask me again."
+
+
+def why_not(error):
+    """The coach's line for an AI that didn't answer: a refused key, no internet, or busy (cloud review, 26 Oct)."""
+    parts = [p for p in str(error).split("; ") if p and not p.endswith(": resting")]
+    if parts and all(any(code in p for code in ("HTTP 400", "HTTP 401", "HTTP 403")) for p in parts):
+        return KEY_REFUSED
+    if parts and all(any(w in p.lower() for w in ("urlopen error", "getaddrinfo", "timed out", "10061", "11001"))
+                     for p in parts):
+        return NO_NET
+    return BUSY
 OPEN_FAILED = "I can't open that from here. Tell me which page, like your games, Practice or Settings."
 
 
@@ -306,8 +320,8 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
         text, _provider = (ask_ai or ai.complete)(system, prompt, 400)
     except ai.NoKey:  # no key: the written sentences, as before
         return fallback
-    except Exception:  # keys busy (the free limits) or down: say so plainly, never a stock line that ignores them (22 Oct)
-        return {"text": BUSY, "mood": "calm", "ai": False, "action": None}
+    except Exception as e:  # keys busy (the free limits), refused or offline: say which, plainly (22 and 26 Oct)
+        return {"text": why_not(e), "mood": "calm", "ai": False, "action": None}
     out = parse(text or "")
     if not out or not coaches.grounded(out["say"], facts_text):
         import logging  # what the AI wrote that couldn't be used, to see why (24 Oct: Gemini failed on "open my last review")
@@ -316,7 +330,8 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     order = out if "what" in out or isinstance(out.get("do"), str) else out.get("do")  # flat (do, what) or the old shapes
     done = action(order, games, where)
     wanted = plain(order) if isinstance(plain(order), dict) else {}
-    if not done and next(iter(wanted), None) in VERBS:  # it meant to do something and wrote it wrong: once more, told why
+    if not done and next(iter(wanted), None) in ("open", "review", "prep"):  # it meant to do something and wrote it
+        # wrong: once more, told why. Not for next, back, guide or rematch: those were understood, just not possible here
         again = None
         try:
             note = (f"\nYour answer {json.dumps(out)[:300]} could not be done: \"what\" must be a page from the list, a "
@@ -342,7 +357,7 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
             if g:
                 heard.learn(g["opponent"])
     asked = plain(order) if isinstance(plain(order), dict) else {}
-    verb = next((k for k in REFUSED if k in asked), next(iter(asked), None))
+    verb = next((k for k in REFUSED if k in asked), next((k for k in asked if k in VERBS), None))  # "talk": just talk
     # it asked for something that can't be done: say so, never "Opening it." with nothing opening (19 and 22 Oct)
     say = (REFUSED.get(verb, OPEN_FAILED) if verb and done is None else out["say"].strip())[:600]
     if done and done.get("route") and str(out.get("asked", "")).strip().lower() == "talk":

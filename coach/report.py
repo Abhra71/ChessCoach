@@ -90,6 +90,12 @@ def report(days=7, now=None):
     from coach import clock
     out["clock"] = clock.summary(period, moves, player, n=len(period) or 1) if period else None
     out["practice"] = _practice(since, until)
+    if days > 7:  # Wrapped ends on the month's film only when there is one (a win of 10 moves or more; cloud review)
+        try:
+            from coach import film
+            out["film"] = bool(film.month_game())
+        except Exception:
+            out["film"] = False
     # every game of the period, for the printed report (26 Oct: "the PDF slightly more detailed")
     ids = {insights.game_id(g["url"]) for g in period}
     out["game_list"] = [{k: x.get(k) for k in ("date", "time_class", "color", "opponent", "opponent_rating", "result",
