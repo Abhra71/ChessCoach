@@ -1098,3 +1098,27 @@ a.pcard, a.pcard * { text-decoration: none; } a.pcard { color: inherit; } a.pcar
 .rtile { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; }
 .rtile .big { font-size: 30px; line-height: 1.1; }
 .rrate { display: flex; align-items: baseline; gap: 6px; } .rrate b { font-size: 20px; }
+/* the printed report: a little colour and the detail a coach wants (26 Oct) */
+.print-only { display: none; }
+@media print {
+  .print-only { display: block !important; }
+  .report, .report * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-band { display: flex !important; justify-content: space-between; align-items: center; background: #4f7a2a !important; color: #fff !important; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; }
+  .print-band b { font-size: 18px; color: #fff !important; } .print-band span { font-size: 12px; color: #e8f1df !important; }
+  .report .report-head .label { display: none; }
+  .report-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .report .rtile { border-top: 4px solid #4f7a2a !important; }
+  .report .rtile:nth-child(2) { border-top-color: #4da3ff !important; } .report .rtile:nth-child(3) { border-top-color: #e5734f !important; }
+  .report .rtile:nth-child(4) { border-top-color: #e9a23b !important; }
+  .report .delta.good, .report .up-good { color: #2f7d32 !important; } .report .delta.bad, .report .up-bad { color: #c62828 !important; }
+  .report .chip.win { background: #36c27a !important; color: #fff !important; } .report .chip.loss { background: #ff4d42 !important; color: #fff !important; }
+  .report .chip.draw { background: #9aa0a6 !important; color: #fff !important; }
+  .report .label { color: #4f7a2a !important; font-weight: 700; }
+  .report-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .report-table th { text-align: left; background: #eef3e8 !important; color: #333 !important; padding: 5px 6px; }
+  .report-table td { padding: 5px 6px; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
+  .report-table tr:nth-child(even) td { background: #fafafa !important; }
+  .print-only .box { margin-top: 12px; }
+  .report-foot { margin-top: 14px; text-align: center; }
+}
+@media print { .report .report-head .small.muted { display: none; } }  /* the dates are in the green band */

@@ -90,6 +90,11 @@ def report(days=7, now=None):
     from coach import clock
     out["clock"] = clock.summary(period, moves, player, n=len(period) or 1) if period else None
     out["practice"] = _practice(since, until)
+    # every game of the period, for the printed report (26 Oct: "the PDF slightly more detailed")
+    ids = {insights.game_id(g["url"]) for g in period}
+    out["game_list"] = [{k: x.get(k) for k in ("date", "time_class", "color", "opponent", "opponent_rating", "result",
+                                               "rating", "opening", "pieces_lost", "moments", "how")}
+                        for x in insights.games_list() if x["id"] in ids][:40]
     out["lessons"] = _lessons(now - span)
     # the best game and the costliest moment, with what was better
     if period:

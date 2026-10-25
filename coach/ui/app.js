@@ -1226,6 +1226,7 @@ async function reportView(arg) {
     <div class="row no-print" style="margin-bottom:14px"><button class="btn primary" id="wrapped">▶ Play it as Wrapped</button>
       <button class="btn" id="print">Print or save as PDF</button></div>
     <div class="report" id="report">
+      <div class="print-only print-band"><b>Knightwise</b><span>${esc(r.title)} report · ${esc(r.from)} to ${esc(r.to)}</span></div>
       <div class="report-head"><div><div class="label">Knightwise report</div><h2 style="margin:2px 0 0">${esc(r.player)} · ${esc(r.title)}</h2>
         <div class="small muted">${esc(r.from)} to ${esc(r.to)}</div></div></div>
       ${/^Only \d+ game/.test(r.lines[0] || "") ? `<p class="small muted" style="margin:0 0 12px">${esc(r.lines[0])}</p>` : ""}
@@ -1254,6 +1255,22 @@ async function reportView(arg) {
         <div class="box stack"><div class="label">Your focus</div>
           ${r.next.habit ? `<div class="small">${esc(r.next.habit)}</div>` : ""}
           ${r.next.lesson ? `<div class="small muted">Next lesson: ${esc(r.next.lesson)}</div>` : ""}</div>
+      </div>
+      <div class="print-only">
+        ${(r.game_list || []).length ? `<div class="box stack"><div class="label">Every game</div>
+          <table class="report-table games-table"><tr><th>Date</th><th>Game</th><th>Opponent</th><th>Result</th><th>Rating</th><th>Opening</th><th>Pieces given away</th><th>Key moments</th></tr>
+          ${r.game_list.map(g => `<tr><td class="num">${esc(g.date)}</td><td>${esc(cap(g.time_class || ""))}, ${esc(g.color || "")}</td>
+            <td>${esc(g.opponent || "")} <span class="muted num">${g.opponent_rating || ""}</span></td>
+            <td><span class="chip ${g.result}">${g.result === "win" ? "W" : g.result === "loss" ? "L" : "D"}</span>${g.how ? ` <span class="muted small">${esc(g.how)}</span>` : ""}</td>
+            <td class="num">${g.rating || ""}</td><td class="small">${esc(g.opening || "")}</td>
+            <td class="num">${g.pieces_lost ?? ""}</td><td class="num">${g.moments ?? ""}</td></tr>`).join("")}</table></div>` : ""}
+        ${r.habits.length ? `<div class="box stack"><div class="label">The mistakes, explained</div>
+          <table class="report-table"><tr><th>Mistake</th><th>A game, now</th><th>Before</th><th>What it means</th><th>The habit that fixes it</th></tr>
+          ${r.habits.filter(h => h.now || h.before).map(h => `<tr><td><b>${esc(cap(h.pattern))}</b></td><td class="num">${per(h.now)}</td><td class="num">${per(h.before)}</td>
+            <td class="small">${esc(h.what || "")}</td><td class="small">${esc(h.habit || "")}</td></tr>`).join("")}</table></div>` : ""}
+        ${r.clock && r.clock.lines && r.clock.lines.length ? `<div class="box stack"><div class="label">The clock</div>${r.clock.lines.map(l => `<div class="small">${esc(l)}</div>`).join("")}</div>` : ""}
+        <div class="box stack"><div class="label">How to read this</div>
+          <div class="small">Every number comes from these games, checked move by move by Stockfish. "Pieces given away" counts pieces lost for nothing; a key moment is a move that changed the game. "Before" is the period just before this one.</div></div>
       </div>
       <p class="small muted report-foot">Made with Knightwise, a free chess coach. Every number is from real games checked by Stockfish; nothing is estimated.</p>
     </div>`;
