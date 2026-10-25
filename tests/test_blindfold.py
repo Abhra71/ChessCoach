@@ -20,7 +20,7 @@ def test_moves_are_said_the_way_people_say_them():
     assert blindfold.spoken(b, b.parse_san("O-O")) == "castles short"
     assert blindfold.spoken(chess.Board(), chess.Move.from_uci("e2e4")) == "e4"
     assert blindfold._read_out([chess.Move.from_uci(u) for u in ("e2e4", "e7e5", "g1f3")]) == \
-        "From the start. 1: e4, e5. 2: knight f3."
+        "From the start. Move 1. White, e4. Black, e5. Move 2. White, knight f3."
 
 
 def test_every_answer_is_right_in_the_real_position():

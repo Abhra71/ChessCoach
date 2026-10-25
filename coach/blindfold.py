@@ -59,15 +59,15 @@ def spoken(board, move):
 
 
 def _read_out(moves):
-    """The whole sequence as one text to speak: "From the start. 1: e4, e5. 2: knight f3, knight c6."."""
-    b, parts = chess.Board(), []
+    """The whole sequence to speak, one move per sentence so each gets a pause (25 Oct, owner: "too quick"):
+    "From the start. Move 1. White, e4. Black, e5. Move 2. White, knight f3."."""
+    b, parts = chess.Board(), ["From the start."]
     for i, m in enumerate(moves):
-        w = spoken(b, m)
-        parts.append(f"{i // 2 + 1}: {w}" if i % 2 == 0 else f", {w}")
-        if i % 2 == 1 or i == len(moves) - 1:
-            parts.append(". ")
+        if i % 2 == 0:
+            parts.append(f"Move {i // 2 + 1}.")
+        parts.append(f"{'White' if i % 2 == 0 else 'Black'}, {spoken(b, m)}.")
         b.push(m)
-    return ("From the start. " + "".join(parts)).strip()
+    return " ".join(parts)
 
 
 def questions(board, moved):

@@ -939,6 +939,7 @@ async function endgamesView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Endgame trainer</h1>
+      <p class="sub calc-sub">Win the endings every player must know, against perfect defence.</p>
       <p class="sub">The endings every player must know, played out against perfect defence: Lichess's endgame tablebase knows the best move in every one. A new position each time.</p></div></div>
     <div class="plan-cards">${list.map(e => `<a class="box pcard" href="#/endgame/${e.id}" title="${esc(e.idea)}">
       <div class="row spread"><span class="pkind">${svg({ mate: "mate", promote: "up", draw: "draw" }[e.goal] || "mate")}Level ${e.level}</span>
@@ -1345,6 +1346,7 @@ async function blindfoldView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Blindfold</h1>
+      <p class="sub calc-sub">Hear a game, see the board in your head.</p>
       <p class="sub">Maya reads out the start of one of your games. Follow it in your head: the board stays empty. Then answer on the board.
         Each right answer makes the next one a move longer.</p></div>
       <span class="muted num">${each(x.plies)}${x.best ? ` · your record: ${each(x.best)}` : ""}</span></div>
@@ -1353,6 +1355,7 @@ async function blindfoldView() {
       <div class="stack">
         <div class="box stack" style="padding:16px"><div class="label">Your game against ${esc(x.game.opponent || "an opponent")}</div>
           <div id="bfmoves" class="small" style="min-height:44px"></div>
+          <p class="small muted" style="margin:0">No set to finish: right makes the next one a move longer, wrong a move shorter. Your record counts for the Blindfold badge.</p>
           <div class="row"><button class="btn primary" id="bfplay">${Voice.on ? "Listen" : "Show the moves"}</button>
             <button class="btn" id="bfpeek" hidden>Show the moves</button></div></div>
         <div class="box stack" style="padding:16px" id="bfq" hidden><h3 style="margin:0" id="bfask"></h3>
@@ -1374,7 +1377,7 @@ async function blindfoldView() {
     $("#bfplay").disabled = true;
     if (Voice.on) {
       $("#bfmoves").innerHTML = `<span class="muted">Listening… ${x.plies} half-moves.</span>`;
-      await Voice.speak(x.say, false, COACHES.maya.voice);
+      await Voice.speak(x.say, false, COACHES.maya.voice, true);  // teaching pace, a breath after each move (25 Oct: "too quick")
     } else {  // no voice: one move at a time, then gone
       for (let k = 0; k < x.moves.length && mine === reading; k++) {
         $("#bfmoves").innerHTML = `<span class="num">${Math.floor(k / 2) + 1}${k % 2 ? "…" : "."} <b>${esc(x.moves[k])}</b></span>`;
@@ -1446,6 +1449,7 @@ async function guessView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Guess the human move</h1>
+      <p class="sub calc-sub">Guess what real players of a rating play, not the engine's move.</p>
       <p class="sub">This week's challenge: five positions from real games. What would a player of that rating play? The closer to what most of them play, the more points.
         ${c.best != null ? ` Your best this week: <b>${c.best}</b> of ${c.positions.length * 100}.` : ""}</p></div>
       <span class="muted num" id="gcount"></span></div>
