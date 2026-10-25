@@ -426,6 +426,9 @@ class Handler(BaseHTTPRequestHandler):
             from coach import report
             days = 30 if (parse_qs(urlsplit(self.path).query).get("days") or ["7"])[0] == "30" else 7
             return self.send(200, json.dumps(report.report(days)), "application/json")
+        if path.startswith("/api/bridge/"):  # the end of a game review: this game's mistake, linked to its training
+            from coach import bridge
+            return self.send(200, json.dumps(bridge.for_game(path.rsplit("/", 1)[-1]) or {}), "application/json")
         if path == "/api/blindfold":  # blindfold by voice: the next game to follow in your head (1.0)
             from coach import blindfold
             out = blindfold.item()
@@ -1164,7 +1167,8 @@ def with_point(said, q):
         acts = [p["action"]] + [a for a in acts if a.get("app") != p["action"].get("app") or not a.get("app")]
     elif in_app and p.get("route"):  # in the app: the suggestion's own button, alone, so it's clear what it opens
         label = {"rematch": "Play it again", "game": "Open the game", "daily": "Start", "badge": "See your badges",
-                 "clock": "Slow-down drill", "tour": "Show me"}.get(p.get("kind"), "Open it")
+                 "clock": "Slow-down drill", "tour": "Show me", "lesson": "Open the lesson", "endgame": "Play it",
+                 "opening": "Opening tree", "calc": "In your head"}.get(p.get("kind"), "Open it")
         acts = [{"label": label, "app": p["route"].split("@")[0], "best": True}]
     return {**said, "point": p, "quiet": False, "lines": keep + [p["line"]], "actions": acts}
 

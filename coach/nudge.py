@@ -17,6 +17,9 @@ FILE = DATA / "nudges.json"  # what was suggested today, and which pages and gam
 A_DAY = 3
 NEW_FOR = 3 * 86400  # seconds a finished game counts as new
 DAILY = ("game", "daily")  # worth saying every day: never sent to the back for variety
+# from the player's own mistakes: one of these comes before the tour each day (25 Oct, owner: "nudge them to explore,
+# on their mistakes: why, the benefit, and exactly where")
+MISTAKE = ("rematch", "lesson", "clock", "endgame", "opening", "calc")
 MAX_DAYS = 2  # any other suggestion: shown on 2 days at most, opened or not (24 Oct: the same rematch again and again)
 CHESSCOM_SECTIONS = ("home", "puzzles", "lessons", "progress")  # never play, review or someone's profile
 _LOCK = threading.Lock()
@@ -109,7 +112,9 @@ def seen(route):
 WHERE = {"daily": "It's the first card on Home.", "games": "It's on Home, or in Games.",
          "rematch": "It's in that game's review, in Games.", "progress": "It's in Progress, in the menu.",
          "clockdrill": "In Progress, press Slow down.", "prep": "It's in Train, under Prep.",
-         "course": "It's in Your course, in the menu."}
+         "course": "It's the card at the top of Your course, in the menu.",
+         "endgame": "In Train, open Endgames.", "openings": "In Train, open Opening tree.",
+         "calc": "In Train, open In your head.", "practice": "It's Practice, in the menu."}
 
 
 def tour_next(coach=None, today=None, now=None, extension=False):
@@ -160,7 +165,7 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
         return any(d == route or d.startswith(route + "/") for d in done)
 
     def add(kind, cid, line, route=None, guide=None):
-        if app and route and WHERE.get(route.split("/")[0]):  # in the app she says where it is (no rings there)
+        if app and route and WHERE.get(route.split("/")[0]):  # in the app she says exactly where it is (no rings there)
             line = f"{line} {WHERE[route.split('/')[0]]}"
         c = {"kind": kind, "id": cid, "line": line}
         if app and route:
@@ -221,8 +226,13 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
             add("prep", f"prep-{who.lower()}", f"You've played {who} {n} times lately. Prep shows how they open and "
                 "how their games end.", f"prep/{who.lower()}")
     if lesson and not (lesson.get("id") and opened(f"course/{lesson['id']}")):
-        add("lesson", f"lesson-{lesson['title']}"[:80], f"Your next lesson: {lesson['title']}.",
+        why = (lesson.get("why") or "").split(". ")[0].rstrip(".")
+        habit = (lesson.get("habit") or "").strip()
+        habit = habit if not habit or habit[-1] in ".?!" else habit + "."
+        why = f"{why}. " if why else (f"It teaches: {habit} " if habit else "")
+        add("lesson", f"lesson-{lesson['title']}"[:80], f"{why}Your next lesson: {lesson['title']}.",
             f"course/{lesson['id']}" if lesson.get("id") else "course")
+    out.extend(_more_nerves(add, opened, games, player))
     wk = home.get("week") or {}
     this, last = wk.get("this") or {}, wk.get("last") or {}
     if this.get("games", 0) >= 3 and last.get("games", 0) >= 3 and \
@@ -240,6 +250,42 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
     if not app:  # a warm-up before rated games, at your level (in the app, the tour brings new things)
         add("bots", "bots", "Before a rated game, warm up against a bot at your level. I'll show you where.", guide="bots")
     return out
+
+
+def _more_nerves(add, opened, games, player):
+    """Endgames, the Opening tree and In your head, each linked to the mistake it trains (25 Oct). Never breaks the
+    suggestions: anything missing means no suggestion of that kind."""
+    if not games or not player:
+        return []
+    try:
+        from coach import course, insights, ladder, scout
+        moves = insights._moves()
+        recent = sorted(games, key=lambda x: x.get("end_time") or 0)[-20:]
+        rows = {x.get("url"): moves.get(x.get("url"), []) for x in recent if x.get("url")}
+        stalemates = sum(1 for rs in rows.values() for r in rs if r.get("pattern") == ladder.STALEMATE)
+        if stalemates and not opened("endgame/queen"):
+            add("endgame", "endgame-queen", f"You stalemated {stalemates} won game{'s' if stalemates > 1 else ''} in your "
+                "last 20. Mate with king and queen ends that.", "endgame/queen")
+        else:
+            recent = [x for x in recent if x.get("url")]
+            winning = [x for x in recent if any(r["cp_before"] >= ladder.WINNING for r in rows[x["url"]])]
+            conv = ladder._conversion(recent, rows, {"player": insights._player() or player})
+            if len(winning) >= 3 and conv is not None and conv < 70 and not opened("endgame/pawn"):
+                add("endgame", "endgame-pawn", f"You won {round(conv)}% of your last games where you were winning. "
+                    "Win with king and pawn trains finishing them.", "endgame/pawn")
+        worst = scout.worst_opening(sorted(games, key=lambda x: x.get("end_time") or 0)[-60:], player, least=5)
+        if worst and worst["score"] <= 35:
+            add("opening", f"opening-{worst['name']}"[:80], f"You score {worst['score']}% with the {worst['name']} "
+                f"({worst['games']} games). The Opening tree shows where those games go wrong.", "openings")
+        tricks = next((r for r in course.course()["lessons"] if r["id"] == "tac-tricks"), None)
+        if tricks and tricks.get("rate") and tricks.get("goal") is not None and tricks["rate"] > tricks["goal"] \
+                and not opened("calc"):
+            add("calc", "calc", f"Tricks a few moves deep cost you {tricks['rate']} a game lately. In your head trains "
+                "seeing them before you move.", "calc")
+    except Exception:  # a suggestion is never worth an error
+        import logging
+        logging.getLogger("knightwise").warning("nudge nerves", exc_info=True)
+    return []
 
 
 def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=None, games=None, player=None,
@@ -269,14 +315,20 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
                    if c["id"] not in mine and c.get("guide") != section
                    and (c["kind"] in DAILY or len([d for d in ever.get(c["id"], []) if d != today]) < MAX_DAYS)]  # not "this way to puzzles" on that page
         options.sort(key=lambda c: c["kind"] in before and c["kind"] not in DAILY)  # stable: yesterday's kinds go last
-        if len(mine) >= A_DAY:
-            options = []
+        tour = m.get("tour") or {}
+        used = len(mine) + (tour.get("n", 0) if place == "app" and tour.get("day") == today else 0)
+        if used >= A_DAY:  # 3 a day in all, new things included: a heavy user sees 3, someone who opens it once sees 1
+            return None
         spaced = now - (m.get("at") or {}).get(place, 0) >= GAP  # never two suggestions together
         options = [c for c in options if spaced or c["kind"] == "game"]
         new_thing = tour_next(coach, day, now, extension) if place == "app" and spaced else None
-        # the day's own things first (a new game, the 5 minutes), then something new, then the rest
+        # the day's own things first (a new game, the 5 minutes), then one from their own mistakes, then something new
+        mistakes = [c for c in options if c["kind"] in MISTAKE and c["kind"] not in before]  # a new kind each day
+        mistake_today = any(k in MISTAKE for k in kinds.get(today, []))
         if options and options[0]["kind"] in DAILY:
             c = options[0]
+        elif mistakes and not mistake_today:
+            c = mistakes[0]
         else:
             c = new_thing or (options[0] if options else None)
         if not c:

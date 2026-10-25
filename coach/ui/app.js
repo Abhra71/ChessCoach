@@ -2120,11 +2120,19 @@ async function gameView(id) {
     if (mode === "key") {
       const at = momentAt(ply), to = at < 0 ? (d > 0 ? moments.findIndex(k => k.ply > ply) : -1) : at + d;
       if (to < 0) return move(moments[0].ply);
-      if (to >= moments.length) { const t = "That was the last key moment. Try it again, or review the whole game."; Coach.react("maya", "calm", t); return t; }
+      if (to >= moments.length) { const t = "That was the last key moment. Try it again, or review the whole game."; Coach.react("maya", "calm", t); linkToTraining(t); return t; }
       return move(moments[to].ply);
     }
-    if (ply + d > g.positions.length - 1) { const t = ending() || "That was the last move."; Coach.react("maya", "calm", t); return t; }
+    if (ply + d > g.positions.length - 1) { const t = ending() || "That was the last move."; Coach.react("maya", "calm", t); linkToTraining(t); return t; }
     return move(ply + d);
+  }
+  // the review's end links this game's mistake to the exact training for it (25 Oct: players who only review)
+  let linked = null;
+  async function linkToTraining(said) {
+    linked = linked || api(`/api/bridge/${encodeURIComponent(g.id)}`).catch(() => ({}));
+    const b = await linked;
+    if (!b || !b.line || !location.hash.includes(`games/${g.id}`)) return;
+    setTimeout(() => Coach.react("maya", "explain", `That's the end. ${b.line}`, [{ label: b.label, app: b.route }]), 1500);
   }
   window.kwNextStep = () => location.hash.includes(`games/${g.id}`) ? step(1) : null;
   window.kwPly = () => location.hash.includes(`games/${g.id}`) ? ply : null;
