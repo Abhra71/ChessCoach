@@ -1359,7 +1359,7 @@ async function blindfoldView() {
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
         <div class="box stack" style="padding:16px"><div class="label">Your game against ${esc(x.game.opponent || "an opponent")}</div>
-          <div id="bfmoves" class="small" style="min-height:44px"></div>
+          <div id="bfmoves" class="small bf-moves"></div>
           <div class="row"><button class="btn primary" id="bfplay">${Voice.on ? "Listen" : "Show the moves"}</button>
             <button class="btn" id="bfpeek" hidden>Show the moves</button></div></div>
         <div class="box stack" style="padding:16px" id="bfq" hidden><h3 style="margin:0" id="bfask"></h3>
