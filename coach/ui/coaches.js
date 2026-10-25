@@ -192,7 +192,12 @@ function trainer(drills, opts) {
   // leaving halfway doesn't start you again (23 Oct test: "it reset without saving my progress")
   const SETS = "kw-sets", setKey = `${new Date().toDateString()}|${location.hash.split("?")[0]}`;
   const ids = drills.map(x => x.id || "").join(",");
+  // keepKey (lessons): answers kept across days until the set is finished, so a lesson left halfway yesterday goes
+  // on from the next position (25 Oct, owner)
+  const KEEP = "kw-keep";
+  const kept = () => { try { return JSON.parse(localStorage.getItem(KEEP) || "{}"); } catch (e) { return {}; } };
   function remember() {
+    if (opts.keepKey) try { const all = kept(); all[opts.keepKey] = { ids, state }; localStorage.setItem(KEEP, JSON.stringify(all)); } catch (e) {}
     if (opts.record) return;
     if (opts.onAnswer) opts.onAnswer(state.slice());
     try {
@@ -216,6 +221,7 @@ function trainer(drills, opts) {
   function allDone(already) {  // every position answered: say so clearly, once
     if (finishedAll) return;
     finishedAll = true;
+    if (opts.keepKey) try { const all = kept(); delete all[opts.keepKey]; localStorage.setItem(KEEP, JSON.stringify(all)); } catch (e) {}  // next time: a fresh go
     // a clear way out once everything is done (23 Oct test: "nothing to return to the main page"); with one position,
     // its last explanation stays above
     const back = document.querySelector("#page .page-head a[href^='#/']");
@@ -437,6 +443,7 @@ function trainer(drills, opts) {
     if (first < 0) allDone(true);
     return;
   }
+  if (opts.keepKey) { const k = kept()[opts.keepKey]; if (k && k.ids === ids) k.state.forEach((t, n) => { if (t) { state[n] = t; answered[n] = true; } }); }
   api("/api/stats").then(s => {  // pick up where you were today
     if (!$("#count")) return;  // left the page before today's answers came back (23 Oct chaos test)
     stats(s);

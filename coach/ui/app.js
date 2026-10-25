@@ -898,7 +898,7 @@ async function courseLesson(id) {
   const pr = $("#practise");
   if (pr) pr.onclick = () => {
     $("#page").innerHTML = trainerPage(item.title, { back: `<a href="#/course/${esc(item.id)}" class="small muted" style="text-decoration:none">← The lesson</a>`, text: item.habit });
-    trainer(item.drills, { coach: item.coach, record: true, onDone: rightFirst => {
+    trainer(item.drills, { coach: item.coach, record: true, keepKey: `lesson-${item.id}`, onDone: rightFirst => {
       finish(rightFirst, item.drills.length);
       setTimeout(() => Coach.react(item.coach, "celebrate",
         `${rightFirst} of ${item.drills.length} right first time. Now the real test: your next ${5} games. I'll watch for this mistake and tell you when it's gone.`,
