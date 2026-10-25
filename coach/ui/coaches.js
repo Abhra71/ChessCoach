@@ -251,7 +251,7 @@ function trainer(drills, opts) {
     const title = String(b.title || "").replace(/^Your game /, "");
     el.innerHTML = `<div class="brief-head">${svg(x.kind === "game" ? "games" : x.kind === "opening" ? "book" : "practice")}
         <h3 class="brief-title">${esc(title)}</h3></div>
-      <div class="muted small">${b.facts.map(esc).join(" · ")}</div>
+      <div class="muted small brief-facts">${b.facts.map(esc).join(" · ")}</div>
       <div class="brief-mind">${svg("bolt")}<span>${esc(b.mindset)}</span></div>
       <button class="btn primary" id="go">I'm ready</button>`;
     $("#go").onclick = () => { briefed[i] = true; show(); };
