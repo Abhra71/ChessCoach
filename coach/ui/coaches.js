@@ -487,7 +487,7 @@ async function planView(arg) {
     return;
   }
   const p = await api("/api/plan");
-  if (!p.player) { $("#page").innerHTML = `<div class="empty">Your plan appears once your games are checked.</div>`; return; }
+  if (!p.player) { $("#page").innerHTML = `<div class="empty">${afterGames("Your plan")}</div>`; return; }
   const all = [...(p.novelty ? [p.novelty] : []), ...Object.values(p.items).filter(Boolean)];
   const started = (p.in_progress || []).filter(x => !all.some(y => y.id === x.id));
   const doneCards = (p.done_cards || []).filter(x => !all.some(y => y.id === x.id) && !started.some(y => y.id === x.id));

@@ -32,3 +32,11 @@ def test_no_numbers_no_made_up_answer():
 def test_work_names_the_habit_in_words():
     t = answers.answer("work", {"section": "home"}, home={**HOME, "focus": {**HOME["focus"]}})["text"]
     assert "leaving pieces hanging" in t and "0.45" in t
+
+
+def test_a_brand_new_account_is_told_where_to_start(monkeypatch):
+    from coach import answers, insights
+    monkeypatch.setattr(insights, "_games", lambda: [])
+    home = {"player": "new", "games": 0}
+    assert answers.answer("work", {"section": "home"}, home=home)["text"].startswith("Start with the Basics in Your course")
+    assert "No games" in answers.answer("lose", {"section": "home"}, home=home)["text"]

@@ -301,7 +301,8 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
     if home is None:
         from coach import insights
         home = insights.home()
-    if not home.get("games"):
+    no_games = not home.get("games")  # a brand-new account: no suggestions from games, but the tour still shows the app (26 Oct)
+    if no_games and place != "app":
         return None
     now = now or time.time()
     with _LOCK:
@@ -311,7 +312,7 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
         kinds = m.get("kinds", {})
         before = set(kinds.get(yesterday, []))
         ever = m.get("ever", {})  # suggestion id -> the days it was shown
-        options = [c for c in candidates(place, home, lesson, rematch, prog, games, player)
+        options = [] if no_games else [c for c in candidates(place, home, lesson, rematch, prog, games, player)
                    if c["id"] not in mine and c.get("guide") != section
                    and (c["kind"] in DAILY or len([d for d in ever.get(c["id"], []) if d != today]) < MAX_DAYS)]  # not "this way to puzzles" on that page
         options.sort(key=lambda c: c["kind"] in before and c["kind"] not in DAILY)  # stable: yesterday's kinds go last

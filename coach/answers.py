@@ -61,6 +61,11 @@ def answer(qid, where=None, extra=None, home=None, rng=random):
     fn = {"how": _how, "work": _work, "lose": _lose, "last": _last, "opening": _opening,
           "move": _move, "turn": _turn, "hint": _hint, "about": _about}.get(qid)
     text = fn(home, where, extra, rng) if fn else ""
+    if not text and not home.get("games") and qid in ("work", "how", "lose"):  # a brand-new account (26 Oct test)
+        text = {"work": "Start with the Basics in Your course: What pieces are worth comes first. After your first games "
+                        "on chess.com, I'll pick what your own games need.",
+                "how": "No games on chess.com yet, so nothing to measure. Play one and I'll have numbers within minutes.",
+                "lose": "No games yet, so no losses to learn from. Play one on chess.com and ask me again."}[qid]
     if not text:
         text = _say("none", ["I don't have the numbers for that yet. Play and check a few more games, and ask me again.",
                              "Not enough games checked yet to answer that properly. A few more and I can."], rng)

@@ -111,6 +111,9 @@ function tickResets() {
 }
 setInterval(tickResets, 20000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) tickResets(); });  // back from sleep
+// a page built from games, before there are any: a brand-new chess.com account (26 Oct test) gets told what to do
+const afterGames = what => STATUS.no_games ? `${what} fills in after your first game on chess.com. Play one: Knightwise checks it within a few minutes.`
+  : `${what} appears once your games are checked.`;
 const roll = (v, dec = 0) => `<span class="num" data-to="${v}" data-dec="${dec}">${(0).toFixed(dec)}</span>`;
 
 let STATUS = {};
@@ -567,7 +570,7 @@ function vsCard(v) {  // you now against you before: the only rival that is alwa
 async function daily() {
   shell("practice", `<p class="muted">Loading…</p>`);
   const d = await api("/api/daily");
-  if (!d.drills.length) { $("#page").innerHTML = `<div class="empty">Today's challenge appears once your games are checked.</div>`; return; }
+  if (!d.drills.length) { $("#page").innerHTML = `<div class="empty">${afterGames("Today's challenge")}</div>`; return; }
   $("#page").innerHTML = trainerPage("Today's 5 minutes", { back: `<a href="#/home" class="small muted" style="text-decoration:none">← Home</a>`,
     text: `Today's idea: ${d.theme}.` });
   trainer(d.drills, { coach: "maya", record: true, reset: "day", onDone: async right => {
@@ -594,7 +597,7 @@ function plainMove(san) {
 async function openingTree() {
   shell("train", `<p class="muted">Loading…</p>`);
   const t = (await api("/api/openings")).tree || {};
-  if (!t.white && !t.black) { $("#page").innerHTML = `<div class="empty">Your opening tree appears once your games are checked.</div>`; return; }
+  if (!t.white && !t.black) { $("#page").innerHTML = `<div class="empty">${afterGames("Your opening tree")}</div>`; return; }
   const label = n => `${Math.ceil(n.ply / 2)}${n.ply % 2 ? "." : "..."} ${n.san}`;
   const byFen = {};
   let picked = null;
@@ -820,7 +823,7 @@ async function levelView() {
   shell("level", `<p class="muted">Loading…</p>`);
   const p = await api("/api/ladder");
   if (!p.player) return go("welcome");
-  if (!p.levels || !p.levels.length) { $("#page").innerHTML = `<div class="empty">Your level appears once your games are checked.</div>`; return; }
+  if (!p.levels || !p.levels.length) { $("#page").innerHTML = `<div class="empty">${afterGames("Your level")}</div>`; return; }
   // a lesson already learnt is being watched in your games: the green button goes to the next thing to do (23 Oct)
   const learnt = s => ["watching", "passed"].includes(s.lesson);
   const cur = p.levels[p.current], up = p.levels[p.current + 1];
@@ -965,7 +968,7 @@ async function repertoireView(fresh) {
       <div class="row spread"><span class="pkind rep-${l.side}">${svg("pawn")}${l.side === "white" ? "You play White" : `You play Black, against 1. ${esc(l.against)}`}</span>
         ${l.kept ? `<span class="pdone" title="You already play this">${svg("check")}</span>` : ""}</div>
       <h3>${esc(l.name)}</h3><span class="rep-moves num">${esc((l.moves || []).map((m, j) => (j % 2 ? "" : `${j / 2 + 1}. `) + m).join(" "))}</span>${l.stale ? `<span class="small bad-text">Out of date: ${esc(l.stale)}. Choose new lines?</span>` : ""}
-      <span class="btn ${i === 0 ? "primary" : ""}">Practise</span></a>`).join("") || `<div class="empty">Your lines appear once your games are checked.</div>`}</div>`;
+      <span class="btn ${i === 0 ? "primary" : ""}">Practise</span></a>`).join("") || `<div class="empty">${afterGames("Your repertoire")}</div>`}</div>`;
   $("#newlines").onclick = () => repertoireView(true);
   Coach.react("viktor", "explain", "Your three openings: one as White, two as Black. Practise each one until you can play its first moves without thinking.");
 }
@@ -1741,7 +1744,7 @@ async function progressView() {
 </a>` : ""}
         </div>
         ${s.next ? `<div class="story-next" title="Next week's one thing">${svg("bolt")}<span>${esc(s.next.habit)}</span></div>` : ""}
-      </div>` : `<div class="empty">Your story appears after your first checked games.</div>`}
+      </div>` : `<div class="empty">${afterGames("Your story")}</div>`}
       ${p.clock && p.clock.lines.length ? `<div class="box rise pclock" title="${esc(p.clock.lines.join(" "))}">
         <h2 style="margin:0">${svg("clock")}Your clock</h2>
         <div class="pclock-n"><b class="num">${p.clock.fast}<span class="faint">/${p.clock.big}</span></b><span class="muted small">big mistakes in a rush</span></div>
@@ -1874,6 +1877,10 @@ async function home() {
       <span>Checking your games: <b class="num">${STATUS.done}</b> of ${STATUS.total}</span><div class="bar"><div style="width:${100 * STATUS.done / STATUS.total}%"></div></div></div>` : ""}
     <div class="home-head"><h1>${hello}, ${esc(h.player)}</h1>
       <span class="home-streak" title="Days in a row of your five minutes">${svg("flame")}<b class="num">${d.streak || 0}</b></span></div>
+    ${h.games ? "" : `<div class="box first-game">${svg("games")}<div><b>No games yet.</b>
+      <span class="muted">Play your first on chess.com: Knightwise checks it within a few minutes.</span></div>
+      <a class="btn primary" href="https://www.chess.com/play/online" target="_blank" rel="noopener">Play on chess.com ↗</a>
+      <a class="btn" href="#/course">Start with the basics</a></div>`}
     <div class="home-cards rise">
       <a class="box hcard" href="#/daily">
         <div class="row spread"><b>${d.done_today ? "Done today" : "Today"}</b><span class="muted">5 min</span></div>
@@ -1898,7 +1905,7 @@ async function home() {
         <span class="muted small">pieces lost a game</span>
         <span class="${btn("practice")}">Practise</span></a>` : ""}
     </div>
-    <div class="home-tiles rise">
+    <div class="home-tiles rise" ${h.games ? "" : "hidden"}>
       ${tiles.map(p => { const [icon] = HABIT[p.pattern] || ["hang"], fewer = p.recent <= p.per_game;
         return `<a class="box tile" href="#/practice/${encodeURIComponent(p.pattern)}" title="${esc((HABIT[p.pattern] || [])[1] || p.pattern)}: practise it">
           ${svg(icon)}<b class="num">${roll(p.times)}</b><span class="muted small">${esc(short[p.pattern] || p.pattern)} ${trend(fewer, "")}</span></a>`; }).join("")}
@@ -1914,7 +1921,7 @@ async function home() {
       <span title="Key moments a game">${svg("bolt")}<b class="num">${v.now.moments}</b>${trend(v.now.moments <= v.then.moments, v.then.moments)}</span></div>` : ""}
     <div class="askpill" id="askbox"></div>`;
   if (last && last.fen) Board.render($("#lastboard"), { fen: last.fen, flip: last.flip });
-  api("/api/warmup").then(w => { const x = (w.items || [])[0]; if (x && $("#todayboard")) Board.render($("#todayboard"), { pieces: x.board, flip: x.flip }); }).catch(() => {});
+  api("/api/warmup").then(w => { const x = (w.items || [])[0]; if (x && $("#todayboard")) Board.render($("#todayboard"), { pieces: x.board, flip: x.flip }); else if ($("#todayboard")) $("#todayboard").remove(); }).catch(() => {});  // nothing to show yet: no empty square
   countUp($("#page"));
   // no "Hear it from Maya" button (23 Oct notes: unnecessary): Maya greets and talks by herself
   api("/api/settings").then(cfg => askBox($("#askbox"), { placeholder: "Ask Maya anything about your chess", coach: "maya", section: "home",
@@ -1949,7 +1956,8 @@ async function games() {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Games <span class="faint num" style="font-size:16px">${list.length}</span></h1></div>
 </div>
-    <div class="box glist">${html}</div>`;
+    ${list.length ? `<div class="box glist">${html}</div>` : `<div class="empty">No games yet. Play your first on chess.com:
+      it shows here, checked, within a few minutes. <a href="https://www.chess.com/play/online" target="_blank" rel="noopener">Play on chess.com ↗</a></div>`}`;
 }
 
 // Game review, one key moment at a time (debrief points 17, 18 and 42): You played, Better, They replied, Their
@@ -2176,7 +2184,7 @@ async function practice(pattern) {
   shell("practice", `<p class="muted">Loading…</p>`);
   const all = await api("/api/practice-set").catch(() => []);
   const only = pattern ? all.filter(d => d.pattern === pattern) : [], drills = only.length ? only : all;
-  if (!drills.length) { $("#page").innerHTML = `<div class="empty">Practice appears once your games are checked.</div>`; return; }
+  if (!drills.length) { $("#page").innerHTML = `<div class="empty">${afterGames("Practice")}</div>`; return; }
   $("#page").innerHTML = trainerPage(only.length ? (HABIT[pattern] || [])[1] || "Practice" : "Practice",
     { text: "" });
   trainer(drills, { coach: "maya", record: true, reset: "day" });
@@ -2516,7 +2524,7 @@ async function welcome() {
       <p class="small muted" style="margin-top:16px">The first time takes a couple of minutes. You can close this window: a notification tells you when it's ready.</p>`;
     for (;;) {
       const s = await api("/api/status").catch(() => ({}));
-      if (s.phase === "ready" && s.review_ready) { try { sessionStorage.setItem("kw-new", "1"); } catch (e) {} return go("home"); }
+      if (s.phase === "ready" && (s.review_ready || s.no_games)) { try { sessionStorage.setItem("kw-new", "1"); } catch (e) {} return go("home"); }
       $("#phase").textContent = s.phase === "error" ? "Something went wrong. Retrying by itself." : cap(s.phase || "working") + "…";
       $("#fill").style.width = (s.total ? Math.max(3, 100 * s.done / s.total) : s.phase === "building your pages" ? 100 : 3) + "%";
       $("#cnt").textContent = s.total ? `Game ${s.done} of ${s.total}` : "";
@@ -2524,6 +2532,7 @@ async function welcome() {
     }
   }
   const s = await api("/api/status").catch(() => ({}));
+  if (s.player && s.no_games) return go("home");  // no games yet: Home says what to do
   if (s.player && !s.review_ready) work(); else intro();
 }
 
@@ -2564,7 +2573,13 @@ async function screen(name, arg) {
   if (name === "prep") return await prepView(arg && decodeURIComponent(arg));
   if (name === "punish") return await punishView(decodeURIComponent(arg || ""));
   if (name === "feedback") { history.replaceState(null, "", "#/home"); setTimeout(feedbackBox, 400); return await home(); }  // from chess.com
-  if (name === "clockdrill") { shell("level", `<p class="muted">Finding your rushed moves…</p>`); return lessonView({ ...(await api("/api/clockdrill")), back: "level" }); }
+  if (name === "clockdrill") {
+      shell("level", `<p class="muted">Finding your rushed moves…</p>`);
+      const c = await api("/api/clockdrill");
+      if (!(c.drills || []).length) { $("#page").innerHTML = `<div class="empty">${STATUS.no_games ? afterGames("The slow-down drill")
+        : "No rushed mistakes to drill: your biggest mistakes weren't played in a hurry. Good."}</div>`; return; }
+      return lessonView({ ...c, back: "level" });
+    }
   if (name === "endgame") return await endgameView(arg);
   if (name === "lesson") return await themeLesson(decodeURIComponent(arg || ""));
   if (name === "openings") return await openingTree();

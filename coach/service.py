@@ -1208,7 +1208,7 @@ def status():
             # connected only if seen lately: it checks in every minute (22 Oct test: "connected" after it was removed)
             "extension_now": [b for b, t in STATE.get("extension_at", {}).items() if time.time() - t < 180],
             "extension_path": str(EXTENSION), "browsers": sorted(browsers()), "listen_install": STATE.get("listen_install"),
-            "practice_day": STATE.get("practice_day")}
+            "practice_day": STATE.get("practice_day"), "no_games": bool(STATE.get("no_games"))}
 
 
 # what isn't the player's: kept by Start over (the app's own settings and downloads, the AI use count, feedback sent)
@@ -1329,6 +1329,11 @@ def update_once():
         puzzles.main()
     STATE["phase"] = "checking your games"
     checked = analyze.main(argv=[], progress=lambda done, total: STATE.update(done=done, total=total))
+    if not (DATA / "moves.jsonl").exists():  # a brand-new chess.com account: no games yet (26 Oct test: it looped on
+        # "Something went wrong" forever). Ready, with nothing to check; the first game is picked up by the next check.
+        STATE.update(phase="ready", no_games=True, last_update=time.strftime("%Y-%m-%d %H:%M"))
+        return 0, False
+    STATE["no_games"] = False
     today = time.strftime("%Y-%m-%d")
     STATE["phase"] = "building your pages"
     if checked or first:
@@ -1396,7 +1401,7 @@ def loop():
                 WAKE.set()
                 continue
             if first:
-                notify(NAME, f"Your review is ready: {n} games checked. Click to open it.", open_link("home"))
+                notify(NAME, f"Your review is ready: {n} game{'s' if n != 1 else ''} checked. Click to open it.", open_link("home"))
             elif n:
                 log.info("checked %d new games", n)
                 text, newest = summary_of_new(n)

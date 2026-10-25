@@ -45,7 +45,7 @@ def _moves():
     """Checked moves per game, each with its pattern worked out once (re-read only when the file changes)."""
     path = DATA / "moves.jsonl"
     mtime = path.stat().st_mtime if path.exists() else None
-    if mtime != _CACHE["mtime"]:
+    if mtime != _CACHE["mtime"] or _CACHE["rows"] is None:  # no games yet: empty, not None (26 Oct: a new account)
         rows = collections.defaultdict(list)
         if path.exists():
             for line in open(path):
