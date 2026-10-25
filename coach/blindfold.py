@@ -17,6 +17,8 @@ from coach import insights
 from coach.paths import DATA
 
 FILE = DATA / "blindfold.json"
+RECENT = 10  # games read out lately: not again until 10 others have been (25 Oct, owner: "is it really fresh?")
+BADGE = [(3, "Bronze"), (5, "Silver"), (8, "Gold")]  # the Blindfold badge, in moves each (progress.py)
 START, LEAST, MOST, STEP = 4, 2, 30, 2  # half-moves read out: 2 each to begin with, one more each when right
 NAME = {chess.PAWN: "pawn", chess.KNIGHT: "knight", chess.BISHOP: "bishop", chess.ROOK: "rook", chess.QUEEN: "queen",
         chess.KING: "king"}
@@ -114,6 +116,8 @@ def item(rng=None, games=None):
     if not pool:
         return None
     rng.shuffle(pool)
+    recent = state.get("recent", [])
+    pool.sort(key=lambda gm: gm[0].get("url") in recent)  # games not read out lately first (stable: still shuffled)
     for g, moves in pool:
         board = chess.Board()
         moved = {}
@@ -134,10 +138,14 @@ def item(rng=None, games=None):
         for m in moves:
             sans.append(b.san(m))
             b.push(m)
+        state["recent"] = ([g.get("url")] + [u for u in recent if u != g.get("url")])[:RECENT]
+        _save(state)
+        best_each = (state.get("best", 0) + 1) // 2
+        goal = next(((n, name) for n, name in BADGE if best_each < n), None)
         mine = (g.get("white") or {}).get("username", "").lower() == (insights.home().get("player") or "").lower()
         other = (g.get("black") if mine else g.get("white")) or {}
         return {"plies": plies, "best": state.get("best", 0), "say": _read_out(moves), "moves": sans,
-                "question": q["ask"], "kind": q["kind"], "answers": q["answers"], "fen": board.fen(),
+                "goal": {"moves": goal[0], "name": goal[1]} if goal else None, "question": q["ask"], "kind": q["kind"], "answers": q["answers"], "fen": board.fen(),
                 "game": {"opponent": other.get("username"), "url": g.get("url")}}
     return None
 

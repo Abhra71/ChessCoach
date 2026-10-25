@@ -1349,7 +1349,7 @@ async function blindfoldView() {
       <p class="sub calc-sub">Hear a game, see the board in your head.</p>
       <p class="sub">Maya reads out the start of one of your games. Follow it in your head: the board stays empty. Then answer on the board.
         Each right answer makes the next one a move longer.</p></div>
-      <span class="muted num">${each(x.plies)}${x.best ? ` · your record: ${each(x.best)}` : ""}</span></div>
+      <span class="muted num">Now: ${each(x.plies)}${x.best ? ` · Record: ${each(x.best)}` : ""}${x.goal ? ` · ${x.goal.name} badge at ${x.goal.moves}` : ""}</span></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">

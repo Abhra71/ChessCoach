@@ -47,3 +47,11 @@ def test_a_spoken_square_is_worked_out_by_the_ai_and_checked():
     assert blindfold.heard_square("I think f three", ask_ai=lambda s, p, n: ("f3", "groq")) == "f3"
     assert blindfold.heard_square("no idea", ask_ai=lambda s, p, n: ("none", "groq")) is None
     assert blindfold.heard_square("x", ask_ai=lambda s, p, n: ("z9", "groq")) is None
+
+
+def test_a_game_read_out_lately_waits_its_turn_and_the_next_badge_is_named():
+    import random
+    games = [dict(GAME, url=f"u{i}") for i in range(3)]
+    seen = [blindfold.item(random.Random(s), games=games)["game"]["url"] for s in range(3)]
+    assert sorted(seen) == ["u0", "u1", "u2"]  # three rounds, three different games
+    assert blindfold.item(random.Random(9), games=games)["goal"] == {"moves": 3, "name": "Bronze"}
