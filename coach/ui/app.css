@@ -1075,3 +1075,5 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .sub { margin-top: 6px; }
 #calchint, .guess-hint, .report-head h2 + .small, .brief-facts { margin-top: 6px !important; }
 .stat-tile { width: 112px; }  /* smaller, still all equal (25 Oct) */
+/* tiles level with the title, not the back link above it (25 Oct) */
+.page-head:has(> div > a:first-child) .stat-row { margin-top: 17px; }
