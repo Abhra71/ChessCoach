@@ -728,7 +728,7 @@ async function sparView(user, color) {
     if (r.over) { gameOver($("#smsg"), r); Coach.react("maya", r.result === "win" ? "celebrate" : "explain", r.say, [{ label: "New game", app: `spar/${user}/${color}` }]); }
   }
   $("#undo").onclick = () => { if (busy || history.length < 2) return; const r = history.pop(); played.splice(played.length - (r.reply ? 2 : 1)); last = {}; tell(cur()); draw(); };
-  $("#again").onclick = () => sparView(user, color);
+  $("#again").onclick = () => { if (!busy) sparView(user, color); };  // not mid-move: the old game would draw over it
   tell(s); draw();
   Coach.react("maya", "explain", `${user} opens the way they really do. Play your repertoire against it, and watch what they like to do.`);
 }

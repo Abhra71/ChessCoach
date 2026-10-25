@@ -42,6 +42,7 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const brief = t => { const parts = String(t).split(/(?<=[.!?])\s+/); return parts.length > 2 ? parts.slice(0, 2).join(" ") : t; };
 
+  addEventListener("pagehide", () => { if (talking) { talking = false; send({ type: "listen-stop", send: false }); } });
   function remove() {
     if (box) box.remove();
     box = null; current = null; clearTimeout(foldTimer); warm = null;
@@ -520,11 +521,16 @@
 
   async function arrive() {
     const here = section(location.pathname), path = location.pathname;
+    await send({ type: "page", live: /^\/(?:game\/live|play\/online)(?:[/?#]|$)/.test(path) });  // fair play across tabs:
+    // said before anything else, so a profile in another tab already knows
     if (!here) setTimeout(() => {  // the self-check: a game page at an address the review doesn't know yet?
-      if (location.pathname === path && KnightwiseContract.unknownGameAddress(path, !!KnightwiseContract.board(document)))
+      // the address first: the page is only looked at when it could be a finished game we don't know (never /game/live)
+      if (location.pathname === path && !/^\/(?:game\/live|game\/daily|play)(?:[/?#]|$)/.test(path)
+          && KnightwiseContract.unknownGameAddress(path, true) && KnightwiseContract.unknownGameAddress(path, !!KnightwiseContract.board(document)))
         KnightwiseContract.report("game-address", false, `unknown: ${path.replace(/\d{6,}/g, "<id>")}`);
     }, 4000);
-    if (here === current) { if (loadGuide()) guideArrive(); return; }
+    if (here && here === current) { if (loadGuide()) guideArrive(); return; }  // never on a page without the coach:
+    // null === null used to run the ring's guide on any such page, a live game included (cloud review, 26 Oct)
     unring();
     remove();
     if (!here) {  // not a coach section: nothing at all, except the ring's next step on chess.com's Play menu page

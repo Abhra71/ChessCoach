@@ -241,9 +241,12 @@ def play(eid, fen, uci, made, limit=None):
         after = _value(board, you)
         # Stockfish at this depth calls king and queen against king anything from +6 to mate (20 Oct: 645 once, so
         # a fixed +6 missed the warning): a won position (+4 or more) that falls to equal or worse is thrown away
-        if goal in ("mate", "promote") and before >= 400 and after < 200:
+        # the tablebase answered before the move and not after (a timeout): no engine number from before, no warning
+        if before is None:
+            pass
+        elif goal in ("mate", "promote") and before >= 400 and after < 200:
             out["warn"] = "Careful: that move throws the win away. Take it back and look again."
-        if goal == "draw" and before > -200 and after < -500:
+        elif goal == "draw" and before > -200 and after < -500:
             out["warn"] = "That move loses: their pawn gets through now. Take it back and look again."
     best = t and t.get("moves")
     if best:  # the defender plays the tablebase's best move

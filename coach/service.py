@@ -171,7 +171,8 @@ def walk(r, mine, best, best_reply, real, after, why, better=None):
         why, better = "", why[len(f"Better was {r['best']}"):].lstrip(":. ") if why.startswith("Better was") else why
     if best != mine:
         steps.append({"kind": "better", "title": "Better", "san": r["best"], "board": "before",
-                      "text": f"Better was {r['best']}. " + (better[0].upper() + better[1:] if better else
+                      "text": f"Better was {r['best']}. " + (better if better and better.split()[0] == r["best"]  # "b4 forks…", not "B4"
+                                                  else better[0].upper() + better[1:] if better else
                               f"It kept about {round(r['loss'])}% more of your chance to win."),
                       "arrows": [[best.uci(), "better"], [mine.uci(), "mine"]]})
     else:

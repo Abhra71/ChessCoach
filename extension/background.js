@@ -38,6 +38,25 @@ async function player() {
 const json = (url, reply) => fetch(url).then(r => r.json()).then(data => reply({ ok: true, data }))
   .catch(() => reply({ ok: false }));
 
+// the tab Talk was started in: closed, reloaded or sent elsewhere, the microphone stops and nothing is sent
+// (cloud review, 26 Oct: it kept recording into the next page for up to a minute, then sent it)
+let listeningTab = null;
+// tabs where a game against a real person may be running: while any is open, nothing about other players is offered
+// in another tab (cloud review, 26 Oct: "Prep against" your opponent's profile mid-game, in a second tab)
+// kept in session storage: the background can restart at any time and must not forget a live game
+const liveTabs = async () => new Set((await chrome.storage.session.get("liveTabs")).liveTabs || []);
+const setLive = async (tabId, on) => {
+  const tabs = await liveTabs();
+  if (on) tabs.add(tabId); else tabs.delete(tabId);
+  await chrome.storage.session.set({ liveTabs: [...tabs] });
+};
+const stopListening = tabId => {
+  if (tabId !== listeningTab) return;
+  listeningTab = null;
+  chrome.runtime.sendMessage({ type: "kw-record-stop", send: false }).catch(() => {});
+};
+chrome.tabs.onRemoved.addListener(tabId => { stopListening(tabId); setLive(tabId, false); });
+chrome.tabs.onUpdated.addListener((tabId, change) => { if (change.status === "loading") stopListening(tabId); });
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "game" && /^\d+$/.test(msg.id)) {
     json(`${COACH}/api/game/${msg.id}`, reply);
@@ -46,6 +65,20 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "tags" && Array.isArray(msg.ids)) {  // the archive's tags: finished, checked games only
     const ids = msg.ids.filter(i => /^\d+$/.test(i)).slice(0, 100).join(",");
     json(`${COACH}/api/tags?ids=${ids}`, reply);
+    return true;
+  }
+  if (msg.type === "page" && sender && sender.tab) {  // each chess.com page says whether a live game can run there
+    setLive(sender.tab.id, !!msg.live).then(() => reply({}));
+    return true;
+  }
+  if (msg.type === "coach" && msg.section === "member") {  // a profile while a game may be on in another tab: quiet
+    liveTabs().then(tabs => {
+      if (tabs.size) return reply({ ok: true, data: { lines: [] } });
+      const q = new URLSearchParams({ section: "member", hour: String(msg.hour ?? "") });
+      if (msg.again) q.set("again", "1");
+      if (/^[\w-]{1,30}$/.test(msg.who || "")) q.set("who", msg.who);
+      json(`${COACH}/api/coach?${q}`, reply);
+    });
     return true;
   }
   if (msg.type === "coach") {
@@ -67,11 +100,13 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     return false;
   }
   if (msg.type === "listen") {  // Talk on chess.com: record in the hidden page, the app writes it down (0.6)
+    listeningTab = sender && sender.tab ? sender.tab.id : null;  // that tab closing or reloading ends it, unsent
     player().then(() => chrome.runtime.sendMessage({ type: "kw-record", app: COACH })).then(reply)
       .catch(() => reply({ error: "app" }));
     return true;
   }
   if (msg.type === "listen-stop") {
+    listeningTab = null;
     chrome.runtime.sendMessage({ type: "kw-record-stop", send: !!msg.send }).catch(() => {});
     return false;
   }

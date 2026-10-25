@@ -87,7 +87,8 @@ def challenge(today=None):
     """This week's challenge: {week, positions, best} (built once a week, then kept)."""
     wk = week(today)
     d = _load()
-    if d.get("week") != wk or len(d.get("positions") or []) < COUNT:
+    # a new week, or nothing built yet; a week that came out short is kept, its best with it (cloud review, 26 Oct)
+    if d.get("week") != wk or not d.get("positions"):
         if not maia.enabled():
             return {"week": wk, "positions": [], "best": None, "off": True}
         d = {"week": wk, "positions": build(wk), "best": None, "tries": 0, "ever": d.get("ever")}

@@ -264,7 +264,8 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, aga
         said = _for_app(said)
     if again and said.get("lines") and section != "review":
         lines = said["lines"]
-        keep = [lines[-1]] if lines[-1].startswith("My pick") else lines[1:2]  # where things stand, in one line
+        keep = [lines[-1]] if lines[-1].startswith("My pick") or len(lines) == 1 else lines[1:2]  # where things stand,
+        # in one line (a profile has only one: who they are and the prep, cloud review 26 Oct)
         if keep and not fresh_today(keep[0]):  # the same stat once a day, not on every visit (22 Oct test)
             return {**said, "lines": [], "again": True, "quiet": True}
         said = {**said, "lines": [line("again", said["coach"], rng)] + keep, "again": True}

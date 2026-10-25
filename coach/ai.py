@@ -145,6 +145,7 @@ def _call(provider, key, system, prompt, max_tokens):
     try:
         return _call_once(provider, key, system, prompt, max_tokens)
     except Exception as e:
+        first = e  # kept: a bare raise outside this block had nothing to raise (cloud review, 26 Oct)
         if isinstance(e, urllib.error.HTTPError) and e.code in (404, 410) and provider in _MODELS:
             _MODELS.pop(provider)
             return _call_once(provider, key, system, prompt, max_tokens)
@@ -156,7 +157,7 @@ def _call(provider, key, system, prompt, max_tokens):
     small = _pick(_LISTED.get(provider, []), SMALL[provider], avoid=AVOID + (_MODELS.get(provider) or "~",))
     if not small:
         _rest(provider)
-        raise
+        raise first
     try:
         return _call_once(provider, key, system, prompt, max_tokens, model=small)
     except Exception as e:

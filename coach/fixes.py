@@ -24,11 +24,12 @@ def clean(raw):
     """Only what the extension knows how to use: lists of short strings, nav targets, known features."""
     if not isinstance(raw, dict):
         raw = {}
-    out = {k: [s for s in raw.get(k, []) if isinstance(s, str) and 0 < len(s) <= 200][:20] for k in LISTS}
+    listed = lambda v: v if isinstance(v, list) else []  # "boards": 5 is ignored, never a crash (cloud review, 26 Oct)
+    out = {k: [s for s in listed(raw.get(k)) if isinstance(s, str) and 0 < len(s) <= 200][:20] for k in LISTS}
     nav = raw.get("nav") if isinstance(raw.get("nav"), dict) else {}
     out["nav"] = {str(k)[:40]: [s for s in v if isinstance(s, str) and 0 < len(s) <= 200][:10]
                   for k, v in list(nav.items())[:50] if isinstance(v, list)}
-    out["off"] = [f for f in raw.get("off", []) if f in FEATURES]
+    out["off"] = [f for f in listed(raw.get("off")) if isinstance(f, str) and f in FEATURES]
     return out
 
 
@@ -36,7 +37,7 @@ def current():
     """The fixes as last downloaded (empty when there are none yet)."""
     try:
         return clean(json.loads(FILE.read_text()).get("fixes"))
-    except (OSError, ValueError, AttributeError):
+    except Exception:  # anything odd in the saved file: as if there were no fixes
         return clean({})
 
 
@@ -58,6 +59,11 @@ def refresh(force=False, fetch=None):
     except Exception as e:  # offline, GitHub down, a broken edit: keep what we had
         log.info("fix file not refreshed: %s", e)
         return current()
+    try:
+        fixes = clean(raw)
+    except Exception as e:  # a broken edit: keep what we had, and don't ask again for a day
+        log.info("fix file ignored: %s", e)
+        fixes = current()
     FILE.parent.mkdir(parents=True, exist_ok=True)
-    FILE.write_text(json.dumps({"at": time.time(), "fixes": clean(raw)}))
+    FILE.write_text(json.dumps({"at": time.time(), "fixes": fixes}))
     return current()

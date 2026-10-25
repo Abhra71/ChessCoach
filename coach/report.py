@@ -117,7 +117,7 @@ def report(days=7, now=None):
         if worst and worst[0]["loss"] >= 15:
             r, g = worst
             out["worst"] = {"opponent": g[insights._side(g, player)[1]]["username"], "move": r["move"], "best": r["best"],
-                            "move_number": r["ply"] // 2 + 1, "pattern": r["pattern"], "id": insights.game_id(g["url"]),
+                            "move_number": (r["ply"] - 1) // 2 + 1,  # ply counts from 1: Black's 1...e5 is ply 2, move 1 "pattern": r["pattern"], "id": insights.game_id(g["url"]),
                             "loss": round(r["loss"])}
     home = insights.home()
     focus = home.get("focus") or {}
