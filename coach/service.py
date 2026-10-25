@@ -486,7 +486,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200 if out else 404, json.dumps(out or {"message": "They have no public games to spar against."}), "application/json")
         if path == "/api/calc":  # the calculation trainer: see the whole line before anything moves (0.9)
             from coach import brief, drills
-            items = drills.calculation(insights.home().get("rating"), time.strftime("%Y-%m-%d"))
+            from coach import memory
+            items = drills.calculation(insights.home().get("rating"), time.strftime("%Y-%m-%d"), done_before=memory.seen_before())
             return self.send(200, json.dumps(brief.add(items)), "application/json")
         if path == "/api/repertoire" or path.startswith("/api/repertoire/"):  # your three opening lines (0.8)
             from coach import brief, live_engine, repertoire

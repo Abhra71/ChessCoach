@@ -376,9 +376,10 @@ CALC_THEMES = ["fork", "pin", "skewer", "discoveredAttack", "deflection", "attra
                "capturingDefender", "doubleCheck", "clearance", "intermezzo", "quietMove", "xRayAttack"]
 
 
-def calculation(rating, seed, n=5):
+def calculation(rating, seed, n=5, done_before=None):
     """Puzzles of two moves or more for the calculation trainer: you work out the whole line before anything moves.
-    Near your level (from 150 below to 350 above), easiest first, different every day."""
+    Near your level (from 150 below to 350 above), easiest first, different every day; ones answered on an earlier
+    day aren't picked again while there are others (25 Oct)."""
     if not PUZZLES.exists():
         return []
     stock = json.loads(PUZZLES.read_text())
@@ -388,5 +389,8 @@ def calculation(rating, seed, n=5):
     if len(pool) < n:  # few at this level: the easiest long ones there are
         every = [(t, p) for t in CALC_THEMES for p in stock.get(t, []) if len(p["moves"]) >= 4]
         pool = sorted(every, key=lambda tp: tp[1]["rating"])[:n * 4]
+    fresh = [tp for tp in pool if tp[1]["id"] not in (done_before or set())]
+    if len(fresh) >= n:
+        pool = fresh
     chosen = sorted(rng.sample(pool, min(n, len(pool))), key=lambda tp: tp[1]["rating"])
     return [puzzle(p, "", t) for t, p in chosen]

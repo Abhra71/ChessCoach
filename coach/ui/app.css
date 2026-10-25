@@ -1069,3 +1069,4 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .stat-tile b { font-size: 17px; color: var(--text); }
 .page-head:has(.stat-row) { flex-wrap: nowrap; align-items: flex-start; } .page-head:has(.stat-row) > div:first-child { min-width: 0; }  /* the title wraps, not the tiles */
 .stat-row { flex-shrink: 0; } .stat-tile b { white-space: nowrap; }
+.stat-tile { box-sizing: border-box; width: 150px; min-width: 0; padding: 6px 10px; }  /* every tile the same size, everywhere (25 Oct) */
