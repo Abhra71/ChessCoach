@@ -1228,32 +1228,30 @@ async function reportView(arg) {
     <div class="report" id="report">
       <div class="report-head"><div><div class="label">Knightwise report</div><h2 style="margin:2px 0 0">${esc(r.player)} · ${esc(r.title)}</h2>
         <div class="small muted">${esc(r.from)} to ${esc(r.to)}</div></div></div>
-      <div class="box stack report-sum">${r.lines.map(l => `<p style="margin:0">${esc(l)}</p>`).join("")}</div>
-      <div class="report-grid">
-        <div class="box stack"><div class="label">Games</div>
-          <div class="row"><b class="big">${r.games}</b><span class="small">${res.win || 0} won · ${res.draw || 0} drawn · ${res.loss || 0} lost</span></div>
-          ${(r.ratings || []).map(x => `<div class="small">${esc(cap(x.kind))} <span class="muted">(${x.games})</span> ${x.from} → ${x.to}
-            ${x.to !== x.from ? `<span class="delta ${x.to > x.from ? "good" : "bad"}">${x.to - x.from > 0 ? "+" : ""}${x.to - x.from}</span>` : `<span class="muted">same</span>`}</div>`).join("")}</div>
-        <div class="box stack"><div class="label">Mistakes a game</div>
-          <div class="small"><b>${per(r.pieces.now)}</b> pieces given away ${change(r.pieces.now, r.pieces.before)}</div>
-          <div class="small" title="The named mistakes (a piece left hanging, a missed mate and so on), the three costliest a game at most"><b>${per(r.big)}</b> big mistakes</div>
-          ${r.clock && r.clock.lines.length ? r.clock.lines.map(l => `<div class="small muted">${esc(l)}</div>`).join("") : ""}</div>
-        <div class="box stack"><div class="label">Practice in Knightwise</div>
-          <div class="small"><b>${pr.days || 0}</b> day${pr.days === 1 ? "" : "s"} practised</div>
-          <div class="small"><b>${pr.answers || 0}</b> positions, <b>${pr.right || 0}</b> right first time</div>
-          <div class="small"><b>${r.lessons || 0}</b> lesson${r.lessons === 1 ? "" : "s"} studied</div></div>
+      ${/^Only \d+ game/.test(r.lines[0] || "") ? `<p class="small muted" style="margin:0 0 12px">${esc(r.lines[0])}</p>` : ""}
+      <!-- numbers, not sentences (26 Oct, owner: "too much text") -->
+      <div class="report-tiles">
+        <div class="box rtile"><span class="label">Games</span><b class="big num">${r.games}</b>
+          <span class="small muted">${res.win || 0} won · ${res.draw || 0} drawn · ${res.loss || 0} lost</span></div>
+        <div class="box rtile"><span class="label">Rating</span>${(r.ratings || []).map(x => `<div class="rrate"><b class="num">${x.to}</b>
+          ${x.to !== x.from ? `<span class="delta ${x.to > x.from ? "good" : "bad"}">${x.to - x.from > 0 ? "+" : ""}${x.to - x.from}</span>` : ""}
+          <span class="small muted">${esc(x.kind)}</span></div>`).join("") || `<b class="big">–</b>`}</div>
+        <div class="box rtile" title="Pieces given away a game"><span class="label">Pieces given away</span><b class="big num">${per(r.pieces.now)}</b>
+          <span class="small">${change(r.pieces.now, r.pieces.before) || `<span class="muted">a game</span>`}</span></div>
+        <div class="box rtile" title="In Knightwise: ${pr.days || 0} day${pr.days === 1 ? "" : "s"}, ${r.lessons || 0} lesson${r.lessons === 1 ? "" : "s"} studied"><span class="label">Practised</span>
+          <b class="big num">${pr.answers || 0}</b><span class="small muted">positions · ${pr.right || 0} first try</span></div>
       </div>
-      ${r.habits.length ? `<div class="box stack"><div class="label">Habits, a game</div>
-        <table class="report-table"><tr><th>What happens</th><th>Now</th><th>Before</th><th>The habit that fixes it</th></tr>
-        ${r.habits.map(h => `<tr><td>${esc(h.pattern)}</td><td class="num">${per(h.now)}</td><td class="num">${per(h.before)}</td><td class="small">${esc(h.habit)}</td></tr>`).join("")}</table></div>` : ""}
+      ${r.habits.length ? `<div class="box stack"><div class="label">Mistakes, a game</div>
+        <table class="report-table"><tr><th></th><th>Now</th><th>Before</th></tr>
+        ${r.habits.filter(h => h.now || h.before).map(h => `<tr><td>${esc(cap(h.pattern))}</td><td class="num">${per(h.now)}</td><td class="num muted">${per(h.before)}</td></tr>`).join("")}</table></div>` : ""}
       <div class="report-grid">
         ${r.best ? `<a class="box stack click" href="#/games/${r.best.id}" style="text-decoration:none;color:inherit"><div class="label">Best game</div>
           <b>vs ${esc(r.best.opponent)} <span class="chip ${r.best.result}">${r.best.result === "win" ? "W" : r.best.result === "loss" ? "L" : "D"}</span></b>
-          <div class="small muted">${esc(r.best.date)} · ${r.best.moments ? `${r.best.moments} big mistake${r.best.moments > 1 ? "s" : ""}` : "no big mistakes"}</div></a>` : ""}
-        ${r.worst ? `<a class="box stack click" href="#/games/${r.worst.id}" style="text-decoration:none;color:inherit"><div class="label">The costliest move</div>
-          <b>Move ${r.worst.move_number}: ${esc(r.worst.move)}, against ${esc(r.worst.opponent)}</b>
-          <div class="small">Better was <b>${esc(r.worst.best)}</b>. ${esc(cap(r.worst.pattern || ""))}.</div></a>` : ""}
-        <div class="box stack"><div class="label">Next</div>
+          <div class="small muted">${esc(r.best.date)}</div></a>` : ""}
+        ${r.worst ? `<a class="box stack click" href="#/games/${r.worst.id}" style="text-decoration:none;color:inherit"><div class="label">Costliest move</div>
+          <b class="num">${r.worst.move_number}. ${esc(r.worst.move)} <span class="muted">→ ${esc(r.worst.best)}</span></b>
+          <div class="small muted">vs ${esc(r.worst.opponent)}</div></a>` : ""}
+        <div class="box stack"><div class="label">Your focus</div>
           ${r.next.habit ? `<div class="small">${esc(r.next.habit)}</div>` : ""}
           ${r.next.lesson ? `<div class="small muted">Next lesson: ${esc(r.next.lesson)}</div>` : ""}</div>
       </div>
