@@ -708,13 +708,13 @@ async function sparView(user, color) {
   }
   async function move(uci) {
     busy = true; picked = null;
+    const shown = Board.show($("#board"), cur().fen, uci, s.flip);  // your move at once; theirs when it comes
     let r;
     try { r = await api("/api/spar/move", { user, fen: cur().fen, uci, color, rating: s.rating }); }
     catch (e) { $("#smsg").textContent = e.message; busy = false; draw(); return; }
     last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
-    Board.render($("#board"), { fen: r.mine.fen, flip: s.flip, highlights: last }); Sound.move(r.mine.san);
     played.push(r.mine.san);
-    await wait(r.reply ? 550 : 0);
+    await wait(r.reply ? Math.max(0, 550 - (Date.now() - shown)) : 0);
     if (r.reply) {
       last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san);
       played.push(r.reply.san);
@@ -779,15 +779,13 @@ async function rematchView(gid, ply) {
   async function move(uci) {
     busy = true; picked = null;
     const before = cur();
+    const shown = Board.show($("#board"), before.fen, uci, s.flip);  // your move at once; theirs when it comes
     let r;
     try { r = await api("/api/rematch/move", { fen: before.fen, uci, rating: s.rating, white, real: s.real }); }
     catch (e) { $("#rmsg").textContent = e.message; busy = false; draw(); return; }
-    // your move first, then theirs a moment later
     last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
-    Board.render($("#board"), { fen: r.mine.fen, flip: s.flip, highlights: last });
-    Sound.move(r.mine.san);
     played.push([r.mine.san, r.reply ? r.reply.san : null]);
-    await wait(r.reply ? 550 : 0);
+    await wait(r.reply ? Math.max(0, 550 - (Date.now() - shown)) : 0);
     if (r.reply) { last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san); }
     history.push(r);
     busy = false; draw();
@@ -1028,20 +1026,20 @@ async function endgameView(id) {
   }
   async function move(uci) {
     busy = true; picked = null;
+    const shown = Board.show($("#board"), cur().fen, uci, s.flip);  // your move at once; the reply after the tablebase answers
     let r;
     try { r = await api("/api/endgame/move", { id, fen: cur().fen, uci, made: cur().made, limit: s.limit }); }
     catch (e) { busy = false; draw(); return; }
     last = { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" };
-    Board.render($("#board"), { fen: r.mine.fen, flip: s.flip, highlights: last });
-    Sound.move(r.mine.san);
     moves.push([r.mine.san, r.reply ? r.reply.san : null]);
-    if (r.reply) { await wait(450); last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san); }
+    if (r.reply) { await wait(Math.max(0, 450 - (Date.now() - shown))); last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san); }
     history.push(r);
     busy = false; draw();
     $("#emsg").innerHTML = r.warn ? `<span class="bad-text">${esc(r.warn)}</span>` : "";
     if (r.over) {
       if (r.result === "win") { confetti(); Sound.play("done"); }
-      Coach.react("viktor", r.result === "win" ? "celebrate" : r.result === "stalemate" ? "worried" : "encourage", r.say,
+      Coach.react("viktor", r.result === "win" ? "celebrate" : r.result === "stalemate" ? "worried" : "encourage",
+        r.result === "win" ? r.say : `${r.say} The idea: ${s.idea}`,  // the idea itself, not "the box" (26 Oct test)
         [{ label: r.result === "win" ? "Another one" : "Try again", run: () => endgameView(id) }]);
     } else if (r.warn) Coach.react("viktor", "warn", r.warn);
   }

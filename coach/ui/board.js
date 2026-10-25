@@ -97,5 +97,26 @@ const Board = (() => {
     return `<div class="legend">${kinds.map(k => `<span><i style="background:${KIND[k].color}"></i>${KIND[k].label}</span>`).join("")}</div>`;
   }
 
-  return { render, squares, legend, KIND };
+  // the pieces after one move, worked out here so your move shows the moment you make it, before the server has
+  // checked it and found the reply (26 Oct test: "the moves get applied after a delay"). Castling, en passant, promotion.
+  function after(fen, uci) {
+    const p = { ...squares(fen) }, from = uci.slice(0, 2), to = uci.slice(2, 4), piece = p[from];
+    if (!piece) return p;
+    delete p[from];
+    if (/k/i.test(piece) && Math.abs(FILES.indexOf(from[0]) - FILES.indexOf(to[0])) === 2) {  // castling: the rook too
+      const side = to[0] === "g", rf = (side ? "h" : "a") + from[1], rt = (side ? "f" : "d") + from[1];
+      p[rt] = p[rf]; delete p[rf];
+    }
+    if (/p/i.test(piece) && from[0] !== to[0] && !p[to]) delete p[to[0] + from[1]];  // en passant
+    p[to] = uci.length > 4 ? (piece === "P" ? uci[4].toUpperCase() : uci[4].toLowerCase()) : piece;
+    return p;
+  }
+  // your move at once: the board and its sound (a capture if something was on the square)
+  function show(el, fen, uci, flip) {
+    const taking = !!squares(fen)[uci.slice(2, 4)];
+    render(el, { pieces: after(fen, uci), flip, highlights: { [uci.slice(0, 2)]: "hl-last", [uci.slice(2, 4)]: "hl-last" } });
+    if (typeof Sound !== "undefined") Sound.play(taking ? "capture" : "move", 0.8);
+    return Date.now();
+  }
+  return { render, squares, legend, KIND, after, show };
 })();

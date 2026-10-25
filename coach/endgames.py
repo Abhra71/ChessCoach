@@ -260,6 +260,6 @@ def play(eid, fen, uci, made, limit=None):
     if goal == "draw" and any(p.piece_type == chess.QUEEN for p in board.piece_map().values()):
         return end("lost", "Their pawn became a queen. Try again: stay in front of it.")
     if made >= limit:
-        return end("limit", f"{limit} moves and no {'checkmate' if goal == 'mate' else 'queen'} yet. Try again with the idea in the box.")
+        return end("limit", f"{limit} moves and no {'checkmate' if goal == 'mate' else 'queen'} yet. Try again.")
     out.update(fen=board.fen(), legal=[m.uci() for m in board.legal_moves])
     return out
