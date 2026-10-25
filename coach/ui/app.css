@@ -1089,4 +1089,3 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .pcard .reset-note { margin-top: -2px; }
 .ctitle { height: 2.6em; display: -webkit-box; align-content: start; }  /* every label two lines tall: the rows line up (25 Oct) */
 .cpath { align-items: start; }
-.ctitle { height: auto; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }  /* one line (25 Oct) */
