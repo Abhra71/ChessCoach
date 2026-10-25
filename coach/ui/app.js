@@ -69,6 +69,7 @@ function countUp(root = document) {
     const step = t => { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3);
       el.textContent = (to * e).toFixed(dec); if (k < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
+    setTimeout(() => { el.textContent = to.toFixed(dec); }, ms + 200);  // the real number even if the window was hidden (no animation frames)
   });
 }
 // The top-right counters of the training pages: small labelled tiles, the label above the number (25 Oct, owner:
@@ -1731,7 +1732,7 @@ async function progressView() {
               <div><b class="big good-text">${roll(r.win || 0)}</b><span>won</span></div>
               <div><b class="big faint">${roll(r.draw || 0)}</b><span>drawn</span></div>
               <div><b class="big bad-text">${roll(r.loss || 0)}</b><span>lost</span></div></div>
-            <div class="stat-label">of ${s.games} games</div></div>
+            <div class="stat-label">of ${s.games} game${s.games === 1 ? "" : "s"}</div></div>
           <div class="story-tile"><div class="big">${roll(s.pieces, 1)}</div><div class="stat-label">pieces given away a game</div>
             ${s.pieces_before !== null ? (s.pieces < s.pieces_before ? `<span class="trend good">${svg("down")}from ${s.pieces_before}</span>`
               : s.pieces > s.pieces_before ? `<span class="trend bad">${svg("up")}from ${s.pieces_before}</span>` : `<span class="small muted">same as before</span>`) : ""}</div>
@@ -2456,12 +2457,14 @@ function welcomeMusic(button) {
   const start = () => {
     if (muted || !audio.paused) return;
     if (audio.readyState >= 1 && audio.currentTime < FROM) audio.currentTime = FROM;
-    audio.play().then(() => fade(VOLUME, 0.5)).catch(() => {});
+    // switched off while it was starting: stay off (26 Oct test: "Music off" and it kept playing)
+    audio.play().then(() => { if (muted) { audio.pause(); audio.volume = 0; } else fade(VOLUME, 0.5); }).catch(() => {});
   };
   const paint = () => { button.innerHTML = muted ? "Music off" : "Music on"; button.setAttribute("aria-pressed", String(!muted)); };
   button.onclick = () => { muted = !muted; remember("kw-music-muted", muted ? "1" : "0"); paint(); if (muted) fade(0, 0.6); else start(); };
   paint(); start();
-  const kick = () => { if (audio.paused) start(); };
+  // a browser lets music start only after a click: any click starts it, except the music button itself, which decides
+  const kick = e => { if (e && e.target && e.target.closest && e.target.closest("#music")) return; if (audio.paused) start(); };
   const EVENTS = ["pointerdown", "keydown"];
   EVENTS.forEach(e => addEventListener(e, kick));
   return () => { EVENTS.forEach(e => removeEventListener(e, kick)); fade(0, 0.8); };
