@@ -1,6 +1,6 @@
 # Knightwise privacy policy
 
-*Last updated: 22 October 2026 (Knightwise 1.0)*
+*Last updated: 26 October 2026 (Knightwise 1.0)*
 
 Knightwise is a free, open-source chess coach for Windows (source code: https://github.com/Abhra71/ChessCoach).
 It is made by one person (Abhra71). There are no accounts, no adverts and no tracking.
@@ -25,7 +25,7 @@ ever sent to the AI company it belongs to.
 | Once a day | GitHub (raw.githubusercontent.com) | nothing about you: it reads Knightwise's fix file, the names of things on chess.com's pages |
 | Downloads, the first time | lichess.org, Hugging Face, Poly Haven and similar | nothing about you: free puzzles, the voices and 3D files |
 | The endgame trainer | Lichess's endgame tablebase | the position on the board; nothing about you |
-| You type to a coach, or ask for an explanation, **only with an AI key** | the AI company whose key you added (Groq, Google Gemini, Anthropic or OpenAI) | your question, the chess position or moment, the engine's facts and your rating |
+| You type to a coach, or ask for an explanation, **only with an AI key** | the AI company whose key you added (Groq or Google Gemini) | your question, the chess position or moment, the engine's facts and your rating |
 | You click **Talk**, **only with an AI key** | the AI company whose key you added (Groq or Google Gemini) | the recording of what you said, from the moment you click Talk until you click Stop, to be written down as text. Then your question as above |
 | You press **Send** in Send feedback | Web3Forms (web3forms.com), which emails it to the maker | the feedback you wrote, the app version and the page you were on; your email address **only if you type it in** (optional, so the maker can reply). At most 4 a day. If it can't be sent, it is copied for you to email yourself |
 | You press **Share** on your week | the app you pick (WhatsApp, X or Instagram) | a line about your week and its picture, for you to post or not |
@@ -34,12 +34,19 @@ Each of those companies handles its request under its own privacy policy. Knight
 maker on its own, and it collects no analytics, crash reports or usage statistics. Feedback only reaches the maker
 when you press Send yourself.
 
-The microphone is on only after you click Talk, and until you click Stop (at most a minute).
+The microphone is on only after you click Talk, and until you click Stop (at most a minute). If you close, reload
+or leave the page first, it stops and nothing is sent.
+
+Everything else Knightwise does runs on your PC and sends nothing: the Stockfish engine, the human-move model
+(Maia-3), your lessons, puzzles and practice, the coaches' voices, and the answers to the questions you tap when
+there is no AI key.
 
 ## The browser extension
 The optional Knightwise browser extension only talks to the Knightwise app on your own PC (`127.0.0.1`). On the
 chess.com pages where it may appear, it reads which finished game is open (to draw the coach's arrows) and the
-links and buttons it points at with its red ring. It sends nothing to anyone else.
+links and buttons it points at with its red ring. To keep fair play across tabs, it notes whether a chess.com
+tab is on a live-game page, so it stays quiet in your other tabs meanwhile; that note stays in your browser and is
+forgotten when the browser closes. It sends nothing to anyone else.
 
 ## Fair play
 Knightwise never gives help during a game against a real person: no hints, no arrows, no reading the board.
