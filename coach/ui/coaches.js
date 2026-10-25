@@ -187,7 +187,7 @@ function trainer(drills, opts) {
   const state = drills.map(() => null), briefed = drills.map(() => false);  // per position: right, missed, shown
   const answered = drills.map(() => false);  // has today's answer: right, missed or shown
   const right = () => state.filter(x => x === "right").length;
-  const counter = () => { $("#count").innerHTML = `<b class="num">${i + 1}</b>/${drills.length} <span class="count-ok" title="Right first time today">${svg("check")} ${right()}</span>`; };
+  const counter = () => { $("#count").innerHTML = tiles([["Puzzle", `${i + 1} of ${drills.length}`], ["Right first time", right()]]); };
   // sets that aren't recorded on the server (plan cards, lessons, drills) remember today's answers in this app, so
   // leaving halfway doesn't start you again (23 Oct test: "it reset without saving my progress")
   const SETS = "kw-sets", setKey = `${new Date().toDateString()}|${location.hash.split("?")[0]}`;
@@ -450,7 +450,7 @@ function trainer(drills, opts) {
 
 function trainerPage(title, sub) {
   return `<div class="page-head"><div>${sub.back || ""}<h1>${esc(title)}</h1><p class="sub">${esc(sub.text)}</p></div>
-      <span class="muted num" id="count"></span></div>
+      <span class="stat-row" id="count"></span></div>
     <div class="dots" id="dots"></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div><p class="small muted" id="where" style="margin-top:10px"></p></div>

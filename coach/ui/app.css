@@ -1062,3 +1062,8 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .ask-you { font-weight: 600; margin-bottom: 4px; color: var(--muted); }
 .ask-more { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .linkish { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; font: inherit; text-align: left; }
+/* top-right counters of the training pages: label above the number (25 Oct) */
+.stat-row { display: flex; gap: 8px; }
+.stat-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--surface); border-radius: 10px; padding: 6px 14px; min-width: 72px; }
+.stat-l { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.stat-tile b { font-size: 17px; color: var(--text); }

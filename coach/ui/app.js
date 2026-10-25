@@ -71,6 +71,10 @@ function countUp(root = document) {
     requestAnimationFrame(step);
   });
 }
+// The top-right counters of the training pages: small labelled tiles, the label above the number (25 Oct, owner:
+// "3 moves each · your record…" read like junk). tiles([["Puzzle", "2 of 10"], ["Right", 3]])
+const tiles = list => list.filter(Boolean).map(([label, value]) =>
+  `<span class="stat-tile"><span class="stat-l">${esc(label)}</span><b class="num">${value}</b></span>`).join("");
 const roll = (v, dec = 0) => `<span class="num" data-to="${v}" data-dec="${dec}">${(0).toFixed(dec)}</span>`;
 
 let STATUS = {};
@@ -1346,16 +1350,16 @@ async function blindfoldView() {
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Blindfold</h1>
-      <p class="sub calc-sub">Hear a game, see the board in your head.</p>
+      <p class="sub calc-sub">Listen to the start of one of your games, picture the board, then find a piece.</p>
       <p class="sub">Maya reads out the start of one of your games. Follow it in your head: the board stays empty. Then answer on the board.
         Each right answer makes the next one a move longer.</p></div>
-      <span class="muted num">Now: ${each(x.plies)}${x.best ? ` · Record: ${each(x.best)}` : ""}${x.goal ? ` · ${x.goal.name} badge at ${x.goal.moves}` : ""}</span></div>
+      <span class="stat-row" title="Right: the next one is a move longer. Wrong: a move shorter.">${tiles([
+        ["Length", `${Math.ceil(x.plies / 2)} moves`], x.best ? ["Best", `${Math.ceil(x.best / 2)} moves`] : null])}</span></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
         <div class="box stack" style="padding:16px"><div class="label">Your game against ${esc(x.game.opponent || "an opponent")}</div>
           <div id="bfmoves" class="small" style="min-height:44px"></div>
-          <p class="small muted" style="margin:0">No set to finish: right makes the next one a move longer, wrong a move shorter. Your record counts for the Blindfold badge.</p>
           <div class="row"><button class="btn primary" id="bfplay">${Voice.on ? "Listen" : "Show the moves"}</button>
             <button class="btn" id="bfpeek" hidden>Show the moves</button></div></div>
         <div class="box stack" style="padding:16px" id="bfq" hidden><h3 style="margin:0" id="bfask"></h3>
@@ -1452,7 +1456,7 @@ async function guessView() {
       <p class="sub calc-sub">Guess what real players of a rating play, not the engine's move.</p>
       <p class="sub">This week's challenge: five positions from real games. What would a player of that rating play? The closer to what most of them play, the more points.
         ${c.best != null ? ` Your best this week: <b>${c.best}</b> of ${c.positions.length * 100}.` : ""}</p></div>
-      <span class="muted num" id="gcount"></span></div>
+      <span class="stat-row" id="gcount"></span></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
@@ -1468,7 +1472,7 @@ async function guessView() {
     const p = x(), targets = picked ? p.legal.filter(u => u.startsWith(picked)).map(u => u.slice(2, 4)) : [];
     Board.render($("#board"), { fen: extra.fen || p.fen, flip: !p.white, targets: answered ? [] : targets, arrows: extra.arrows || [],
       highlights: { [p.last[0]]: "hl-last", [p.last[1]]: "hl-last", ...(picked ? { [picked]: "hl-pick" } : {}) }, onClick: click });
-    $("#gcount").textContent = `${i + 1} of ${c.positions.length}`;
+    $("#gcount").innerHTML = tiles([["Position", `${i + 1} of ${c.positions.length}`]]);
     $("#gtotal").textContent = `${total} points`;
   }
   function show() {
@@ -1549,7 +1553,7 @@ async function calcView() {
     <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">See it in your head</h1>
       <p class="sub calc-sub">Plan moves ahead without moving the pieces: the skill of seeing ahead.</p></div>
-      <span class="muted num" id="calccount"></span></div>
+      <span class="stat-row" id="calccount"></span></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div><p class="small muted" id="calcwhere" style="margin-top:10px"></p></div>
       <div class="stack">
@@ -1570,7 +1574,8 @@ async function calcView() {
     $("#calcline").innerHTML = Array.from({ length: need() }, (_, k) => `<div class="calc-slot ${yours(k) ? "mine" : "theirs"} ${line[k] ? "full" : k === line.length ? "now" : ""}">
         <span class="num">${k + 1}</span><b>${yours(k) ? "Your move" : "Their reply"}</b>
         <i class="num">${line[k] ? `${line[k].slice(0, 2)} → ${line[k].slice(2, 4)}` : k === line.length ? "click a piece, then its square" : "…"}</i></div>`).join("");
-    $("#calccount").textContent = `${i + 1} of ${items.length} · ${Object.keys(kept).filter(id => items.some(it => it.id === id)).length} done today`;
+    $("#calccount").innerHTML = tiles([["Puzzle", `${i + 1} of ${items.length}`],
+      ["Done today", Object.keys(kept).filter(id => items.some(it => it.id === id)).length]]);
   }
   function show() {
     line = []; picked = null; done = false;
