@@ -10,6 +10,9 @@ from coach.paths import DATA
 
 FILE = DATA / "daily.json"
 OPENING_MOVES = 3  # your first three moves of the opening are enough for a daily warm-up
+# a brand-new account has no games for its own position and opening: three puzzles on the basics instead of one
+# (26 Oct, owner). Only when there are no games at all: everyone else's set is unchanged.
+NEW_PLAYER_THEMES = ["hangingPiece", "mateIn1", "fork", "pin", "trappedPiece", "mateIn2"]
 
 
 def _memory():
@@ -76,6 +79,17 @@ def challenge(home, games=None, engine=None, today=None):
             drill["steps"] = drill["steps"][:OPENING_MOVES]
             drill["intro"] = f"Your opening: the first moves of the {lesson['name']}."
             items.append(drill)
+    if not home.get("games"):
+        got = {x.get("id") for x in items}
+        for t in rng.sample(NEW_PLAYER_THEMES, len(NEW_PLAYER_THEMES)):
+            if len(items) >= 3:
+                break
+            if t == theme:
+                continue
+            more = plan._puzzles(t, home.get("rating"), rng, avoid=set(memory.seen_before(today)) | got)[:1]
+            if more and more[0].get("id") not in got:
+                got.add(more[0].get("id"))
+                items.append({**more[0], "intro": f"Also today: {plan.THEME_NAME[t]}. {more[0]['intro']}"})
     mem = _memory()
     if engine is not None and items:  # the full set (with your opening): kept for the rest of the day
         mem["set"] = {"day": today.isoformat(), "theme": plan.THEME_NAME[theme], "drills": items}
