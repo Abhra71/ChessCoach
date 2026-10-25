@@ -1341,6 +1341,14 @@ async function filmView(id) {
 // Maya reads out the first moves of one of your own games; the board stays empty. Then one question, answered by
 // clicking a square (or saying it, with an AI key). Right: the next one is a move longer. With the voice off, the
 // moves show one at a time instead, then disappear.
+// what Maya says after an answer: a few ways, never the same twice in a row (25 Oct, owner: "repeated every time?")
+const BF_RIGHT = ["Right, without seeing a thing.", "Yes. You held the whole board in your head.", "Spot on. That's real board vision.",
+  "Correct. Your mind's eye is getting sharper.", "Right. Most players lose track by then."];
+const BF_WRONG = ["This is hard for everyone at first: it gets easier every day.", "Close. Next time, picture each move as it lands.",
+  "Not this time. Try saying each move to yourself as you hear it.", "Lost track? That's normal. A shorter one comes next.",
+  "Keep at it: a few minutes a day is how players learn to see without the board."];
+let bfLast = "";
+const bfLine = list => { const pick = list.filter(l => l !== bfLast); bfLast = pick[Math.floor(Math.random() * pick.length)]; return bfLast; };
 const each = plies => { const n = Math.ceil(plies / 2); return `${n} move${n === 1 ? "" : "s"} each`; };
 async function blindfoldView() {
   shell("train", `<p class="muted">Finding one of your games…</p>`);
@@ -1415,8 +1423,8 @@ async function blindfoldView() {
       : `<span class="bad-text">Not ${esc(sq)}.</span> ${esc(where)}${esc(more)}`;
     if (r.record) confetti(40);
     $("#bfnext").hidden = false;
-    Coach.react("maya", right ? "celebrate" : "encourage", right ? `Right, without seeing a thing.${r.record ? " That's your record." : ""}${more}`
-      : `${where} This is hard for everyone at first: it gets easier every day.${more}`);
+    Coach.react("maya", right ? "celebrate" : "encourage", right ? `${bfLine(BF_RIGHT)}${r.record ? " That's your record." : ""}${more}`
+      : `${where} ${bfLine(BF_WRONG)}${more}`);
   }
   $("#bfplay").onclick = play;
   $("#bfpeek").onclick = peek;
