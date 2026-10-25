@@ -1447,7 +1447,14 @@ async function guessView() {
     return;
   }
   let i = 0, picked = null, total = 0, answered = false;
-  const scores = [];
+  // answered positions are kept: leaving halfway brings you back to the start of the next one (25 Oct, owner)
+  const KEY = "kw-guess", set = c.positions.map(p => p.fen).join("|");
+  let scores = [];
+  try { const k = JSON.parse(localStorage.getItem(KEY) || "{}"); if (k.set === set && k.scores.length < c.positions.length) scores = k.scores;
+    else if (k.set === set) { api("/api/guess/done", { total: k.scores.reduce((a, b) => a + b, 0) }).catch(() => {}); localStorage.removeItem(KEY); }  // all five answered, left before the score: still counted
+  } catch (e) {}
+  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify({ set, scores })); } catch (e) {} };
+  i = scores.length; total = scores.reduce((a, b) => a + b, 0);
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/train" class="small muted" style="text-decoration:none">← Train</a>
       <h1 style="margin-top:6px">Guess the human move</h1>
@@ -1494,7 +1501,7 @@ async function guessView() {
     answered = true; picked = null;
     const pct = p.chances[uci] || 0, top = p.top[0];
     const pts = uci === top.uci ? 100 : Math.min(100, Math.round(100 * pct / (p.chances[top.uci] || top.pct || 1)));
-    scores.push(pts); total += pts;
+    scores.push(pts); total += pts; keep();
     const mine = p.top.find(t => t.uci === uci);
     const arrows = [{ from: uci.slice(0, 2), to: uci.slice(2, 4), kind: "mine", label: "Your guess" },
       ...(top.uci !== uci ? [{ from: top.uci.slice(0, 2), to: top.uci.slice(2, 4), kind: "real", label: "Most played" }] : [])];
@@ -1518,6 +1525,7 @@ async function guessView() {
   }
   $("#gnext").onclick = async () => {
     if (i + 1 < c.positions.length) { i++; return show(); }
+    try { localStorage.removeItem(KEY); } catch (e) {}  // finished: next time is a fresh go
     const r = await api("/api/guess/done", { total }).catch(() => ({ best: total, record: false }));
     if (r.record) { confetti(); Sound.play("done"); }
     $("#gresult").innerHTML = `<h2 style="margin:0">${total} of ${c.positions.length * 100}</h2>
