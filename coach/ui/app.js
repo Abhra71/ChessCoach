@@ -1459,8 +1459,8 @@ async function guessView() {
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
         <div class="box stack" style="padding:16px"><h3 style="margin:0" id="gtask"></h3>
-          <p class="small muted guess-hint" style="margin:0">Click a piece, then where it goes. Ratings here are online (Lichess) ratings.</p></div>
-        <div class="box stack" style="padding:16px" id="gresult" hidden></div>
+          <p class="small muted guess-hint" style="margin:0">Click a piece, then its square. Lichess ratings.</p></div>
+        <div class="box" style="padding:16px" id="gresult" hidden></div>
         <div class="row"><span class="num" id="gtotal"></span><button class="btn primary" id="gnext" hidden>Next →</button></div>
       </div>
     </div>`;
@@ -1502,10 +1502,10 @@ async function guessView() {
     const engLine = !eng ? "" : eng.uci === top.uci ? `The engine agrees: ${esc(eng.san)} is its best move too.`
       : `The engine prefers <b>${esc(eng.san)}</b>${p.chances[eng.uci] != null ? `, played by ${Math.round(p.chances[eng.uci])}% at this level` : ", which almost no one plays here"}: people and engines see different things.`;
     $("#gresult").innerHTML = `<div class="row spread"><h2 style="margin:0">${pts} points</h2><span class="small muted">${pct < 1 ? "almost no one plays it" : `${Math.round(pct)}% play your move`}</span></div>
-      <div class="label">At ${p.rating.toLocaleString()}, players play</div>
-      ${p.top.map(t => `<div class="small"><div class="row spread"><span><b>${esc(t.san)}</b>${t.uci === uci ? " · your guess" : ""}</span><span class="num">${t.pct}%</span></div>
+      <div class="label guess-label">At ${p.rating.toLocaleString()}, players play</div>
+      ${p.top.map(t => `<div class="small guess-row"><div class="row spread"><span><b>${esc(t.san)}</b>${t.uci === uci ? ` <span class="muted">· your guess</span>` : ""}</span><span class="num">${t.pct}%</span></div>
         <div class="bar"><div style="width:${t.pct}%"></div></div></div>`).join("")}
-      <p class="small" style="margin:6px 0 0">${engLine}</p>`;
+      <p class="small guess-engine">${engLine}</p>`;
     $("#gresult").hidden = false;
     $("#gnext").hidden = false;
     $("#gnext").textContent = i + 1 < c.positions.length ? "Next →" : "See your score";

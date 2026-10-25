@@ -1077,3 +1077,8 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 .stat-tile { width: 112px; }  /* smaller, still all equal (25 Oct) */
 /* tiles level with the title, not the back link above it (25 Oct) */
 .page-head:has(> div > a:first-child) .stat-row { margin-top: 17px; }
+/* Guess the move: even spacing in the result (25 Oct) */
+#gresult .guess-label { margin: 14px 0 8px; }
+#gresult .guess-row { margin-bottom: 12px; }
+#gresult .guess-row .bar { margin-top: 6px; }
+#gresult .guess-engine { margin: 4px 0 0; line-height: 1.5; }
