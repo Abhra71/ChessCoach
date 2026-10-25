@@ -2362,7 +2362,7 @@ async function settingsView() {
       <div class="settings-row"><div><h3 title="Games, checks, practice and your logbook.">Your data</h3></div>
         <div class="row"><button class="btn" id="folder">Open data folder</button></div></div>
       <div class="settings-row"><div><h3 title="Free and open source. Fair play: never active in games against real people.">About and credits</h3></div>
-        <div class="muted small">Knightwise ${esc((STATUS && STATUS.version) || "")} · GPL-3.0 · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a>
+        <div class="muted small">Knightwise ${esc((STATUS && STATUS.version) || "")} · GPL-3.0 · <a href="https://github.com/Abhra71/ChessCoach" target="_blank" rel="noopener">GitHub ↗</a> · <a href="https://github.com/Abhra71/ChessCoach/blob/main/PRIVACY.md" target="_blank" rel="noopener">Privacy ↗</a>
           <details style="margin-top:6px"><summary>Made with the work of others, all free</summary><ul style="margin:6px 0 0;padding-left:18px">
             <li><b>Stockfish 19</b>, the move checker: the Stockfish team, GPL-3.0</li>
             <li><b>The human-move model</b> is Maia-3, by the CSSLab at the University of Toronto, AGPL-3.0: run by Knightwise itself</li>

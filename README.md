@@ -13,7 +13,7 @@ one thing at a time, at your level. Free, open source, and it runs on your own P
 
 No account · no ads · no subscription · your games stay on your computer
 
-*Microsoft Store: private beta now, public release coming. Windows 10 and 11.*
+*Knightwise 1.0 · free on the Microsoft Store · Windows 10 and 11*
 
 </div>
 
@@ -73,64 +73,42 @@ Your numbers will be different. That's the point: everything is worked out from 
 - It doesn't play against you; chess.com has bots for that.
 - It needs Windows for the app. The chess.com coaches need Chrome or Edge with the Knightwise extension.
 
-## Status: private beta
+## What's in 1.0
 
-| Piece | State |
-|---|---|
-| Download a player's games from chess.com | works |
-| Check every move with Stockfish and find the big mistakes | works |
-| Sort mistakes into patterns (hanging pieces, missed captures, forks, missed mates, stalemated wins) | works |
-| Review page: your top 3 patterns on real boards from your own games, in plain words | works |
-| Practice page: positions from your own games, click your move, it says right or why not | works |
-| Only new games are downloaded and checked (so it can later run by itself) | works |
-| Runs by itself in the background: checks new games every 10 minutes, Windows notification | works |
-| Browser extension: key moments of your finished games with labelled arrows (Better / You played / Reply) on the chess.com board; guided set-up with real Chrome screenshots (click spots circled) and copy buttons | works (beta) |
-| Two coaches (original characters, since 13 Oct: Maya for your games, practice and puzzles, Viktor for progress and your plan): drawn with arms and hands, gestures, voice; on chess.com and inside the app, each tab's coach comes up by themselves, the full welcome once a day; hidden on every chess.com page where a game can run | built, testing (next update) |
-| Your plan: one opening that suits your games (Lichess opening catalogue + Stockfish + your results), one tactic and one endgame from 18,000 Lichess puzzles in 20 themes, 40 per theme in every 100-point band from 300 to about 2,900, matched to your rating, one way of thinking; played on the board with the coach reacting to every move | built, testing (next update) |
-| Something new when it's needed: the coaches bring a new tactic, opening or idea only when your games show a reason (a stalemated win, a new kind of mistake, opening trouble, a losing streak, a stuck habit), one at a time | built, testing (next update) |
-| Do this, not that: e.g. "skip bullet for now: 2.0 pieces lost a game there, 0.6 in blitz", or a break after 3 losses in a row | built, testing (next update) |
-| Instant review: a just-finished game is reviewed as soon as chess.com archives it | built, testing (next update) |
-| Navigation guide: the coach rings chess.com's own link ("click Puzzles") and checks you got there; it never clicks for you | built, testing (next update) |
-| Talk with your coaches: with your own free AI key, ask questions and get replies in each coach's personality; the engine's facts are checked, and if the AI is busy the coach still answers | built, testing (next update) |
-| Home at a glance: your focus with a practise button, your habits as clickable tiles (each opens practice for that habit, with a fewer or more lately arrow), win bar, rating change; numbers roll up, lines draw themselves | built, testing (next update) |
-| Today's 5 minutes: one position from your own games, one puzzle on today's idea, the first moves of your opening; a gentle streak that forgives one missed day | built, testing (next update) |
-| You vs you: your last 20 games against the 20 before (pieces given away, games won, big mistakes) | built, testing (next update) |
-| Progress with Viktor: the story of your week (games, pieces given away against the week before, most improved habit, best game, next week's one thing), saved as a picture to share | built, testing (next update) |
-| 20 badges in four groups, Habits, Clean play, Results and Practice, Bronze, Silver and Gold, earned from real chess.com games and your own practice only | built, testing (next update) |
-| A briefing before every position: which game or puzzle it is, the phase, the material, the engine's verdict, what happened, and the mindset to bring; the coach reads it out, then the board wakes up | built, testing (next update) |
-| Practice organised by habit: numbered dots grouped by habit (green right, orange missed), Back and Next, your own positions first, then puzzles at your level from easy to hard | built, testing (next update) |
-| Try it again: any key moment of a reviewed game opens as a puzzle on the board, with Maya; it joins your practice memory | built, testing (next update) |
-| Your opening tree, for beginners: every move in plain words ("You: pawn to e4"), how to read it, a board for the move you click, your score on each branch, named from the Lichess catalogue, and a note on the branches that cost you games | built, testing (next update) |
-| Game review one moment at a time, in the app and on chess.com's own board: You played, Better, They replied, Their better, each with its arrows and Maya saying it | built, testing (next update) |
-| Rematch your loss: from the moment it went wrong, against the engine at about your opponent's level (an approximation, said plainly), with take back and start again | built, testing (next update) |
-| Clock coach: each game's time on the move that cost the most and your longest think; across 30 games, the biggest mistakes played in a rush and the losses on time | built, testing (next update) |
-| Warm-up on chess.com's home: three positions from your own games in the coach's box, before you play; answers count as practice | built, testing (next update) |
-| chess.com self-check: every address, element and API field Knightwise uses is checked on each visit and weekly on GitHub; a change pauses only that feature, with an honest line, shown in Settings and the pop-up | built, testing (next update) |
-| Tags on chess.com's games archive (clean game, pieces left hanging...) that open the review in Knightwise | built, testing (next update) |
-| A beginner's introduction at the top of every section, until "Got it" | built, testing (next update) |
-| The coaches' voices, picked by ear: Maya af_heart, Viktor am_michael a little slower, with a breath between sentences; on chess.com she starts after the first sentence | built, testing (next update) |
-| Sounds: moves, captures, check, right and wrong answers, a finished set (with confetti); no button clicks or coach sounds; picked by a player from Kenney's CC0 packs; own switch in Settings, no background music | built, testing (next update) |
-| Lichess puzzles matched to your habits, mixed into the practice page (new set every day) | works |
-| Practice remembers you: missed positions come back the next day, right ones after 3, 7, 21, 60 days | works |
-| "Is this you?" answer on the review page, saved in your logbook | works |
-| Welcome screen: a short 3D film of an antique chess set (Poly Haven, CC0) replaying the Opera Game (high above, then beside the pieces with the background out of focus, then a slow orbit), typed lines, a quiet Satie piano piece (public domain, mute remembered), set-up steps in a black panel on the right; offline | works |
-| Desktop app window: Home (your focus, score, trend, last game), Games, Practice, Settings; dark and light | works (beta) |
-| Settings: chess.com account, theme, voice, two optional AI key slots kept in Windows Credential Manager | works (AI use: next) |
-| The coach speaks (Kokoro, on this computer): briefing, key moments, practice feedback; 4 voices | works |
-| AI explanations and "Ask the coach" with your own key (free Groq or Google Gemini; Claude and OpenAI come in 1.1), grounded in engine facts | works (beta) |
-| Ask the coach by voice: Talk button, Whisper on this computer (one-time 485 MB download in Settings) | works (beta) |
-| Windows installer: Next, Next, Finish; icon by the clock; welcome page asks your chess.com name | works (beta, not yet published) |
-| Microsoft Store package (MSIX, signed by Microsoft on upload, so Windows never blocks it): starts with Windows, notifications, extension copied to Documents\Knightwise | built, not yet submitted |
-| Voice conversation with the coaches: hold to talk, she answers out loud, and the turns continue; needs the free AI key | planned, next update |
-| "Review my game against X" by voice: the coach finds and opens the game and talks through every move, what was better, and one new thing | planned, next update |
-| A two-way bridge: the app opens the game on chess.com with Maya there; chess.com buttons open the right app page | planned, next update |
-| AI usage panel in the sidebar and Settings: today's use for each key, time to reset, which AI does which job; a small dot on chess.com | planned, next update |
-| Groq first, Gemini as backup: a busy AI is rested for 10 minutes; then the smaller model, then the written sentences, so the coach always answers | planned, next update |
+**Learn**
+- **Your course:** 43 lessons in six levels, from Basics (what pieces are worth, the basic checkmates) to Expert, each
+  taught with your own positions and Lichess puzzles. The next lesson is picked by the mistake that costs you most.
+- **Your level:** five steps from beginner to 2,000, each measured in your last 20 games.
+- **Your plan:** one opening, tactic, endgame and way of thinking for you now, plus the whole Lichess library to explore.
+
+**Train**
+- **Prep:** any chess.com player's openings and how their games end, a deep "how to beat them" check by Stockfish,
+  and positions from their own games to punish.
+- **Opening tree** and **Repertoire:** how your games start, and three lines to know by heart.
+- **In your head:** plan the whole line before anything moves. **Blindfold:** follow one of your games by ear.
+- **Guess the move:** what would a player of this rating play? Powered by Maia-3, a model of human chess.
+- **Endgames:** the endings every player must know, against perfect defence (Lichess's endgame tablebase).
+
+**Every day**
+- **Today's 5 minutes** and **Practice** from your own games, new at midnight in your own time zone.
+- **Game review** one key moment at a time, in the app and on chess.com's own board, with **Rematch** from the
+  moment it went wrong. Your **game of the month** as a short film, your week or month as **Wrapped** or a printable report.
+- **51 badges**, earned only in real games and your own practice.
+
+**The coaches**
+- Maya and Viktor point you to the one thing your games need, with the reason from your own numbers and exactly where
+  it is in the app, at most three times a day.
+- Tap a question to ask them, free. Type or talk to them with a free Groq or Google Gemini key.
+- Their voices are made on your PC; nothing is recorded unless you press Talk.
+
+**Built to last**
+- Works offline with the games it already has. A daily fix file on GitHub keeps it working when chess.com changes its
+  pages, with no new release.
 
 ## For players: install
 
-1. Get **Knightwise** from the Microsoft Store (now a private beta for a small group of testers; public later). Click **Get**: no installer, no Python, no admin rights, and Windows doesn't block it, because the Store
-   signs it.
+1. Get **Knightwise** from the Microsoft Store. Click **Get**: no installer, no Python, no admin rights, and Windows
+   doesn't block it, because the Store signs it.
 2. The app opens full screen on the welcome: type your chess.com username. The coach checks your games (about 2 minutes the first
    time) and shows your review. From then on it lives as a knight icon by the clock and checks each new game
    by itself.

@@ -1,5 +1,25 @@
 # Knightwise: where we are and what comes next
 
+## 26 Oct 2026: Knightwise 1.0 is ready to submit (START HERE)
+
+**State:** dev-0.6 merged into main. The final Store package is `dist\Knightwise-1.0.0.0.msix` (359 MB, built from
+main; not in the repo). Checked: 275 tests, a smoke test of the built app (every page, the voice, the human-move
+model), Defender clean, VirusTotal 1/62 (SentinelOne's "Static AI - Suspicious MSIX", a false positive on an
+unsigned package), offline, no AI key, a brand-new chess.com account (0 games) and a one-game account. Two
+independent code reviews (0.6-0.9 and 0.9-1.0): every real finding fixed, four of them fair play.
+
+**Launch, with a parent (Partner Center):** upload the MSIX; listing text from `installer/msix/STORE_LISTING.md`;
+screenshots; age rating (IARC questionnaire); privacy link https://github.com/Abhra71/ChessCoach/blob/main/PRIVACY.md;
+free; publish manually after certification (1-5 days: first public release, full-trust and microphone are reviewed).
+Trailer: later, as a listing update (no new package).
+
+**1.1 list:** Claude and OpenAI keys back (tested); a backup and restore file; the local server accepts only
+Knightwise's own extension ID; master games (undecided); report the SentinelOne false positive; the trailer;
+a GitHub release with the Windows installer (unsigned: SmartScreen warns), only if wanted.
+
+**Tidy after launch:** the main folder `C:\Syntax_Assembler\ChessCoach` has two 19 Oct leftovers (an empty
+`coach/ladder.py` and a one-line label change in `app.js`); uninstall the old Store Knightwise 0.4.1 from this PC.
+
 *Hand-over notes for the next work session (updated 14 Oct 2026). Read this after CLAUDE.md.*
 
 ## Branch dev-0.6, 14 Oct 2026 (built while the user was away; worktree C:\Syntax_Assembler\ChessCoach-0.6)
