@@ -816,6 +816,8 @@ function skillValue(s) {
   return `${v} ${s.unit && s.unit !== "%" ? s.unit : ""} · goal: ${s.way === "max" ? "at most" : "at least"} ${t}`.replace(/\s+/g, " ");
 }
 
+// short names for the course path, one line each (25 Oct, owner); the full title shows on hover and in the lesson
+const COURSE_SHORT = {"basics-values": "Piece values", "basics-cheapest": "Cheapest attacker", "basics-mates": "Basic checkmates", "safe-hanging": "Every piece safe", "safe-threats": "Their threat first", "safe-free": "Free pieces", "safe-guard": "Keep the guard", "safe-checks": "Their checks", "safe-backrank": "The back rank", "safe-mate1": "Mate in one", "safe-stalemate": "No stalemate", "tac-fork": "Forks", "tac-pin": "Pins", "tac-skewer": "Skewers", "tac-discovered": "Discoveries", "tac-develop": "Develop pieces", "tac-centre": "Take the centre", "tac-castle": "Castle early", "tac-mate2": "Mate in two", "tac-tricks": "Deeper tricks", "club-shelter": "King shelter", "club-defender": "Remove defender", "club-active": "Active pieces", "club-passed": "Passed pawns", "club-king": "Endgame king", "club-pawns": "Pawn weaknesses", "club-rook": "Rook endgames", "club-clock": "Slow down", "pre-calc": "In your head", "pre-intermezzo": "In-between move", "pre-quiet": "The quiet move", "pre-xray": "X-rays", "pre-trapped": "Trapped pieces", "pre-zugzwang": "Zugzwang", "pre-minor": "Minor endings", "pre-hold": "Hold the draw", "pre-iqp": "Isolated pawn", "pre-structures": "Pawn structures", "exp-attack": "King attack", "exp-queen": "Queen endings", "exp-convert": "Convert the win", "exp-prophylaxis": "What they want", "exp-plans": "Master plans"};
 async function levelView() {
   shell("level", `<p class="muted">Loading…</p>`);
   const p = await api("/api/ladder");
@@ -884,7 +886,7 @@ async function courseView() {
     const can = l.status !== "coming", cls = l.next ? "next" : l.status;
     return `<a class="cnode ${cls}" ${can ? `href="#/course/${l.id}"` : ""} title="${esc(l.reason || l.habit || "")}${(COURSE_CHIP[l.status] || [])[0] ? " · " + esc(COURSE_CHIP[l.status][0]) : ""}">
       <span class="cdot">${ICON[l.status] && !l.next ? svg(ICON[l.status]) : l.next ? svg("practice") : ""}</span>
-      <span class="ctitle">${esc(l.title)}</span></a>`;
+      <span class="ctitle" title="${esc(l.title)}">${esc(COURSE_SHORT[l.id] || l.title)}</span></a>`;
   };
   const groups = Object.keys(c.levels).map((lv, i) => {
     const ls = c.lessons.filter(l => l.level === lv);
