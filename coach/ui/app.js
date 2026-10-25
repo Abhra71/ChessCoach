@@ -1371,7 +1371,8 @@ async function blindfoldView() {
           <div class="row"><button class="btn primary" id="bfplay">${Voice.on ? "Listen" : "Show the moves"}</button>
             <button class="btn" id="bfpeek" hidden>Show the moves</button></div></div>
         <div class="box stack" style="padding:16px" id="bfq" hidden><h3 style="margin:0" id="bfask"></h3>
-          <div class="row">${TALK ? `<button class="btn" id="bfsay">Say the square</button>` : ""}<span class="small muted" id="bfheard"></span></div>
+          <div class="row">${TALK ? `<button class="btn" id="bfsay">Say the square</button>` : ""}<button class="btn" id="bfgive">Show the answer</button>
+            <span class="small muted" id="bfheard"></span></div>
           <div class="small" id="bfmsg"></div>
           <div class="row"><button class="btn primary" id="bfnext" hidden>Next →</button></div></div>
       </div>
@@ -1406,13 +1407,14 @@ async function blindfoldView() {
     $("#bfmoves").innerHTML = x.moves.map((m, k) => `${k % 2 ? "" : `<span class="muted">${k / 2 + 1}.</span> `}${esc(m)}`).join(" ");
     $("#bfpeek").hidden = true;
   }
-  async function answer(sq) {
+  async function answer(sq) {  // sq null: they asked for the answer (counts as a miss)
     if (!ready || done) return;
     done = true; reading++; Voice.stop();
+    $("#bfgive").hidden = true; if ($("#bfsay")) $("#bfsay").hidden = true;  // answered: only Next is left
     const looked = peeked;  // read the moves before answering: no longer move for it
-    const right = x.answers.includes(sq);
+    const right = !!sq && x.answers.includes(sq);
     const hl = Object.fromEntries(x.answers.map(a => [a, "hl-ok"]));
-    if (!right) hl[sq] = "hl-no";
+    if (sq && !right) hl[sq] = "hl-no";
     board({ fen: x.fen, hl });
     peek();
     Sound.play(right ? "right" : "wrong", 0.6);
@@ -1420,7 +1422,7 @@ async function blindfoldView() {
     const more = r.plies ? ` Next one: ${each(r.plies)}.` : "";
     const where = x.answers.length > 1 ? `The answers: ${x.answers.join(", ")}.` : `It's on ${x.answers[0]}.`;
     $("#bfmsg").innerHTML = right ? `<span class="ok-text"><b>Right.</b> You saw it without the board.</span>${esc(more)}`
-      : `<span class="bad-text">Not ${esc(sq)}.</span> ${esc(where)}${esc(more)}`;
+      : sq ? `<span class="bad-text">Not ${esc(sq)}.</span> ${esc(where)}${esc(more)}` : `${esc(where)}${esc(more)}`;
     if (r.record) confetti(40);
     $("#bfnext").hidden = false;
     Coach.react("maya", right ? "celebrate" : "encourage", right ? `${bfLine(BF_RIGHT)}${r.record ? " That's your record." : ""}${more}`
@@ -1428,6 +1430,7 @@ async function blindfoldView() {
   }
   $("#bfplay").onclick = play;
   $("#bfpeek").onclick = peek;
+  $("#bfgive").onclick = () => answer(null);  // stuck: see it, and the next one is shorter (25 Oct)
   $("#bfnext").onclick = () => blindfoldView();
   const say = $("#bfsay");
   if (say) say.onclick = async () => {
@@ -1435,10 +1438,10 @@ async function blindfoldView() {
     say.disabled = true; $("#bfheard").textContent = "Listening…";
     try {
       const text = await Mic.listen({ wait: 6000 });
-      if (!text) { $("#bfheard").textContent = "I didn't hear a square. Say it again, or click it."; return; }
+      if (!text) { $("#bfheard").textContent = `I didn't hear anything. Say a square, like "e4", or click it.`; return; }
       const r = await api("/api/blindfold/heard", { text });
       if (r.square) { $("#bfheard").textContent = `"${text}": ${r.square}`; answer(r.square); }
-      else $("#bfheard").textContent = `"${text}": which square was that? Click it.`;
+      else $("#bfheard").textContent = `I heard "${text}". Say a square, like "e4", or click it.`;
     } catch (e) { $("#bfheard").textContent = e.message || "The microphone isn't available. Click the square."; }
     finally { say.disabled = false; }
   };
