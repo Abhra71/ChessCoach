@@ -1361,8 +1361,8 @@ async function blindfoldView() {
       <p class="sub calc-sub">Listen to the start of one of your games, picture the board, then find a piece.</p>
       <p class="sub">Maya reads out the start of one of your games. Follow it in your head: the board stays empty. Then answer on the board.
         Each right answer makes the next one a move longer.</p></div>
-      <span class="stat-row" title="Right: the next one is a move longer. Wrong: a move shorter.">${tiles([
-        ["Length", `${Math.ceil(x.plies / 2)} moves`], x.best ? ["Best", `${Math.ceil(x.best / 2)} moves`] : null])}</span></div>
+      <span class="stat-row" title="How many moves Maya reads out (Move 1, Move 2…). Right: one more next time. Wrong: one fewer.">${tiles([
+        ["Moves now", Math.ceil(x.plies / 2)], x.best ? ["Your best", Math.ceil(x.best / 2)] : null])}</span></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
