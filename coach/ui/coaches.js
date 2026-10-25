@@ -187,7 +187,7 @@ function trainer(drills, opts) {
   const state = drills.map(() => null), briefed = drills.map(() => false);  // per position: right, missed, shown
   const answered = drills.map(() => false);  // has today's answer: right, missed or shown
   const right = () => state.filter(x => x === "right").length;
-  const counter = () => { $("#count").innerHTML = tiles([["Puzzle", `${i + 1} of ${drills.length}`], ["Right first time", right()]]); };
+  const counter = () => { $("#count").innerHTML = tiles([["Puzzle", `${i + 1} of ${drills.length}`], ["First try", right()]]); };
   // sets that aren't recorded on the server (plan cards, lessons, drills) remember today's answers in this app, so
   // leaving halfway doesn't start you again (23 Oct test: "it reset without saving my progress")
   const SETS = "kw-sets", setKey = `${new Date().toDateString()}|${location.hash.split("?")[0]}`;

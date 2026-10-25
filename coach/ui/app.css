@@ -1074,3 +1074,4 @@ button.lstepbox { font: inherit; color: inherit; cursor: pointer; border: 0; }
 /* a little space between every title and the line under it (25 Oct: the date line sat right under the title) */
 .sub { margin-top: 6px; }
 #calchint, .guess-hint, .report-head h2 + .small, .brief-facts { margin-top: 6px !important; }
+.stat-tile { width: 112px; }  /* smaller, still all equal (25 Oct) */
