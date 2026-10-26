@@ -323,3 +323,13 @@ Each is a separate, small piece of work. Paste this section with the files named
 How the owner likes to work, and what the app's decisions were, is in the owner's private notes on their own PC
 (`jarvis-keep\KNIGHTWISE-OWNER-NOTES.md`), not in this public repo. A chat helping the owner should ask for them.
 The public decisions are in `ROADMAP.md`, `docs/PLAN-1.0.md` and `docs/FLAGSHIPS.md`.
+
+## Keeping players' progress across updates (27 Oct 2026)
+Store updates keep the app's data folder (`%LOCALAPPDATA%\Packages\Abhra71.Knightwise_2zqxgm1k7h82j\LocalState`);
+only uninstalling wipes it. Two rules keep it that way:
+- **Never change the package identity** (`Name="Abhra71.Knightwise"`, the Publisher) in `installer/msix/AppxManifest.xml`:
+  a new identity is a new app with an empty folder. `tests/test_paths.py` guards where the Store app keeps its data.
+- **Every new version reads the files older versions saved.** If a file's shape changes, read the old shape with
+  defaults or convert it on first start; never start the player from zero.
+(1.0's update from 0.4.1 started fresh because 0.4.1 kept its data in `%LOCALAPPDATA%\ChessCoach`; only the owner had
+the beta, and their data was copied over by hand.)
