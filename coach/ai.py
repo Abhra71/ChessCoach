@@ -259,8 +259,12 @@ def test_key(slot):
         _call(provider, key, "Reply with one word.", "Say: ready", 300)
         return True, f"Works ({settings.PROVIDERS[provider]['name']}{', ' + _MODELS[provider] if provider in _MODELS else ''})."
     except urllib.error.HTTPError as e:
-        return False, {400: "The provider refused the request (bad key?).", 401: "The key was refused.",
-                       403: "The key isn't allowed to do this.", 429: "Out of free quota for now."}.get(e.code, f"HTTP {e.code}")
+        # one plain line per case, the same for every provider (27 Oct: Gemini's 400 and Groq's 401 read differently)
+        refused = "The key was refused. Make a new key on the provider's site and paste it here."
+        return False, {400: refused, 401: refused,
+                       403: "This key isn't allowed to use this AI. Check it's switched on, or make a new one.",
+                       429: "This key's free allowance is used up for now. Try again later."}.get(
+                           e.code, f"The provider didn't answer (error {e.code}). Try again later.")
     except Exception as e:
         return False, str(e)[:160]
 

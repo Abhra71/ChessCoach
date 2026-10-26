@@ -937,7 +937,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, json.dumps({"message": "That isn't a chess position."}), "application/json")
         except Exception as e:
             log.warning("AI failed: %s", e)
-            return self.send(502, json.dumps({"message": f"The AI didn't answer: {str(e)[:200]}"}), "application/json")
+            # the plain line, never "gemini: HTTP 400; groq: HTTP 401" (27 Oct, the owner's first 1.0 run)
+            from coach import talk
+            return self.send(502, json.dumps({"message": talk.why_not(e)}), "application/json")
         return self.send(200, json.dumps(answer), "application/json")
 
     def static_file(self, name, root=None):
