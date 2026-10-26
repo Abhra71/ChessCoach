@@ -13,6 +13,8 @@ one thing at a time, at your level. Free, open source, and it runs on your own P
 
 No account · no ads · no subscription · your games stay on your computer
 
+**[⬇ Get Knightwise free from the Microsoft Store](https://apps.microsoft.com/detail/9NKLGS6K72J2)**
+
 *Knightwise 1.0 · free on the Microsoft Store · Windows 10 and 11*
 
 </div>
@@ -107,7 +109,7 @@ Your numbers will be different. That's the point: everything is worked out from 
 
 ## For players: install
 
-1. Get **Knightwise** from the Microsoft Store. Click **Get**: no installer, no Python, no admin rights, and Windows
+1. Get **Knightwise** from the [Microsoft Store](https://apps.microsoft.com/detail/9NKLGS6K72J2). Click **Get**: no installer, no Python, no admin rights, and Windows
    doesn't block it, because the Store signs it.
 2. The app opens full screen on the welcome: type your chess.com username. The coach checks your games (about 2 minutes the first
    time) and shows your review. From then on it lives as a knight icon by the clock and checks each new game
