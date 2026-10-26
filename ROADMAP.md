@@ -13,6 +13,11 @@ screenshots; age rating (IARC questionnaire); privacy link https://github.com/Ab
 free; publish manually after certification (1-5 days: first public release, full-trust and microphone are reviewed).
 Trailer: later, as a listing update (no new package).
 
+**1.0 is LIVE on the Microsoft Store (26 Oct 2026):** https://apps.microsoft.com/detail/9NKLGS6K72J2
+**Already fixed for 1.1 (on dev-0.6, not yet in a package), from the owner's first 1.0 run, 27 Oct:** plain words when an
+AI key is refused (ask box and Test key); plain spaces round moves in AI answers; folding the coach keeps her answer;
+arrow labels stay inside the board. Retake the age-rating questionnaire (Online Content = Yes) with the 1.1 submission.
+
 **1.1 list:** Claude and OpenAI keys back (tested); a backup and restore file; the local server accepts only
 Knightwise's own extension ID; master games (undecided); report the SentinelOne false positive; the trailer;
 a GitHub release with the Windows installer (unsigned: SmartScreen warns), only if wanted.
