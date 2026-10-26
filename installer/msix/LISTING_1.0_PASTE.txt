@@ -1,0 +1,51 @@
+===== DESCRIPTION (replace everything in the box) =====
+
+Knightwise is a free chess coach that sits beside you on chess.com. It reads your finished games, finds the habits that really cost you, and trains you out of them, one thing at a time, at your level.
+
+• A full game review, free. Every move labelled (Best, Mistake, Blunder…), accuracy for both players, a game graph, and Maya talking you through each key moment: what you played, what was better, and how many players at your level find it. On the app's board or on chess.com's own board, with arrows.
+
+• Practice made from your own games. Positions where you went wrong come back until they stick, with puzzles on the same idea at your level. Today's 5 minutes, new every day at midnight in your own time zone.
+
+• Your course and your level. 43 lessons in six levels, from the basics up to expert, taught with your own positions. Five steps from beginner to 2,000, each measured in your last 20 games.
+
+• Rematch your loss. Play a lost game again from the moment it went wrong, against a human-like opponent at about their level.
+
+• Train. Prep before a game (any player's openings and how their games end), your opening tree and a repertoire, sparring, In your head, Blindfold, Guess the human move, and an endgame trainer against perfect defence.
+
+• Two coaches. Maya and Viktor point you to the one thing your games need, with the reason from your own numbers. Tap a question to ask them, free. Talk or type to them with a free Groq or Google Gemini key.
+
+• Your progress. You vs you, a weekly report you can print for a human coach, your month as Knightwise Wrapped, 51 badges, and your best game as a short 3D film.
+
+• Fair play first. Knightwise is never active during a game against a real person: no hints, no arrows, nothing.
+
+• Free and open source. No account, no adverts, no tracking. Your games stay on your PC.
+
+Made by Abhra71. Knightwise is an independent app. It is not made by, endorsed by or connected with chess.com.
+
+
+===== WHAT'S NEW IN THIS VERSION (replace the beta line) =====
+
+Knightwise 1.0: a calmer new look. A full game review with every move labelled, accuracy and a game graph. Train, one home for every training tool: Prep, opening tree, repertoire, In your head, Blindfold, Guess the move and an endgame trainer. Your course (43 lessons) and Your level. Rematch from the moment a game went wrong. Maya and Viktor point you to what your games need, at most three times a day. A printable report, Wrapped and 51 badges.
+
+
+===== PRODUCT FEATURES (one per box; edit the 6 boxes, then "Add more" for 7 and 8) =====
+
+1. Finds the habits that cost you, from your real chess.com games
+2. Free full game review: every move labelled, accuracy, key moments explained
+3. Practice and puzzles made from your own mistakes, at your level
+4. A 43-lesson course and a level ladder from beginner to 2,000
+5. Rematch your loss from the moment it went wrong
+6. Prep, sparring, Blindfold, Guess the move and an endgame trainer
+7. Strict fair play: never active in games against real people
+8. Free, open source, no account, no tracking
+
+
+===== SHORT DESCRIPTION (Supplemental fields, empty box) =====
+
+A free chess coach that sits beside you on chess.com: your real mistakes, explained, and practice made from them.
+
+
+===== KEYWORDS (add these 2 to the 5 already there, 7 in total) =====
+
+chess
+chess lessons
