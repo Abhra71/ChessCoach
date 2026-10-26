@@ -313,7 +313,9 @@ function askBox(el, { placeholder, enabled, listen, onAsk, coach, chips, section
   const clearAnswer = () => { clearTimeout(fade); out.innerHTML = ""; q.value = "";
     document.removeEventListener("pointerdown", elsewhere, true); };
   // only doing something else clears it (a button, a link, a field), not a click on empty space (23 Oct test)
-  const elsewhere = e => { if (!el.contains(e.target) && e.target.closest("a,button,input,select,textarea,label,[onclick]")) clearAnswer(); };
+  // the coach's own card doesn't count: folding Maya kept clearing her answer (27 Oct, the owner's first 1.0 run)
+  const elsewhere = e => { if (!el.contains(e.target) && !e.target.closest(".kw-coach")
+    && e.target.closest("a,button,input,select,textarea,label,[onclick]")) clearAnswer(); };
   const fadeLater = () => { clearTimeout(fade); fade = setTimeout(function tick() {
     if (out.matches(":hover")) { fade = setTimeout(tick, 10000); return; }
     clearAnswer(); }, 60000);

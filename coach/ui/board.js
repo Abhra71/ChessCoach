@@ -31,7 +31,9 @@ const Board = (() => {
     const len = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / len, uy = (y2 - y1) / len;
     const hx = x2 - ux * 3.6, hy = y2 - uy * 3.6, px = -uy * 2.2, py = ux * 2.2;
     const sx = x1 + ux * 2, sy = y1 + uy * 2;
-    const tx = (sx + hx) / 2, ty = (sy + hy) / 2, text = a.label || k.label, w = text.length * 1.55 + 2.4;
+    const text = a.label || k.label, w = text.length * 1.55 + 2.4, ty = (sy + hy) / 2;
+    // kept inside the board: "You played" on the a- or h-file was cut off at the edge (27 Oct, the owner's 1.0 run)
+    const tx = Math.min(Math.max((sx + hx) / 2, w / 2 + 0.3), 80 - w / 2 - 0.3);
     return `<g class="arrow" opacity=".92">
       <line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy}" stroke="${k.color}" stroke-width="1.7" stroke-linecap="round"/>
       <polygon points="${x2},${y2} ${hx + px},${hy + py} ${hx - px},${hy - py}" fill="${k.color}"/>

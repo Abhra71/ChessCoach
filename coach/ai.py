@@ -184,6 +184,15 @@ def ready():
     return any(settings.get_key(slot) for slot in settings.SLOTS)
 
 
+# The AI puts odd spaces round chess moves ("the move a6"): the app's font draws U+202F with no width, so
+# answers read "aftera6the" (27 Oct, the owner's first 1.0 answers). Every kind becomes a plain space.
+_ODD_SPACES = str.maketrans({c: " " for c in "      　"} | {"​": ""})
+
+
+def _plain_spaces(text):
+    return text.translate(_ODD_SPACES) if isinstance(text, str) else text
+
+
 def complete(system, prompt, max_tokens=700):
     """Ask key 1, then key 2. Returns (text, provider). Raises NoKey when no key is set."""
     s, errors = settings.load(), []
@@ -196,7 +205,7 @@ def complete(system, prompt, max_tokens=700):
             errors.append(f"{provider}: resting")
             continue
         try:
-            text = _call(provider, key, system, prompt, max_tokens)
+            text = _plain_spaces(_call(provider, key, system, prompt, max_tokens))
             if text:
                 return text, provider
             errors.append(f"{provider}: empty answer")
