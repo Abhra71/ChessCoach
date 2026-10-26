@@ -17,7 +17,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install chess==1.11.2 pytest
+      # the same tools as tests.yml: the shared test set-up loads the puzzles, which need zstandard (26 Oct)
+      - run: pip install chess==1.11.2 pytest==9.1.1 numpy==2.5.3 keyring==25.7.0 zstandard==0.25.0
       - name: Live check of chess.com's game API
         env:
           KNIGHTWISE_LIVE: "1"
