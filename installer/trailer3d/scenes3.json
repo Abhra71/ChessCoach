@@ -1,0 +1,24 @@
+[
+ {"name": "home", "hash": "#/home", "load": 3500, "coach": true, "do": [
+   ["js", "Coach.hide(); 1"], ["wait", 600],
+   ["js", "Coach.show({ coach: 'maya', pose: 'greet', mood: 'greet', lines: [\"Hi. Let's look at your last game together.\"], actions: [] }, { speak: false }); document.querySelector('.kw-coach').classList.add('talking'); 1"],
+   ["wait", 3200], ["js", "document.querySelector('.kw-coach').classList.remove('talking'); 1"], ["wait", 1800]]},
+ {"name": "review", "hash": "#/games/185261729330", "load": 4000, "coach": true, "do": [
+   ["wait", 1200], ["click", "[data-mode=key]"], ["wait", 2600],
+   ["click", "[data-go='1']"], ["wait", 2600], ["click", "[data-go='1']"], ["wait", 2200]]},
+ {"name": "practice", "hash": "#/practice", "load": 4000, "do": [
+   ["wait", 1500], ["js", "[...document.querySelectorAll('button')].find(b=>/ready/i.test(b.textContent)).click(); 1"],
+   ["wait", 1400],
+   ["js", "document.querySelector('rect[data-sq=\"h1\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"], ["wait", 600],
+   ["js", "document.querySelector('rect[data-sq=\"c6\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"], ["wait", 3200]]},
+ {"name": "guess", "hash": "#/guess", "load": 5000, "coach": true, "do": [
+   ["wait", 1500],
+   ["js", "document.querySelector('rect[data-sq=\"f2\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"], ["wait", 600],
+   ["js", "document.querySelector('rect[data-sq=\"e3\"]').dispatchEvent(new MouseEvent('click',{bubbles:true})); 1"], ["wait", 3800]]},
+ {"name": "train", "hash": "#/train", "load": 3500, "do": [
+   ["wait", 2200],
+   ["js", "(() => { const e = [...document.querySelectorAll('[onclick], a, button, .card, div')].reverse().find(x => x.children.length < 6 && /^\\s*Endgames/.test(x.textContent) && x.offsetParent); if (e) e.click(); return !!e; })()"],
+   ["wait", 3200]]},
+ {"name": "level", "hash": "#/level", "load": 3500, "do": [
+   ["wait", 1500], ["scroll", 260, 1600], ["wait", 2200]]}
+]

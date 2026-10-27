@@ -5,6 +5,7 @@ Run:  blender -b --factory-startup -P installer/trailer3d/assemble.py -- <root> 
   root: the folder with frames/<shot>/ and flashes/ (from scene.py and prep_flashes.py)
 """
 import glob
+import math
 import os
 import sys
 
@@ -111,17 +112,26 @@ t += 1.4
 b0 = t
 t = shot("blunder", t, channel=2, inn=0.3, out=0.3)
 words("Every lost game has a reason.", b0 + 1.4, t - 0.3, size=66, font=font_serif)
-# the app: each big feature as a floating window that slides in and moves closer to what matters
-FEATURES = [  # card, focus point on the 1920x1080 screen, kicker, headline, line under it
-    ("03-home", (1700, 900), "YOUR COACHES", "Two coaches, always with you", "They go through every game with you, out loud"),
-    ("02-review", (820, 520), "GAME REVIEW", "Every move, reviewed", "The moments that cost you, and the better move"),
-    ("04-practice", (1100, 330), "PRACTICE", "Practice from your own mistakes", "Your positions come back until you get them right"),
-    ("08-guess", (1250, 260), "HUMAN-LIKE", "Opponents that play like people", "A model of human chess, not a perfect engine"),
-    ("05-train", (1000, 380), "TRAIN", "Train like a pro", "Endgames, blindfold, and seeing the whole line"),
-    ("07-level", (1100, 420), "YOUR LEVEL", "From beginner to 2,000", "Five steps, each measured in your own games"),
+# the app, moving: each big feature as a real clip in a floating window. It slides in, the words are read, then the
+# camera goes in close (pixel-sharp: the clip is full size), holds while the action plays, and comes back out. Each
+# feature moves differently, so it never feels like the same zoom (owner's notes, 27 Oct)
+S0 = 0.60                      # the window's size on screen (a full-size clip shown at 60%)
+FEATURES = [  # clip, kicker, headline, line under it, close-up: [(scale, focus point on the 1920x1080 clip, where on screen)], turn
+    ("home", "YOUR COACHES", "Two coaches, always with you", "They go through every game with you, out loud",
+     [(0.95, (1690, 925), (60, -40)), (0.98, (1690, 925), (40, -30))], 0),
+    ("review", "GAME REVIEW", "Every move, reviewed", "The moments that cost you, and the better move",
+     [(0.88, (900, 520), (-60, 0)), (0.88, (1480, 430), (-20, 10))], 0),          # the board, then across to the panel
+    ("practice", "PRACTICE", "Practice from your mistakes", "Your positions come back until you get them right",
+     [(0.86, (1250, 420), (0, 0)), (0.93, (1350, 300), (40, 10))], 0),             # a slow drift in, then closer
+    ("guess", "HUMAN-LIKE", "Opponents who play like people", "A model of human chess, not a perfect engine",
+     [(0.90, (1100, 560), (0, 0)), (0.92, (1180, 560), (20, 0))], -1.5),          # with a slight turn
+    ("train", "TRAIN", "Train like a pro", "Endgames, blindfold, and seeing the whole line",
+     [(0.95, (700, 560), (-40, -20)), (0.95, (1500, 560), (40, -20))], 0),        # tracking along the cards
+    ("level", "YOUR LEVEL", "From beginner to 2,000", "Five steps, each measured in your own games",
+     [(0.98, (1100, 300), (0, 60)), (0.80, (1100, 520), (0, 0))], 0),             # close on the steps, then easing back
 ]
-CARD_SCALE, EACH = 0.60, 4.2
-for i, (card, (fx, fy), kicker, head, line) in enumerate(FEATURES):
+EACH = 5.4
+for i, (clip, kicker, head, line, close, turn) in enumerate(FEATURES):
     a0, a1 = t, t + EACH
     bg = STRIPS.new_image(f"back{i}", os.path.join(ROOT, "cards", f"back{i}.png"), 2, sec(a0))
     bg.frame_final_duration = int(EACH * FPS)
@@ -129,36 +139,48 @@ for i, (card, (fx, fy), kicker, head, line) in enumerate(FEATURES):
         bg.transform.scale_x = bg.transform.scale_y = z
         bg.transform.keyframe_insert("scale_x", frame=sec(tt)); bg.transform.keyframe_insert("scale_y", frame=sec(tt))
     fade(bg, a0, a1, 0.25 if i else 0.4, 0.25)
-    c = STRIPS.new_image(card, os.path.join(ROOT, "cards", card + ".png"), 4, sec(a0), fit_method="ORIGINAL")
-    c.frame_final_duration = int(EACH * FPS)
+    files = sorted(glob.glob(os.path.join(ROOT, "cards", f"clip_{clip}", f"clip_{clip}_*.png")))
+    c = STRIPS.new_image(clip, files[0], 4, sec(a0), fit_method="ORIGINAL")
+    for f in files[1:]:
+        c.elements.append(os.path.basename(f))
+    c.frame_final_duration = min(len(files), int(EACH * FPS))
     c.blend_type = "ALPHA_OVER"
-    w = c.elements[0].orig_width if c.elements[0].orig_width else 1292
-    base = 1920 / 2 - 30 - w / 2  # the window on the right
-    rx, ry = (fx - 960) * CARD_SCALE, (540 - fy) * CARD_SCALE  # the point to move closer to, from the window's centre
+    w = c.elements[0].orig_width or 2100
+    base = 1920 / 2 - 20 - w * S0 / 2  # the window on the right, its words on the left
     tr = c.transform
-    # in, still while the words are read, then close in on the feature itself, brought to the middle of the screen
-    ZOOM, TARGET = 1.75, (40, -10)
-    for tt, z, (ox, oy) in ((a0, 1.0, (base + 110, 0)), (a0 + 0.5, 1.0, (base, 0)), (a0 + 2.2, 1.0, (base, 0)),
-                            (a1, ZOOM, (TARGET[0] - rx * ZOOM, TARGET[1] - ry * ZOOM))):
+
+    def at(tt, z, focus=None, screen=None, rot=0.0, slide=0.0):
+        if focus:  # put this point of the clip at this place on the screen
+            rx, ry = focus[0] - 960, 540 - focus[1]
+            ox, oy = screen[0] - rx * z, screen[1] - ry * z
+        else:
+            ox, oy = base + slide, 0
         tr.scale_x = tr.scale_y = z
-        tr.offset_x, tr.offset_y = ox, oy
-        for k in ("scale_x", "scale_y", "offset_x", "offset_y"):
+        tr.offset_x, tr.offset_y, tr.rotation = ox, oy, math.radians(rot)
+        for k in ("scale_x", "scale_y", "offset_x", "offset_y", "rotation"):
             tr.keyframe_insert(k, frame=sec(tt))
-    fade(c, a0, a1, 0.45, 0.25)
-    # the words on the left: a small gold kicker, the headline in Palatino, a quiet line under it
+
+    (z1, f1, p1), (z2, f2, p2) = close
+    at(a0, S0, slide=120)              # slides in
+    at(a0 + 0.5, S0)
+    at(a0 + 2.3, S0 * 1.03)            # a slight drift while the words are read
+    at(a0 + 3.0, z1, f1, p1, turn)     # in close
+    at(a0 + 4.2, z2, f2, p2, turn)     # the hold, the clip playing (with a pan or a push, different each time)
+    at(a0 + 4.85, S0)                  # and back out
+    fade(c, a0, a1, 0.45, 0.3)
     for txt, y, size, font, col, d0, anchor in (
-            (kicker, 0.635, 24, font_bold, (0.88, 0.70, 0.36, 1), 0.15, "BOTTOM"),
-            (head, 0.60, 62, font_serif, (0.97, 0.95, 0.91, 1), 0.25, "TOP"),
-            (line, 0.40, 30, font_light, (0.78, 0.76, 0.72, 1), 0.45, "TOP")):
-        tx = words(txt, a0 + d0, a0 + 2.6, size=size, y=y, font=font, colour=col, inn=0.35, out=0.3)  # then aside
-        if tx:
+            (kicker, 0.64, 24, font_bold, (0.88, 0.70, 0.36, 1), 0.15, "BOTTOM"),
+            (head, 0.605, 58, font_serif, (0.97, 0.95, 0.91, 1), 0.25, "TOP"),
+            (line, 0.33, 30, font_light, (0.78, 0.76, 0.72, 1), 0.45, "TOP")):
+        tx = words(txt, a0 + d0, a0 + 2.45, size=size, y=y, font=font, colour=col, inn=0.35, out=0.3)
+        if tx:  # left-aligned in a column; the line under the headline sits well clear of its two lines
             tx.location = (0.055, y)
             tx.anchor_x, tx.anchor_y = "LEFT", anchor
             tx.use_shadow = False
             if hasattr(tx, "alignment_x"):
                 tx.alignment_x = "LEFT"
             if hasattr(tx, "wrap_width"):
-                tx.wrap_width = 0.25
+                tx.wrap_width = 0.27
     t = a1
 # the promise, wide: a whole crystal game from above
 f0 = t
