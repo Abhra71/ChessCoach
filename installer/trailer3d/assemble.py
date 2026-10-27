@@ -20,8 +20,10 @@ FONT_BOLD = r"C:\Windows\Fonts\seguisb.ttf"
 scene = bpy.context.scene
 scene.render.fps = FPS
 scene.render.resolution_x, scene.render.resolution_y, scene.render.resolution_percentage = 1920, 1080, 100
+# "Standard": the frames already have their film look from scene.py; AgX again would grey the words and app screens
+scene.view_settings.view_transform, scene.view_settings.look = "Standard", "None"
 ed = scene.sequence_editor_create()
-STRIPS = getattr(ed, "strips", None) or ed.sequences
+STRIPS = ed.strips if hasattr(ed, "strips") else ed.sequences  # Blender 5: "strips"
 font_light = bpy.data.fonts.load(FONT_LIGHT)
 font_bold = bpy.data.fonts.load(FONT_BOLD)
 
@@ -66,7 +68,7 @@ def flash(file, start, length, zoom=(1.0, 1.06), channel=1):
 
 
 def words(text, start, end, size=64, y=0.14, font=None, colour=(0.96, 0.94, 0.90, 1), channel=6, inn=0.6, out=0.6):
-    t = STRIPS.new_effect(f"t_{start}", "TEXT", channel, frame_start=sec(start), frame_end=sec(end))
+    t = STRIPS.new_effect(f"t_{start}", "TEXT", channel, frame_start=sec(start), length=sec(end) - sec(start))
     t.text, t.font_size, t.color = text, size, colour
     t.font = font or font_light
     t.location = (0.5, y)
@@ -78,7 +80,7 @@ def words(text, start, end, size=64, y=0.14, font=None, colour=(0.96, 0.94, 0.90
 
 
 def black(start, end, channel=1):
-    c = STRIPS.new_effect(f"black_{start}", "COLOR", channel, frame_start=sec(start), frame_end=sec(end))
+    c = STRIPS.new_effect(f"black_{start}", "COLOR", channel, frame_start=sec(start), length=sec(end) - sec(start))
     c.color = (0, 0, 0)
     return c
 
@@ -124,6 +126,15 @@ for tt, v in ((0, 0.0), (1.5, 0.85), (LENGTH - 3.5, 0.85), (LENGTH - 0.2, 0.0)):
     music.keyframe_insert("volume", frame=sec(tt))
 
 scene.frame_start, scene.frame_end = 1, sec(LENGTH)
+if os.environ.get("KW_RANGE"):  # a quick check of part of the cut: "start,end" in seconds, saved as stills
+    a0, a1 = (float(x) for x in os.environ["KW_RANGE"].split(","))
+    for tt in (a0, (a0 + a1) / 2, a1):
+        scene.frame_set(sec(tt))
+        scene.render.image_settings.file_format = "PNG"
+        scene.render.filepath = f"{OUT}_check_{tt:05.1f}.png"
+        bpy.ops.render.render(write_still=True)
+    print("LENGTH", round(LENGTH, 1))
+    raise SystemExit(0)
 r = scene.render
 r.image_settings.file_format = "FFMPEG"
 r.ffmpeg.format, r.ffmpeg.codec = "MPEG4", "H264"
