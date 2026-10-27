@@ -99,30 +99,48 @@ def checked_games():
     return set()
 
 
-def main(argv=None, progress=None):
-    """Check games not checked yet. Returns how many games were checked.
-    progress(done, total) is called after each game (for the welcome page)."""
+FIRST_LOOK = 20  # the first start checks the newest games first, so Home opens in a minute or two (27 Oct: a new PC
+# waited 25 minutes for all 148 games before it showed anything)
+
+
+def unchecked(done_urls=None):
+    """Games not checked yet, newest first (the ones a player remembers and cares about)."""
+    done_urls = checked_games() if done_urls is None else done_urls
+    games = [g for f in sorted(glob.glob(str(DATA / "games-*.json")))
+             for g in json.load(open(f))["games"]
+             if g.get("rules") == "chess" and g["url"] not in done_urls]
+    return sorted(games, key=lambda g: g.get("end_time", 0), reverse=True)
+
+
+def main(argv=None, progress=None, limit=None):
+    """Check games not checked yet, newest first. Returns how many games were checked.
+    progress(done, total) is called after each game (for the welcome page). limit: at most this many now (the rest
+    wait for the next call)."""
     argv = sys.argv[1:] if argv is None else argv
     player = (DATA / "player.txt").read_text().strip().lower()
     redo = "--all" in argv
     done_urls = set() if redo else checked_games()
-    games = [g for f in sorted(glob.glob(str(DATA / "games-*.json")))
-             for g in json.load(open(f))["games"]
-             if g.get("rules") == "chess" and g["url"] not in done_urls]
+    games = unchecked(done_urls)
+    if limit:
+        games = games[:limit]
     if not games:
         print("no new games to check", file=sys.stderr)
         CHECKED.write_text("\n".join(sorted(done_urls)) + "\n")
         return 0
     mode = "w" if redo else "a"
-    with ProcessPoolExecutor(max_workers=min(8, os.cpu_count() or 1)) as pool, open(MOVES, mode) as fh:
+    # one core is left for the window, so the app stays smooth while it checks
+    workers = max(1, min(8, (os.cpu_count() or 2) - 1))
+    with ProcessPoolExecutor(max_workers=workers) as pool, open(MOVES, mode) as fh:
         for done, (game, rows) in enumerate(zip(games, pool.map(analyse_game, games, [player] * len(games))), 1):
             for r in rows:
                 fh.write(json.dumps(r) + "\n")
+            fh.flush()
             done_urls.add(game["url"])
+            # saved after every game: a hiccup halfway never checks (and counts) the same games twice
+            CHECKED.write_text("\n".join(sorted(done_urls)) + "\n")
             print(f"\r{done}/{len(games)} games", end="", file=sys.stderr, flush=True)
             if progress:
                 progress(done, len(games))
-    CHECKED.write_text("\n".join(sorted(done_urls)) + "\n")
     print(f"\nchecked {len(games)} new games -> {MOVES}", file=sys.stderr)
     return len(games)
 

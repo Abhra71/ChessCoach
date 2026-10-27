@@ -23,7 +23,10 @@ only code is small (paths.py, app.py's window, analyze.py, service.py's browser 
 
 **Already fixed for 1.1 (on dev-0.6, not yet in a package), from the owner's first 1.0 run, 27 Oct:** plain words when an
 AI key is refused (ask box and Test key); plain spaces round moves in AI answers; folding the coach keeps her answer;
-arrow labels stay inside the board. Retake the age-rating questionnaire (Online Content = Yes) with the 1.1 submission.
+arrow labels stay inside the board; **the first start: the newest 20 games first, then Home opens (about a
+minute) and the older games are checked in the background** (a new PC waited 25+ minutes for 148 games), progress
+saved after every game, "Can't reach chess.com" only for a real download failure (a helper process's broken pipe
+said it), chess.com downloads tried again on a timeout, 429 or 5xx. Retake the age-rating questionnaire (Online Content = Yes) with the 1.1 submission.
 
 **1.1 list:** Claude and OpenAI keys back (tested); a backup and restore file; the local server accepts only
 Knightwise's own extension ID; master games (undecided); report the SentinelOne false positive; the trailer;

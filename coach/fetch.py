@@ -5,6 +5,7 @@ Output: data/games-YYYY-MM.json, data/player.txt
 """
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -13,9 +14,23 @@ from coach.paths import DATA
 HEADERS = {"User-Agent": "Knightwise (open-source chess coach; github.com/Abhra71/ChessCoach)"}
 
 
-def get_json(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=HEADERS), timeout=30) as resp:
-        return json.load(resp)
+RETRY_WAITS = (3, 8)  # seconds: a slow or briefly busy chess.com is tried again before the player sees a problem (27 Oct)
+
+
+def get_json(url, waits=RETRY_WAITS):
+    """chess.com's answer as JSON. A dropped connection, a timeout, "too many requests" (429) or a server hiccup (5xx)
+    is tried again after a short wait; an unknown player (404) and other answers are not."""
+    for attempt in range(len(waits) + 1):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=HEADERS), timeout=30) as resp:
+                return json.load(resp)
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 500, 502, 503, 504) or attempt == len(waits):
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt == len(waits):
+                raise
+        time.sleep(waits[attempt])
 
 
 def fetch(user, refresh_all=False):

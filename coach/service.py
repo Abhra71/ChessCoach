@@ -1205,6 +1205,7 @@ def today_done():
 def status():
     return {"version": VERSION, "player": player(), "last_update": STATE.get("last_update"), "phase": STATE.get("phase"),
             "done": STATE.get("done", 0), "total": STATE.get("total", 0), "error": STATE.get("error"),
+            "older": STATE.get("older"),  # the older games being checked while the app is ready (27 Oct)
             "data_version": STATE.get("data_version", 0),
             "review_ready": (DATA / "review.html").exists(), "extension_seen": STATE.get("extension_seen"),
             "extension_in": STATE.get("extension_in", {}), "health": health.summary(),
@@ -1331,7 +1332,11 @@ def update_once():
         STATE["phase"] = "downloading puzzles"
         puzzles.main()
     STATE["phase"] = "checking your games"
-    checked = analyze.main(argv=[], progress=lambda done, total: STATE.update(done=done, total=total))
+    # many games waiting (a first start, or a long break): the newest first, then Home opens and the older ones are
+    # checked in the background (27 Oct: a new PC waited 25 minutes for 148 games before it showed anything)
+    many = len(analyze.unchecked()) > analyze.FIRST_LOOK
+    checked = analyze.main(argv=[], progress=lambda done, total: STATE.update(done=done, total=total),
+                           limit=analyze.FIRST_LOOK if many else None)
     if not (DATA / "moves.jsonl").exists():  # a brand-new chess.com account: no games yet (26 Oct test: it looped on
         # "Something went wrong" forever). Ready, with nothing to check; the first game is picked up by the next check.
         STATE.update(phase="ready", no_games=True, last_update=time.strftime("%Y-%m-%d %H:%M"))
@@ -1347,6 +1352,17 @@ def update_once():
     STATE.update(phase="ready", last_update=time.strftime("%Y-%m-%d %H:%M"))
     if checked:  # new numbers: open pages redraw themselves (only then, not after every check)
         STATE["data_version"] = STATE.get("data_version", 0) + 1
+    if many:  # the older games, while the player already uses the app; then the pages again, with all of them
+        STATE["older"] = {"done": 0, "total": len(analyze.unchecked())}
+        try:
+            more = analyze.main(argv=[], progress=lambda done, total: STATE.update(older={"done": done, "total": total}))
+        finally:
+            STATE.pop("older", None)
+        if more:
+            checked += more
+            review.build()
+            drills.build()
+            STATE["data_version"] = STATE.get("data_version", 0) + 1
     if checked or first:
         warm_up()
     return checked, first
@@ -1412,7 +1428,10 @@ def loop():
         except Exception as e:
             log.exception("update failed")
             # no internet (chess.com unreachable) is said plainly, not as an error code (26 Oct offline test)
-            offline = isinstance(e, (urllib.error.URLError, ConnectionError, TimeoutError)) and not isinstance(e, urllib.error.HTTPError)
+            # and only while downloading: while checking, a helper process's broken pipe is a ConnectionError too,
+            # and it said "Can't reach chess.com" with the internet fine (27 Oct, a new PC)
+            offline = (isinstance(e, (urllib.error.URLError, ConnectionError, TimeoutError))
+                       and not isinstance(e, urllib.error.HTTPError) and STATE.get("phase") == "downloading your games")
             STATE.update(phase="error", error="offline" if offline else str(e)[:200])  # chess.com busy or a file error is not "offline"
         WAKE.wait(EVERY)
         WAKE.clear()

@@ -501,8 +501,10 @@ async function paintAiUse() {
 function paintStatus() {
   const el = $("#status");
   if (!el) return;
-  const s = STATUS, busy = s.phase && !["ready", "waiting for your chess.com username", "starting"].includes(s.phase);
-  const text = !s.phase ? "Coach not running" : busy ? `${cap(s.phase)}${s.total ? ` ${s.done}/${s.total}` : "…"}`
+  const s = STATUS, older = s.phase === "ready" && s.older && s.older.total,  // the app is ready, the older games still coming
+    busy = (s.phase && !["ready", "waiting for your chess.com username", "starting"].includes(s.phase)) || !!older;
+  const text = !s.phase ? "Coach not running" : older ? `Checking older games ${s.older.done}/${s.older.total}`
+    : busy ? `${cap(s.phase)}${s.total ? ` ${s.done}/${s.total}` : "…"}`
     : s.phase === "error" ? (s.error === "offline" ? "Offline · your games so far still work" : "Last check failed, retrying") : `Up to date${s.last_update ? " · " + s.last_update.slice(11) : ""}`;
   // quiet when all is well: a grey icon with a dot; words only while it's working on something or went wrong
   el.hidden = !busy && s.phase !== "error" && !!s.phase;
