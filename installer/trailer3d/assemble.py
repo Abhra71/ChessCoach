@@ -95,34 +95,75 @@ def black(start, end, channel=1):
     return c
 
 
-# ---------- the cut (seconds) ----------
-black(0, 70, channel=1)  # everything sits on black: fades go to black, not to grey
-t = shot("above", 0.0, channel=2, inn=1.0)  # wide, from above: the whole board
-words("Every game has a story.", 1.2, 4.6)
-t = shot("reveal", t, channel=3, skip=1.6, take=4.0, inn=0.4)
-r0 = t
-t = shot("rank", t, channel=2, skip=1.0, take=4.0, inn=0.4)
-words("Some moves cost more than you think.", r0 + 0.3, t - 0.3)
-t = shot("blunder", t, channel=3, out=0.3)
-words("Knightwise finds them.", t + 0.1, t + 1.9, size=78, y=0.5, font=font_bold, inn=0.25, out=0.3)
-t += 2.0
-# the big features, one each, with a line: what the app is, not every button in it
-FEATURES = [("03-home.png", "Two coaches who talk you through every game"),
-            ("02-review.png", "Every move reviewed, and the better one shown"),
-            ("04-practice.png", "Practice made from your own mistakes"),
-            ("08-guess.png", "Opponents that play like real people"),
-            ("05-train.png", "Train: endgames, blindfold, seeing ahead"),
-            ("07-level.png", "Your level, from beginner to 2,000")]
-for f, line in FEATURES:
-    words(line, t + 0.05, t + 1.95, size=50, y=0.10, font=font_bold, inn=0.15, out=0.15, box=True)
-    t = flash(f, t, 2.0, channel=4)
-c0 = t
-t = shot("cradle", t, channel=2, skip=0.6, take=6.0, inn=0.3)
-words("And trains you, move by move.", c0 + 1.0, c0 + 5.0)
-t = shot("mate", t, channel=3, inn=0.3, out=0.4)
+# ---------- the cut (seconds): version 3, the app first; the 3D frames it (owner's notes, 27 Oct) ----------
+font_serif = bpy.data.fonts.load(r"C:\Windows\Fonts\palab.ttf")
+black(0, 80, channel=1)  # everything sits on black: fades go to black, not to grey
+# the hook: the best shot, at once: the crystal king falling
+t = shot("mate", 0.0, channel=2, skip=1.0, take=2.6, inn=0.15, out=0.3)
+lg = STRIPS.new_image("hook_logo", LOGO, 3, sec(t))
+lg.frame_final_duration = int(1.3 * FPS)
+lg.blend_type, lg.transform.scale_x, lg.transform.scale_y = "ALPHA_OVER", 0.10, 0.10
+lg.transform.offset_y = 70
+fade(lg, t, t + 1.3, 0.2, 0.3)
+words("Knightwise", t + 0.1, t + 1.3, size=84, y=0.40, font=font_bold, inn=0.2, out=0.3)
+t += 1.4
+# the problem: a mistake, in slow motion
+b0 = t
+t = shot("blunder", t, channel=2, inn=0.3, out=0.3)
+words("Every lost game has a reason.", b0 + 1.4, t - 0.3, size=66, font=font_serif)
+# the app: each big feature as a floating window that slides in and moves closer to what matters
+FEATURES = [  # card, focus point on the 1920x1080 screen, kicker, headline, line under it
+    ("03-home", (1700, 900), "YOUR COACHES", "Two coaches, always with you", "They go through every game with you, out loud"),
+    ("02-review", (820, 520), "GAME REVIEW", "Every move, reviewed", "The moments that cost you, and the better move"),
+    ("04-practice", (1100, 330), "PRACTICE", "Practice from your own mistakes", "Your positions come back until you get them right"),
+    ("08-guess", (1250, 260), "HUMAN-LIKE", "Opponents that play like people", "A model of human chess, not a perfect engine"),
+    ("05-train", (1000, 380), "TRAIN", "Train like a pro", "Endgames, blindfold, and seeing the whole line"),
+    ("07-level", (1100, 420), "YOUR LEVEL", "From beginner to 2,000", "Five steps, each measured in your own games"),
+]
+CARD_SCALE, EACH = 0.60, 4.2
+for i, (card, (fx, fy), kicker, head, line) in enumerate(FEATURES):
+    a0, a1 = t, t + EACH
+    bg = STRIPS.new_image(f"back{i}", os.path.join(ROOT, "cards", f"back{i}.png"), 2, sec(a0))
+    bg.frame_final_duration = int(EACH * FPS)
+    for tt, z in ((a0, 1.0), (a1, 1.06)):
+        bg.transform.scale_x = bg.transform.scale_y = z
+        bg.transform.keyframe_insert("scale_x", frame=sec(tt)); bg.transform.keyframe_insert("scale_y", frame=sec(tt))
+    fade(bg, a0, a1, 0.25 if i else 0.4, 0.25)
+    c = STRIPS.new_image(card, os.path.join(ROOT, "cards", card + ".png"), 4, sec(a0), fit_method="ORIGINAL")
+    c.frame_final_duration = int(EACH * FPS)
+    c.blend_type = "ALPHA_OVER"
+    w = c.elements[0].orig_width if c.elements[0].orig_width else 1292
+    base = 1920 / 2 - 30 - w / 2  # the window on the right
+    rx, ry = (fx - 960) * CARD_SCALE, (540 - fy) * CARD_SCALE  # the point to move closer to, from the window's centre
+    tr = c.transform
+    # in, still while the words are read, then close in on the feature itself, brought to the middle of the screen
+    ZOOM, TARGET = 1.75, (40, -10)
+    for tt, z, (ox, oy) in ((a0, 1.0, (base + 110, 0)), (a0 + 0.5, 1.0, (base, 0)), (a0 + 2.2, 1.0, (base, 0)),
+                            (a1, ZOOM, (TARGET[0] - rx * ZOOM, TARGET[1] - ry * ZOOM))):
+        tr.scale_x = tr.scale_y = z
+        tr.offset_x, tr.offset_y = ox, oy
+        for k in ("scale_x", "scale_y", "offset_x", "offset_y"):
+            tr.keyframe_insert(k, frame=sec(tt))
+    fade(c, a0, a1, 0.45, 0.25)
+    # the words on the left: a small gold kicker, the headline in Palatino, a quiet line under it
+    for txt, y, size, font, col, d0, anchor in (
+            (kicker, 0.635, 24, font_bold, (0.88, 0.70, 0.36, 1), 0.15, "BOTTOM"),
+            (head, 0.60, 62, font_serif, (0.97, 0.95, 0.91, 1), 0.25, "TOP"),
+            (line, 0.40, 30, font_light, (0.78, 0.76, 0.72, 1), 0.45, "TOP")):
+        tx = words(txt, a0 + d0, a0 + 2.6, size=size, y=y, font=font, colour=col, inn=0.35, out=0.3)  # then aside
+        if tx:
+            tx.location = (0.055, y)
+            tx.anchor_x, tx.anchor_y = "LEFT", anchor
+            tx.use_shadow = False
+            if hasattr(tx, "alignment_x"):
+                tx.alignment_x = "LEFT"
+            if hasattr(tx, "wrap_width"):
+                tx.wrap_width = 0.25
+    t = a1
+# the promise, wide: a whole crystal game from above
 f0 = t
-t = shot("rise", t, channel=2, inn=0.4, out=1.0)  # wide again: a whole crystal game from above
-words("Fair.  Free.  Yours.", f0 + 0.6, t - 0.4, size=72)
+t = shot("rise", t, channel=2, inn=0.4, out=1.0)
+words("Fair.  Free.  Yours.", f0 + 0.6, t - 0.4, size=72, font=font_serif)
 # the end: the knight, the name of the app, where to get it; then the one who made it
 end0 = t + 0.3
 logo = STRIPS.new_image("logo", LOGO, 3, sec(end0))

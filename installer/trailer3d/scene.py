@@ -71,9 +71,9 @@ def marble():
     m, n, l, b = material("marble")
     coord = n.new("ShaderNodeTexCoord")
     checker = n.new("ShaderNodeTexChecker")
-    checker.inputs["Scale"].default_value = 0.5  # a checker cell is 1 / (2 x scale) = one square
-    checker.inputs["Color1"].default_value = (0.012, 0.011, 0.011, 1)
-    checker.inputs["Color2"].default_value = (0.42, 0.40, 0.37, 1)
+    checker.inputs["Scale"].default_value = 1.0  # a checker cell is 1 / scale world units: one square = 1.0 (checked from above, 27 Oct)
+    checker.inputs["Color1"].default_value = (0.42, 0.40, 0.37, 1)  # so a1 is dark: "light on the right"
+    checker.inputs["Color2"].default_value = (0.012, 0.011, 0.011, 1)
     noise = n.new("ShaderNodeTexNoise")
     noise.inputs["Scale"].default_value = 2.2
     noise.inputs["Detail"].default_value = 12.0
