@@ -196,7 +196,7 @@ if ENGINE == "cycles":
         except TypeError:
             continue
     scene.cycles.device = "GPU"
-    scene.cycles.samples = 128
+    scene.cycles.samples = int(os.environ.get("KW_SAMPLES", "128"))
     scene.cycles.use_denoising = True
 else:
     scene.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in [
