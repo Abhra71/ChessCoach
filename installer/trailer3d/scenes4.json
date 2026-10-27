@@ -1,0 +1,23 @@
+[
+ {"name": "home", "hash": "#/home", "load": 3500, "coach": true, "do": [
+   ["js", "Coach.hide(); Coach.show({ coach: 'maya', pose: 'greet', mood: 'greet', lines: [\"Hi. Let's look at your last game together.\"], actions: [] }, { speak: false }); document.querySelector('.kw-coach').classList.add('talking'); 1"],
+   ["move", [760, 420], 900], ["move", [1010, 330], 700],
+   ["clickat", "js:[...document.querySelectorAll('button,a')].find(b => b.textContent.trim() === 'Review')", 800],
+   ["wait", 1900]]},
+ {"name": "review", "hash": "#/games/185261729330", "load": 4000, "coach": true, "do": [
+   ["clickat", "#startreview", 900], ["wait", 300], ["play", 11, 300], ["wait", 900]]},
+ {"name": "practice", "hash": "#/practice", "load": 4000, "do": [
+   ["clickat", "js:[...document.querySelectorAll('button')].find(b => /ready/i.test(b.textContent))", 900], ["wait", 500],
+   ["clickat", "rect[data-sq='h1']", 800], ["clickat", "rect[data-sq='c6']", 750], ["wait", 1700]]},
+ {"name": "guess", "hash": "#/guess", "load": 5000, "coach": true, "do": [
+   ["move", [900, 400], 700], ["clickat", "rect[data-sq='f2']", 700], ["clickat", "rect[data-sq='e3']", 650], ["wait", 2300]]},
+ {"name": "train", "hash": "#/train", "load": 3500, "do": [
+   ["move", "js:[...document.querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === 'Prep')", 700],
+   ["move", "js:[...document.querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === 'In your head')", 650],
+   ["move", "js:[...document.querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === 'Blindfold')", 550],
+   ["move", "js:[...document.querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === 'Guess the move')", 550],
+   ["clickat", "js:[...document.querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === 'Endgames')", 550],
+   ["wait", 1800]]},
+ {"name": "level", "hash": "#/level", "load": 3500, "do": [
+   ["move", [700, 200], 700], ["move", [1000, 470], 800], ["scroll", 240, 1400], ["move", [1300, 400], 800], ["wait", 1200]]}
+]
