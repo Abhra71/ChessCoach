@@ -276,6 +276,8 @@ def board():
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, -0.06))
     b = bpy.context.active_object
     b.name, b.scale = "board", (8.0, 8.0, 0.12)
+    # the size made real, so the pattern counts squares in metres: one square = 1.0 (it was 4 giant squares, 27 Oct)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     bev = b.modifiers.new("bevel", "BEVEL")
     bev.width, bev.segments = 0.01, 3
     b.data.materials.append(marble())
@@ -511,8 +513,52 @@ def shot_mate():
     return 6 * FPS
 
 
+def orbit(cam, centre, radius, height, a0, a1, f0, f1, steps=6):
+    """The camera along an arc round `centre` (degrees a0 -> a1), keyed at a few points so it stays on the circle."""
+    for i in range(steps + 1):
+        u = i / steps
+        a = math.radians(a0 + (a1 - a0) * u)
+        cam.location = centre + Vector((radius * math.cos(a), radius * math.sin(a), height))
+        cam.keyframe_insert("location", frame=round(f0 + (f1 - f0) * u))
+
+
+def shot_above():
+    """5 s, wide: the whole board from high above, all 32 wooden pieces, the camera slowly turning and coming down."""
+    board()
+    key, rim, fill = lights()
+    key.location, key.data.spot_size, key.data.energy = Vector((-1.5, -2.5, 13.0)), math.radians(62), 8500
+    key.rotation_euler = (Vector((0, 0, 0)) - key.location).to_track_quat("-Z", "Y").to_euler()
+    setup(START, "wood")
+    cam, focus = camera(lens=40, fstop=5.6)
+    focus.location = Vector((0, 0, 0.3))
+    orbit(cam, Vector((0, 0, 0)), 3.2, 15.0, -110, -78, 1, 5 * FPS)
+    keys(cam.data, "lens", [(1, 28.0), (5 * FPS, 33.0)])  # the whole board and its frame in view
+    return 5 * FPS
+
+
+MIDGAME = {"w": [("king", "g1"), ("rook", "f1"), ("queen", "d2"), ("bishop", "c4"), ("knight", "f3"), ("rook", "a1")]
+                + [("pawn", s) for s in ("a2", "b2", "c3", "e4", "f2", "g2", "h3")],
+           "b": [("king", "g8"), ("rook", "f8"), ("queen", "d8"), ("bishop", "e7"), ("knight", "c6"), ("rook", "a8")]
+                + [("pawn", s) for s in ("a6", "b5", "c7", "d6", "f7", "g7", "h7")]}
+
+
+def shot_rise():
+    """4 s, crystal, wide: from the board's edge the camera rises and looks down on a whole crystal game."""
+    board()
+    key, rim, fill = lights(warm=1.2)
+    key.location, key.data.spot_size, key.data.energy = Vector((-1.5, -3.0, 12.5)), math.radians(60), 16000
+    key.rotation_euler = (Vector((0, 0, 0)) - key.location).to_track_quat("-Z", "Y").to_euler()
+    glow(where=(0, 10.0, 2.5), size=16)
+    setup(MIDGAME, "crystal")
+    cam, focus = camera(lens=35, fstop=4.0)
+    keys(cam, "location", [(1, Vector((0.4, -7.2, 1.2))), (4 * FPS, Vector((0.2, -4.0, 10.5)))])
+    keys(focus, "location", [(1, Vector((0, -1.0, 0.5))), (4 * FPS, Vector((0, 0.3, 0.3)))])
+    return 4 * FPS
+
+
 SHOTS = {"reveal": (shot_reveal, "EEVEE"), "rank": (shot_rank, "EEVEE"), "blunder": (shot_blunder, "EEVEE"),
-         "cradle": (shot_cradle, "CYCLES"), "mate": (shot_mate, "CYCLES")}
+         "cradle": (shot_cradle, "CYCLES"), "mate": (shot_mate, "CYCLES"), "above": (shot_above, "EEVEE"),
+         "rise": (shot_rise, "CYCLES")}
 
 # ================= render =================
 build, engine = SHOTS[SHOT]
