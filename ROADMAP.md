@@ -14,6 +14,13 @@ free; publish manually after certification (1-5 days: first public release, full
 Trailer: later, as a listing update (no new package).
 
 **1.0 is LIVE on the Microsoft Store (26 Oct 2026):** https://apps.microsoft.com/detail/9NKLGS6K72J2
+**Priorities from 27 Oct 2026 (owner):** (1) promote it in the most relevant places; (2) no major update: fix bugs,
+test, and add only what is genuinely missing and useful (1.1); (3) cross-platform: Linux, older Windows, phones, and,
+if two-player features come one day, play across platforms. Facts checked 27 Oct: chess.com's and Lichess's public APIs
+both send `Access-Control-Allow-Origin: *`, so a browser version could read games with no server of ours; the Windows-
+only code is small (paths.py, app.py's window, analyze.py, service.py's browser finder); Windows 7/8 can't run Python
+3.12 or WebView2, so "older Windows" means older Windows 10 builds (the package now needs 10.0.19041).
+
 **Already fixed for 1.1 (on dev-0.6, not yet in a package), from the owner's first 1.0 run, 27 Oct:** plain words when an
 AI key is refused (ask box and Test key); plain spaces round moves in AI answers; folding the coach keeps her answer;
 arrow labels stay inside the board. Retake the age-rating questionnaire (Online Content = Yes) with the 1.1 submission.
