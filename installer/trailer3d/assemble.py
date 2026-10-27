@@ -118,21 +118,22 @@ words("Every lost game has a reason.", b0 + 1.4, t - 0.3, size=66, font=font_ser
 S0 = 0.60                      # the window's size on screen (a full-size clip shown at 60%)
 FEATURES = [  # clip, kicker, headline, line under it, close-up: [(scale, focus point on the 1920x1080 clip, where on screen)], turn
     ("home", "YOUR COACHES", "Two coaches, always with you", "They go through every game with you, out loud",
-     [(0.95, (1690, 925), (60, -40)), (0.98, (1690, 925), (40, -30))], 0),
+     [(0.92, (1250, 640), (0, 0)), (0.96, (1330, 690), (0, 0))], 0),              # the game opening, Maya talking
     ("review", "GAME REVIEW", "Every move, reviewed", "The moments that cost you, and the better move",
      [(0.88, (900, 520), (-60, 0)), (0.88, (1480, 430), (-20, 10))], 0),          # the board, then across to the panel
     ("practice", "PRACTICE", "Practice from your mistakes", "Your positions come back until you get them right",
-     [(0.86, (1250, 420), (0, 0)), (0.93, (1350, 300), (40, 10))], 0),             # a slow drift in, then closer
+     [(0.86, (1100, 420), (0, 0)), (0.92, (950, 410), (40, 10))], 0),              # a slow drift in: the move and the "right"
     ("guess", "HUMAN-LIKE", "Opponents who play like people", "A model of human chess, not a perfect engine",
      [(0.90, (1100, 560), (0, 0)), (0.92, (1180, 560), (20, 0))], -1.5),          # with a slight turn
     ("train", "TRAIN", "Train like a pro", "Endgames, blindfold, and seeing the whole line",
      [(0.95, (700, 560), (-40, -20)), (0.95, (1500, 560), (40, -20))], 0),        # tracking along the cards
     ("level", "YOUR LEVEL", "From beginner to 2,000", "Five steps, each measured in your own games",
-     [(0.98, (1100, 300), (0, 60)), (0.80, (1100, 520), (0, 0))], 0),             # close on the steps, then easing back
+     [(0.98, (1100, 260), (0, 60)), (0.80, (1100, 520), (0, 0))], 0),             # close on the steps, then easing back
 ]
 EACH = 5.4
 for i, (clip, kicker, head, line, close, turn) in enumerate(FEATURES):
     a0, a1 = t, t + EACH
+    print("FEATURE", clip, round(a0, 2))
     bg = STRIPS.new_image(f"back{i}", os.path.join(ROOT, "cards", f"back{i}.png"), 2, sec(a0))
     bg.frame_final_duration = int(EACH * FPS)
     for tt, z in ((a0, 1.0), (a1, 1.06)):

@@ -1,7 +1,7 @@
 """Trailer 2, the moving version: each recorded clip of the real app (rec.mjs) at 24 frames a second, full size, as a
 floating window (rounded corners, a thin light edge, a soft shadow) in transparent PNGs, so a zoom stays pixel-sharp.
 
-Run: python installer/trailer3d/prep_clips.py <root>     (reads <root>/clips/<name>/, writes <root>/cards/clip_<name>/)
+Run: python installer/trailer3d/prep_clips.py <root>     (reads <root>/clips2/<name>/, writes <root>/cards/clip_<name>/)
 """
 import json
 import os
@@ -12,8 +12,9 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "."
 FPS, PAD, RADIUS = 24, 90, 30
 # name: (seconds skipped at the start, seconds used): timed so each clip's action lands in the zoom's hold
-CLIPS = {"home": (0.0, 5.4), "review": (1.2, 5.4), "practice": (0.6, 5.4), "guess": (0.0, 5.4),
-         "train": (0.0, 5.4), "level": (0.6, 5.4)}
+CLIPS = {"home": (1.0, 5.4), "review": (1.2, 5.4), "practice": (2.9, 5.4), "guess": (1.0, 5.4),
+         "train": (0.0, 5.4), "level": (1.2, 5.4)}
+SRC = os.environ.get("KW_CLIPS", "clips2")  # clips2: rec2.mjs, the pointer and live screencast (version 5)
 
 W, H = 1920, 1080
 mask = Image.new("L", (W, H), 0)
@@ -30,7 +31,7 @@ ONLY = sys.argv[2:]  # just these clips (default: all)
 for name, (skip, length) in CLIPS.items():
     if ONLY and name not in ONLY:
         continue
-    src = os.path.join(ROOT, "clips", name)
+    src = os.path.join(ROOT, SRC, name)
     meta = json.load(open(os.path.join(src, "frames.json")))
     times = meta["frames"]  # when each captured frame was taken, in seconds
     out = os.path.join(ROOT, "cards", f"clip_{name}")

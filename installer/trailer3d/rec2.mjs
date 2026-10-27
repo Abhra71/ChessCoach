@@ -2,7 +2,7 @@
 // hovers and clicks, captured with Chrome's live screencast (every repaint, about 25-30 frames a second) at 1920x1080.
 // node rec2.mjs <scenes.json> <outdir> [only-scene]      (the test copy must be running on port 8766)
 // Steps: ["wait", ms] | ["js", code] | ["move", selector-or-[x,y], ms] | ["click"] | ["clickat", selector, ms]
-//        | ["scroll", y, ms] | ["play", times, gap-ms] (press ▶ again and again)
+//        | ["scroll", y, ms] | ["play", times, gap-ms] (press ▶ again and again) | ["waitfor", selector, ms]
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -11,7 +11,7 @@ const [, , list, outdir, only] = process.argv;
 const scenes = JSON.parse(fs.readFileSync(list, "utf8")).filter(s => !only || s.name === only);
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 const BASE = "http://127.0.0.1:8766/";
-const edge = spawn(EDGE, ["--headless=new", "--remote-debugging-port=9335", "--window-size=1536,864", "--hide-scrollbars",
+const edge = spawn(EDGE, ["--headless=new", "--remote-debugging-port=9335", "--window-size=1536,864", "--force-device-scale-factor=1.25", "--hide-scrollbars",
   "--autoplay-policy=no-user-gesture-required", `--user-data-dir=${path.resolve(process.env.TEMP, "kw-rec2")}`, "about:blank"], { stdio: "ignore" });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let targets;
@@ -74,6 +74,7 @@ for (const s of scenes) {
   fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
   await send("Page.navigate", { url: BASE + "#/home" }); await sleep(800);
   await send("Page.navigate", { url: BASE + s.hash }); await sleep(s.load || 3000);
+  if (s.pre) { await run(s.pre); await sleep(s.preWait || 2500); }  // e.g. forget a set already answered, then load again
   await run(TIDY); await run(POINTER); await sleep(200);
   if (!s.coach) await run(`document.head.insertAdjacentHTML("beforeend", "<style>.kw-coach{display:none!important}</style>"); 1`);
   const frames = []; let t0 = null, n = 0;
@@ -83,14 +84,24 @@ for (const s of scenes) {
     frames.push(ts - t0); n++;
     send("Page.screencastFrameAck", { sessionId: p.sessionId });
   };
-  await send("Page.startScreencast", { format: "jpeg", quality: 92, maxWidth: 1920, maxHeight: 1080, everyNthFrame: 1 });
+  await send("Page.startScreencast", { format: "jpeg", quality: 82, maxWidth: 1920, maxHeight: 1080, everyNthFrame: 1 });
   const start = Date.now();
   for (const [what, a, b] of s.do || []) {
     if (what === "wait") await sleep(a);
     else if (what === "js") await run(a);
+    else if (what === "log") console.log("  log:", await run(a));
     else if (what === "move") { await moveTo(a, b || 700); await sleep(80); }
     else if (what === "click") { await click(); await sleep(380); }
-    else if (what === "clickat") { if (await moveTo(a, b || 700)) { await sleep(120); await click(); } await sleep(380); }
+    else if (what === "clickat") {
+      if (await moveTo(a, b || 700)) {
+        await sleep(120);
+        const now = await where(a), at = await run("window.__kwAt");  // the page may have moved under the pointer: aim again
+        if (now && at && Math.hypot(now[0] - at[0], now[1] - at[1]) > 4) { await moveTo(a, 250); await sleep(60); }
+        await click();
+      }
+      await sleep(380);
+    }
+    else if (what === "waitfor") { for (let t = 0; t < (b || 4000) && !(await where(a)); t += 100) await sleep(100); }
     else if (what === "scroll") {
       const steps = Math.round(b / 33), from = await run(`(document.scrollingElement || document.body).scrollTop`);
       for (let k = 1; k <= steps; k++) { const e = k / steps, y = from + (a - from) * (e < .5 ? 2 * e * e : 1 - Math.pow(-2 * e + 2, 2) / 2); await run(`window.scrollTo(0, ${y}); 1`); await sleep(33); }
