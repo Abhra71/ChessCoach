@@ -136,6 +136,8 @@ if os.environ.get("KW_RANGE"):  # a quick check of part of the cut: "start,end" 
     print("LENGTH", round(LENGTH, 1))
     raise SystemExit(0)
 r = scene.render
+if hasattr(r.image_settings, "media_type"):  # Blender 5: video is its own kind of output
+    r.image_settings.media_type = "VIDEO"
 r.image_settings.file_format = "FFMPEG"
 r.ffmpeg.format, r.ffmpeg.codec = "MPEG4", "H264"
 r.ffmpeg.constant_rate_factor, r.ffmpeg.ffmpeg_preset = "HIGH", "GOOD"
