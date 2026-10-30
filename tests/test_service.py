@@ -197,3 +197,22 @@ def test_start_over_clears_the_player_but_keeps_the_app(tmp_path, monkeypatch):
     (tmp_path / "voice-cache").mkdir()
     service.start_over()
     assert sorted(p.name for p in tmp_path.iterdir()) == ["ai-usage.json", "puzzles.json", "settings.json", "voice-cache"]
+
+
+def test_a_suggestion_always_comes_after_a_greeting(monkeypatch):
+    """30 Oct test: "its suggestion should not come before greeting". A second visit (the stat already said today)
+    used to show the suggestion alone."""
+    from coach import coaches, insights, nudge, progress, service, talk
+    monkeypatch.setattr(nudge, "seen", lambda route: None)  # nothing written to the real memory
+    monkeypatch.setattr(coaches, "line", lambda kind, coach, *a, **k: "Welcome back.")
+    monkeypatch.setattr(insights, "home", lambda: {"games": 5, "last_game": {}})
+    monkeypatch.setattr(insights, "_games", lambda: [])
+    monkeypatch.setattr(insights, "_player", lambda: "me")
+    monkeypatch.setattr(progress, "page", lambda: None)
+    monkeypatch.setattr(talk, "next_lesson", lambda: None)
+    monkeypatch.setattr(nudge, "pick", lambda *a, **k: {"kind": "tour", "line": "Open Your level.", "route": "level"})
+    quiet = {"coach": "maya", "lines": [], "again": True, "quiet": True}
+    out = service.with_point(quiet, {"in": "app", "tab": "home"})
+    assert out["lines"] == ["Welcome back.", "Open Your level."]
+    again = {"coach": "maya", "lines": ["Picking up where we were.", "0.7 pieces a game."], "again": True}
+    assert service.with_point(again, {"in": "app", "tab": "home"})["lines"] == ["Picking up where we were.", "Open Your level."]

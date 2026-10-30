@@ -33,6 +33,10 @@ IN_HER_VOICE = {"ask", "extension"}  # lines that say "I": only the coach they b
 TOUR_GAP = 20 * 60  # seconds between two of them
 GAP = 10 * 60  # seconds between any two suggestions in the app ("not together"); a new game is never held back
 TOUR = [
+    # first: Knightwise is built around chess.com (30 Oct test: "it never nudges for setting the extension up";
+    # it was last of 20, so it came after about ten days)
+    ("extension", "maya", "extension", "extension", "no_extension",
+     "Do you play on chess.com? I can sit beside you there too. Settings, at the bottom left, sets it up."),
     ("level", "viktor", "level", "level", None,
      "Do you know your level? Open Your level in the menu: five steps from beginner to 2,000, each counted in your real games."),
     ("practice", "maya", "practice", "practice", None,
@@ -75,8 +79,6 @@ TOUR = [
      "In Progress, open Report and press Play it as Wrapped: your chess story in cards, with music."),
     ("talk", "maya", "settings", "settings", None,
      "You can talk to us out loud: press the mic and speak. Settings, at the bottom left, has the switch."),
-    ("extension", "maya", "extension", "extension", "no_extension",
-     "Do you play on chess.com? I can sit beside you there too. Settings, at the bottom left, sets it up."),
 ]
 
 
@@ -111,7 +113,7 @@ def seen(route):
 # where things are, said in words (23 Oct test: a ring in the app pointed at the wrong place; words can't)
 WHERE = {"daily": "It's the first card on Home.", "games": "It's on Home, or in Games.",
          "rematch": "It's in that game's review, in Games.", "progress": "It's in Progress, in the menu.",
-         "clockdrill": "In Progress, press Slow down.", "prep": "It's in Train, under Prep.",
+         "clockdrill": "In Progress, scroll down to Your clock and press Slow down.", "prep": "It's in Train, under Prep.",
          "course": "It's the card at the top of Your course, in the menu.",
          "endgame": "In Train, open Endgames.", "openings": "In Train, open Opening tree.",
          "calc": "In Train, open In your head.", "practice": "It's Practice, in the menu."}

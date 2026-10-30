@@ -319,6 +319,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, "{}", "application/json")
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
             STATE["extension_seen"] = time.strftime("%Y-%m-%d %H:%M")
+            from coach import nudge
+            nudge.seen("extension")  # remembered: the tour never asks someone who has it to set it up (30 Oct)
             STATE.setdefault("extension_in", {})[browser_of(self.headers.get("User-Agent"))] = STATE["extension_seen"]
             STATE.setdefault("extension_at", {})[browser_of(self.headers.get("User-Agent"))] = time.time()  # finding 11
             return self.send(200, "{}", "application/json")
@@ -1138,7 +1140,7 @@ HUBS = ("home", "games", "train", "progress", "plan", "course", "level")  # app 
 
 
 def with_point(said, q):
-    from coach import insights, nudge, talk
+    from coach import coaches, insights, nudge, talk
     in_app, section = q.get("in") == "app", q.get("section", "home")
     if q.get("tab"):
         nudge.seen(q["tab"])
@@ -1164,7 +1166,9 @@ def with_point(said, q):
     if not p:
         return said
     lines = said.get("lines") or []
-    keep = lines[:1] if lines and not said.get("again") and not said.get("quiet") else []
+    # a greeting always comes first, then the suggestion (30 Oct test: "its suggestion should not come before greeting");
+    # on a second visit that's the short "Welcome back." line
+    keep = lines[:1] if lines else [coaches.line("again", said.get("coach") or "maya")]
     acts = said.get("actions") or []
     if p.get("action"):  # it lives in the other place: one button to it, first
         acts = [p["action"]] + [a for a in acts if a.get("app") != p["action"].get("app") or not a.get("app")]

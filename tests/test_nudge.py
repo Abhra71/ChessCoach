@@ -116,6 +116,7 @@ QUIET = {**HOME, "daily": {"done_today": True, "streak": 3}, "last_game": {}, "f
 
 def test_the_tour_brings_a_new_thing_spaced_and_at_most_three_a_day(tmp_path, monkeypatch):
     fresh(tmp_path, monkeypatch, tour=True)
+    nudge.seen("extension")  # the extension has said hello: no "set it up"
     first = nudge.pick("app", "home", QUIET, DAY, now=T0)
     assert first["kind"] == "tour" and first["route"] == "level"
     assert nudge.pick("app", "home", QUIET, DAY, now=T0 + 60) is None  # not together
@@ -127,6 +128,7 @@ def test_the_tour_brings_a_new_thing_spaced_and_at_most_three_a_day(tmp_path, mo
 
 def test_the_tour_skips_what_was_opened_and_comes_back_to_what_was_not(tmp_path, monkeypatch):
     fresh(tmp_path, monkeypatch, tour=True)
+    nudge.seen("extension")  # the extension has said hello: no "set it up"
     assert nudge.pick("app", "home", QUIET, DAY, now=T0)["id"] == "tour-level"
     nudge.seen("practice")  # found on their own: never suggested
     nxt = nudge.pick("app", "home", QUIET, DAY, now=T0 + nudge.TOUR_GAP)
@@ -137,6 +139,7 @@ def test_the_tour_skips_what_was_opened_and_comes_back_to_what_was_not(tmp_path,
 
 def test_the_tour_points_on_into_the_page_and_waits_for_what_it_needs(tmp_path, monkeypatch):
     fresh(tmp_path, monkeypatch, tour=True)
+    nudge.seen("extension")  # the extension has said hello: no "set it up"
     ids_ = [x[0] for x in nudge.TOUR]
     nudge.seen("plan")
     explore = next(x for x in nudge.TOUR if x[0] == "explore")
@@ -149,6 +152,15 @@ def test_the_tour_points_on_into_the_page_and_waits_for_what_it_needs(tmp_path, 
     assert nudge.tour_next(today=DAY, now=T0)["id"] == "tour-explore"
     nudge.seen("plan/explore")
     assert nudge.tour_next(today=DAY, now=T0) is None  # Done waits until something is done
+
+
+def test_setting_up_chess_com_comes_first_until_the_extension_says_hello(tmp_path, monkeypatch):
+    """30 Oct test: "it never nudges for setting the extension up" (it was last of 20 in the tour)."""
+    fresh(tmp_path, monkeypatch, tour=True)
+    assert nudge.pick("app", "home", QUIET, DAY, now=T0)["id"] == "tour-extension"
+    fresh(tmp_path / "b", monkeypatch, tour=True)
+    nudge.seen("extension")  # what /api/hello records
+    assert nudge.tour_next(today=DAY, now=T0)["id"] != "tour-extension"
 
 
 def test_the_speaking_coach_brings_her_own_first(tmp_path, monkeypatch):
