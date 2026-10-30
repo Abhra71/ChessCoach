@@ -26,7 +26,7 @@ AI key is refused (ask box and Test key); plain spaces round moves in AI answers
 arrow labels stay inside the board; **the first start: the newest 20 games first, then Home opens (about a
 minute) and the older games are checked in the background** (a new PC waited 25+ minutes for 148 games), progress
 saved after every game, "Can't reach chess.com" only for a real download failure (a helper process's broken pipe
-said it), chess.com downloads tried again on a timeout, 429 or 5xx. The coach (30 Oct test): a greeting always comes before a suggestion; setting up chess.com is the first new thing she shows (it was last of 20) and never once the extension has connected; the slow-down drill's directions say to scroll to Your clock. Retake the age-rating questionnaire (Online Content = Yes) with the 1.1 submission.
+said it), chess.com downloads tried again on a timeout, 429 or 5xx. The coach (30 Oct test): a greeting always comes before a suggestion; setting up chess.com is the first new thing she shows (it was last of 20) and never once the extension has connected; the slow-down drill's directions say to scroll to Your clock. Asking about a game: the coach is told how each game ended (resigned, checkmate, on time, which draw) and, for the last game, the material at the end, its final position and its key moments in words ("why did my opponent resign?" got "I don't have the engine details"). Retake the age-rating questionnaire (Online Content = Yes) with the 1.1 submission.
 
 **1.1 list:** Claude and OpenAI keys back (tested); a backup and restore file; the local server accepts only
 Knightwise's own extension ID; master games (undecided); report the SentinelOne false positive; the trailer;

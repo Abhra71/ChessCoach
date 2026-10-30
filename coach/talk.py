@@ -88,10 +88,57 @@ def why_not(error):
 OPEN_FAILED = "I can't open that from here. Tell me which page, like your games, Practice or Settings."
 
 
+ENDED = {"checkmated": "checkmate", "resigned": "resigned", "timeout": "ran out of time", "abandoned": "left the game",
+         "stalemate": "draw by stalemate", "agreed": "draw by agreement", "repetition": "draw by repetition",
+         "insufficient": "draw: not enough pieces to mate", "50move": "draw by the 50-move rule",
+         "timevsinsufficient": "draw: time ran out but no mate was possible"}
+VALUE = {1: 1, 2: 3, 3: 3, 4: 5, 5: 9}  # pawn, knight, bishop, rook, queen
+
+
+def ended(g):
+    """How the game ended, in words and from the player's side: "they resigned", "you ran out of time"."""
+    how = ENDED.get(g.get("how"), g.get("how") or "")
+    if how.startswith("draw"):
+        return how
+    who = "they" if g.get("result") == "win" else "you"
+    return f"{who} were checkmated" if how == "checkmate" else f"{who} {how}"
+
+
+def last_game_detail(g):
+    """For the last game, what a coach would look at to explain it (30 Oct test: "why did my opponent resign the
+    last game" got "I don't have the engine details for that game"): the material at the end and its key moments."""
+    import io
+    import chess.pgn
+    out = {}
+    try:
+        raw = next((x for x in insights._games() if x["url"] == g["url"]), None)
+        board = chess.pgn.read_game(io.StringIO(raw["pgn"])).end().board()
+        side = chess.WHITE if g["color"] == "white" else chess.BLACK
+        count = lambda c: sum(VALUE.get(p.piece_type, 0) for p in board.piece_map().values() if p.color == c)
+        diff = count(side) - count(not side)
+        out["material_at_the_end"] = ("level" if not diff else
+                                      f"you were {abs(diff)} points {'ahead' if diff > 0 else 'behind'} (pawn 1, knight or bishop 3, rook 5, queen 9)")
+        out["position_at_the_end"] = board.fen()
+    except Exception:  # the facts are a help, never a reason for no answer
+        pass
+    try:
+        from coach import service
+        rows = insights._moves().get(g["url"], [])
+        out["key_moments"] = [{"move": m.get("move_number"), "say": m.get("say")}
+                              for m in service.key_moments(rows, g["id"])][:3]
+    except Exception:
+        pass
+    return out
+
+
 def recent_games(n=RECENT):
-    """The player's last games as the coach may name them: id, opponent, result, date, key moments."""
-    games = [{k: g[k] for k in ("id", "opponent", "result", "date", "time_class", "moments")}
-             for g in insights.games_list() if g.get("checked")][:n]
+    """The player's last games as the coach may name them: id, opponent, result, how it ended, date, key moments;
+    the last game in more detail."""
+    rows = [g for g in insights.games_list() if g.get("checked")][:n]
+    games = [{**{k: g.get(k) for k in ("id", "opponent", "opponent_rating", "result", "date", "time_class", "opening",
+                                       "moves", "pieces_lost", "moments")}, "ended": ended(g)} for g in rows]
+    if rows:
+        games[0].update(last_game_detail(rows[0]))
     return [{"n": i + 1, **g} for i, g in enumerate(games)]  # 1 = the last game: "my third last game" is 3, no counting
 
 

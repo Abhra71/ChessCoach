@@ -174,3 +174,20 @@ def test_a_refused_key_and_no_internet_are_said_as_such():
     def refused(*a):
         raise RuntimeError("groq: HTTP 401")
     assert talk.reply("maya", "hi", home=HOME, games=GAMES, ask_ai=refused)["text"] == talk.KEY_REFUSED
+
+
+def test_the_coach_knows_how_the_last_game_ended(monkeypatch):
+    """30 Oct test: "why did my opponent resign the last game" got "I don't have the engine details for that game".
+    The coach is now told how each game ended and, for the last one, the material at the end."""
+    url = "https://www.chess.com/game/live/9"
+    pgn = '[Event "x"]\n\n1. e4 e5 2. Qh5 Nc6 3. Qxf7+ Kxf7 4. Nf3 d6 1-0'  # white gave up the queen, then they resigned
+    row = {"id": "9", "url": url, "opponent": "x", "opponent_rating": 400, "result": "win", "date": "d",
+           "time_class": "rapid", "opening": None, "moves": 4, "pieces_lost": 1, "moments": 0, "checked": True,
+           "color": "black", "how": "resigned"}
+    monkeypatch.setattr(talk.insights, "games_list", lambda: [row, {**row, "id": "8", "result": "loss", "how": "timeout"}])
+    monkeypatch.setattr(talk.insights, "_games", lambda: [{"url": url, "pgn": pgn}])
+    monkeypatch.setattr(talk.insights, "_moves", lambda: {})
+    last, before = talk.recent_games()[:2]
+    assert last["ended"] == "they resigned" and before["ended"] == "you ran out of time"
+    assert last["material_at_the_end"].startswith("you were 8 points ahead")  # a queen for a pawn
+    assert talk.ended({"how": "repetition", "result": "draw"}) == "draw by repetition"
