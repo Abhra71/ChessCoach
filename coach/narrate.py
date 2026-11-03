@@ -151,6 +151,23 @@ def _sacrifice(after, sq, captured=0):
     return bool(takers) and (not defended or min(takers) < VALUE[p.piece_type])
 
 
+def missed(board, prev, label):
+    """(words, arrow) for the opponent's move that wasn't their best: what the engine would have played for them,
+    from your previous move's line (prev["reply_pv"]); a checkmate they let go is said as one."""
+    name = {"Inaccuracy": "An inaccuracy by them", "Mistake": "Their mistake", "Blunder": "A blunder by them"}[label]
+    pv = (prev or {}).get("reply_pv") or []
+    try:
+        best = chess.Move.from_uci(pv[0])
+        if best not in board.legal_moves:
+            raise ValueError
+        san = board.san(best)
+    except (ValueError, IndexError):
+        return f" {name}.", None
+    if (prev.get("cp_after") or 0) <= -5000:  # you had just allowed a mate, and they didn't play it
+        return f" {name}: {san} started a checkmate for them, and they missed it.", best.uci()
+    return f" {name}: {san} was stronger for them.", best.uci()
+
+
 def game(positions, played, rows, me, opponent):
     """Every move of the game: [{ply, text, kind, label, arrows}], ply 1 = the first move. rows: the engine's
     verdicts on the player's moves (moves.jsonl, by ply). Labels like chess.com's: Book, Brilliant, Best,
@@ -225,8 +242,12 @@ def game(positions, played, rows, me, opponent):
                         u = _uci(nxt["fen"], nxt["best"])
                         if u:
                             arrows.append([u, "better", "Your chance"])
-                elif label == "Inaccuracy":
-                    text += " An inaccuracy by them."
+                elif label in ("Inaccuracy", "Mistake", "Blunder"):  # what they missed, said (3 Nov test: "how can
+                    # taking a queen be a mistake": it was, they had mate with Qh5+, but nothing said so)
+                    said_it, u = missed(board, prev, label)
+                    text += said_it
+                    if u:
+                        arrows.append([u, "reply", "They missed"])
         if in_book and tuple(sans) in names and names[tuple(sans)] != named:  # the opening, by name, when it's reached
             named = names[tuple(sans)]
             text = (text[:-len(" Checkmate.")] + f" This is the {named}. Checkmate." if text.endswith(" Checkmate.")

@@ -46,3 +46,17 @@ def test_checkmate_is_said():
 def test_back_by_voice_only_in_a_review():
     assert talk.action({"do": "back"}, [], {"section": "review"}) == {"back": True}
     assert talk.action({"do": "back"}, [], {"section": "home"}) is None
+
+
+def test_their_mistake_says_what_they_missed():
+    """3 Nov test: "how can taking a queen be a mistake". 9...Nxe4 let White mate with Qh5+; they took the queen on d8
+    instead. The label was right, but nothing said why."""
+    import chess
+    from coach import narrate
+    board = chess.Board("r1bqk2r/pppp2p1/2n2n1p/2b2PB1/2B1P3/2P4Q/PP3PPP/RN2K1NR b KQkq - 1 9")
+    board.push_san("Nxe4")
+    said, arrow = narrate.missed(board, {"reply_pv": ["h3h5", "g7g6"], "cp_after": -9997}, "Mistake")
+    assert said == " Their mistake: Qh5+ started a checkmate for them, and they missed it." and arrow == "h3h5"
+    said, _ = narrate.missed(board, {"reply_pv": ["h3h5"], "cp_after": -300}, "Inaccuracy")
+    assert said == " An inaccuracy by them: Qh5+ was stronger for them."
+    assert narrate.missed(board, {}, "Blunder") == (" A blunder by them.", None)  # no line: just the label's words
