@@ -25,15 +25,24 @@ const Board = (() => {
     return [(flip ? 7 - f : f) * 10, (flip ? r : 7 - r) * 10];
   }
 
-  function arrowSvg(a, flip) {
+  // boxes overlap (with a little air between them)
+  const hits = (a, b) => a.x < b.x + b.w + 0.4 && b.x < a.x + a.w + 0.4 && a.y < b.y + b.h + 0.4 && b.y < a.y + a.h + 0.4;
+
+  function arrowSvg(a, flip, taken = []) {
     const k = KIND[a.kind] || KIND.better;
     const [x1, y1] = xy(a.from, flip).map(v => v + 5), [x2, y2] = xy(a.to, flip).map(v => v + 5);
     const len = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / len, uy = (y2 - y1) / len;
     const hx = x2 - ux * 3.6, hy = y2 - uy * 3.6, px = -uy * 2.2, py = ux * 2.2;
     const sx = x1 + ux * 2, sy = y1 + uy * 2;
-    const text = a.label || k.label, w = text.length * 1.55 + 2.4, ty = (sy + hy) / 2;
-    // kept inside the board: "You played" on the a- or h-file was cut off at the edge (27 Oct, the owner's 1.0 run)
-    const tx = Math.min(Math.max((sx + hx) / 2, w / 2 + 0.3), 80 - w / 2 - 0.3);
+    const text = a.label || k.label, w = text.length * 1.55 + 2.4;
+    // kept inside the board: "You played" on the a- or h-file was cut off at the edge (27 Oct, the owner's 1.0 run);
+    // slid along its arrow off the move's badge and the other labels (3 Nov: the ?? badge hid "Better")
+    const at = t => { const ty = sy + (hy - sy) * t;
+      const tx = Math.min(Math.max(sx + (hx - sx) * t, w / 2 + 0.3), 80 - w / 2 - 0.3);
+      return { tx, ty, box: { x: tx - w / 2, y: ty - 2.1, w, h: 4.2 } }; };
+    const spot = [0.5, 0.35, 0.65, 0.22, 0.78].map(at).find(c => !taken.some(b => hits(c.box, b))) || at(0.5);
+    const { tx, ty } = spot;
+    taken.push(spot.box);
     return `<g class="arrow" opacity=".92">
       <line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy}" stroke="${k.color}" stroke-width="1.7" stroke-linecap="round"/>
       <polygon points="${x2},${y2} ${hx + px},${hy + py} ${hx - px},${hy - py}" fill="${k.color}"/>
@@ -66,7 +75,9 @@ const Board = (() => {
       const [x, y] = xy(t, flip);
       s += `<circle cx="${x + 5}" cy="${y + 5}" r="4.3" class="target-take" pointer-events="none"/>`;
     }
-    for (const a of opts.arrows || []) s += arrowSvg(a, flip);
+    const taken = [];  // the badge's circle, then each label as it's placed
+    if (opts.badge) { const [x, y] = xy(opts.badge.sq, flip); taken.push({ x: x + 6.3, y: y - 0.9, w: 4.6, h: 4.6 }); }
+    for (const a of opts.arrows || []) s += arrowSvg(a, flip, taken);
     if (opts.badge) {  // a move's label on its square, like chess.com's icons: {sq, text, color}
       const [x, y] = xy(opts.badge.sq, flip);
       s += `<g pointer-events="none"><circle cx="${x + 8.6}" cy="${y + 1.4}" r="2.3" fill="${opts.badge.color}" stroke="#0a0a0a" stroke-width=".3"/>

@@ -2061,7 +2061,13 @@ async function gameView(id) {
     const k = view ? moments[view[0]] : null, st = k ? k.steps[view[1]] : null, hl = {};
     const at = st ? stepPly(k, st) : ply, pos = g.positions[at], m = said[ply - 1];
     let arrows = st ? toArrows(st.arrows) : [];
-    if (!st && ply > 0 && mode && m) arrows = toArrows(m.arrows);
+    // the move just played gets its arrow only when it's alone: next to a Better or They missed arrow, its two lit
+    // squares and its badge already show it (3 Nov test: "the arrows are crowding the board", "remove only if it's
+    // unnecessary"). The arrows that teach (better, their reply, what they missed) always stay.
+    if (!st && ply > 0 && mode && m) {
+      const teach = m.arrows.filter(a => a[1] !== "mine" && a[1] !== "real");
+      arrows = toArrows(teach.length ? teach : m.arrows);
+    }
     if (pos.uci) { hl[pos.uci.slice(0, 2)] = "hl-last"; hl[pos.uci.slice(2, 4)] = "hl-last"; }
     const mark = !st && mode && m && m.label && pos.uci ? { sq: pos.uci.slice(2, 4), text: LABEL[m.label][1], color: LABEL[m.label][0] } : null;
     Board.render($("#board"), { fen: pos.fen, flip, highlights: hl, arrows, badge: mark });
