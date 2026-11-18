@@ -512,6 +512,13 @@ function paintStatus() {
   const icon = $("#synced");
   if (icon) { icon.title = text; icon.querySelector(".dot").className = `dot ${!s.phase || s.phase === "error" ? "bad" : busy ? "busy" : "ok"}`; }
   const me = $("#mename"); if (me && s.player && !me.textContent) me.textContent = s.player;
+  const bar = document.querySelector(".box.checking");  // Home's own bar moves too (18 Nov: it stayed on 2 of 20)
+  if (bar) {
+    if (busy && !older && s.total) {
+      bar.querySelector("span").innerHTML = `Checking your games: <b class="num">${s.done}</b> of ${s.total}`;
+      bar.querySelector(".bar div").style.width = `${100 * s.done / s.total}%`;
+    } else bar.remove();
+  }
 }
 
 let lastPhase = null, lastVersion = null;
@@ -1871,10 +1878,16 @@ async function home() {
   shell("home", `<p class="muted">Loading…</p>`);
   const h = await api("/api/home");
   if (!h.player) return go("welcome");
+  // the first check isn't done (the app was closed and opened again meanwhile): its progress page, not Home's numbers
+  // from two or three games (18 Nov self-test: "0.0 pieces lost a game, from 0.0")
+  if (STATUS.phase && STATUS.phase !== "ready" && STATUS.phase !== "error" && !STATUS.review_ready && !STATUS.no_games) return go("welcome");
   // the very first Home is for the player's own games: the AI card waits for the next visit (13 Oct test: the AI
   // card, a sudden coach and a console window all at once "ruined the first look")
   try {
-    if (sessionStorage.getItem("kw-new")) { sessionStorage.removeItem("kw-new"); localStorage.setItem("kw-ai-next", "1"); }
+    // "the next visit" is the next time the app opens, not Home drawn again with new numbers a minute later
+    // (18 Nov self-test: the card covered the very first Home)
+    if (sessionStorage.getItem("kw-new")) { sessionStorage.removeItem("kw-new"); sessionStorage.setItem("kw-first-look", "1"); localStorage.setItem("kw-ai-next", "1"); }
+    else if (sessionStorage.getItem("kw-first-look")) { /* still the first look: no card */ }
     else if (localStorage.getItem("kw-ai-next")) { localStorage.removeItem("kw-ai-next"); setTimeout(() => AiCard.maybe("welcome"), 4000); }
     else AiCard.maybe("week");
   } catch (e) {}
