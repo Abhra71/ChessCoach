@@ -94,3 +94,43 @@ def test_a_busy_chess_com_is_tried_again_and_an_unknown_player_is_not(monkeypatc
     with pytest.raises(urllib.error.HTTPError):
         fetch.get_json("https://api.chess.com/nobody")
     assert len(calls) == 1
+
+
+def test_the_first_look_is_two_rounds_on_any_pc(monkeypatch):
+    """18 Nov self-test: 20 games were 3 rounds of checks here and 7 on a 4-core laptop. Two rounds, 6 to 20 games."""
+    for cores, want in ((2, 6), (4, 6), (8, 14), (12, 16), (32, 16)):
+        monkeypatch.setattr(analyze.os, "cpu_count", lambda c=cores: c)
+        assert analyze.first_look() == want, cores
+
+
+def test_practice_positions_are_worked_out_side_by_side_and_kept(tmp_path, monkeypatch):
+    """18 Nov self-test: 12 positions took 40 s one after another. Several engines at once; the cache still answers."""
+    import threading
+    from coach import drills
+    monkeypatch.setattr(drills, "CACHE", tmp_path / "drill-cache.json")
+    monkeypatch.setattr(drills, "_cache", None)
+    engines, seen = [], set()
+
+    class Eng:
+        def __enter__(self):
+            engines.append(self)
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def configure(self, opts):
+            pass
+
+    def fake(eng, pattern, r):
+        seen.add(threading.get_ident())
+        return {"id": drills.drill_id(r), "pattern": pattern}
+    monkeypatch.setattr(drills, "open_engine", Eng)
+    monkeypatch.setattr(drills, "_drill", fake)
+    monkeypatch.setattr(drills.os, "cpu_count", lambda: 12)
+    chosen = [("hang", {"url": "u", "ply": i, "fen": "f"}) for i in range(12)]
+    got = drills.many(chosen)
+    assert [d["id"] for d in got] == [f"u#{i}" for i in range(12)]  # in order
+    assert len(engines) == 5  # (12 - 1) // 2 engines
+    engines.clear()
+    assert drills.many(chosen) == got and engines == []  # all kept: no engine opened

@@ -91,7 +91,9 @@ def challenge(home, games=None, engine=None, today=None):
                 got.add(more[0].get("id"))
                 items.append({**more[0], "intro": f"Also today: {plan.THEME_NAME[t]}. {more[0]['intro']}"})
     mem = _memory()
-    if engine is not None and items:  # the full set (with your opening): kept for the rest of the day
+    # the full set (with your opening): kept for the rest of the day, once Practice's own positions exist (a first
+    # start builds them just after Home opens, 18 Nov: day one would have lost "your position")
+    if engine is not None and items and (DATA / "drills.json").exists():
         mem["set"] = {"day": today.isoformat(), "theme": plan.THEME_NAME[theme], "drills": items}
         try:
             FILE.parent.mkdir(parents=True, exist_ok=True)

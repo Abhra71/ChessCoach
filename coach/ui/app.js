@@ -2226,6 +2226,13 @@ async function practice(pattern) {
   shell("practice", `<p class="muted">Loading…</p>`);
   const all = await api("/api/practice-set").catch(() => []);
   const only = pattern ? all.filter(d => d.pattern === pattern) : [], drills = only.length ? only : all;
+  if (!drills.length && STATUS.practice_pending) {  // a first start: Practice is worked out just
+    // after Home opens (18 Nov), so a few seconds here; it opens by itself
+    $("#page").innerHTML = `<div class="empty">${svg("sync")} Getting your practice ready: a few seconds…</div>`;
+    const here = location.hash;
+    setTimeout(async () => { STATUS = await api("/api/status").catch(() => STATUS); if (location.hash === here) practice(pattern); }, 3000);
+    return;
+  }
   if (!drills.length) { $("#page").innerHTML = `<div class="empty">${afterGames("Practice")}</div>`; return; }
   $("#page").innerHTML = trainerPage(only.length ? (HABIT[pattern] || [])[1] || "Practice" : "Practice",
     { text: "" });

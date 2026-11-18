@@ -103,6 +103,18 @@ FIRST_LOOK = 20  # the first start checks the newest games first, so Home opens 
 # waited 25 minutes for all 148 games before it showed anything)
 
 
+def workers():
+    """Games checked side by side: one core is left for the window, so the app stays smooth while it checks."""
+    return max(1, min(8, (os.cpu_count() or 2) - 1))
+
+
+def first_look():
+    """How many games the first start checks before Home opens: two rounds of side-by-side checks, so it takes about
+    the same time on any PC (18 Nov: 20 games were 3 rounds here, about 36 s, and 7 rounds on a 4-core laptop).
+    The rest follow in the background."""
+    return max(6, min(FIRST_LOOK, 2 * workers()))
+
+
 def unchecked(done_urls=None):
     """Games not checked yet, newest first (the ones a player remembers and cares about)."""
     done_urls = checked_games() if done_urls is None else done_urls
@@ -128,9 +140,7 @@ def main(argv=None, progress=None, limit=None):
         CHECKED.write_text("\n".join(sorted(done_urls)) + "\n")
         return 0
     mode = "w" if redo else "a"
-    # one core is left for the window, so the app stays smooth while it checks
-    workers = max(1, min(8, (os.cpu_count() or 2) - 1))
-    with ProcessPoolExecutor(max_workers=workers) as pool, open(MOVES, mode) as fh:
+    with ProcessPoolExecutor(max_workers=workers()) as pool, open(MOVES, mode) as fh:
         for done, (game, rows) in enumerate(zip(games, pool.map(analyse_game, games, [player] * len(games))), 1):
             for r in rows:
                 fh.write(json.dumps(r) + "\n")

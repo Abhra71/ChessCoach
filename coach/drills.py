@@ -8,8 +8,10 @@ Output: data/drills.html  (user data, never committed) - open it in any browser.
 Every legal move in each position is scored by Stockfish when the page is built, so the page itself needs nothing.
 """
 import json
+import os
 import random
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
 from datetime import date
 
@@ -165,12 +167,7 @@ def drill(eng, pattern, r):
     global _cache
     key = f"{drill_id(r)}|{r['fen']}|{pattern}"
     with _CACHE_LOCK:  # the warm-up after new games and a page can both be here (coach/service.py)
-        if _cache is None:
-            try:
-                saved = json.loads(CACHE.read_text())
-                _cache = saved["drills"] if saved.get("version") == CACHE_VERSION else {}
-            except (OSError, ValueError, KeyError):
-                _cache = {}
+        _load_cache()
         hit = _cache.get(key)
     if hit is None:
         hit = _drill(eng, pattern, r)
@@ -186,6 +183,40 @@ def drill(eng, pattern, r):
             except OSError:
                 pass
     return json.loads(json.dumps(hit))  # a copy: callers add to it
+
+
+def _load_cache():
+    """Read the kept positions once (call with _CACHE_LOCK held)."""
+    global _cache
+    if _cache is None:
+        try:
+            saved = json.loads(CACHE.read_text())
+            _cache = saved["drills"] if saved.get("version") == CACHE_VERSION else {}
+        except (OSError, ValueError, KeyError):
+            _cache = {}
+
+
+def _cached(pattern, r):
+    with _CACHE_LOCK:
+        _load_cache()
+        return f"{drill_id(r)}|{r['fen']}|{pattern}" in _cache
+
+
+def many(chosen):
+    """drill() for each (pattern, row), several engines side by side (18 Nov self-test: the 12 positions of a new
+    player's first practice took 40 s one after another; one engine each on a few cores, like the games' check)."""
+    todo = [(p, r) for p, r in chosen if not _cached(p, r)]
+    if todo:
+        cores = os.cpu_count() or 2
+        k = max(1, min(len(todo), 6, (cores - 1) // 2))  # a core left for the window
+        def work(chunk):
+            with open_engine() as eng:
+                eng.configure({"Threads": 2 if cores >= 4 else 1, "Hash": 64})
+                for p, r in chunk:
+                    drill(eng, p, r)
+        with ThreadPoolExecutor(max_workers=k) as pool:
+            list(pool.map(work, [todo[i::k] for i in range(k)]))
+    return [drill(None, p, r) for p, r in chosen]  # all from the cache now, in order
 
 
 def _drill(eng, pattern, r):
@@ -330,9 +361,7 @@ def build():
         # every example of the pattern except the ones on the review page, clearest first
         candidates = {drill_id(r): r for r in pick_examples(by_pattern[p], len(by_pattern[p]))[EXAMPLES:]}
         chosen += [(p, candidates[i]) for i in memory.choose(list(candidates), PER_PATTERN)]
-    with open_engine() as eng:
-        eng.configure({"Threads": 4, "Hash": 128})
-        drills = [drill(eng, p, r) for p, r in chosen]
+    drills = many(chosen)
     from coach import insights
     puzzles = pick_puzzles(by_pattern, top, seed=date.today().isoformat(), rating=insights.home().get("rating"))
     # organised by habit, biggest first: your own positions, then puzzles on the same habit, easiest first

@@ -1212,6 +1212,7 @@ def status():
             "older": STATE.get("older"),  # the older games being checked while the app is ready (27 Oct)
             "data_version": STATE.get("data_version", 0),
             "review_ready": (DATA / "review.html").exists(), "extension_seen": STATE.get("extension_seen"),
+            "practice_pending": bool(STATE.get("practice_pending")),
             "extension_in": STATE.get("extension_in", {}), "health": health.summary(),
             # connected only if seen lately: it checks in every minute (22 Oct test: "connected" after it was removed)
             "extension_now": [b for b, t in STATE.get("extension_at", {}).items() if time.time() - t < 180],
@@ -1338,9 +1339,10 @@ def update_once():
     STATE["phase"] = "checking your games"
     # many games waiting (a first start, or a long break): the newest first, then Home opens and the older ones are
     # checked in the background (27 Oct: a new PC waited 25 minutes for 148 games before it showed anything)
-    many = len(analyze.unchecked()) > analyze.FIRST_LOOK
+    look = analyze.first_look()
+    many = len(analyze.unchecked()) > look
     checked = analyze.main(argv=[], progress=lambda done, total: STATE.update(done=done, total=total),
-                           limit=analyze.FIRST_LOOK if many else None)
+                           limit=look if many else None)
     if not (DATA / "moves.jsonl").exists():  # a brand-new chess.com account: no games yet (26 Oct test: it looped on
         # "Something went wrong" forever). Ready, with nothing to check; the first game is picked up by the next check.
         STATE.update(phase="ready", no_games=True, last_update=time.strftime("%Y-%m-%d %H:%M"))
@@ -1350,10 +1352,20 @@ def update_once():
     STATE["phase"] = "building your pages"
     if checked or first:
         review.build()
-    if checked or first or STATE.get("practice_day") != today:  # new practice every day: puzzles, due positions
+    practice = checked or first or STATE.get("practice_day") != today  # new practice every day: puzzles, due positions
+    if practice and not first:
         drills.build()
         STATE["practice_day"] = today
     STATE.update(phase="ready", last_update=time.strftime("%Y-%m-%d %H:%M"))
+    if practice and first:  # the very first start: Home opens now, Practice is worked out just after (18 Nov self-test:
+        # 12 positions, every move scored, kept a new player waiting 20 s here and over a minute on a 4-core laptop)
+        STATE["practice_pending"] = True
+        try:
+            drills.build()
+        finally:
+            STATE["practice_pending"] = False
+        STATE["practice_day"] = today
+        STATE["data_version"] = STATE.get("data_version", 0) + 1  # an open page shows it
     if checked:  # new numbers: open pages redraw themselves (only then, not after every check)
         STATE["data_version"] = STATE.get("data_version", 0) + 1
     if many:  # the older games, while the player already uses the app; then the pages again, with all of them
