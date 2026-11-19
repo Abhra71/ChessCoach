@@ -749,13 +749,13 @@ async function rematchView(gid, ply) {
   shell("games", `<p class="muted">Loading…</p>`);
   let s;
   try { s = await api(`/api/rematch/${gid}/${ply}`); }
-  catch (e) { $("#page").innerHTML = `<div class="empty">There's no rematch for this game: rematches are for games you didn't win.</div>`; return; }
+  catch (e) { $("#page").innerHTML = `<div class="empty">There's no rematch for this game: it had no big mistake to replay.</div>`; return; }
   const white = s.color === "white", history = [s], played = [];
   let picked = null, busy = true, last = {};
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games/${esc(gid)}" class="small muted" style="text-decoration:none">← Back to the game</a>
       <h1 style="margin-top:6px">Rematch vs ${esc(s.opponent)} <span class="faint num">${s.rating}</span></h1>
-      <p class="sub">From move ${s.move_number} · you played ${esc(s.real_move)} and ${s.real === "loss" ? "lost" : "drew"}</p></div></div>
+      <p class="sub">From move ${s.move_number} · you played ${esc(s.real_move)} and ${s.real === "loss" ? "lost" : s.real === "win" ? "still won" : "drew"}</p></div></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
@@ -822,7 +822,8 @@ async function rematchView(gid, ply) {
   for (const fen of s.lead_in) { Board.render($("#board"), { fen, flip: s.flip }); await wait(420); }
   busy = false; draw();
   Coach.react("maya", "explain", `Your game against ${s.opponent}, just before move ${s.move_number}. In the real game you played ${s.real_move}` +
-    ` and ${s.real === "loss" ? "lost" : "drew"}. Play something better this time, then play it out. They'll play at about their level.`);
+    (s.real === "win" ? `. You still won, because they didn't punish it. This time they might: play something better, then play it out.`
+      : ` and ${s.real === "loss" ? "lost" : "drew"}. Play something better this time, then play it out. They'll play at about their level.`));
 }
 
 // ---------- your level: the ladder from beginner to 2,000+, measured on your last 20 games (0.6) ----------
@@ -2025,6 +2026,7 @@ async function gameView(id) {
       <h1 style="margin-top:6px">vs ${esc(g.opponent)} <span class="faint num">${g.opponent_rating}</span></h1>
       <p class="sub">${cap(g.result)} · ${esc(g.time_class)} · you were ${g.color}${g.opening ? " · " + esc(g.opening) : ""}</p></div>
       <div class="row">${g.result === "win" && g.positions.length > 20 ? `<a class="btn" href="#/film/${g.id}">▶ Watch it as a film</a>` : ""}
+        ${g.rematch ? `<a class="btn" href="#/rematch/${g.id}/${g.rematch.ply}" title="Play on from move ${g.rematch.move_number}, where it went wrong, against an opponent at their level">↻ Rematch from move ${g.rematch.move_number}</a>` : ""}
         <a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener">Open on chess.com ↗</a></div></div>
     <div class="game-layout">
       <div><div class="evalwrap"><div class="evalbar ${flip ? "flip" : ""}" id="evalbar" title="Who's winning"><i></i><span></span></div>
@@ -2141,7 +2143,7 @@ async function gameView(id) {
         ${explained[k.ply] ? `<div class="coach-says">${esc(explained[k.ply])}</div>` : ""}
         <div class="kbtns"><a class="btn primary" href="#/try/${g.id}/${k.ply}">Try again</a>
           ${k.lesson ? `<a class="btn" href="#/course/${k.lesson.id}" title="The lesson: ${esc(k.lesson.title)}">Learn it</a>` : ""}
-          ${g.result !== "win" ? `<a class="btn" href="#/rematch/${g.id}/${k.ply}" title="Play on from here against the engine, at their level">Rematch</a>` : ""}
+          ${g.rematch ? `<a class="btn" href="#/rematch/${g.id}/${k.ply}" title="Play on from here against the engine, at their level">Rematch</a>` : ""}
           ${aiReady && !explained[k.ply] ? `<button class="btn" data-explain="${k.ply}" title="The coach explains it in their own words">Explain</button>` : ""}</div></div>` : ""}
       ${last || (mode === "key" && ki === moments.length - 1) ? `<div data-helpful></div>` : ""}`;
     helpful(w.querySelector("[data-helpful]"), `review ${g.id}`);

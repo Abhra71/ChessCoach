@@ -32,7 +32,7 @@ RULES = (
     "the next lesson). "
     "do review, what a game's n: opens the review of one of the recent_games (n 1 is their last game, n 2 the one "
     "before, so \"my third last game\" is 3; \"my game against X\" is the n of the newest game against X). "
-    "do rematch, what a game's n: replays a lost or drawn game from where it went wrong; on a game's page (where_the_player_is has game), \"this game\" or just \"rematch\" means that game: what is its id. "
+    "do rematch, what a game's n: replays a game from its biggest mistake (a loss, a draw, or a win where they didn't punish it); on a game's page (where_the_player_is has game), \"this game\" or just \"rematch\" means that game: what is its id. "
     "do next: starts the review, or shows its next step or move (only when where_the_player_is says review). "
     "do back: the review's previous step or move again (only when where_the_player_is says review). "
     "In a review, \"next\", \"forward\", \"previous\", \"back\" or \"previous move\" means do next or do back, even "
@@ -64,7 +64,7 @@ ABOUT = {
     "the_games_they_see": "the last 12 games in detail; all_games has the totals",
 }
 REFUSED = {  # an action the coach asked for that isn't possible here: say so, never "let's replay it" and nothing (19 Oct)
-    "rematch": "I can't start a rematch from here. Open a game you lost or drew, then say rematch.",
+    "rematch": "I couldn't start that rematch. Name the game, like your last game or the player's name, or open it and say rematch.",
     "next": "Open a game's review first, then say next and I'll go through it step by step.",
     "back": "Open a game's review first, then say next or back to go through it.",
     "review": "I can't find that game in your recent games.",
@@ -277,7 +277,7 @@ def action(do, games, where):
             g = next((x for x in games if x["id"] == here), None) or next(
                 (x for x in insights.games_list() if x["id"] == here and x.get("checked")), None)
         if g:
-            detail = insights.extras_for(g["id"]).get("rematch") if g["result"] != "win" else None
+            detail = insights.extras_for(g["id"]).get("rematch")  # wins too, when there was a big mistake (19 Nov)
             return {"route": f"rematch/{g['id']}/{detail['ply']}"} if detail else None
     # next / back: whatever the AI wrote after the word ("next": "step", "move"…) (22 Oct test: "Next." was refused)
     if "next" in do and do["next"] not in (False, None, "none") and (where or {}).get("section") == "review":

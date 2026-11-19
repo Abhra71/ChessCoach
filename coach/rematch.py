@@ -93,7 +93,12 @@ def play(fen, uci, rating, player_white):
 
 
 def end_say(result, real):
-    """Maya's line when the rematch ends, against how the real game went ("loss" or "draw")."""
+    """Maya's line when the rematch ends, against how the real game went ("loss", "draw" or "win")."""
+    if real == "win":  # they let your slip go in the real game: this time, would you have won without needing that?
+        return {"win": "You won again, and this time without the slip. That's the clean way.",
+                "draw": "A draw this time. In the real game they let your slip go: try once more for the clean win.",
+                "stalemate": "Stalemate, so it's a draw. When you're winning, leave their king a square before you close in.",
+                }.get(result, "This time they punished it. That's what a stronger player does: try once more from the same moment.")
     if result == "win":
         return f"Checkmate! In the real game you {'lost' if real == 'loss' else 'drew'}. This time you won."
     if result == "draw":
@@ -111,10 +116,10 @@ def _human(rating):
 
 
 def setup(gid, ply):
-    """Where a rematch starts: the board just before your move at this ply, in a game you didn't win."""
+    """Where a rematch starts: the board just before your move at this ply (a win too: the slip they let go)."""
     from coach import insights
     g = insights.game_detail(gid)
-    if not g or g["result"] == "win" or not 1 <= ply < len(g["positions"]):
+    if not g or not 1 <= ply < len(g["positions"]):
         return None
     board = chess.Board(g["positions"][ply - 1]["fen"])
     white = g["color"] == "white"

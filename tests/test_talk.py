@@ -36,7 +36,7 @@ def test_a_refused_action_is_never_promised():
     """19 Oct: "Rematch it" on Home said "Let's replay that game." and nothing happened."""
     r = talk.reply("maya", "rematch it", home=HOME, games=GAMES,
                    ask_ai=ai_says({"say": "Let's replay that game.", "do": {"rematch": "222"}}))
-    assert r["action"] is None and "can't start a rematch from here" in r["text"]
+    assert r["action"] is None and "couldn't start that rematch" in r["text"]
 
 
 def test_prep_against_any_player_but_only_a_real_username():
@@ -199,7 +199,9 @@ def test_rematch_this_game_on_its_page(monkeypatch):
     where = {"section": "review", "game": "111", "ply": "5"}
     assert talk.action({"rematch": "this"}, GAMES, where) == {"route": "rematch/111/17"}
     assert talk.action({"rematch": "this"}, GAMES, {"section": "home"}) is None  # no game on screen: nothing guessed
-    assert talk.action({"rematch": "222"}, GAMES, where) is None  # a win has no rematch
+    assert talk.action({"rematch": "222"}, GAMES, where) == {"route": "rematch/222/17"}  # a win with a big mistake too (19 Nov)
+    monkeypatch.setattr(talk.insights, "extras_for", lambda gid: {"rematch": None})
+    assert talk.action({"rematch": "222"}, GAMES, where) is None  # no big mistake: nothing to replay
 
 
 def test_a_game_by_a_close_name_or_a_number_past_the_last_12(monkeypatch):

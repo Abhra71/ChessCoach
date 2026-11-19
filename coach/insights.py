@@ -219,13 +219,13 @@ def game_detail(gid):
 
 
 def extras(g, rows, player):
-    """The clock coach's lines for one game, and where a rematch of a game you didn't win would start: the moment
-    that cost the most (flagships 4 and 5)."""
+    """The clock coach's lines for one game, and where its rematch starts: the moment that cost the most (flagships 4
+    and 5). Wins too (19 Nov, the owner: "a win might have blunders too"): the slip they didn't punish."""
     from coach import clock
     me = _side(g, player)[0]
     worst = max(biggest(rows), key=lambda r: r["loss"], default=None)
     rematch = ({"ply": worst["ply"], "move_number": move_number(worst)}
-               if worst and _result(g, me) != "win" else None)
+               if worst else None)
     return {"clock": clock.game_clock(g, me, rows), "rematch": rematch}
 
 
