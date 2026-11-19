@@ -64,7 +64,7 @@ Your numbers will be different. That's the point: everything is worked out from 
 ## How it works
 
 1. **Type your chess.com username.** There's no password, because only your public games are read.
-2. **Knightwise checks your games** with Stockfish on your PC, which takes about 2 minutes the first time, and keeps checking new ones by itself.
+2. **Knightwise checks your games** with Stockfish on your PC. The first time, your newest games are ready in about a minute and the rest are checked while you use it; after that it checks new ones by itself.
 3. **Play on chess.com as usual.** After a game, the coaches show up with what mattered and what to practise next.
 
 ![The welcome: a 3D antique chess set replaying the Opera Game](docs/screenshots/welcome.jpg)
@@ -111,8 +111,8 @@ Your numbers will be different. That's the point: everything is worked out from 
 
 1. Get **Knightwise** from the [Microsoft Store](https://apps.microsoft.com/detail/9NKLGS6K72J2). Click **Get**: no installer, no Python, no admin rights, and Windows
    doesn't block it, because the Store signs it.
-2. The app opens full screen on the welcome: type your chess.com username. The coach checks your games (about 2 minutes the first
-   time) and shows your review. From then on it lives as a knight icon by the clock and checks each new game
+2. The app opens full screen on the welcome: type your chess.com username. The coach checks your newest games first (about a minute
+   the first time; the rest follow in the background) and shows your review. From then on it lives as a knight icon by the clock and checks each new game
    by itself.
 3. Optional, 1 minute: **Arrows on chess.com** (in the icon's menu) walks you through adding the browser
    extension and turns green when it works.

@@ -1,0 +1,30 @@
+Knightwise 1.1: what to paste and upload in Partner Center (Start update on the live 1.0 listing).
+Everything else in the listing stays as it is.
+
+
+===== WHAT'S NEW IN THIS VERSION (replace the 1.0 text) =====
+
+Knightwise 1.1: a much faster first start. Your newest games are checked first, so Home opens in about a minute instead of waiting for every game, and the rest are checked while you use it. Ask your coach why a game ended and she knows how it finished. The game review says what your opponent missed, and the board shows fewer, clearer arrows. Clearer messages when an AI key is refused or you're offline, and downloads from chess.com are tried again when it's slow.
+
+
+===== PACKAGES =====
+
+Drop dist\Knightwise-1.1.0.0.msix (it replaces 1.0.0.0). Keep the runFullTrust reason as it is.
+
+
+===== TRAILER (Store listings -> Trailers) =====
+
+Video:      C:\Users\abhra\Videos\Knightwise\Knightwise trailer 2.mp4   (55 s, 1920x1080)
+Thumbnail:  installer\store-hero\trailer_thumb.png                      (1920x1080)
+Title:      Knightwise: your personal chess coach
+
+
+===== 16:9 HERO IMAGE (Store listings -> Store logos / Promotional art, "16:9 Super hero art") =====
+
+installer\store-hero\hero.png   (3840x2160, no words)
+
+
+===== AGE RATING (with a parent) =====
+
+Retake the IARC questionnaire. Change one answer: Online content / users can see content from others = Yes
+(the coaches' AI replies come from an online service when the player adds a key). Everything else as before.
