@@ -1,6 +1,14 @@
 # Knightwise: where we are and what comes next
 
-## 26 Oct 2026: Knightwise 1.0 is ready to submit (START HERE)
+## 19 Nov 2026: Knightwise 1.1 is built and ready to submit (START HERE)
+
+`dist\Knightwise-1.1.0.0.msix` (376 MB, not in the repo), built from dev-0.6 after the owner's hand test (13 findings,
+all fixed and retested) and 290 tests; Defender clean. Submit with a parent: Partner Center -> Knightwise -> Start
+update; everything to paste and upload is in `installer/msix/LISTING_1.1_PASTE.txt` (package, What's new, trailer,
+16:9 hero, age-rating retake). After certification: measure how fast the Store app opens (Smart App Control blocks
+the unsigned build here), then merge dev-0.6 into main and tag v1.1.0. No promotion before 1.1 is live.
+
+## 26 Oct 2026: Knightwise 1.0 is ready to submit
 
 **State:** dev-0.6 merged into main. The final Store package is `dist\Knightwise-1.0.0.0.msix` (359 MB, built from
 main; not in the repo). Checked: 275 tests, a smoke test of the built app (every page, the voice, the human-move
