@@ -63,6 +63,8 @@ ABOUT = {
                                  "back in a review, prep against a chess.com player, and on chess.com show the way with a red ring",
     "fair_play": "completely off during a game against a real person",
     "the_games_they_see": "the last 12 games in detail; all_games has the totals",
+    "opening_older_games": "any of their checked games can be opened (do review) or rematched (do rematch) by its number, "
+                           "1 = the newest, up to all_games.checked, even when it isn't in recent_games",
 }
 REFUSED = {  # an action the coach asked for that isn't possible here: say so, never "let's replay it" and nothing (19 Oct)
     "rematch": "I couldn't start that rematch. Name the game, like your last game or the player's name, or open it and say rematch.",
@@ -383,7 +385,8 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     fallback["action"] = None
     facts = {"player": coaches.player_card(home), "recent_games": games, "where_the_player_is": where or {},
              "level": level_now(), "next_lesson": next_lesson(), "knightwise": ABOUT,
-             "all_games": {"checked": home.get("games"), "results": home.get("results")}}
+             "all_games": {"checked": home.get("games"), "results": home.get("results"),
+                           "numbers_you_can_open": f"1 to {home.get('games') or 0}"}}
     facts.update(this_move(where))
     facts.update(this_line(where))
     facts_text = json.dumps(facts)
