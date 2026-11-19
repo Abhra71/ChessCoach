@@ -191,3 +191,36 @@ def test_the_coach_knows_how_the_last_game_ended(monkeypatch):
     assert last["ended"] == "they resigned" and before["ended"] == "you ran out of time"
     assert last["material_at_the_end"].startswith("you were 8 points ahead")  # a queen for a pawn
     assert talk.ended({"how": "repetition", "result": "draw"}) == "draw by repetition"
+
+
+def test_rematch_this_game_on_its_page(monkeypatch):
+    """19 Nov hand test: "let's rematch this game" on a lost game's page was refused ("open a game you lost")."""
+    monkeypatch.setattr(talk.insights, "extras_for", lambda gid: {"rematch": {"ply": 17}})
+    where = {"section": "review", "game": "111", "ply": "5"}
+    assert talk.action({"rematch": "this"}, GAMES, where) == {"route": "rematch/111/17"}
+    assert talk.action({"rematch": "this"}, GAMES, {"section": "home"}) is None  # no game on screen: nothing guessed
+    assert talk.action({"rematch": "222"}, GAMES, where) is None  # a win has no rematch
+
+
+def test_a_game_by_a_close_name_or_a_number_past_the_last_12(monkeypatch):
+    """19 Nov, the owner: a name "might not be fully correct, just close", or "56th game"."""
+    games = [{"n": 1, "id": "111", "opponent": "SreejitDebnath", "result": "loss"},
+             {"n": 2, "id": "222", "opponent": "DOMO0977777", "result": "win"},
+             {"n": 3, "id": "333", "opponent": "MananOp90", "result": "loss"}]
+    assert talk.find_game("sreejit", games)["id"] == "111"
+    assert talk.find_game("Sreejit Debnath", games)["id"] == "111"
+    assert talk.find_game("manan op", games)["id"] == "333"
+    assert talk.find_game("bob", games) is None  # nobody close: refused, never a guess
+    every = [{"id": str(i), "opponent": f"p{i}", "result": "loss", "checked": True} for i in range(100)]
+    monkeypatch.setattr(talk.insights, "games_list", lambda: every)
+    assert talk.find_game("56", games) == {**every[55], "n": 56}
+    assert talk.find_game("500", games) is None
+
+
+def test_a_game_past_the_last_12_is_named_from_the_list(monkeypatch):
+    """Her facts don't have game 56: what she says about it comes from the game list, never made up."""
+    every = [{"id": str(i), "opponent": f"p{i}", "result": "loss", "checked": True, "date": f"{i} Oct 2026"} for i in range(100)]
+    monkeypatch.setattr(talk.insights, "games_list", lambda: every)
+    r = talk.reply("maya", "open my 56th game", home=HOME, games=GAMES,
+                   ask_ai=ai_says({"do": "review", "what": "56", "say": "Here's your game against Magnus.", "asked": "order"}))
+    assert r["action"] == {"route": "games/55"} and r["text"] == "Here's your game against p55, 55 Oct 2026."

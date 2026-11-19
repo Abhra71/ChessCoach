@@ -782,6 +782,8 @@ async function rematchView(gid, ply) {
     html += `<span class="rstart">▶ Starts here: move ${s.move_number}, you to move</span>`;  // 22 Oct: "where does it start from?"
     played.forEach((p, i) => { html += `<span class="n">${s.move_number + i}.</span><span>${esc(p[0])}</span><span>${esc(p[1] || "")}</span>`; });
     $("#rmoves").innerHTML = html + (played.length ? "" : `<span class="small muted" style="grid-column:1/-1">Not ${esc(s.real_move)} this time.</span>`);
+    // nothing played yet: nothing to take back or start again, so they look it (19 Nov hand test: "they don't work")
+    for (const b of [$("#undo"), $("#again")]) { b.disabled = !played.length; b.title = played.length ? "" : "Make your first move"; }
   }
   async function click(sq) {
     if (busy || cur().over) return;
@@ -2585,7 +2587,11 @@ async function welcome() {
   }
   const s = await api("/api/status").catch(() => ({}));
   if (s.player && s.no_games) return go("home");  // no games yet: Home says what to do
-  if (s.player && !s.review_ready) work(); else intro();
+  if (s.player && !s.review_ready) work();
+  // set up and ready (the first check finished while the window was minimised and the page loaded again): Home, never
+  // "Who are you on chess.com?" a second time (19 Nov hand test)
+  else if (s.player && s.review_ready) { try { sessionStorage.setItem("kw-new", "1"); } catch (e) {} go("home"); }
+  else intro();
 }
 
 // ---------- router ----------

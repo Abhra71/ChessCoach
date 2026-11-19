@@ -32,7 +32,7 @@ RULES = (
     "the next lesson). "
     "do review, what a game's n: opens the review of one of the recent_games (n 1 is their last game, n 2 the one "
     "before, so \"my third last game\" is 3; \"my game against X\" is the n of the newest game against X). "
-    "do rematch, what a game's n: replays a lost or drawn game from where it went wrong. "
+    "do rematch, what a game's n: replays a lost or drawn game from where it went wrong; on a game's page (where_the_player_is has game), \"this game\" or just \"rematch\" means that game: what is its id. "
     "do next: starts the review, or shows its next step or move (only when where_the_player_is says review). "
     "do back: the review's previous step or move again (only when where_the_player_is says review). "
     "In a review, \"next\", \"forward\", \"previous\", \"back\" or \"previous move\" means do next or do back, even "
@@ -48,7 +48,7 @@ RULES = (
     "When where_the_player_is has chesscom and they ask how to get somewhere on chess.com (bots, puzzles, lessons, their "
     "game history), do is guide, never open: Knightwise has no bots; chess.com does. "
     "do none when the player only talks or asks. Ask for something only when the player wants it. If they ask for "
-    "something you can't do yourself, like changing a setting, open the page where they can. If they name an opponent "
+    "something you can't do yourself, like changing a setting, open the page where they can. Games are numbered from the newest: \"my 45th game\" or any game past the last of recent_games is one you can't see in detail: you can't explain it, but you can open its review or rematch with its number as what (do review, what 45); never answer about a different game. In key_moments, you_played is the player's own move and they_actually_played is the opponent's: never mix them up. If they name an opponent "
     "who isn't in the facts, say you can't find that game. Never say you are opening, replaying or showing something "
     "unless do does it. Nobody can delete games, change settings or change anything by talking to you: say so, and "
     "open the page only if it really has what they asked for. Mention their habit only when it answers what they "
@@ -124,8 +124,11 @@ def last_game_detail(g):
     try:
         from coach import service
         rows = insights._moves().get(g["url"], [])
-        out["key_moments"] = [{"move": m.get("move_number"), "say": m.get("say")}
-                              for m in service.key_moments(rows, g["id"])][:3]
+        # who did what, labelled (19 Nov hand test: from one sentence the AI said "you played Bxd8", their move)
+        out["key_moments"] = [{k: v for k, v in {
+            "move": m.get("move_number"), "you_played": m.get("move"), "better_for_you": m.get("best"),
+            "their_best_reply": m.get("reply_san"), "they_actually_played": m.get("real_reply_san"),
+            "say": m.get("say")}.items() if v} for m in service.key_moments(rows, g["id"])][:3]
     except Exception:
         pass
     return out
@@ -218,7 +221,22 @@ def find_game(ref, games):
             return g
     if ref.isdigit() and 1 <= int(ref) <= len(games):
         return next((g for g in games if g.get("n") == int(ref)), games[int(ref) - 1])
-    return next((g for g in games if g["opponent"].lower() == ref.lower()), None)
+    if ref.isdigit() and int(ref) > len(games):  # "my 56th game": counted back from the newest, in every checked game
+        every = [g for g in insights.games_list() if g.get("checked")]  # (19 Nov: only the last 12 could be named)
+        return {**every[int(ref) - 1], "n": int(ref)} if int(ref) <= len(every) else None
+    exact = next((g for g in games if g["opponent"].lower() == ref.lower()), None)
+    if exact or not ref:
+        return exact
+    # a name that's close ("sreejit", "sreejit debnath"): the nearest opponent, only when clearly the one meant
+    import difflib
+    names = list(dict.fromkeys(g["opponent"] for g in games))
+    squash = lambda t: "".join(c for c in t.lower() if c.isalnum())
+    starts = [n for n in names if squash(n).startswith(squash(ref)) and len(squash(ref)) >= 4]
+    near = starts if len(starts) == 1 else difflib.get_close_matches(squash(ref), [squash(n) for n in names], n=2, cutoff=0.75)
+    if len(near) != 1:
+        return None
+    name = near[0] if near[0] in names else next(n for n in names if squash(n) == near[0])
+    return next(g for g in games if g["opponent"] == name)
 
 
 NAMES = {"home": "Home", "games": "your games", "practice": "Practice", "daily": "today's five minutes",
@@ -229,7 +247,9 @@ NAMES = {"home": "Home", "games": "your games", "practice": "Practice", "daily":
 def confirm(done, games):
     """What the coach says when the AI did something but forgot to say so (never a random line instead)."""
     route = done.get("route") or ""
-    g = next((g for g in games if route.count("/") and g["id"] == route.split("/")[1]), None)
+    gid = route.split("/")[1] if route.count("/") else None
+    g = next((g for g in games if g["id"] == gid), None) or (
+        next((g for g in insights.games_list() if g["id"] == gid), None) if gid and route.startswith(("games/", "rematch/")) else None)
     if route.startswith("games/") and g:
         return f"Here's your game against {g['opponent']}, {g['date']}."
     if route.startswith("rematch/") and g:
@@ -250,10 +270,15 @@ def action(do, games, where):
         return {"route": PAGES[str(do["open"]).lower()]}
     if "review" in do and find_game(do["review"], games):
         return {"route": f"games/{find_game(do['review'], games)['id']}"}
-    if "rematch" in do and find_game(do["rematch"], games):
+    if "rematch" in do:
         g = find_game(do["rematch"], games)
-        detail = insights.extras_for(g["id"]).get("rematch") if g["result"] != "win" else None
-        return {"route": f"rematch/{g['id']}/{detail['ply']}"} if detail else None
+        here = str((where or {}).get("game") or "")
+        if not g and here:  # "rematch this game" on a game's page: that game (19 Nov hand test: refused on a lost game)
+            g = next((x for x in games if x["id"] == here), None) or next(
+                (x for x in insights.games_list() if x["id"] == here and x.get("checked")), None)
+        if g:
+            detail = insights.extras_for(g["id"]).get("rematch") if g["result"] != "win" else None
+            return {"route": f"rematch/{g['id']}/{detail['ply']}"} if detail else None
     # next / back: whatever the AI wrote after the word ("next": "step", "move"…) (22 Oct test: "Next." was refused)
     if "next" in do and do["next"] not in (False, None, "none") and (where or {}).get("section") == "review":
         return {"next": True}
@@ -390,6 +415,9 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
             order2 = again if "what" in again or isinstance(again.get("do"), str) else again.get("do")
             if action(order2, games, where) or not wanted:
                 out, order, done = again, order2, action(order2, games, where)
+    opened = (done or {}).get("route") or ""
+    if opened.startswith(("games/", "rematch/")) and opened.split("/")[1] not in {g["id"] for g in games}:
+        out["say"] = confirm(done, games)  # a game past the last 12 (her facts don't have it): which one, from the list
     if not out["say"].strip():  # it did something and forgot to say what: say it, from what was done
         if not done:
             return fallback

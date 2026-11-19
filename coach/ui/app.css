@@ -702,7 +702,9 @@ a.tile:hover { filter: brightness(1.05); }
 .cnode[href]:hover .cdot { filter: brightness(1.15); }
 .cdot { width: 38px; height: 38px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; box-shadow: inset 0 -3px 0 var(--press); }
 .cdot svg { width: 18px; height: 18px; }
-.cnode.passed .cdot, .cnode.fine .cdot { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 -3px 0 var(--accent-edge); }
+.cnode.passed .cdot { background: var(--accent); color: var(--on-accent); box-shadow: inset 0 -3px 0 var(--accent-edge); }
+/* "you already do this": your games show it, not studied here; an outline, so a filled tick is always a lesson passed (19 Nov hand test) */
+.cnode.fine .cdot { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
 .cnode.next .cdot { background: var(--text); color: var(--bg); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); }
 .cnode.again .cdot, .cnode.watching .cdot { background: #e9a23b; color: #2a1a04; }
 .cnode.coming .cdot, .cnode.later .cdot { color: var(--faint); box-shadow: none; }
