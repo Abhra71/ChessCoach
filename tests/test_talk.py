@@ -1,6 +1,13 @@
 import json
 
+import pytest
+
 from coach import talk
+
+
+@pytest.fixture(autouse=True)
+def _fresh_memory(monkeypatch):
+    monkeypatch.setattr(talk, "_LAST", {})  # each test starts with nothing opened just before
 
 GAMES = [{"id": "111", "opponent": "anna", "result": "loss", "date": "13 Oct 2026", "time_class": "rapid", "moments": 2},
          {"id": "222", "opponent": "bob", "result": "win", "date": "12 Oct 2026", "time_class": "rapid", "moments": 0}]
@@ -75,6 +82,7 @@ def test_the_ai_s_order_in_any_shape_still_opens_the_game():
     games = [{"n": 1, **GAMES[0]}, {"n": 2, **GAMES[1]}]
     for do in ("review 111", "review:111", {"review": 1}, {"review": "1"}, ["review", "111"], {"review": "anna"}):
         do = do if not isinstance(do, list) else " ".join(do)
+        talk._LAST.clear()  # each shape on its own (the same page again within minutes is only a button)
         r = talk.reply("maya", "review my last game", home=HOME, games=games, ask_ai=ai_says({"say": "Here it is.", "do": do}))
         assert r["action"] == {"route": "games/111"}, do
     assert talk.action("open settings", games, None) == {"route": "settings"}
@@ -226,3 +234,14 @@ def test_a_game_past_the_last_12_is_named_from_the_list(monkeypatch):
     r = talk.reply("maya", "open my 56th game", home=HOME, games=GAMES,
                    ask_ai=ai_says({"do": "review", "what": "56", "say": "Here's your game against Magnus.", "asked": "order"}))
     assert r["action"] == {"route": "games/55"} and r["text"] == "Here's your game against p55, 55 Oct 2026."
+
+
+
+def test_the_same_page_again_within_minutes_is_only_a_button():
+    """19 Nov hand test: "i love you maya, will u marry me" reopened the rematch from the turn before."""
+    first = talk.reply("maya", "open my game against anna", home=HOME, games=GAMES,
+                       ask_ai=ai_says({"do": "review", "what": "1", "say": "Here it is.", "asked": "order"}))
+    assert first["action"] == {"route": "games/111"}
+    joke = talk.reply("maya", "will u marry me", home=HOME, games=GAMES,
+                      ask_ai=ai_says({"do": "review", "what": "1", "say": "I'm here to help you with chess.", "asked": "order"}))
+    assert joke["action"] is None and joke["offer"] == {"route": "games/111"}  # a button, never opened by itself

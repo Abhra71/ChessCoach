@@ -47,6 +47,7 @@ RULES = (
     "even in the app: Knightwise's own practice is not chess.com. "
     "When where_the_player_is has chesscom and they ask how to get somewhere on chess.com (bots, puzzles, lessons, their "
     "game history), do is guide, never open: Knightwise has no bots; chess.com does. "
+    "Only the player's newest message decides do: never repeat an action from an earlier turn unless they ask for it again; chat, jokes and compliments are do none. "
     "do none when the player only talks or asks. Ask for something only when the player wants it. If they ask for "
     "something you can't do yourself, like changing a setting, open the page where they can. Games are numbered from the newest: \"my 45th game\" or any game past the last of recent_games is one you can't see in detail: you can't explain it, but you can open its review or rematch with its number as what (do review, what 45); never answer about a different game. In key_moments, you_played is the player's own move and they_actually_played is the opponent's: never mix them up. If they name an opponent "
     "who isn't in the facts, say you can't find that game. Never say you are opening, replaying or showing something "
@@ -182,6 +183,8 @@ def parse(text):
 
 
 VERBS = ("open", "review", "rematch", "next", "back", "prep", "guide")
+_LAST = {}  # the page she last opened, and when: the same one again within REPEAT seconds only as a button
+REPEAT = 300
 
 
 def plain(do):
@@ -435,14 +438,21 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
     verb = next((k for k in REFUSED if k in asked), next((k for k in asked if k in VERBS), None))  # "talk": just talk
     # it asked for something that can't be done: say so, never "Opening it." with nothing opening (19 and 22 Oct)
     say = (REFUSED.get(verb, OPEN_FAILED) if verb and done is None else out["say"].strip())[:600]
-    if done and done.get("route") and str(out.get("asked", "")).strip().lower() == "talk":
-        done, out["offer"] = None, order  # a question gets a suggestion she points at, never a page opened (23 Oct test)
+    import time
+    again = bool(done and done.get("route") and _LAST.get("route") == done["route"] and time.time() - _LAST.get("at", 0) < REPEAT)
+    if done and done.get("route") and (str(out.get("asked", "")).strip().lower() == "talk" or again):
+        # a question gets a suggestion she points at, never a page opened (23 Oct test); the same page again within
+        # minutes is a button too (19 Nov hand test: "will u marry me" reopened the rematch from the turn before)
+        done, out["offer"] = None, order
         if not out["say"].strip():
             return fallback
+    if done and done.get("route"):
+        _LAST.update(route=done["route"], at=time.time())
     offered = None if done else action(out.get("offer"), games, where)  # her suggestion: the menu item glows
     if not done and not offered and isinstance(out.get("offer"), str):  # "practice left a piece hanging": its page (23 Oct)
         first = (out["offer"].strip().lower().split() or [""])[0]
         offered = action({"open": first}, games, where) if first in PAGES else None
     if offered and not offered.get("route"):
         offered = None
-    return {"text": say, "mood": "pleased" if "!" in say else "calm", "ai": True, "action": done, "offer": offered}
+    return {"text": say, "mood": "pleased" if "!" in say else "calm", "ai": True, "action": done, "offer": offered,
+            "asked": str(out.get("asked", ""))[:12]}  # for the debug logbook: what the AI took the message to be
