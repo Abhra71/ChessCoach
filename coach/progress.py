@@ -351,9 +351,18 @@ def new_gold(now=None, ready=True):
         m = None
     if m is None and not ready:  # still checking the games: the history isn't all there yet (cloud review)
         return None
-    if m is None:
+    if m is None:  # the first time: every Gold already held is recorded, and celebrated once, together (below)
+        m = {"shown": [b["id"] for b in golds]}
+    if not m.get("history"):  # once, for a new player and for everyone updating from 1.0 (19 Nov hand test: one old
+        # badge popped up by itself on a first start; the owner: "the welcome history celebration is good after updates")
+        held = [b for b in golds if b["id"] in m.get("shown", [])]
+        m["history"] = True
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(json.dumps({"shown": [b["id"] for b in golds]}))
+        f.write_text(json.dumps(m))
+        if held:
+            names = ", ".join(b["name"] for b in held[:3]) + (f" and {len(held) - 3} more" if len(held) > 3 else "")
+            return {"id": "history", "label": "Welcome · your history", "name": f"You already hold {len(held)} Gold badge"
+                    f"{'s' if len(held) > 1 else ''}", "line": f"{names}, earned in your real chess.com games"}
         return None
     b = next((b for b in golds if b["id"] not in m.get("shown", [])), None)
     if not b:

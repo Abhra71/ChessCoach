@@ -1,4 +1,4 @@
-"""50 badges, and the completed-badge pop-up: history counts quietly, a new Gold pops up once (23 Oct)."""
+"""50 badges, and the completed-badge pop-up: history is celebrated once, together (19 Nov); a new Gold pops up once."""
 from coach import progress
 
 
@@ -14,7 +14,10 @@ def test_history_is_quiet_and_a_new_gold_pops_up_once(tmp_path, monkeypatch):
     held = [gold("wins"), {**gold("mates"), "tier": 2}]
     monkeypatch.setattr(progress, "page", lambda: {"badges": held})
     progress._LAST.update(at=0.0, badges=None)
-    assert progress.new_gold(now=1000) is None  # first look: what you already hold is history, no pop-up
+    h = progress.new_gold(now=1000)  # first look: what you already hold, celebrated once, together (19 Nov)
+    assert h["id"] == "history" and h["name"] == "You already hold 1 Gold badge" and h["line"].startswith("wins, ")
+    progress._LAST.update(at=0.0, badges=None)
+    assert progress.new_gold(now=1500) is None  # and never again
     held.append(gold("comeback"))
     progress._LAST.update(at=0.0, badges=None)
     b = progress.new_gold(now=2000)
@@ -32,4 +35,23 @@ def test_no_baseline_while_the_games_are_still_being_checked(tmp_path, monkeypat
     assert progress.new_gold(now=1000, ready=False) is None and not (tmp_path / "golds.json").exists()
     held.extend([gold("wins"), gold("mates")])  # the first check finishes: history found
     progress._LAST.update(at=0.0, badges=None)
-    assert progress.new_gold(now=2000, ready=True) is None  # history stays quiet (cloud review: it all popped up)
+    # history: one welcome for both, never one pop-up each (cloud review: it all popped up)
+    assert progress.new_gold(now=2000, ready=True)["name"] == "You already hold 2 Gold badges"
+    progress._LAST.update(at=0.0, badges=None)
+    assert progress.new_gold(now=3000, ready=True) is None
+
+
+
+def test_a_player_updating_from_1_0_gets_the_history_welcome_once(tmp_path, monkeypatch):
+    """1.0 recorded history quietly and never celebrated it: after the update, once (the owner, 19 Nov)."""
+    import json
+    f = tmp_path / "golds.json"
+    f.write_text(json.dumps({"shown": ["wins", "mates", "comeback", "streak"]}))  # 1.0's file: no "history"
+    monkeypatch.setattr(progress, "_golds_file", lambda: f)
+    gold = lambda bid: {"id": bid, "name": bid.title(), "icon": "medal", "group": "Results", "what": "x", "tier": 3, "tiers": [1, 2, 3]}
+    monkeypatch.setattr(progress, "page", lambda: {"badges": [gold(x) for x in ("wins", "mates", "comeback", "streak")]})
+    progress._LAST.update(at=0.0, badges=None)
+    h = progress.new_gold(now=1000)
+    assert h["name"] == "You already hold 4 Gold badges" and h["line"].startswith("Wins, Mates, Comeback and 1 more")
+    progress._LAST.update(at=0.0, badges=None)
+    assert progress.new_gold(now=2000) is None

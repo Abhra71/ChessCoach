@@ -476,9 +476,9 @@
     const STAR = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.2l7.1-.6z"/></svg>`;
     el.innerHTML = `<div class="kwb-medal"><div class="kwb-coin"><div class="kwb-m kwb-silver">${MEDAL}</div><div class="kwb-m kwb-gold">${MEDAL}</div></div>
         ${Array.from({ length: 8 }, (_, i) => `<span class="kwb-star" style="--i:${i};--a:${i * 45}deg">${STAR}</span>`).join("")}</div>
-      <div class="kwb-text"><div class="kwb-label">Badge complete · <b>Gold</b></div>
+      <div class="kwb-text"><div class="kwb-label">${b.label ? o.esc(b.label) : "Badge complete · <b>Gold</b>"}</div>
         <div class="kwb-name">${o.esc(b.name)}</div>
-        <div class="kwb-what"><b>${o.esc(String(b.gold))}</b> ${o.esc(b.what)} · earned in ${o.esc(b.from)}</div></div>
+        <div class="kwb-what">${b.line ? o.esc(b.line) : `<b>${o.esc(String(b.gold))}</b> ${o.esc(b.what)} · earned in ${o.esc(b.from)}`}</div></div>
       <button class="kwb-x" aria-label="Close" title="Close">✕<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="21"/></svg></button>`;
     el.style.setProperty("--stay", STAY / 1000 + "s");  // the ring round the close button runs down these seconds
     document.body.appendChild(el);

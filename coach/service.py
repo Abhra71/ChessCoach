@@ -1130,7 +1130,7 @@ def coach_says(url):
     if calm:
         try:
             from coach import progress
-            said["badge"] = progress.new_gold(ready=STATE.get("phase") == "ready")
+            said["badge"] = progress.new_gold(ready=STATE.get("phase") == "ready" and not STATE.get("catching_up"))
         except Exception:
             log.exception("badge pop-up")
     return said
@@ -1341,6 +1341,7 @@ def update_once():
     # checked in the background (27 Oct: a new PC waited 25 minutes for 148 games before it showed anything)
     look = analyze.first_look()
     many = len(analyze.unchecked()) > look
+    STATE["catching_up"] = many  # older games still to come after Home opens: the history isn't all there yet
     checked = analyze.main(argv=[], progress=lambda done, total: STATE.update(done=done, total=total),
                            limit=look if many else None)
     if not (DATA / "moves.jsonl").exists():  # a brand-new chess.com account: no games yet (26 Oct test: it looped on
@@ -1374,6 +1375,7 @@ def update_once():
             more = analyze.main(argv=[], progress=lambda done, total: STATE.update(older={"done": done, "total": total}))
         finally:
             STATE.pop("older", None)
+            STATE["catching_up"] = False
         if more:
             checked += more
             review.build()

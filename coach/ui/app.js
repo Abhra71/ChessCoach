@@ -1936,7 +1936,8 @@ async function home() {
         <span class="${btn("review")}">Review</span></a>` : ""}
       ${f ? `<a class="box hcard" href="#/practice/${encodeURIComponent(f.pattern)}">
         <div class="row spread"><b>Your focus</b><span class="hicon calm" title="Practise: ${esc((PATTERN_TITLE[f.pattern] || cap(f.pattern)).toLowerCase())}">${svg("practice")}</span></div>
-        <div class="hnum"><b class="num">${roll(h.pieces_last20, 1)}</b>${trend(better, `from ${h.pieces_per_game.toFixed(1)}`)}</div>
+        <div class="hnum"><b class="num">${roll(h.pieces_last20, 1)}</b>${Number(h.pieces_last20).toFixed(1) === h.pieces_per_game.toFixed(1)
+          ? `<span class="muted small">same as before</span>` : trend(better, `from ${h.pieces_per_game.toFixed(1)}`)}</div>
         <div title="Pieces lost a game, each point the average of ${h.trend_window || 10} games, oldest on the left. Now ${Number(h.pieces_last20).toFixed(1)}; over all your games ${h.pieces_per_game.toFixed(1)}.">${spark(h.trend, better)}</div>
         <span class="muted small">pieces lost a game</span>
         <span class="${btn("practice")}">Practise</span></a>` : ""}
@@ -2572,13 +2573,13 @@ async function welcome() {
   async function work() {
     card.innerHTML = `${dots(2)}<h1>Studying your games</h1><p class="muted" id="phase" style="margin:8px 0 16px">Starting…</p>
       <div class="bar"><div id="fill" style="width:3%;transition:width .4s"></div></div><p class="small muted num" id="cnt" style="margin-top:8px"></p>
-      <p class="small muted" style="margin-top:16px">The first time takes a couple of minutes. You can close this window: a notification tells you when it's ready.</p>`;
+      <p class="small muted" style="margin-top:16px">Your newest games first, about a minute. The rest are checked while you use Knightwise. You can close this window: a notification tells you when it's ready.</p>`;
     for (;;) {
       const s = await api("/api/status").catch(() => ({}));
       if (s.phase === "ready" && (s.review_ready || s.no_games)) { try { sessionStorage.setItem("kw-new", "1"); } catch (e) {} return go("home"); }
       $("#phase").textContent = s.phase === "error" ? (s.error === "offline" ? "Can't reach chess.com. Check your internet: it tries again by itself." : "Something went wrong. Retrying by itself.") : cap(s.phase || "working") + "…";
       $("#fill").style.width = (s.total ? Math.max(3, 100 * s.done / s.total) : s.phase === "building your pages" ? 100 : 3) + "%";
-      $("#cnt").textContent = s.total ? `Game ${s.done} of ${s.total}` : "";
+      $("#cnt").textContent = s.total ? `Your newest ${s.total} games: ${s.done} of ${s.total}` : "";  // why 16 (19 Nov hand test)
       await wait(1000);
     }
   }
@@ -2788,9 +2789,9 @@ function kwBadgeBanner(b, opts) {
   const STAR = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.2l7.1-.6z"/></svg>`;
   el.innerHTML = `<div class="kwb-medal"><div class="kwb-coin"><div class="kwb-m kwb-silver">${MEDAL}</div><div class="kwb-m kwb-gold">${MEDAL}</div></div>
       ${Array.from({ length: 8 }, (_, i) => `<span class="kwb-star" style="--i:${i};--a:${i * 45}deg">${STAR}</span>`).join("")}</div>
-    <div class="kwb-text"><div class="kwb-label">Badge complete · <b>Gold</b></div>
+    <div class="kwb-text"><div class="kwb-label">${b.label ? o.esc(b.label) : "Badge complete · <b>Gold</b>"}</div>
       <div class="kwb-name">${o.esc(b.name)}</div>
-      <div class="kwb-what"><b>${o.esc(String(b.gold))}</b> ${o.esc(b.what)} · earned in ${o.esc(b.from)}</div></div>
+      <div class="kwb-what">${b.line ? o.esc(b.line) : `<b>${o.esc(String(b.gold))}</b> ${o.esc(b.what)} · earned in ${o.esc(b.from)}`}</div></div>
     <button class="kwb-x" aria-label="Close" title="Close">✕<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="21"/></svg></button>`;
   el.style.setProperty("--stay", STAY / 1000 + "s");  // the ring round the close button runs down these seconds
   document.body.appendChild(el);
