@@ -243,6 +243,7 @@ fix file. Upgrade only when there's a reason (a bug fixed upstream, a security f
    `Microsoft.Windows.SDK.BuildTools`).
 6. **Upload:** partner.microsoft.com → Apps and games → **Knightwise** → **Start update** → Packages → drop the
    .msix → Store listings (text in `installer/msix/STORE_LISTING.md`; update it when features change) → **Submit**.
+   In **Submission options**, publishing is "as soon as it passes certification" (the owner, 19 Nov 2026).
    Certification takes from 30 minutes to a few days; Partner Center emails you.
 7. **The extension for Edge:** zip the *contents* of the `extension` folder → partner.microsoft.com → Edge →
    Extensions → Knightwise → Update → upload the zip → Submit. (Chrome users load it from the app: Arrows on
