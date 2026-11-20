@@ -1,0 +1,47 @@
+name: Report a bug
+description: Something in Knightwise didn't work or looked wrong.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make Knightwise better! Please don't paste passwords, AI keys or anything private.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+      placeholder: "I opened a game review and the arrows were…"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we see it too?
+      description: The steps, one per line.
+      placeholder: |
+        1. Open Games
+        2. Click my last game
+        3. Press Review
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where?
+      options:
+        - In the Knightwise app
+        - On chess.com (the coach in the browser)
+        - Installing or the first start
+        - Somewhere else
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Knightwise version
+      description: Settings, at the bottom (for example 1.1.0).
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot (optional)
+      description: Drag a picture here. It helps a lot.

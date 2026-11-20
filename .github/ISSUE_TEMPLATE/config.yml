@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question or share your progress
+    url: https://github.com/Abhra71/ChessCoach/discussions
+    about: Questions, tips and "look at my rating graph!" go in Discussions.
+  - name: Get Knightwise (free)
+    url: https://www.microsoft.com/store/apps/9NKLGS6K72J2?cid=github
+    about: The Microsoft Store page.

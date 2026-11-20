@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knightwise: your personal chess coach</title>
+<meta name="description" content="A free, open-source chess coach for chess.com players. It finds the habit that loses you games, trains you on your own positions, and lets you rematch the exact move where it went wrong. Off in every live game.">
+<meta property="og:title" content="Knightwise: your personal chess coach">
+<meta property="og:description" content="Free, open-source chess coach for chess.com players. Finds your worst habit, trains you on your own games, and lets you rematch the move where it went wrong.">
+<meta property="og:image" content="https://abhra71.github.io/ChessCoach/media/social-preview.png">
+<meta property="og:url" content="https://abhra71.github.io/ChessCoach/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="media/icon.png">
+<style>
+  :root {
+    --side: #1e1c1a; --bg: #262421; --surface: #312e2b; --raised: #3d3a36; --line: #3a3733;
+    --text: #f3f1ee; --muted: #b0aba4; --faint: #9c968e;
+    --accent: #81b64c; --accent-edge: #5d8a35; --on-accent: #13210a; --gold: #e3b45b;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.55;
+    font: 17px/1.55 "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  header { position: sticky; top: 0; z-index: 5; background: rgba(30,28,26,.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line); }
+  header .wrap { display: flex; align-items: center; gap: 12px; height: 60px; }
+  header img { width: 32px; height: 32px; border-radius: 8px; }
+  header b { font-size: 19px; letter-spacing: .2px; }
+  header nav { margin-left: auto; display: flex; gap: 18px; font-size: 15px; }
+  header nav a { color: var(--muted); text-decoration: none; }
+  header nav a:hover { color: var(--text); }
+  .btn { display: inline-block; padding: 13px 26px; border-radius: 10px; font-weight: 700; text-decoration: none;
+    background: var(--accent); color: var(--on-accent); box-shadow: inset 0 -4px 0 var(--accent-edge); }
+  .btn:hover { filter: brightness(1.06); }
+  .ghost { display: inline-block; padding: 13px 22px; border-radius: 10px; font-weight: 600; text-decoration: none;
+    color: var(--text); background: var(--surface); }
+  .hero { padding: 54px 0 30px; text-align: center; }
+  .hero h1 { font: 700 clamp(34px, 6vw, 58px)/1.1 Georgia, "Palatino Linotype", Palatino, serif; margin: 0 0 14px; }
+  .hero p.lead { font-size: clamp(18px, 2.4vw, 22px); color: var(--muted); max-width: 720px; margin: 0 auto 26px; }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .small { font-size: 14px; color: var(--faint); margin-top: 12px; }
+  .video { margin: 34px auto 0; max-width: 960px; border-radius: 14px; overflow: hidden; background: #000;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+  .video video { display: block; width: 100%; height: auto; }
+  section { padding: 54px 0; }
+  h2 { font: 700 30px/1.2 Georgia, "Palatino Linotype", Palatino, serif; margin: 0 0 8px; text-align: center; }
+  .sub { text-align: center; color: var(--muted); margin: 0 auto 30px; max-width: 640px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .card { background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .card img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+  .card div { padding: 16px 18px 18px; }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .fair { background: var(--side); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .fair .wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; text-align: center; }
+  .fair b { display: block; font-size: 32px; color: var(--gold); font-family: Georgia, serif; }
+  .fair span { color: var(--muted); font-size: 15px; }
+  .steps { counter-reset: s; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+  .steps div { background: var(--surface); border-radius: 14px; padding: 20px; }
+  .steps div::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center;
+    width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 800; margin-bottom: 10px; }
+  .steps p { margin: 0; color: var(--muted); }
+  .maker { text-align: center; max-width: 680px; margin: 0 auto; color: var(--muted); }
+  footer { padding: 30px 0 44px; color: var(--faint); font-size: 14px; text-align: center; border-top: 1px solid var(--line); }
+  footer a { color: var(--muted); }
+  @media (max-width: 640px) { header nav a.hide { display: none; } }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <img src="media/icon.png" alt="">
+  <b>Knightwise</b>
+  <nav><a class="hide" href="#features">Features</a><a class="hide" href="#fair">Fair play</a><a href="https://github.com/Abhra71/ChessCoach">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap hero">
+  <h1>Every lost game has a reason.</h1>
+  <p class="lead">Knightwise is a free chess coach that sits beside you on chess.com. It finds the habit that keeps
+    losing you games, trains you on <b>your own</b> positions, and puts you back at the exact move where it went wrong.</p>
+  <div class="cta">
+    <a class="btn" href="https://www.microsoft.com/store/apps/9NKLGS6K72J2?cid=site">Get it free · Microsoft Store</a>
+    <a class="ghost" href="https://github.com/Abhra71/ChessCoach">⭐ Star on GitHub</a>
+  </div>
+  <p class="small">Windows 10 and 11 · free forever · no account, no ads, no tracking · open source (GPL-3.0)</p>
+  <div class="video"><video src="media/trailer.mp4" poster="media/banner.jpg" controls preload="none" playsinline></video></div>
+</div>
+
+<section id="features"><div class="wrap">
+  <h2>A coach, not just an engine</h2>
+  <p class="sub">Stockfish decides every move. Two coaches, Maya and Viktor, explain it in plain words, and even by voice.</p>
+  <div class="grid">
+    <div class="card"><img src="screenshots/home.jpg" alt="Home" loading="lazy"><div><h3>Your habits, found</h3><p>Every move of your chess.com games is checked and sorted into the habits behind your mistakes: pieces left hanging, forks, missed mates.</p></div></div>
+    <div class="card"><img src="screenshots/review.jpg" alt="Game review" loading="lazy"><div><h3>Review one moment at a time</h3><p>What you played, what was better, what they could have done. Labelled arrows, in the app or on chess.com's own board.</p></div></div>
+    <div class="card"><img src="screenshots/practice.jpg" alt="Practice" loading="lazy"><div><h3>Practice from your own games</h3><p>Your real positions come back after 1, 3 and 7 days until they stick, plus puzzles at your level and a gentle 5-minute daily set.</p></div></div>
+    <div class="card"><img src="screenshots/course.jpg" alt="Your course" loading="lazy"><div><h3>A course that follows your games</h3><p>43 lessons from the basics up. A lesson counts as passed only when your games show it.</p></div></div>
+    <div class="card"><img src="screenshots/level.jpg" alt="Your level" loading="lazy"><div><h3>From beginner to 2,000</h3><p>Five steps, each measured in your last 20 games, so you always know the one skill to work on next.</p></div></div>
+    <div class="card"><img src="screenshots/train.jpg" alt="Train" loading="lazy"><div><h3>Train like a club player</h3><p>Prep against any chess.com player, your opening tree, calculation, Blindfold, Guess the human move, and endgames.</p></div></div>
+  </div>
+</div></section>
+
+<section id="fair" class="fair"><div class="wrap">
+  <div><b>Off</b><span>in every game against a real person: no hints, no arrows, nothing reads the board</span></div>
+  <div><b>Rematch</b><span>any game from the move where it went wrong, against a human-like opponent at their level</span></div>
+  <div><b>Your PC</b><span>your games and progress stay on your computer; nothing is sold or tracked</span></div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Ready in about a minute</h2>
+  <p class="sub">No password: only your public chess.com games are read.</p>
+  <div class="steps">
+    <div><p><b>Install it free</b> from the Microsoft Store.</p></div>
+    <div><p><b>Type your chess.com username.</b> Your newest games are checked first, so Home opens in about a minute.</p></div>
+    <div><p><b>Play as usual.</b> After each game, the coaches show what mattered and what to practise next.</p></div>
+  </div>
+  <p class="cta" style="margin-top:28px"><a class="btn" href="https://www.microsoft.com/store/apps/9NKLGS6K72J2?cid=site">Get Knightwise free</a></p>
+</div></section>
+
+<section><div class="wrap maker">
+  <h2>Made by one teenager</h2>
+  <p>Knightwise is built and looked after by Abhra71, a teenage developer who plays on chess.com and kept losing the
+    same way. It's free and open source so it can keep going for years. Found a bug or have an idea?
+    <a href="https://github.com/Abhra71/ChessCoach/issues/new/choose">Tell me in two minutes</a>, or say hi in
+    <a href="https://github.com/Abhra71/ChessCoach/discussions">Discussions</a>.</p>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  © 2026 Abhra71 · <a href="https://github.com/Abhra71/ChessCoach">Source code (GPL-3.0)</a> ·
+  <a href="https://github.com/Abhra71/ChessCoach/blob/main/PRIVACY.md">Privacy</a><br>
+  Knightwise is independent and not made by, endorsed by or connected with chess.com.
+</div></footer>
+</body>
+</html>

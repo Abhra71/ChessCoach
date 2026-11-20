@@ -1,0 +1,32 @@
+name: Suggest an idea
+description: Something Knightwise could do to help you improve.
+title: "Idea: "
+labels: ["idea"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would help you?
+      description: Tell us the problem first, then your idea. "I keep losing on time and…" is perfect.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How could Knightwise help with it?
+  - type: dropdown
+    id: level
+    attributes:
+      label: Your chess.com rating (rough)
+      options:
+        - Under 600
+        - 600 to 1000
+        - 1000 to 1400
+        - 1400 to 1800
+        - Over 1800
+        - I'd rather not say
+  - type: markdown
+    attributes:
+      value: |
+        Knightwise never helps during a game against a real person. Ideas that would break that can't be added.

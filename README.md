@@ -1,8 +1,15 @@
 <div align="center">
 
-<img src="installer/msix/Assets/Square150x150Logo.scale-200.png" width="110" alt="Knightwise logo">
+<a href="https://abhra71.github.io/ChessCoach/"><img src="docs/media/banner.jpg" alt="Knightwise: your personal chess coach. Click to watch the trailer" width="100%"></a>
 
 # Knightwise
+
+[![Get it free on the Microsoft Store](https://img.shields.io/badge/Microsoft_Store-Get_it_free-2ea44f?logo=microsoftstore&logoColor=white)](https://www.microsoft.com/store/apps/9NKLGS6K72J2?cid=github)
+[![Watch the trailer](https://img.shields.io/badge/%E2%96%B6_Trailer-55_seconds-555)](https://abhra71.github.io/ChessCoach/)
+[![Tests](https://github.com/Abhra71/ChessCoach/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Abhra71/ChessCoach/actions/workflows/tests.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+![Stockfish 19](https://img.shields.io/badge/engine-Stockfish_19-6c4)
+![Windows 10 and 11](https://img.shields.io/badge/Windows-10_%7C_11-0078d4)
 
 ### A chess coach that sits beside you on chess.com.
 
@@ -13,7 +20,7 @@ one thing at a time, at your level. Free, open source, and it runs on your own P
 
 No account · no ads · no subscription · your games stay on your computer
 
-**[⬇ Get Knightwise free from the Microsoft Store](https://apps.microsoft.com/detail/9NKLGS6K72J2)**
+**[⬇ Get Knightwise free from the Microsoft Store](https://www.microsoft.com/store/apps/9NKLGS6K72J2?cid=github)** · **[▶ Watch the trailer](https://abhra71.github.io/ChessCoach/)** · **[⭐ Star it on GitHub](https://github.com/Abhra71/ChessCoach)**
 
 *Knightwise 1.1 · free on the Microsoft Store · Windows 10 and 11*
 
@@ -30,15 +37,16 @@ No account · no ads · no subscription · your games stay on your computer
 |---|---|
 | **Your games, checked move by move.** Every move you played on chess.com is checked by Stockfish. Knightwise sorts the mistakes into the habits behind them, like pieces left hanging or walking into forks, and counts them. | ![Home](docs/screenshots/home.jpg) |
 | **Review one moment at a time, on chess.com itself.** Maya takes each key moment step by step: what you played, what was better, what they replied, and what they could have played. Labelled arrows on your own board or on chess.com's. Then **Try it again** turns the moment into a puzzle. | ![Review](docs/screenshots/review.jpg) |
-| **A briefing before every position.** Which game it's from, the phase, the material and what happened, then the mindset to bring. Practice is grouped by habit, with Back and Next, and puzzles at your level. |  ![Practice](docs/screenshots/practice.jpg) |
-| **Today's 5 minutes.** One position from your own games, one puzzle on today's idea and the first moves of your opening. The streak is gentle: one missed day is forgiven, and nobody scolds you. | ![Today's 5 minutes](docs/screenshots/daily.jpg) |
-| **Two coaches, nothing to set up.** Maya takes your games, practice and puzzles; Viktor tracks your progress and your plan. They are drawn characters with gestures and moods: worried when you go wrong, cheering when you get it. They talk with their own voices, made on your PC. | ![Your plan](docs/screenshots/ai-card.jpg) |
-| **Progress you can see.** You vs you: your last 20 games against the 20 before. Viktor writes the story of your week, which you can save as a picture. 20 badges, Bronze to Gold, are earned only in real games and your own practice. | ![Progress](docs/screenshots/progress.jpg) |
+| **Practice from your own positions.** A briefing before every position: which game it's from, what happened, the mindset to bring. Grouped by habit, with puzzles at your level, plus **Today's 5 minutes** with a gentle streak: one missed day is forgiven. |  ![Practice](docs/screenshots/practice.jpg) |
+| **Two coaches, nothing to set up.** Maya takes your games, practice and puzzles; Viktor tracks your progress, your course and your plan. Drawn characters with gestures and moods, and their own voices made on your PC. Ask them anything ("why did I lose my last game?"), even in Hinglish. | ![Your course](docs/screenshots/course.jpg) |
+| **Your level, from beginner to 2,000.** Five steps, each measured in your last 20 games, so you always know the one skill to work on next. | ![Your level](docs/screenshots/level.jpg) |
+| **Train like a club player.** Prep against any chess.com player, your opening tree and repertoire, calculation, Blindfold, Guess the human move, and endgames against perfect defence. | ![Train](docs/screenshots/train.jpg) |
+| **Progress you can see.** You vs you: your last 20 games against the 20 before. Viktor writes the story of your week, which you can save as a picture. 51 badges, Bronze to Gold, earned only in real games and your own practice. | ![Progress](docs/screenshots/progress.jpg) |
 | **Your opening tree.** Your first moves of every game as White and Black, with your score on each branch. A note marks the branch that costs you games, and your plan suggests an opening that suits you. | ![Opening tree](docs/screenshots/openings.jpg) |
 
 **Things chess.com doesn't have, free.**
-- **Rematch your loss.** Play a lost game again from the moment it went wrong, against the engine at about your
-  opponent's level, and turn it around.
+- **Rematch any game.** Play it again from the move where it went wrong (in a win, the blunder they didn't punish),
+  against a human-like opponent at their level, and turn it around.
 - **Clock coach.** From the clock chess.com records on every move: how long you took on the move that cost the most,
   and how many of your biggest mistakes were played in a rush.
 - **A warm-up before you play,** on chess.com's home page: three positions from your own games, in about two minutes.
@@ -115,6 +123,16 @@ Your numbers will be different. That's the point: everything is worked out from 
 **Built to last**
 - Works offline with the games it already has. A daily fix file on GitHub keeps it working when chess.com changes its
   pages, with no new release.
+
+## Get involved
+
+Knightwise is made by one teenager and grows with its players. You can help without writing any code:
+
+- ⭐ **Star the repo** if you like it: it helps other chess players find it.
+- 💬 **[Discussions](https://github.com/Abhra71/ChessCoach/discussions):** ask a question, share your progress, suggest an idea.
+- 🐞 **[Report a bug](https://github.com/Abhra71/ChessCoach/issues/new?template=bug_report.yml)** or 💡 **[suggest a feature](https://github.com/Abhra71/ChessCoach/issues/new?template=feature_request.yml)**: a short form, two minutes.
+- 🌍 **Want the coaches in your language?** Say which in Discussions (planned). Or **fix something**: see [CONTRIBUTING.md](CONTRIBUTING.md).
+- 📣 **Tell a chess friend.** That's how a free app grows.
 
 ## For players: install
 
