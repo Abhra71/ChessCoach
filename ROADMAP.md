@@ -38,6 +38,8 @@ said it), chess.com downloads tried again on a timeout, 429 or 5xx. The coach (3
 
 **Next major version (owner, 19 Nov): one hero feature** that alone makes people install Knightwise, the way "play real people" is chess.com's. Not on chess.com, one line to explain, inside fair play, able to work without chess.com. Ideas: your chess twin (a bot that plays like you, from your games and Maia-3; friends can challenge it), beat your past self (a weekly match against you from 3 months ago), the famous-game rematch. Retake the age-rating questionnaire (Online Content = Yes) with the 1.1 submission.
 
+**1.2 list (from the 1.1 launch, 20 Nov):** updates without the player doing anything, like big apps (the owner: "big apps do not require removing it from the tray"): Knightwise always runs by the clock, so the Store's background update waits; notice a waiting update and restart quietly at a calm moment (no window open, never during a chess.com game or practice), or show "Update ready, restart". The game page's ask box can't open pages (rematch). The age-rating retake with a parent.
+
 **1.1 list:** Claude and OpenAI keys back (tested); a backup and restore file; the local server accepts only
 Knightwise's own extension ID; master games (undecided); report the SentinelOne false positive; the trailer;
 a GitHub release with the Windows installer (unsigned: SmartScreen warns), only if wanted.
