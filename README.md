@@ -15,7 +15,7 @@ No account · no ads · no subscription · your games stay on your computer
 
 **[⬇ Get Knightwise free from the Microsoft Store](https://apps.microsoft.com/detail/9NKLGS6K72J2)**
 
-*Knightwise 1.0 · free on the Microsoft Store · Windows 10 and 11*
+*Knightwise 1.1 · free on the Microsoft Store · Windows 10 and 11*
 
 </div>
 
@@ -74,6 +74,15 @@ Your numbers will be different. That's the point: everything is worked out from 
 - It never helps during a game against a real person, and it never moves pieces or clicks for you.
 - It doesn't play against you; chess.com has bots for that.
 - It needs Windows for the app. The chess.com coaches need Chrome or Edge with the Knightwise extension.
+
+## New in 1.1
+
+- **A much faster first start:** your newest games are checked first, so Home opens in about a minute (it took 25+
+  minutes on a new PC); the rest are checked while you use it.
+- **Ask your coach about any game:** how it ended, why, by number ("my 37th game") or a name that's close enough.
+- **Rematch any game** from its biggest mistake, wins too (the blunder they didn't punish); a button on every game.
+- **Clearer reviews:** your opponent's mistakes say what they missed; fewer, clearer arrows.
+- **Your past Gold badges celebrated once,** together.
 
 ## What's in 1.0
 

@@ -1,6 +1,12 @@
 # Knightwise: where we are and what comes next
 
-## 19 Nov 2026: Knightwise 1.1 is built and ready to submit (START HERE)
+## 20 Nov 2026: Knightwise 1.1 is LIVE on the Microsoft Store (START HERE)
+
+Submitted 19 Nov ~23:40, certified 20 Nov 00:25 (about 45 minutes), published by itself; the owner's PC updated
+(14.5 MB differential download) and opens fast; the history badge welcome showed once (6 Golds). main = v1.1.0.
+Next: the other PC's first start, promotion (Whiggi comment, Reddit), then the 1.2 list below.
+
+## 19 Nov 2026: Knightwise 1.1 built and submitted
 
 `dist\Knightwise-1.1.0.0.msix` (376 MB, not in the repo), built from dev-0.6 after the owner's hand test (13 findings,
 all fixed and retested) and 290 tests; Defender clean. Submit with a parent: Partner Center -> Knightwise -> Start
