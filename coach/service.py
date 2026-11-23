@@ -33,7 +33,7 @@ PORT = int(os.environ.get("KNIGHTWISE_PORT", "8765"))  # another port only for a
 URL = f"http://127.0.0.1:{PORT}"
 EVERY = 300  # seconds between checks for new games: fresh, and gentle on chess.com (23 Oct)
 MOMENTS = 3  # key moments shown per game
-FEEDBACK_TO = "nanotech.mark.robots@gmail.com"  # where feedback goes (the user's choice, 19 Oct)
+FEEDBACK_TO = "knightwise.app@gmail.com"  # where feedback goes (Knightwise's own support inbox since 23 Nov 2026; was the maker's, 19 Oct)
 # notifications say "Knightwise": the Store app's own id, or the id the installer gives the Start menu shortcut
 APP_ID = f"{PACKAGE}!Knightwise" if PACKAGE else "Abhra71.Knightwise"
 
