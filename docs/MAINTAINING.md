@@ -235,8 +235,8 @@ fix file. Upgrade only when there's a reason (a bug fixed upstream, a security f
      Make it with `python -m coach.puzzles` (it writes `data/puzzles.json`) and copy that file to
      `coach/puzzles-pack.json`. If you change `KEEP_THEMES` in `coach/puzzles.py`, raise `VERSION` there and remake it.
    - `coach/feedback.key`: the Web3Forms access key (one line) that lets Send feedback email you in one click. It's on
-     web3forms.com: the key delivers to the inbox it was made for, so make it with knightwise.app@gmail.com (the support
-     inbox since 23 Nov 2026; 1.0 and 1.1 builds carry a key for the old inbox nanotech.mark.robots@gmail.com). Without
+     web3forms.com: the key delivers to the inbox it was made for, so make it with abhra71.dev@gmail.com (the developer
+     inbox for all apps since 24 Nov 2026; 1.0 and 1.1 builds carry a key for the old inbox nanotech.mark.robots@gmail.com). Without
      a key, Send opens the player's email app instead.
 4. **Build the app:** `python -m PyInstaller installer/Knightwise.spec --noconfirm` → `dist\Knightwise`
    (the trailer's 225 MB in `coach/ui/vendor/trailer` is left out by the spec on purpose)

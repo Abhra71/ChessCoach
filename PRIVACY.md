@@ -63,5 +63,5 @@ Uninstall Knightwise: the Store app's data is removed with it. (The older instal
 Videos\Knightwise.
 
 ## Contact
-Questions: Send feedback in the app, email knightwise.app@gmail.com, or open an issue at
+Questions: Send feedback in the app, email abhra71.dev@gmail.com, or open an issue at
 https://github.com/Abhra71/ChessCoach/issues

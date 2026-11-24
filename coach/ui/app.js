@@ -429,7 +429,7 @@ function feedbackBox() {
   };
   box.querySelector("[data-send]").onclick = () => send(true);
 }
-const FEEDBACK_TO = "knightwise.app@gmail.com";
+const FEEDBACK_TO = "abhra71.dev@gmail.com";
 
 // One tap at a natural ending (the end of a review, a finished set): never a pop-up, at most once a day, easy to
 // ignore. 👎 opens the feedback form; 👍 is kept on this PC. (19 Oct: "in the user's mind, never in the way")

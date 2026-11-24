@@ -182,7 +182,7 @@ def test_feedback_by_email_is_a_ready_email_to_the_right_address():
     from coach.service import FEEDBACK_TO, feedback_mail
     url = feedback_mail("What went wrong: the arrow & the ring\n" + "x" * 5000)
     parts = urlsplit(url)
-    assert parts.scheme == "mailto" and unquote(parts.path) == FEEDBACK_TO == "knightwise.app@gmail.com"
+    assert parts.scheme == "mailto" and unquote(parts.path) == FEEDBACK_TO == "abhra71.dev@gmail.com"
     q = parse_qs(parts.query)
     assert q["subject"][0].startswith("Knightwise feedback") and q["body"][0].startswith("What went wrong: the arrow & the ring")
     assert len(url) < 6000  # Windows mail apps cut longer addresses

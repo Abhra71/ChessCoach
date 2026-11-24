@@ -9,7 +9,7 @@
 - **Category:** Education (subcategory: none). Secondary: Games / Board
 - **Privacy policy URL:** https://github.com/Abhra71/ChessCoach/blob/main/PRIVACY.md
 - **Website:** https://github.com/Abhra71/ChessCoach
-- **Support contact:** knightwise.app@gmail.com (also Send feedback inside the app)
+- **Support contact:** abhra71.dev@gmail.com (also Send feedback inside the app)
 - **Product declarations:** tick "This app depends on non-Microsoft drivers or NT services": **no**.
   "Accessibility guidelines": leave unticked.
 - **System requirements:** Minimum: 8 GB memory, x64. Recommended: 16 GB.
