@@ -1,5 +1,17 @@
 # Knightwise: where we are and what comes next
 
+## 24 Nov 2026: the maker's portfolio and one developer inbox
+
+- **Portfolio live: https://abhra71.github.io** (repo `Abhra71/Abhra71.github.io`): Knightwise case study, Jarvis, an
+  "Early work" section, a build log; Google data ties Knightwise to its maker. Keep it in sync with every important
+  change (CLAUDE.md). Search Console verified (main Gmail), sitemap submitted, indexing requested for the portfolio
+  and this site; check around 1 Dec.
+- **Support email is now abhra71.dev@gmail.com** (one developer inbox for all apps): Send feedback, privacy page,
+  Store listing notes. A new Web3Forms key for it is in `coach/feedback.key` (git-ignored), tested; it ships in 1.2.
+  1.0/1.1 one-click feedback still goes to the old nanotech inbox.
+- Owner to do: Partner Center support contact -> abhra71.dev; GitHub/X website fields -> the portfolio; the
+  Instagram login email moves to abhra71.dev around 1 Dec (Meta's new-device lock).
+
 ## 20 Nov 2026: Knightwise 1.1 is LIVE on the Microsoft Store (START HERE)
 
 Submitted 19 Nov ~23:40, certified 20 Nov 00:25 (about 45 minutes), published by itself; the owner's PC updated
