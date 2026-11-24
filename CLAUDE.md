@@ -35,5 +35,7 @@ Fully on everywhere else (game review, analysis, puzzles, lessons, before/after 
 - **No sentence patterns / regexes for understanding speech.** Fix understanding properly.
 - **AI is used where it adds value; the engine and code do the rest** (cheap and fast for everyone).
 - Commit and push after each working piece, only when the tests pass.
+- **Keep the portfolio in sync:** any important change (a release or version, contact email, accounts, a new feature,
+  new numbers) also goes on the owner's portfolio https://abhra71.github.io (repo `Abhra71/Abhra71.github.io`).
 - End every reply with: `Coach: ~N% · Feel: ~N%` (feel = from the user's own use, not tests).
 - The user can't sit to approve prompts: use simple, pre-approved command shapes.
