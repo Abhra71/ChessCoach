@@ -164,6 +164,7 @@ The fix file is for when that isn't enough.
    - a new game address: `"game_addresses": ["^/games/live/(\\d+)"]` (a pattern; the game number in brackets)
    - a red-ring route: `"nav": {"bots": ["/play", "/play/computer"]}`; a button by its words: `"/puzzles/rated|Solve Puzzles"`
    - pause a feature: `"off": ["guide"]`
+   - the newest Store version (section 7, step 9): `"latest": "1.2.0"`
 4. **Commit changes.** Raise `"version"` by one.
 5. Check the next day on your own PC (or restart Knightwise: it reads it at start).
 
@@ -251,6 +252,13 @@ fix file. Upgrade only when there's a reason (a bug fixed upstream, a security f
    Extensions → Knightwise → Update → upload the zip → Submit. (Chrome users load it from the app: Arrows on
    chess.com.)
 8. **Merge and tag:** `git checkout main`, `git merge dev-…`, `git push`, then `git tag v1.0.1` and `git push --tags`.
+9. **Tell every copy it's out (1.2 and later), only once the Store page shows the new version:** in `fixes.json` on
+   **main**, set `"latest": "1.0.1"` (the three numbers from step 1) and commit. Within a day each Store copy notices
+   it's older and, at a calm moment (window closed, nobody using it for 10 minutes, no game check), restarts itself so
+   Windows can finish the Store's update (`coach/updater.py`). If the Store hadn't downloaded it yet, Home shows
+   "Knightwise 1.0.1 is out" with Restart now and Open the Store. Never set `latest` before the Store shows it: every
+   copy would restart for nothing (at most once a day) and show the card. Settings → the logbook has
+   "update: now 1.0.1 (was …)" lines when it worked.
 
 **Smart App Control** on your PC blocks unsigned programs, so a build you made yourself may not run there until the
 Store has signed it. Test from the source with `try.bat` instead; the Store build is tested after certification.

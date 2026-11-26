@@ -26,4 +26,6 @@ def test_downloaded_once_a_day_and_offline_keeps_the_last_copy(tmp_path, monkeyp
 def test_the_repo_file_is_valid_and_empty():
     from pathlib import Path
     raw = json.loads((Path(__file__).resolve().parents[1] / "fixes.json").read_text())
-    assert fixes.clean(raw) == fixes.clean({}) and raw["version"] == 1
+    out = fixes.clean(raw)
+    assert out.pop("latest") in (None, *[raw.get("latest")]) and raw["version"] == 1  # "latest": the Store's version (1.2)
+    assert out == {k: v for k, v in fixes.clean({}).items() if k != "latest"}

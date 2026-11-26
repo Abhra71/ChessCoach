@@ -134,9 +134,13 @@ def main():
     os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--autoplay-policy=no-user-gesture-required")
     import webview
 
-    from coach import service
+    from coach import service, updater
 
     route = next((a.split("chesscoach://", 1)[1] for a in sys.argv[1:] if a.startswith("chesscoach://")), "home")
+    # back from the quiet update restart (coach/updater.py): by the clock, no window, like a start at sign-in
+    background = route.strip("/") == "background"
+    if background:
+        route = "home"
     if sys.platform == "win32" and not PACKAGED:  # taskbar shows "Knightwise", not Python (the Store app has its own id)
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(service.APP_ID)
@@ -149,13 +153,17 @@ def main():
 
     state = {"quitting": False}
     place_extension()
-    window = webview.create_window(NAME, f"{service.URL}/#/{route}", width=1240, height=820, maximized=True, hidden=at_login(bool(service.player())),
+    updater.on_start()
+    hidden = background or at_login(bool(service.player()))
+    window = webview.create_window(NAME, f"{service.URL}/#/{route}", width=1240, height=820, maximized=True, hidden=hidden,
                                    min_size=(900, 620), background_color="#0A0A0A")
+    updater.window(not hidden)
 
     def show(where):
         window.evaluate_js(f"location.hash = '#/{where.strip('/')}'")
         window.show()
         window.maximize()  # also un-minimises; restore() would shrink it back to 1240×820
+        updater.window(True)
 
     def quit_app():
         state["quitting"] = True
@@ -166,6 +174,7 @@ def main():
         if state["quitting"]:
             return True
         window.hide()  # keep coaching in the background; the icon by the clock brings it back
+        updater.window(False)
         return False
 
     window.events.closing += on_closing
@@ -179,8 +188,13 @@ def main():
                 service.log.warning("microphone permission hook failed: %s", e)
 
     window.events.loaded += on_loaded
+    window.events.minimized += lambda: updater.window(False)  # minimised counts as away (the quiet update, 1.2)
+    window.events.restored += lambda: updater.window(True)
+    window.events.maximized += lambda: updater.window(True)
     service.SHOW = lambda where: threading.Thread(target=show, args=(where,), daemon=True).start()
     icon = tray(show, quit_app)
+    service.QUIT[0] = quit_app
+    updater.watch(service.STATE, service.UPDATE_LOCK, quit_app)
     webview.start(private_mode=False, storage_path=str(service.DATA.parent / "webview"))
     server.shutdown()
 

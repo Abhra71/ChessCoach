@@ -808,6 +808,9 @@ a.tile:hover { filter: brightness(1.05); }
 
 .checking { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 14px; }
 .checking svg { width: 18px; height: 18px; color: #e9a23b; animation: spin 2s linear infinite; } .checking .bar { flex: 1; } .checking .bar > div { background: var(--accent); }
+.update-ready { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 14px; flex-wrap: wrap; }  /* 1.2: a newer Knightwise */
+.update-ready > span { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 2px; }
+.update-ready > svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* the rematch (22 Oct): where it starts, and the opponent as a player */

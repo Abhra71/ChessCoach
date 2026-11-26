@@ -24,7 +24,7 @@ from pathlib import Path
 import chess
 import chess.pgn
 
-from coach import analyze, drills, fetch, health, memory, puzzles, review, settings
+from coach import analyze, drills, fetch, health, memory, puzzles, review, settings, updater
 from coach.paths import BUNDLED_EXTENSION, DATA, EXTENSION, FROZEN, LOGBOOK, NAME, PACKAGE, TEMPLATES, VERSION
 from coach.patterns import classify
 from coach.review import explain, move_number
@@ -276,6 +276,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.allowed():
             return self.send(403, "forbidden", "text/plain")
+        updater.used(self.path)  # the player's own use: no quiet update restart for 10 minutes (1.2)
         path = self.path.split("?")[0].rstrip("/")
         if path.startswith("/api/game/"):
             rows = MOMENT_CACHE.get(path.rsplit("/", 1)[-1])
@@ -601,6 +602,7 @@ class Handler(BaseHTTPRequestHandler):
         """Answers from our own pages only: JSON from http://127.0.0.1:8765 (other sites can't send JSON here)."""
         if not self.allowed():
             return self.send(403, "forbidden", "text/plain")
+        updater.used(self.path)
         if self.path.startswith("/api/listen") and self.headers.get("Content-Type") == "application/octet-stream":
             return self.listen()
         if self.path.startswith("/api/film/save") and self.headers.get("Content-Type") in (("video/webm",) if FROZEN else ("video/webm", "video/mp4")):  # MP4 is the trailer tool's, never the shipped app's (cloud review)
@@ -809,6 +811,13 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps({"ok": ok, "message": message}), "application/json")
         if path in ("/api/explain", "/api/ask"):
             return self.coach_ai(path, body)
+        if path == "/api/update/restart":  # Home's "Update ready": restart now, back with the window open (1.2)
+            if QUIT[0] is None or not updater.restart(QUIT[0], route="home"):
+                return self.send(500, json.dumps({"message": "Couldn't restart Knightwise. Try the Store button."}), "application/json")
+            return self.send(200, "{}", "application/json")
+        if path == "/api/update/store":  # the Store's own Knightwise page, where Update installs it now
+            updater.store_page()
+            return self.send(200, "{}", "application/json")
         if path == "/api/voice/install-listening":
             if not STATE.get("listen_install"):
                 threading.Thread(target=install_listening, daemon=True).start()
@@ -999,6 +1008,7 @@ class Handler(BaseHTTPRequestHandler):
 STATE = {"phase": "starting"}
 WAKE = threading.Event()  # set it to check for new games right now
 UPDATE_LOCK = threading.Lock()  # the background check and Start over take turns
+QUIT = [None]  # the app window's "Quit Knightwise" (coach/app.py), for the update restart
 GENERATION = [0]  # bumped by Start over: a check that started before it must not leave the old player's games
 
 
@@ -1217,7 +1227,8 @@ def status():
             # connected only if seen lately: it checks in every minute (22 Oct test: "connected" after it was removed)
             "extension_now": [b for b, t in STATE.get("extension_at", {}).items() if time.time() - t < 180],
             "extension_path": str(EXTENSION), "browsers": sorted(browsers()), "listen_install": STATE.get("listen_install"),
-            "practice_day": STATE.get("practice_day"), "no_games": bool(STATE.get("no_games"))}
+            "practice_day": STATE.get("practice_day"), "no_games": bool(STATE.get("no_games")),
+            "update": updater.status()}  # a newer Knightwise on the Store, for Home's "Update ready" (1.2)
 
 
 # what isn't the player's: kept by Start over (the app's own settings and downloads, the AI use count, feedback sent)

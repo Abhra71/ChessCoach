@@ -1,5 +1,21 @@
 # Knightwise: where we are and what comes next
 
+## 26 Nov 2026: 1.2 in progress (submit before the exams, 1-11 Dec)
+
+- **Quiet updates** (`coach/updater.py`): the fix file's new `"latest"` says the newest Store version; at a calm moment
+  (window closed or minimised, no use of the app or extension for 10 minutes, no game check) the Store copy schedules
+  itself to open again in 2 minutes (a one-time task, `chesscoach://background`: back by the clock, no window) and
+  quits, so Windows can finish the Store's update. Once a day per version; never quits without the comeback scheduled.
+  If it comes back still old, Home shows "Knightwise X is out" with Restart now / Open the Store. Tested on the owner's
+  PC: the scheduled task opens the Store app (on battery too, after adding the battery settings). Not testable before
+  1.2 is live: whether Windows applies the Store's waiting update during those 2 minutes; check with 1.2 -> 1.2.1 or 1.3.
+  Release step 9 in docs/MAINTAINING.md: set `latest` only once the Store shows the new version.
+- **The game page's ask box can act**: "rematch this game" or "open my openings" works there (the Talk brain, asked
+  alongside the engine-checked answer; a plain question still gets the position answer).
+- Version 1.2.0. Ships the new feedback inbox (abhra71.dev) and its Web3Forms key.
+- **Plan after 1.2 (owner, 26 Nov):** 1.3 Lichess (12-26 Dec) -> 1.4/1.5 polish -> **2.0 hero feature by 10 Feb 2027**
+  -> mobile (free stores: F-Droid, Galaxy Store, Indus; web version for iPhone). Pick the hero feature before 12 Dec.
+
 ## 24 Nov 2026: the maker's portfolio and one developer inbox
 
 - **Portfolio live: https://abhra71.github.io** (repo `Abhra71/Abhra71.github.io`): Knightwise case study, Jarvis, an

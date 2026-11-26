@@ -7,6 +7,7 @@ checked here (short strings and the known features only), so a bad edit can't br
 """
 import json
 import logging
+import re
 import time
 import urllib.request
 
@@ -30,6 +31,10 @@ def clean(raw):
     out["nav"] = {str(k)[:40]: [s for s in v if isinstance(s, str) and 0 < len(s) <= 200][:10]
                   for k, v in list(nav.items())[:50] if isinstance(v, list)}
     out["off"] = [f for f in listed(raw.get("off")) if isinstance(f, str) and f in FEATURES]
+    # the newest Knightwise on the Microsoft Store (1.2: coach/updater.py restarts quietly into it). Set it only once
+    # the Store shows the new version (docs/MAINTAINING.md), never before
+    v = raw.get("latest")
+    out["latest"] = v if isinstance(v, str) and re.fullmatch(r"\d{1,3}(\.\d{1,5}){1,3}", v) else None
     return out
 
 

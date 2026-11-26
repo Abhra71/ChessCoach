@@ -1914,6 +1914,10 @@ async function home() {
   $("#page").innerHTML = `
     ${STATUS.phase && !["ready", "starting"].includes(STATUS.phase) && STATUS.total ? `<div class="box checking">${svg("sync")}
       <span>Checking your games: <b class="num">${STATUS.done}</b> of ${STATUS.total}</span><div class="bar"><div style="width:${100 * STATUS.done / STATUS.total}%"></div></div></div>` : ""}
+    ${STATUS.update ? `<div class="box update-ready">${svg("sync")}<span><b>Knightwise ${esc(STATUS.update.latest)} is out.</b>
+      <span class="muted">${STATUS.update.tried ? "It isn't downloaded yet: the Store gets it right away." : "Restart to get it: about two minutes, everything stays."}</span></span>
+      <button class="btn${STATUS.update.tried ? "" : " primary"}" data-update="restart">Restart now</button>
+      <button class="btn${STATUS.update.tried ? " primary" : ""}" data-update="store">Open the Store</button></div>` : ""}
     <div class="home-head"><h1>${hello}, ${esc(h.player)}</h1>
       <span class="home-streak" title="Days in a row of your five minutes">${svg("flame")}<b class="num">${d.streak || 0}</b></span></div>
     ${h.games ? "" : `<div class="box first-game">${svg("games")}<div><b>No games yet.</b>
@@ -1960,6 +1964,13 @@ async function home() {
       <span title="Games won">${svg("medal")}<b class="num">${v.now.wins}%</b>${trend(v.now.wins >= v.then.wins, v.then.wins + "%", true)}</span>
       <span title="Key moments a game">${svg("bolt")}<b class="num">${v.now.moments}</b>${trend(v.now.moments <= v.then.moments, v.then.moments)}</span></div>` : ""}
     <div class="askpill" id="askbox"></div>`;
+  document.querySelectorAll("[data-update]").forEach(b => b.onclick = async () => {  // 1.2: the update, by the player's click
+    const restart = b.dataset.update === "restart", box = b.closest(".update-ready");
+    try {
+      await api(`/api/update/${b.dataset.update}`, {});
+      if (restart) box.innerHTML = `${svg("sync")}<span><b>Restarting…</b> <span class="muted">Knightwise is back in about two minutes.</span></span>`;
+    } catch (e) { box.insertAdjacentHTML("beforeend", `<span class="err small">${esc(e.message)}</span>`); }
+  });
   if (last && last.fen) Board.render($("#lastboard"), { fen: last.fen, flip: last.flip });
   api("/api/warmup").then(w => { const x = (w.items || [])[0]; if (x && $("#todayboard")) Board.render($("#todayboard"), { pieces: x.board, flip: x.flip }); else if ($("#todayboard")) $("#todayboard").remove(); }).catch(() => {});  // nothing to show yet: no empty square
   countUp($("#page"));
@@ -2206,7 +2217,21 @@ async function gameView(id) {
   window.kwBackStep = () => location.hash.includes(`games/${g.id}`) ? step(-1) : null;
   askBox($("#askbox"), { placeholder: "Ask Maya about this position", coach: "maya", enabled: aiReady, listen: cfg.talk_ready,
     section: "review", where: () => ({ game: g.id, ply: String(ply) }),
-    onAsk: q => { const k = moments[momentAt(ply)]; return api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: k ? k.ply : null }); } });
+    onAsk: async q => {
+      // 1.2: a question gets the engine-checked answer about this position (/api/ask); "rematch this game" or "open my
+      // openings" is done, as anywhere else (/api/talk, the same brain as Home). Both are asked at once, so it's no slower.
+      const k = moments[momentAt(ply)];
+      const [asked, talked] = await Promise.allSettled([
+        api("/api/ask", { question: q, fen: g.positions[ply].fen, game: g.id, ply: k ? k.ply : null }),
+        api("/api/talk", { coach: "maya", text: q, history: [], where: { section: "review", game: g.id, ply: String(ply) } })]);
+      const t = talked.status === "fulfilled" ? talked.value : null;
+      if (t && t.action && (t.action.route || t.action.web)) {
+        if (t.action.route) { window.kwOpenedFor = Date.now() + 8000; setTimeout(() => go(t.action.route), 1200); }
+        return t;
+      }
+      if (asked.status === "fulfilled") return asked.value;
+      throw asked.reason;
+    } });
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
     const v = b.dataset.go, was = ply;
     if (v === "1" || v === "-1") step(Number(v));
