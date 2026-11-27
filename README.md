@@ -214,7 +214,10 @@ play, with no exception for bot games. So the coach helps before and after games
 
 **Fair play:** the extension only shows something for games the coach already knows, and the coach only knows
 games that chess.com has archived as finished. During a live game it shows nothing at all. It never moves pieces
-and never sends anything to chess.com; it only talks to the coach on your own computer.
+and never sends anything to chess.com; it only talks to the coach on your own computer. A review also needs chess.com's
+move list to be exactly that finished game (a rematch on the same page takes it away), and while a game may be running
+in any chess.com tab, the coaches stay off in every other tab too. Every path is traced in
+[docs/FAIR-PLAY-AUDIT.md](docs/FAIR-PLAY-AUDIT.md).
 
 `python -m coach.patterns` prints the full count in the terminal, for example (a ~300-rated player, 140 games):
 

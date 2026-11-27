@@ -1,5 +1,25 @@
 # Knightwise: where we are and what comes next
 
+## 27 Nov 2026: fair-play audit and bug hunt (branch `claude/stabilise-after-1-2-e3103b`, NOT in 1.2)
+
+For the release after 1.2, after the owner's hand test. Nothing merged into dev-0.6/main.
+- **Fair-play audit** (`docs/FAIR-PLAY-AUDIT.md`): every extension path traced. Four real risks found and fixed, each
+  with a test (`tests/test_fair_play.py`): a rematch/new game on the same page kept the old review (its "Better"
+  arrows could come back in the new game); the cross-tab guard only knew `/game/live` (live games moved to `/game/<id>`
+  on 13 Oct), so a review, Ask, Talk and the warm-up worked next to a live game in another tab; a late Ask/warm-up/ring
+  answer could open the coach on a game page; the extension's self-update reload could forget which tab held a game.
+- **Bug hunt fixed:** a half-written `moves.jsonl` (the game check writing while the review reads) crashed the review's
+  answer, so the instant review never came; one missed answer from the app ended the page's wait for the review; the
+  quiet-update comeback could pop the window up if Knightwise was already running.
+- **Found, not fixed (small, or a decision):** `/api/feedback` crashes on a non-number "helped" (our page always sends
+  a number); `/api/listen`'s on-PC path fails on an odd number of bytes or a bad Content-Length (our pages never send
+  those); `fixes.refresh` raises if the saved file is valid JSON but not an object (only a hand edit); the game page's
+  ask box sends every question to both `/api/ask` and `/api/talk`, so two AI calls per question, and Talk may open a
+  chess.com page by itself (owner decision); the tests need Stockfish and fail (not skip) in a checkout without
+  `engine/` (set `KNIGHTWISE_ENGINE`); two new tests take ~45 s and ~21 s (they wait out the page's real timers).
+- **Owner decisions:** pause the app's engine/AI while the extension says a game may be running; exclude bot games
+  from "may be live"; Prep while a daily game is going. Hand test on real chess.com: see the end of the audit.
+
 ## 26 Nov 2026: 1.2 in progress (submit before the exams, 1-11 Dec)
 
 - **Quiet updates** (`coach/updater.py`): the fix file's new `"latest"` says the newest Store version; at a calm moment
