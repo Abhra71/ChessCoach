@@ -26,7 +26,7 @@
   Store listing notes. A new Web3Forms key for it is in `coach/feedback.key` (git-ignored), tested; it ships in 1.2.
   1.0/1.1 one-click feedback still goes to the old nanotech inbox.
 - Owner to do: Partner Center support contact -> abhra71.dev; GitHub/X website fields -> the portfolio; the
-  Instagram login email moves to abhra71.dev around 1 Dec (Meta's new-device lock).
+  Instagram: the old account kept getting locked, so it was deleted (27 Nov) and the developer Instagram is now @abhra71_dev (login abhra71.dev@gmail.com).
 
 ## 20 Nov 2026: Knightwise 1.1 is LIVE on the Microsoft Store (START HERE)
 

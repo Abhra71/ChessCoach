@@ -133,7 +133,7 @@ Knightwise is made by one teenager and grows with its players. You can help with
 - 🐞 **[Report a bug](https://github.com/Abhra71/ChessCoach/issues/new?template=bug_report.yml)** or 💡 **[suggest a feature](https://github.com/Abhra71/ChessCoach/issues/new?template=feature_request.yml)**: a short form, two minutes.
 - 🌍 **Want the coaches in your language?** Say which in Discussions (planned). Or **fix something**: see [CONTRIBUTING.md](CONTRIBUTING.md).
 - ✉️ **Email:** [abhra71.dev@gmail.com](mailto:abhra71.dev@gmail.com) for support, press or creators.
-- 📸 **Follow:** Instagram [@abhra71.dev](https://www.instagram.com/abhra71.dev/) (updates on all my apps) · the maker, Abhra Chakraborty: [portfolio](https://abhra71.github.io), X [@Abhra71](https://x.com/Abhra71) and [GitHub](https://github.com/Abhra71).
+- 📸 **Follow:** Instagram [@abhra71_dev](https://www.instagram.com/abhra71_dev/) (updates on all my apps) · the maker, Abhra Chakraborty: [portfolio](https://abhra71.github.io), X [@Abhra71](https://x.com/Abhra71) and [GitHub](https://github.com/Abhra71).
 - 📣 **Tell a chess friend.** That's how a free app grows.
 
 ## For players: install
