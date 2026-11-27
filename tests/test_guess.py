@@ -5,7 +5,7 @@ import pytest
 
 from coach import guess, maia
 
-pytestmark = pytest.mark.skipif(not maia.available(), reason="Maia-3 isn't downloaded")
+pytestmark = [pytest.mark.skipif(not maia.available(), reason="Maia-3 isn't downloaded"), pytest.mark.needs_engine]
 
 
 @pytest.fixture(autouse=True)

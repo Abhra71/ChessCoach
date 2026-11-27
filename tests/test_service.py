@@ -1,3 +1,4 @@
+import pytest
 from coach.service import game_id, key_moments
 
 HANG = dict(url="https://www.chess.com/game/live/42", color="white", stalemate=False, cp_before=0, cp_after=-800,
@@ -9,6 +10,7 @@ def test_game_id():
     assert game_id("https://www.chess.com/game/live/143843521880") == "143843521880"
 
 
+@pytest.mark.needs_engine
 def test_key_moment_has_arrows_and_words():
     [m] = key_moments([HANG, dict(HANG, loss=2, ply=33)])  # the small slip is not a key moment
     assert (m["move_uci"], m["best_uci"], m["reply_uci"]) == ("d4e5", "d4d5", "d6e5")

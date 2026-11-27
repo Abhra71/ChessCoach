@@ -52,7 +52,10 @@ def refresh(force=False, fetch=None):
         saved = json.loads(FILE.read_text())
     except (OSError, ValueError):
         saved = {}
-    if not force and time.time() - saved.get("at", 0) < EVERY:
+    if not isinstance(saved, dict):  # a list or a number in the saved file: as if there were none (27 Nov bug hunt)
+        saved = {}
+    at = saved.get("at")
+    if not force and isinstance(at, (int, float)) and time.time() - at < EVERY:
         return current()
     try:
         if fetch:
