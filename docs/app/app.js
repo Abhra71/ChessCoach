@@ -2,16 +2,57 @@
 //   #/          who are you? (chess.com or Lichess username)
 //   #/games     your newest finished games, with wins / losses / draws on top
 //   #/game/ID   one game, move by move on a board
-// Everything stays on this phone (localStorage). No server of ours, no engine yet (see docs/MOBILE-PLAN.md).
+// Everything stays on this phone (IndexedDB, see store.js). No server of ours, no engine yet (docs/MOBILE-PLAN.md).
+// Cheap phones first: the first screen needs only this file, games.js and store.js; the board, pieces and
+// rules (about 26 KB) load the first time you open a game.
 (() => {
   const view = document.getElementById("view");
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  let games = [];          // the games on screen right now
-  let note = "";           // a line under the list: "saved 5 min ago", "offline", ...
+  let games = [];          // summaries of the games on screen right now
+  let note = "";           // a line under the list: "Saved 5 min ago", "Offline", ...
+  let loading = false;     // a download is running
+
+  // ---------- load a script only when it's first needed ----------
+  const scripts = {};
+  const need = src => scripts[src] || (scripts[src] = new Promise((ok, bad) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = ok;
+    s.onerror = () => { delete scripts[src]; bad(new Error("Couldn't load " + src)); };
+    document.head.append(s);
+  }));
 
   // ---------- who is playing (kept on the phone) ----------
   function player() { try { return JSON.parse(localStorage.getItem("kw.player") || "null"); } catch { return null; } }
   function setPlayer(p) { try { p ? localStorage.setItem("kw.player", JSON.stringify(p)) : localStorage.removeItem("kw.player"); } catch { } }
+
+  // ---------- downloading, shown as it arrives ----------
+  // resolves when the first games are in (or fails with the reason), keeps going in the background
+  function download(site, user) {
+    loading = true;
+    const still = () => { const q = player(); return q && q.site === site && q.user === user; };   // not changed player meanwhile
+    return new Promise((first, fail) => {
+      let started = false;
+      Games.load(site, user, some => {
+        if (!still()) return;
+        games = some;
+        note = `Downloading... ${some.length} so far.`;
+        if (!started && some.length) { started = true; first(); }
+        else if (location.hash === "#/games") drawGames(player());
+      }).then(all => {
+        loading = false;
+        if (!still()) return;
+        games = all; note = "Updated just now.";
+        if (!all.length) return fail(new Error("no-games"));
+        if (!started) first();
+        if (location.hash === "#/games") drawGames(player());
+      }).catch(x => {
+        loading = false;
+        if (!started) return fail(x);
+        note = "The download stopped; showing what came in.";
+        if (location.hash === "#/games") drawGames(player());
+      });
+    });
+  }
 
   // ---------- screen 1: username ----------
   function showStart() {
@@ -37,15 +78,15 @@
     view.querySelector("#who").onsubmit = async e => {
       e.preventDefault();
       const user = view.querySelector("#user").value.trim();
-      if (!user) return;
+      if (!user || loading) return;
       const btn = view.querySelector(".btn.primary"), err = view.querySelector("#err");
       btn.disabled = true; btn.textContent = "Downloading your games..."; err.hidden = true;
       try {
-        games = await Games.load(site, user);
-        if (!games.length) throw new Error("no-games");
-        setPlayer({ site, user }); note = "Updated just now.";
+        setPlayer({ site, user });
+        await download(site, user);
         location.hash = "#/games";
       } catch (x) {
+        setPlayer(null);
         err.hidden = false;
         err.textContent = x.message === "no-player" ? `No ${site === "lichess" ? "Lichess" : "chess.com"} player called "${user}".`
           : x.message === "no-games" ? "No finished games yet. Play one, then come back."
@@ -68,21 +109,17 @@
     const p = player();
     if (!p) { location.hash = "#/"; return; }
     if (!games.length) {                               // opened fresh: show what's saved at once, then refresh
-      const s = Games.saved(p.site, p.user);
+      const s = await Games.saved(p.site, p.user);
       if (s) { games = s.games; note = `Saved ${ago(s.at)}.`; }
     }
     drawGames(p);
-    if (!note.startsWith("Updated")) refresh(p);
-  }
-
-  async function refresh(p) {
-    try {
-      games = await Games.load(p.site, p.user);
-      note = "Updated just now.";
-    } catch {
-      note = navigator.onLine ? "Couldn't update; showing the saved games." : "Offline; showing the saved games.";
+    if (!loading && !note.startsWith("Updated")) {
+      if (!navigator.onLine) { note = "Offline; showing the saved games."; drawGames(p); return; }
+      download(p.site, p.user).catch(() => {
+        note = games.length ? "Couldn't update; showing the saved games." : "Couldn't download the games. Try again later.";
+        if (location.hash === "#/games") drawGames(p);
+      });
     }
-    if (location.hash === "#/games") drawGames(p);
   }
 
   function drawGames(p) {
@@ -102,25 +139,33 @@
         return `<li><a class="game" href="#/game/${encodeURIComponent(g.id)}">
           <span class="chip ${g.result}">${g.result === "win" ? "W" : g.result === "loss" ? "L" : "½"}</span>
           <span class="grow"><div class="who">${esc(opp)} <span class="muted small num">${esc(oppR || "")}</span></div>
-            <div class="meta">${esc(g.how)} · ${esc(g.speed)} · ${Math.ceil(g.sans.length / 2)} moves · ${dateOf(g.endedAt)}</div></span>
+            <div class="meta">${esc(g.how)} · ${esc(g.speed)} · ${Math.ceil(g.plies / 2)} moves · ${dateOf(g.endedAt)}</div></span>
           <span class="side ${g.me}" title="You played ${g.me === "w" ? "White" : "Black"}"></span></a></li>`;
       }).join("")}</ul>`;
     view.querySelector("#change").onclick = () => { setPlayer(null); games = []; note = ""; location.hash = "#/"; };
   }
 
   // ---------- screen 3: one game on the board ----------
-  function showGame(id) {
+  async function showGame(id) {
     const p = player();
-    if (!games.length && p) { const s = Games.saved(p.site, p.user); if (s) games = s.games; }
+    if (!games.length && p) { const s = await Games.saved(p.site, p.user); if (s) games = s.games; }
     const g = games.find(x => x.id === id);
     if (!g) { location.hash = "#/games"; return; }
+    view.innerHTML = `<p class="muted">Opening the game...</p>`;
     let line;
-    try { line = Rules.replay(g.sans, g.startFen); }
-    catch (x) { view.innerHTML = `<p class="error">This game's record couldn't be read: ${esc(x.message)}</p><a href="#/games">Back</a>`; return; }
+    try {
+      await Promise.all([need("pieces.js"), need("rules.js")]);
+      await need("board.js");
+      line = Rules.replay(Games.sansOf(g), g.startFen || Games.START);   // worked out now, not kept for every game
+    } catch (x) {
+      view.innerHTML = `<p class="error">This game couldn't be opened: ${esc(x.message)}</p><a href="#/games">Back</a>`;
+      return;
+    }
+    if (location.hash !== "#/game/" + encodeURIComponent(id)) return;   // the player went elsewhere meanwhile
     const flip = g.me === "b", last = line.fens.length - 1;
     let at = last;   // open at the end: how it finished
-    const top = flip ? ["w", g.white, g.whiteRating] : ["b", g.black, g.blackRating];
-    const bottom = flip ? ["b", g.black, g.blackRating] : ["w", g.white, g.whiteRating];
+    const top = flip ? [g.white, g.whiteRating] : [g.black, g.blackRating];
+    const bottom = flip ? [g.black, g.blackRating] : [g.white, g.whiteRating];
     const word = { win: "You won", loss: "You lost", draw: "Draw" }[g.result];
 
     view.className = "page game-page";
@@ -128,9 +173,9 @@
       <div class="links"><a href="#/games" class="btn ghost small">‹ Games</a>
         <a href="${esc(g.url)}" target="_blank" rel="noopener" class="btn ghost small">Open on ${esc(g.site)}</a></div>
       <div class="game-grid"><div>
-        <div class="players"><span>${esc(top[1])} <span class="r num">${esc(top[2] || "")}</span></span></div>
+        <div class="players"><span>${esc(top[0])} <span class="r num">${esc(top[1] || "")}</span></span></div>
         <div class="board-wrap" id="board"></div>
-        <div class="players"><span>${esc(bottom[1])} <span class="r num">${esc(bottom[2] || "")}</span></span></div>
+        <div class="players"><span>${esc(bottom[0])} <span class="r num">${esc(bottom[1] || "")}</span></span></div>
         <div class="controls">
           <button class="btn" data-go="start" aria-label="Start">⏮</button>
           <button class="btn" data-go="back" aria-label="Back">◀</button>
@@ -144,8 +189,12 @@
           `${i % 2 === 0 ? `<span class="n">${i / 2 + 1}.</span>` : ""}<button data-i="${i + 1}">${esc(m.san)}</button>`).join("")}</div>
       </div></div>`;
 
-    const boardEl = view.querySelector("#board"), ply = view.querySelector("#ply");
+    const boardEl = view.querySelector("#board"), ply = view.querySelector("#ply"), list = view.querySelector("#moves");
+    const buttons = list.querySelectorAll("button");
+    let lit = null;   // the highlighted move: only it and the new one change, so the phone redraws little
+    let queued = false;
     function draw() {
+      queued = false;
       const hl = {}, m = line.moves[at - 1];
       if (m) { hl[m.from] = "hl-last"; hl[m.to] = "hl-last"; }
       if (m && m.check) {                              // the king in check gets a red square
@@ -154,18 +203,16 @@
       }
       Board.render(boardEl, { fen: line.fens[at], flip, highlights: hl });
       ply.textContent = at === 0 ? "Start position" : `Move ${Math.ceil(at / 2)}${at % 2 ? "" : "…"} ${m.san} · ${at} of ${last}`;
-      view.querySelectorAll("#moves button").forEach(b => {
-        const on = Number(b.dataset.i) === at;
-        b.classList.toggle("on", on);
-        if (on) b.parentNode.scrollTop = b.offsetTop - b.parentNode.clientHeight / 2;   // only the list scrolls, not the page
-      });
+      if (lit) lit.classList.remove("on");
+      lit = at ? buttons[at - 1] : null;
+      if (lit) { lit.classList.add("on"); list.scrollTop = lit.offsetTop - list.clientHeight / 2; }   // only the list scrolls
     }
-    const go = to => { at = Math.max(0, Math.min(last, to)); draw(); };
+    // fast taps on a slow phone: draw once per screen frame, with the newest position
+    const go = to => { at = Math.max(0, Math.min(last, to)); if (!queued) { queued = true; requestAnimationFrame(draw); } };
     const moves = { start: () => go(0), back: () => go(at - 1), next: () => go(at + 1), end: () => go(last) };
     view.querySelectorAll("[data-go]").forEach(b => b.onclick = moves[b.dataset.go]);
-    view.querySelectorAll("#moves button").forEach(b => b.onclick = () => go(Number(b.dataset.i)));
-    // swipe the board left or right to step through the game
-    let x0 = null;
+    list.onclick = e => { const b = e.target.closest("button"); if (b) go(Number(b.dataset.i)); };   // one listener, not one per move
+    let x0 = null;   // swipe the board left or right to step through the game
     boardEl.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
     boardEl.addEventListener("touchend", e => {
       if (x0 === null) return;
@@ -194,7 +241,7 @@
   route();
 
   // ---------- installable, and works offline ----------
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
   let ask = null;
   const installBtn = document.getElementById("install");
   addEventListener("beforeinstallprompt", e => { e.preventDefault(); ask = e; installBtn.hidden = false; });

@@ -1,9 +1,9 @@
 // The service worker: keeps the app's own files on the phone so it opens offline, like an installed app.
-// Games are kept by the page itself (localStorage); requests to chess.com and Lichess are never touched here.
+// Games are kept by the page itself (IndexedDB, store.js); requests to chess.com and Lichess are never touched here.
 // Change VERSION whenever any file below changes, so phones fetch the new copy.
-const VERSION = "kw-mobile-0.1.0";
-const FILES = ["./", "index.html", "app.css", "app.js", "board.js", "pieces.js", "rules.js", "games.js",
-  "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-180.png"];
+const VERSION = "kw-mobile-0.2.0";
+const FILES = ["./", "index.html", "app.css", "app.js", "board.js", "pieces.js", "rules.js", "games.js", "store.js",
+  "manifest.webmanifest", "icons/icon-64.png", "icons/icon-192.png"];   // the big install icons are fetched only when installing
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

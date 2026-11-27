@@ -3,10 +3,12 @@
 Written 27 Nov 2026 while the owner studies for exams (1-11 Dec). Nothing here is decided until the owner says so.
 Section 7 lists the decisions waiting for you.
 
-**Short version:** a first phone app already works (116 KB, no downloads): type your chess.com or Lichess
-username, see your newest 60 finished games, replay any of them on a board. The next big step is the engine
-(Stockfish built for the browser, 1.9 MB, GPL-3, needs your OK). A first real version (review, habits,
-practice from your own mistakes) is about **3-4 weeks of work** after you approve it.
+**Short version:** a first phone app already works (37 KB on first open, no downloads): type your chess.com or
+Lichess username, see your newest finished games (60, or fewer on a phone with little memory), replay any of them
+on a board. It is built for **cheap phones** (section 4b) and measured on a simulated one: first screen in 1.8 s on
+slow 3G with the processor slowed 6 times. The next big step is the engine (Stockfish built for the browser,
+"lite" 1.9 MB, GPL-3, needs your OK). A first real version (review, habits, practice from your own mistakes) is
+about **3-4 weeks of work** after you approve it.
 
 ---
 
@@ -97,6 +99,47 @@ app is open (a web app can't work when closed). Speed on a real phone is **not m
 first job once the engine is approved. Then compare the phone's verdicts with the PC's on your own 142 games, so
 the phone and PC agree on what a blunder is (the same 25-point "winning chance" drop, `coach/patterns.py`).
 
+## 4b. Built for cheap phones (owner's rule, 27 Nov)
+
+**The phone we design for:** a cheap Android phone, Android 9 or newer, Chrome; **2-3 GB of memory, 4 slow
+cores**; on slow 3G or patchy 4G. If it runs well there, it runs well everywhere.
+
+What that means in the app (done in the skeleton):
+
+- **Small:** plain JavaScript, no frameworks, system fonts. The whole app's code is 60 KB (before compression);
+  the first screen downloads **37 KB in 7 files**.
+- **Heavy parts load only when needed:** the board, pieces and chess rules (26 KB) load the first time you open
+  a game. The engine will load only when you ask for a check, never on the first screen.
+- **Games arrive bit by bit:** chess.com one month at a time, newest first; Lichess read as it streams in. The list
+  shows the first games while the rest download. A month's big download is dropped as soon as it's read.
+- **Kept small:** each game is a short summary with its moves as one line of text; the board positions are worked
+  out only for the game you open. Saved in **IndexedDB** (the phone browser's database), not in memory.
+- **Fewer games on weak phones:** the browser says roughly how much memory it has. 60 games normally, 30 with
+  2 GB or 2 cores, 20 with 1 GB or less.
+- **Smooth board:** the board has a fixed square size (nothing on the page jumps), fast taps draw once per screen
+  frame, and only the two changed moves in the move list are repainted.
+- **Offline after the first open:** the app's files are kept by the service worker; the big install icons are
+  fetched only when installing.
+
+**How it was tested (27 Nov):** a headless Microsoft Edge with a throwaway profile, driven through DevTools
+(`tests/mobile/lowend_check.mjs`): **CPU 6 times slower**, **slow 3G** (400 ms delay, 400 kbit/s) or **slow 4G**
+(150 ms, 1.6 Mbit/s), a 375 x 812 phone screen, real chess.com and Lichess downloads.
+
+| Measured (CPU 6x slower) | chess.com, slow 3G | Lichess, slow 3G | chess.com, slow 4G |
+|---|---|---|---|
+| First screen ready | 1.8 s | 1.8 s | 0.8 s |
+| Downloaded for the first screen | 37 KB | 37 KB | 37 KB |
+| First games on screen | 1.4 s (3 games) | 1.3 s (22 games) | 0.8 s |
+| All 60 games in | 5.5 s | 1.7 s | 2.5 s |
+| Memory used by the page (JavaScript) | 1.4 MB | 1.7 MB | 1.4 MB |
+| Opening a game (first time, loads the board) | 0.24 s | 0.27 s | 0.36 s |
+| One tap on "next move" to the new board on screen | 28 ms (worst 33) | 28 ms (worst 33) | 35 ms (worst 41) |
+| Reopening with no internet | 0.7 s, saved list shown | 0.6 s | 0.1 s |
+
+With the phone reporting 2 GB of memory: 30 games, all in 3.8 s on slow 3G. **Limits of this test:** a slowed-down
+PC is not a real cheap phone (the PC's memory and disk are still fast), and chess.com's speed varies. The real check
+is your phone, and a cheap one if a friend has one.
+
 ## 5. Fair play on the phone (the hard line)
 
 Your chess.com account was closed on 27 Nov for engine use on a phone. The phone app must make that **impossible
@@ -115,15 +158,17 @@ to do by accident**, and never tempting:
 
 ## 6. Storage, offline, size
 
-- **On the phone only.** Username and games in `localStorage` today (fine for 60 games, about 0.3 MB). When the
-  engine's checks come, move to **IndexedDB** (the phone browser's database, far more room) and ask the browser
-  to keep it (`navigator.storage.persist`). Nothing is sent anywhere except the requests to chess.com/Lichess.
+- **On the phone only.** Games in **IndexedDB** (the phone browser's database, far more room than `localStorage`;
+  `docs/app/store.js`), the username in `localStorage`. The app asks the browser to keep the data
+  (`navigator.storage.persist`). The engine's checks will go in the same database. Nothing is sent anywhere except
+  the requests to chess.com/Lichess.
 - **Offline:** the service worker (`docs/app/sw.js`) keeps the app's files; the last games list is kept, so the app
   opens and replays games with no internet. New games need the internet once.
 - **iPhone note:** Safari may clear a website's storage after 7 days unused, but not for an app added to the Home
   Screen. The app should say "Add to Home Screen" on iPhone.
-- **Size budget (first install):** app 0.12 MB now + engine 1.9 MB + data for one player about 1 MB =
-  **under 5 MB** for v1 (the PC package is 376 MB). Any extra (puzzles, film, voice) is downloaded only when used.
+- **Size budget (first install):** app 0.06 MB of code now (37 KB for the first screen) + engine 1.9 MB +
+  data for one player about 1 MB = **under 5 MB** for v1 (the PC package is 376 MB). Any extra (puzzles, film,
+  voice) is downloaded only when used. Rule: the first screen stays **under 200 KB**.
 
 ## 7. Decisions waiting for the owner
 
@@ -139,6 +184,28 @@ to do by accident**, and never tempting:
    Sizes checked today from the published package (27 Nov). The 99 MB file is also right at GitHub Pages' 100 MB
    per-file limit. GPL-3 is fine: Knightwise is already open-source under a GPL-compatible licence.
    We'd copy just the two lite files (`stockfish-19-lite-single.js` + `.wasm`) into `docs/app/engine/`, no npm.
+
+   **Lite vs full on a cheap phone:**
+
+   | | Lite, single-threaded | Full, single-threaded |
+   |---|---|---|
+   | Download (once, then kept offline) | 1.9 MB: about 40 s on slow 3G, 10 s on slow 4G | 99 MB: about 33 min on slow 3G, 8 min on slow 4G |
+   | Memory while checking | small net + 16 MB table: roughly 20-40 MB (estimate) | big net alone is most of the 99 MB, so roughly 120-150 MB (estimate); risky with 2 GB, where the browser may close the tab |
+   | Speed | small net, so more positions per second (to measure) | stronger per position, slower per position (to measure) |
+   | Strength | "far stronger than any human" (its README); enough to find a club player's blunders | full strength |
+
+   The download times are arithmetic from the sizes; the memory figures are estimates. The first job after your
+   OK is to measure both on the cheap-phone test and on your phone.
+
+   **Recommended: lite, with a time limit per position**, sized to the phone: about 0.3 s per position on a weak
+   phone (2 GB or 2 cores), deeper on stronger ones. A game has about 35 of your moves, so about 10-15 s per game,
+   and about 4-5 minutes for the newest 20 games on a weak phone (arithmetic, to measure). How it runs:
+   - in a **background worker** (a separate thread), so tapping and scrolling never wait for the engine;
+   - **one game at a time**, saved as soon as it's done, so nothing is lost if the app closes;
+   - **only while the app is open and on screen**: it pauses when you switch apps or the screen turns off
+     (`visibilitychange`), and carries on from the next game when you come back (battery-friendly);
+   - the engine downloads only when you first ask for a check, never on the first screen.
+   Multi-threaded and full builds stay off for v1 (headers GitHub Pages can't send; size and memory).
 2. **Rewrite in JS (A) or Pyodide (B)** for the habits logic (section 2). Recommendation: A.
 3. **Exact v1 list** (section 4): keep, cut, or add (e.g. the clock coach is cheap to add).
 4. **Order with Lichess 1.3 and the 2.0 hero feature**: ROADMAP (26 Nov) says 1.3 Lichess 12-26 Dec, 2.0 by
@@ -196,10 +263,12 @@ Then open http://localhost:8771/app/ (press F12 and pick a phone size to see it 
 
 What's there: `docs/app/` - `index.html` (the page), `app.js` (the three screens), `games.js` (downloads and reads
 games), `rules.js` (the rules of chess for replaying), `board.js` and `pieces.js` (copied from the PC app),
-`app.css` (the calm look), `sw.js` + `manifest.webmanifest` (install and offline). Tests: `tests/mobile/rules_test.js`
-(also run by `python -m pytest` when Node.js is installed).
+`app.css` (the calm look), `store.js` (saving on the phone), `sw.js` + `manifest.webmanifest` (install and
+offline). Tests: `tests/mobile/rules_test.js` (also run by `python -m pytest` when Node.js is installed);
+cheap-phone timings: `tests/mobile/lowend_check.mjs` (section 4b).
 
 Checked on real games 27 Nov: 300 games from five public accounts (60 each; three on chess.com, two on Lichess)
 replayed with no errors; for all 180 chess.com games the final position matched exactly the one chess.com
-recorded. Also tried in a phone-sized browser window: username, list, replay, swipe-free buttons, a wrong
-username, no sideways scrolling. **Not yet tried on a real phone or installed to a home screen.**
+recorded. Also tried in a phone-sized browser window (username, list, replay, a wrong username, no sideways
+scrolling) and on the simulated cheap phone (section 4b). **Not yet tried on a real phone or installed to a home
+screen.**

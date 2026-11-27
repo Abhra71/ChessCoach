@@ -56,4 +56,25 @@ test("a chess.com PGN with clocks becomes a list of moves", () => {
   assert.equal(Rules.replay(Games.pgnMoves(pgn)).moves.at(-1).check, true);
 });
 
+test("a Lichess game: finished games kept, aborted ones dropped, moves kept as one line", () => {
+  const base = { id: "abc", variant: "standard", status: "mate", winner: "white", moves: "e4 e5 Qh5 Nc6 Bc4 Nf6 Qxf7#",
+    players: { white: { user: { name: "Someone" }, rating: 1500 }, black: { user: { name: "Me" }, rating: 1400 } }, lastMoveAt: 1 };
+  const g = Games.fromLichess(base, "me");
+  assert.equal(g.me, "b"); assert.equal(g.result, "loss"); assert.equal(g.plies, 7); assert.equal(typeof g.moves, "string");
+  assert.equal(Games.fromLichess({ ...base, status: "aborted" }, "me"), null);
+  assert.equal(Games.fromLichess({ ...base, status: "started" }, "me"), null);
+  assert.equal(Games.fromLichess({ ...base, variant: "chess960" }, "me"), null);
+});
+
+test("fewer games on phones with little memory", () => {
+  const was = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  const as = (deviceMemory, hardwareConcurrency) => {
+    Object.defineProperty(globalThis, "navigator", { value: { deviceMemory, hardwareConcurrency }, configurable: true });
+    return Games.howMany();
+  };
+  assert.equal(as(1, 4), 20); assert.equal(as(2, 8), 30); assert.equal(as(4, 2), 30); assert.equal(as(8, 8), 60);
+  assert.equal(as(undefined, undefined), 60);   // the phone doesn't say: assume a normal phone
+  if (was) Object.defineProperty(globalThis, "navigator", was);
+});
+
 console.log(`\n${passed} passed`);

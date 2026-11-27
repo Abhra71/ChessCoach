@@ -5,11 +5,23 @@
 // we also drop anything not ended by the rules (aborted, never started). Nothing here can look at a
 // game in progress, and nothing lets you set up a position of your own.
 //
-// Every game, from either site, becomes the same plain object:
+// Made for cheap phones: one month (or a few Lichess games) at a time, newest first, shown as they arrive;
+// only a short summary of each game is kept (the moves stay one text line until you open the game);
+// fewer games on phones with little memory.
+//
+// Every game, from either site, becomes the same small object:
 //   { id, site, url, white, black, whiteRating, blackRating, me: "w"|"b", result: "win"|"loss"|"draw",
-//     how, speed, endedAt, sans: ["e4", "e5", ...], startFen, finalFen, opening }
+//     how, speed, endedAt, moves: "e4 e5 Nf3 ...", plies, startFen (only if not the usual start), finalFen, opening }
 const Games = (() => {
-  const WANT = 60;   // the newest 60 games are plenty for a first look, and quick to download
+  const START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+  // how many games to load: 60 on most phones, fewer when the phone says it has little memory or few cores
+  // (navigator.deviceMemory is rounded: 0.5, 1, 2, 4, 8; not every browser tells, then we assume a normal phone)
+  function howMany() {
+    const mem = (typeof navigator !== "undefined" && navigator.deviceMemory) || 4;
+    const cores = (typeof navigator !== "undefined" && navigator.hardwareConcurrency) || 4;
+    return mem <= 1 ? 20 : mem <= 2 || cores <= 2 ? 30 : 60;
+  }
 
   // ---------- reading a PGN (the text format chess.com uses for a game) ----------
   function pgnHeaders(pgn) {
@@ -38,76 +50,95 @@ const Games = (() => {
     return r.json();
   }
 
-  async function chesscom(user) {
+  function fromChesscom(g, name) {
+    const h = pgnHeaders(g.pgn), me = g.white.username.toLowerCase() === name ? "w" : "b";
+    const mine = me === "w" ? g.white : g.black, theirs = me === "w" ? g.black : g.white;
+    const result = mine.result === "win" ? "win" : theirs.result === "win" ? "loss" : "draw";
+    const sans = pgnMoves(g.pgn);
+    return {
+      id: "cc-" + (g.uuid || g.url.split("/").pop()), site: "chess.com", url: g.url,
+      white: g.white.username, black: g.black.username, whiteRating: g.white.rating, blackRating: g.black.rating,
+      me, result, how: CC_HOW[result === "win" ? theirs.result : mine.result] || "",
+      speed: g.time_class, endedAt: g.end_time * 1000, moves: sans.join(" "), plies: sans.length,
+      startFen: h.SetUp === "1" && h.FEN ? h.FEN : undefined, finalFen: g.fen,
+      opening: (h.ECOUrl || "").split("/").pop().replace(/-/g, " ").replace(/\s\d.*$/, ""),
+    };
+  }
+
+  async function chesscom(user, want, onSome) {
     const name = user.trim().toLowerCase();
     const { archives = [] } = await getJson(`https://api.chess.com/pub/player/${encodeURIComponent(name)}/games/archives`);
     const out = [];
     for (const month of archives.slice().reverse()) {   // newest month first, one at a time (chess.com asks for that)
-      const { games = [] } = await getJson(month);
-      for (const g of games.slice().reverse()) {
-        if (g.rules !== "chess" || !g.pgn) continue;     // standard chess only (no Chess960 or other variants yet)
-        const h = pgnHeaders(g.pgn), me = g.white.username.toLowerCase() === name ? "w" : "b";
-        const mine = me === "w" ? g.white : g.black, theirs = me === "w" ? g.black : g.white;
-        const result = mine.result === "win" ? "win" : theirs.result === "win" ? "loss" : "draw";
-        out.push({
-          id: "cc-" + (g.uuid || g.url.split("/").pop()), site: "chess.com", url: g.url,
-          white: g.white.username, black: g.black.username, whiteRating: g.white.rating, blackRating: g.black.rating,
-          me, result, how: CC_HOW[result === "win" ? theirs.result : mine.result] || "",
-          speed: g.time_class, endedAt: g.end_time * 1000, sans: pgnMoves(g.pgn),
-          startFen: h.SetUp === "1" && h.FEN ? h.FEN : Rules.START, finalFen: g.fen,
-          opening: (h.ECOUrl || "").split("/").pop().replace(/-/g, " ").replace(/\s\d.*$/, ""),
-        });
-        if (out.length >= WANT) return out;
+      let { games = [] } = await getJson(month);
+      for (let i = games.length - 1; i >= 0 && out.length < want; i--) {
+        const g = games[i];
+        if (g.rules === "chess" && g.pgn) out.push(fromChesscom(g, name));   // standard chess only for now
       }
+      games = null;                                        // let the phone free the month's big download
+      if (onSome) onSome(out.slice());
+      if (out.length >= want) break;
     }
     return out;
   }
 
-  // ---------- Lichess ----------
+  // ---------- Lichess (read as it streams in, one game per line) ----------
   const LI_HOW = { mate: "checkmate", resign: "resigned", outoftime: "on time", timeout: "left the game",
     stalemate: "stalemate", draw: "draw", variantEnd: "", cheat: "cheat detected", unknownFinish: "" };
 
-  async function lichess(user) {
+  function fromLichess(g, name) {
+    if (g.variant !== "standard" || LI_HOW[g.status] === undefined || !g.moves) return null;
+    const w = g.players.white, b = g.players.black;
+    const wn = (w.user && w.user.name) || "Computer", bn = (b.user && b.user.name) || "Computer";
+    const me = wn.toLowerCase() === name ? "w" : "b";
+    const result = !g.winner ? "draw" : g.winner === (me === "w" ? "white" : "black") ? "win" : "loss";
+    return {
+      id: "li-" + g.id, site: "Lichess", url: "https://lichess.org/" + g.id,
+      white: wn, black: bn, whiteRating: w.rating, blackRating: b.rating,
+      me, result, how: LI_HOW[g.status], speed: g.speed, endedAt: g.lastMoveAt || g.createdAt,
+      moves: g.moves, plies: g.moves.split(" ").length, finalFen: null, opening: g.opening ? g.opening.name : "",
+    };
+  }
+
+  async function lichess(user, want, onSome) {
     const name = user.trim().toLowerCase();
     const url = `https://lichess.org/api/games/user/${encodeURIComponent(name)}` +
-      `?max=${WANT}&ongoing=false&finished=true&moves=true&opening=true&clocks=false&evals=false`;
+      `?max=${want}&ongoing=false&finished=true&moves=true&opening=true&clocks=false&evals=false`;
     const r = await fetch(url, { headers: { Accept: "application/x-ndjson" } });
     if (r.status === 404) throw new Error("no-player");
     if (!r.ok) throw new Error(`Lichess said ${r.status}`);
-    const lines = (await r.text()).split("\n").filter(Boolean).map(l => JSON.parse(l));
-    return lines.filter(g => g.variant === "standard" && LI_HOW[g.status] !== undefined && g.moves)
-      .map(g => {
-        const w = g.players.white, b = g.players.black;
-        const wn = (w.user && w.user.name) || "Computer", bn = (b.user && b.user.name) || "Computer";
-        const me = wn.toLowerCase() === name ? "w" : "b";
-        const result = !g.winner ? "draw" : g.winner === (me === "w" ? "white" : "black") ? "win" : "loss";
-        return {
-          id: "li-" + g.id, site: "Lichess", url: "https://lichess.org/" + g.id,
-          white: wn, black: bn, whiteRating: w.rating, blackRating: b.rating,
-          me, result, how: LI_HOW[g.status], speed: g.speed, endedAt: g.lastMoveAt || g.createdAt,
-          sans: g.moves.split(" "), startFen: Rules.START, finalFen: null,
-          opening: g.opening ? g.opening.name : "",
-        };
-      });
+    const out = [], take = line => { if (line.trim()) { const g = fromLichess(JSON.parse(line), name); if (g) out.push(g); } };
+    if (!r.body || !r.body.getReader) { (await r.text()).split("\n").forEach(take); if (onSome) onSome(out.slice()); return out; }
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let rest = "", shown = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      rest += dec.decode(value || new Uint8Array(), { stream: !done });
+      const lines = rest.split("\n"); rest = lines.pop();
+      lines.forEach(take);
+      if (onSome && out.length - shown >= 10) { shown = out.length; onSome(out.slice()); }   // show every 10 games
+      if (done) break;
+    }
+    take(rest);
+    if (onSome) onSome(out.slice());
+    return out;
   }
 
-  // ---------- kept on the phone, so the list opens at once and works offline ----------
-  const key = (site, user) => `kw.games.${site}.${user.trim().toLowerCase()}`;
-  function saved(site, user) {
-    try { return JSON.parse(localStorage.getItem(key(site, user)) || "null"); } catch { return null; }
-  }
-  function keep(site, user, games) {
-    try { localStorage.setItem(key(site, user), JSON.stringify({ at: Date.now(), games })); } catch { /* full or private mode */ }
-  }
+  // ---------- kept on the phone (IndexedDB), so the list opens at once and works offline ----------
+  const key = (site, user) => `games.${site}.${user.trim().toLowerCase()}`;
+  const saved = (site, user) => Store.get(key(site, user));
 
-  async function load(site, user) {
-    const games = site === "lichess" ? await lichess(user) : await chesscom(user);
+  // onSome(gamesSoFar) is called as games arrive, newest first, so the list can grow on screen
+  async function load(site, user, onSome) {
+    const want = howMany();
+    const games = site === "lichess" ? await lichess(user, want, onSome) : await chesscom(user, want, onSome);
     games.sort((a, b) => b.endedAt - a.endedAt);
-    keep(site, user, games);
+    await Store.set(key(site, user), { at: Date.now(), games });
     return games;
   }
 
-  return { load, saved, pgnMoves, pgnHeaders };
+  const sansOf = g => (g.moves ? g.moves.split(" ") : []);
+  return { START, load, saved, howMany, sansOf, pgnMoves, pgnHeaders, fromChesscom, fromLichess };
 })();
 
 if (typeof module !== "undefined") module.exports = Games;
