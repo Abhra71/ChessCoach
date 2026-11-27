@@ -3,14 +3,14 @@ import chess
 
 from coach import film
 
-PGN = ('[Termination "gushynanda won by checkmate"]\n\n1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0')
+PGN = ('[Termination "demo_player won by checkmate"]\n\n1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0')
 GAME = {"url": "https://www.chess.com/game/live/42", "pgn": PGN, "end_time": 1792000000, "rules": "chess",
-        "white": {"username": "gushynanda", "result": "win"}, "black": {"username": "them", "result": "checkmated"}}
+        "white": {"username": "demo_player", "result": "win"}, "black": {"username": "them", "result": "checkmated"}}
 
 
 def test_the_film_follows_the_real_game_and_ends_on_the_win(monkeypatch):
     monkeypatch.setattr(film.insights, "_games", lambda: [GAME])
-    monkeypatch.setattr(film.insights, "_player", lambda: "gushynanda")
+    monkeypatch.setattr(film.insights, "_player", lambda: "demo_player")
     monkeypatch.setattr(film.insights, "_moves", lambda: {})
     s = film.script("42")
     assert [m["san"] for m in s["moves"]] == ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"]

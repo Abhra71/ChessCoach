@@ -31,7 +31,7 @@ const out = {
     "/game/daily/162529818", "/analysis/game/live/185261729330/review", "/game/185261729330?tab=review",
     "/game/computer/123456789", "/puzzles/rated", "/home"].map(p => [p, C.gameId(p)])),
   unknown: Object.fromEntries(["/newgame/185261729330", "/game/computer/123456789", "/puzzles/problem/1234567",
-    "/game/185261729330", "/member/gushynanda"].map(p => [p, C.unknownGameAddress(p, true)])),
+    "/game/185261729330", "/member/demo_player"].map(p => [p, C.unknownGameAddress(p, true)])),
   unknownWithoutBoard: C.unknownGameAddress("/newgame/185261729330", false),
   board: !!C.board(doc(html)),
   boardRenamed: !!C.board(doc(html.replace(/wc-chess-board/g, "chess-board"))),
@@ -39,8 +39,8 @@ const out = {
   placement: C.placement(classLists(html)),
   piecesRenamed: C.placement(classLists(html.replace(/square-(\d\d)/g, "sq-$1"))),
   moveNode: html.includes(C.moveNode(3).replace(/^\[|\]$/g, "")),
-  names: C.namesOnPage(html, ["opponent", "gushynanda"]),
-  namesMissing: C.namesOnPage(html.replace(/opponent/g, ""), ["opponent", "gushynanda"]),
+  names: C.namesOnPage(html, ["opponent", "demo_player"]),
+  namesMissing: C.namesOnPage(html.replace(/opponent/g, ""), ["opponent", "demo_player"]),
 };
 console.log(JSON.stringify(out));
 """
@@ -71,7 +71,7 @@ def test_a_game_page_at_a_new_address_is_noticed(found):
     u = found["unknown"]
     assert u["/newgame/185261729330"] is True
     assert not any(u[p] for p in ("/game/computer/123456789", "/puzzles/problem/1234567", "/game/185261729330",
-                                  "/member/gushynanda"))
+                                  "/member/demo_player"))
     assert found["unknownWithoutBoard"] is False
 
 

@@ -92,9 +92,9 @@ def test_close_to_a_badge_rushed_mistakes_and_a_regular_opponent(tmp_path, monke
     prog = {"badges": [{"group": "Habits", "id": "safe", "name": "Safe pieces", "what": "games in a row without a "
                         "hanging piece", "current": 8, "next": 10}], "clock": {"big": 44, "fast": 16}}
     now = time.time()
-    games = [{"end_time": now - i * 86400, "white": {"username": "gushynanda"}, "black": {"username": "Laro1966"}}
+    games = [{"end_time": now - i * 86400, "white": {"username": "demo_player"}, "black": {"username": "Laro1966"}}
              for i in range(4)]
-    got = ids("app", home, n=3, prog=prog, games=games, player="gushynanda")
+    got = ids("app", home, n=3, prog=prog, games=games, player="demo_player")
     assert got == ["clock", "badge-safe-10", "prep-laro1966"]  # their own mistake first (25 Oct)
 
 

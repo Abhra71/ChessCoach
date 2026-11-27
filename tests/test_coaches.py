@@ -2,7 +2,7 @@ import random
 
 from coach import coaches, voice
 
-HOME = {"player": "gushynanda", "games": 140, "pieces_per_game": 1.14, "pieces_last20": 0.7,
+HOME = {"player": "demo_player", "games": 140, "pieces_per_game": 1.14, "pieces_last20": 0.7,
         "focus": {"pattern": "left a piece hanging", "habit": "Before every move, ask: what can they take?"},
         "last_game": {"opponent": "Coach-Nadia", "url": "https://www.chess.com/game/live/150000000001", "moments": 3}}
 
@@ -25,7 +25,7 @@ def test_each_section_always_gets_the_same_coach():
 def test_greeting_names_the_player_their_focus_and_the_progress():
     said = coaches.speak("home", HOME, hour=19, rng=random.Random(1))
     text = " ".join(said["lines"])
-    assert said["mood"] == "pleased" and "gushynanda" in text and "0.7" in text and "every piece safe" in text
+    assert said["mood"] == "pleased" and "demo_player" in text and "0.7" in text and "every piece safe" in text
     assert [a.get("url") or a["app"] for a in said["actions"]] == [coaches.PUZZLES, HOME["last_game"]["url"], "home"]
     assert said["actions"][0]["best"] and said["lines"][-1].startswith("My pick: Warm up with puzzles.")
 
@@ -102,7 +102,7 @@ def test_chat_replies_in_character_with_the_ai():
         seen.update(system=system, prompt=prompt)
         return "Keep every piece safe before you attack!", "groq"
     r = coaches.chat("viktor", "what should I work on?", home=HOME, ask_ai=fake_ai)
-    assert r["ai"] and "Viktor" in seen["system"] and "gushynanda" in seen["prompt"] and r["text"].startswith("Keep")
+    assert r["ai"] and "Viktor" in seen["system"] and "demo_player" in seen["prompt"] and r["text"].startswith("Keep")
 
 
 def test_chat_never_fails_when_the_ai_is_busy_or_missing():
@@ -131,7 +131,7 @@ def test_progress_coach_remembers_this_week_against_last_week():
 def test_a_daily_or_bot_game_link_goes_to_the_archive_instead():
     home = {**HOME, "last_game": {**HOME["last_game"], "url": "https://www.chess.com/game/daily/162529818"}}
     urls = [a["url"] for a in coaches.suggestions(home)]
-    assert urls[1] == "https://www.chess.com/games/archive/gushynanda"
+    assert urls[1] == "https://www.chess.com/games/archive/demo_player"
 
 
 def test_second_visit_today_is_short_not_a_new_welcome():
@@ -139,7 +139,7 @@ def test_second_visit_today_is_short_not_a_new_welcome():
     visits a short 'back again' and where things stand, never the hello again."""
     first = coaches.speak("home", HOME, hour=19, rng=random.Random(1))
     again = coaches.speak("home", HOME, hour=19, rng=random.Random(1), again=True)
-    assert "gushynanda" in first["lines"][0] and "gushynanda" not in again["lines"][0]
+    assert "demo_player" in first["lines"][0] and "demo_player" not in again["lines"][0]
     assert again["again"] and len(again["lines"]) == 2 and again["lines"][1].startswith("My pick")
     assert again["actions"] == first["actions"]
 

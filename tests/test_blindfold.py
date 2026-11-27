@@ -5,13 +5,13 @@ import pytest
 from coach import blindfold
 
 GAME = {"pgn": "1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. Ng5 d5 5. exd5 Nxd5 6. Nxf7 *", "url": "u",
-        "white": {"username": "gushynanda"}, "black": {"username": "them"}}
+        "white": {"username": "demo_player"}, "black": {"username": "them"}}
 
 
 @pytest.fixture(autouse=True)
 def own_file(tmp_path, monkeypatch):
     monkeypatch.setattr(blindfold, "FILE", tmp_path / "blindfold.json")
-    monkeypatch.setattr(blindfold.insights, "home", lambda: {"player": "gushynanda"})
+    monkeypatch.setattr(blindfold.insights, "home", lambda: {"player": "demo_player"})
 
 
 def test_moves_are_said_the_way_people_say_them():

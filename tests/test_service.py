@@ -77,7 +77,7 @@ def test_coach_says_nothing_about_a_game_it_does_not_know(monkeypatch):
     from coach import service
     monkeypatch.setattr(service.MOMENT_CACHE, "get", lambda gid: [HANG] if gid == "42" else None)
     from coach import coaches  # a player with games, not this PC's data (GitHub's computer has none)
-    monkeypatch.setattr(coaches.insights, "home", lambda: {"player": "gushynanda", "games": 140, "pieces_last20": 0.7,
+    monkeypatch.setattr(coaches.insights, "home", lambda: {"player": "demo_player", "games": 140, "pieces_last20": 0.7,
                                                            "pieces_per_game": 1.2})
     unknown = service.coach_says("/api/coach?section=review&hour=20&game=999")
     assert unknown["coach"] == "maya" and unknown["mood"] == "thinking" and not unknown["actions"]

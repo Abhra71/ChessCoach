@@ -25,7 +25,7 @@ Fully on everywhere else (game review, analysis, puzzles, lessons, before/after 
 ## How to work
 - **Elite, not cosmetic.** The best available engine, data and models, proven on the user's real games.
 - **Curated, not noisy.** Only the one or two things that matter for this player now, at their level.
-- **Measure on real data:** the user's own games (chess.com user `gushynanda`) and their verdict
+- **Measure on real data:** the user's own games (their chess.com username is in Claude's private memory, not in the repo) and their verdict
   ("is this me?"). Never report a score from tests you wrote as progress.
 - **Discuss before installing or downloading anything:** what it is, why, source, size, licence.
 - **The user works by voice and reads plain language.** Say what you're doing, why, what you found, including

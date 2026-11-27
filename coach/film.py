@@ -93,7 +93,7 @@ def script(gid, title="Your game, as a film"):
             step["caption"] = _caption(board, m, ply)
         board.push(m)
         moves.append(step)
-    how = (game.headers.get("Termination") or "").lower()  # chess.com: "gushynanda won by resignation"
+    how = (game.headers.get("Termination") or "").lower()  # chess.com: "<player> won by resignation"
     why = (" They resigned." if "resignation" in how else " On time." if "time" in how
            else " They left the game." if "abandon" in how else "")
     end = ("Checkmate. You won." if board.is_checkmate() and result == "win" else

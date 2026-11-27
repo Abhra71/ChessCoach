@@ -9,7 +9,7 @@ import pytest
 from coach import fetch, health
 
 pytestmark = pytest.mark.skipif(os.environ.get("KNIGHTWISE_LIVE") != "1", reason="live check: KNIGHTWISE_LIVE=1")
-PLAYER = "gushynanda"  # the project owner's public chess.com account
+PLAYER = "annacramling"  # a public chess.com account with games every month (a well-known chess creator)
 
 
 def test_chess_com_game_api_still_has_what_knightwise_reads():
