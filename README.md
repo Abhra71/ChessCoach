@@ -271,6 +271,7 @@ and never sends anything to chess.com; it only talks to the coach on your own co
 | `installer/` | how the installer is built (PyInstaller recipe, Inno Setup script, icon) |
 | `installer/msix/`, `installer/make_msix.py`, `installer/make_icons.py` | the Microsoft Store package: manifest (identity from Partner Center), icons, Store listing text |
 | `PRIVACY.md` | the privacy policy linked from the Store |
+| `docs/app/` | the phone version (preview, not released): an installable web app that lists and replays your finished chess.com or Lichess games; plan in `docs/MOBILE-PLAN.md`, tests in `tests/mobile/` |
 | `tests/` | `python -m pytest -q tests` |
 
 ### Build the installer

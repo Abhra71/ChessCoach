@@ -1,0 +1,59 @@
+// Tests for the phone app's move rules (docs/app/rules.js) and game reading (docs/app/games.js).
+// Run:  node tests/mobile/rules_test.js      (Node only, no packages)
+const assert = require("node:assert/strict");
+global.Rules = require("../../docs/app/rules.js");
+const Games = require("../../docs/app/games.js");
+const Rules = global.Rules;
+
+const placement = fen => fen.split(" ")[0];
+let passed = 0;
+function test(name, fn) { fn(); passed++; console.log("ok  " + name); }
+
+test("the Opera Game (Morphy, 1858) ends in the right position, mate on d8", () => {
+  const sans = "e4 e5 Nf3 d6 d4 Bg4 dxe5 Bxf3 Qxf3 dxe5 Bc4 Nf6 Qb3 Qe7 Nc3 c6 Bg5 b5 Nxb5 cxb5 Bxb5+ Nbd7 O-O-O Rd8 Rxd7 Rxd7 Rd1 Qe6 Bxd7+ Nxd7 Qb8+ Nxb8 Rd8#".split(" ");
+  const { fens, moves } = Rules.replay(sans);
+  assert.equal(placement(fens.at(-1)), "1n1Rkb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2K5");
+  assert.equal(moves.at(-1).check, true);
+  assert.equal(moves[22].from, "e1"); assert.equal(moves[22].to, "c1");   // O-O-O moves the king two squares
+});
+
+test("en passant takes the pawn that passed", () => {
+  const { fens } = Rules.replay("e4 Nf6 e5 d5 exd6".split(" "));
+  assert.equal(placement(fens.at(-1)), "rnbqkb1r/ppp1pppp/3P1n2/8/8/8/PPPP1PPP/RNBQKBNR");
+});
+
+test("promotion, with and without the = sign", () => {
+  assert.equal(placement(Rules.replay(["a8=Q"], "8/P7/8/8/8/8/8/k6K w - - 0 1").fens[1]), "Q7/8/8/8/8/8/8/k6K");
+  assert.equal(placement(Rules.replay(["a8N"], "8/P7/8/8/8/8/8/k6K w - - 0 1").fens[1]), "N7/8/8/8/8/8/8/k6K");
+});
+
+test("a pinned knight is skipped when the move doesn't say which knight", () => {
+  // knights on d2 and h4 can both reach f3, but d2 is pinned by the bishop on a5
+  const { moves } = Rules.replay(["Nf3"], "4k3/8/8/b7/7N/8/3N4/4K3 w - - 0 1");
+  assert.equal(moves[0].from, "h4");
+});
+
+test("two pieces that fit the move: the file or rank picks one", () => {
+  const start = "4k3/8/8/8/8/8/8/R4RK1 w - - 0 1";
+  assert.equal(Rules.replay(["Rad1"], start).moves[0].from, "a1");
+  assert.throws(() => Rules.replay(["Rd1"], start), /fits 2 pieces/);
+});
+
+test("castling rights go when the king or a rook moves", () => {
+  const { fens } = Rules.replay("e4 e5 Nf3 Nc6 Bc4 Bc5 O-O Nf6 Rf1e1 Rb8".split(" "));
+  assert.equal(fens.at(-1).split(" ")[2], "k");   // White castled, Black's a8 rook moved: only Black's short castle left
+});
+
+test("a broken move says so instead of guessing", () => {
+  assert.throws(() => Rules.replay(["e5"]), /fits 0 pieces/);
+  assert.throws(() => Rules.replay(["hello"]), /Can't read/);
+});
+
+test("a chess.com PGN with clocks becomes a list of moves", () => {
+  const pgn = `[Event "Live Chess"]\n[Site "Chess.com"]\n[Result "0-1"]\n\n1. e4 {[%clk 0:09:58.1]} 1... e5 {[%clk 0:09:57]} 2. Qh5 {[%clk 0:09:50]} 2... Nc6 3. Bc4 Nf6 4. Qxf7# 1-0`;
+  assert.deepEqual(Games.pgnMoves(pgn), ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7#"]);
+  assert.equal(Games.pgnHeaders(pgn).Result, "0-1");
+  assert.equal(Rules.replay(Games.pgnMoves(pgn)).moves.at(-1).check, true);
+});
+
+console.log(`\n${passed} passed`);

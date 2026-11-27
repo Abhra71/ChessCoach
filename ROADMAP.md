@@ -1,5 +1,13 @@
 # Knightwise: where we are and what comes next
 
+## 27 Nov 2026: phone version, first foundation (branch `claude/mobile-foundation-3a8a4d`, not merged)
+
+- Plan for the owner after exams: `docs/MOBILE-PLAN.md` (features, fair play on the phone, storage, size, time, decisions).
+- Skeleton web app in `docs/app/` (116 KB, no downloads): chess.com or Lichess username -> newest 60 finished games ->
+  replay on the PC's board; installable, opens offline. 300 real games replayed, all 180 chess.com final positions match.
+- Waiting for the owner: the engine (Stockfish.js 19 lite, 1.9 MB, GPL-3), JS rewrite vs Pyodide, the v1 list, order
+  with 1.3 Lichess and 2.0, the look. v1 is about 3-4 weeks of work after that.
+
 ## 26 Nov 2026: 1.2 in progress (submit before the exams, 1-11 Dec)
 
 - **Quiet updates** (`coach/updater.py`): the fix file's new `"latest"` says the newest Store version; at a calm moment

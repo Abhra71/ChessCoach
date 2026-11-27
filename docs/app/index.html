@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Knightwise</title>
+<meta name="description" content="Knightwise on your phone: replay your finished chess.com and Lichess games. Free and open-source. Off in every live game.">
+<meta name="theme-color" content="#f4f2ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#262421" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/"><img src="icons/icon-192.png" alt="" width="26" height="26"><span>Knightwise</span></a>
+  <span class="tag">preview</span>
+  <button id="install" class="btn ghost small" hidden>Install</button>
+</header>
+<main id="view" class="page"></main>
+<footer class="foot">Only finished games. Knightwise is off during every live game.</footer>
+
+<script src="pieces.js"></script>
+<script src="board.js"></script>
+<script src="rules.js"></script>
+<script src="games.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
