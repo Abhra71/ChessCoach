@@ -18,6 +18,12 @@
     return null;
   }
 
+  // Fair play (audit 27 Nov, docs/FAIR-PLAY-AUDIT.md): the coach may show, speak or ring only while this page is
+  // still the coach section it arrived on, and no other chess.com tab may hold a live game. Checked at the moment
+  // anything is shown or said, not only when the page changes: an answer that arrives late (Ask, Talk, the warm-up),
+  // a timer (the ring's next step), or a game started in another tab can't bring her onto a game.
+  const ok = () => !!current && section(location.pathname) === current && !KnightwiseContract.liveElsewhere();
+
   const MINUTES_OPEN = 0.5;  // the box folds back to the face this long after it has finished talking
   let box = null, current = null, foldTimer = null, said = null;
 
@@ -29,7 +35,7 @@
   // app any more. Say so once, plainly; the player refreshes when they like (never automatic: never mid-game).
   let staleShown = false;
   function updated() {
-    if (staleShown || !document.body) return;
+    if (staleShown || !document.body || !section(location.pathname)) return;  // never on a game page
     staleShown = true;
     const note = document.createElement("div");
     note.className = "kw-updated";
@@ -55,6 +61,7 @@
     const s = said && { ...said, talk_ready: said.talk_ready && !off("talk"),
                         actions: (said.actions || []).filter(a => !(a.warmup && off("warmup"))) };
     if (!s) return;
+    if (!ok()) { unring(); remove(); return; }
     if (!box) {
       box = document.createElement("div");
       box.className = "kw-coach";
@@ -255,6 +262,8 @@
   }
   function guideStep(first) {  // ring the furthest step that can be seen on this page
     if (!guiding) return;
+    // a timer can fire after the page changed: only on a coach page or the Play menu page, never with a game elsewhere
+    if (!(ok() || (playHub() && !KnightwiseContract.liveElsewhere()))) { unring(); return; }
     if (arrived(guiding)) {
       const name = guiding.name;
       stopGuide();
@@ -294,7 +303,7 @@
       : guiding.wrong ? `That's not it, no problem. Click "${name}" in the red ring.`
       : `Good. Now click "${name}".`]);
     nudge = setTimeout(() => {  // still here: point again, a little bigger
-      if (!ring) return;
+      if (!ring || !(ok() || playHub())) return;
       ring.classList.add("again");
       guideSay([`It's right there, in the red ring: "${name}".`]);
     }, 12000);
@@ -337,7 +346,7 @@
   }
   function warmSay(text, pose) { said = { ...said, pose, lines: [text] }; speak(); }
   function showWarm(intro) {
-    if (!box || current !== "home") { warm = null; return; }
+    if (!box || current !== "home" || !ok()) { warm = null; return; }
     clearTimeout(foldTimer);
     const x = warm.items[warm.i], flip = x.flip;
     const files = flip ? "hgfedcba" : "abcdefgh", ranks = flip ? "12345678" : "87654321";
@@ -440,7 +449,7 @@
   function fold() { clearTimeout(foldTimer); send({ type: "hush" }); render(false); }
 
   async function speak() {
-    if (!said || !said.voice_on) return;
+    if (!said || !said.voice_on || !ok()) return;
     send({ type: "say", text: said.lines.join(" "), voice: said.voice });
   }
 
@@ -521,18 +530,20 @@
 
   async function arrive() {
     const here = section(location.pathname), path = location.pathname;
-    await send({ type: "page", live: /^\/(?:game\/live|play\/online)(?:[/?#]|$)/.test(path) });  // fair play across tabs:
-    // said before anything else, so a profile in another tab already knows
+    // fair play across tabs: said before anything else, so a profile in another tab already knows. Every game address
+    // counts (chess.com's live games moved to /game/<id> on 13 Oct; the old check only knew /game/live)
+    await send({ type: "page", live: KnightwiseContract.liveHere(path) });
     if (!here) setTimeout(() => {  // the self-check: a game page at an address the review doesn't know yet?
       // the address first: the page is only looked at when it could be a finished game we don't know (never /game/live)
       if (location.pathname === path && !/^\/(?:game\/live|game\/daily|play)(?:[/?#]|$)/.test(path)
-          && KnightwiseContract.unknownGameAddress(path, true) && KnightwiseContract.unknownGameAddress(path, !!KnightwiseContract.board(document)))
+          && KnightwiseContract.unknownGameAddress(path, true) && KnightwiseContract.unknownGameAddress(path, !!KnightwiseContract.boardByName(document)))
         KnightwiseContract.report("game-address", false, `unknown: ${path.replace(/\d{6,}/g, "<id>")}`);
     }, 4000);
     if (here && here === current) { if (loadGuide()) guideArrive(); return; }  // never on a page without the coach:
     // null === null used to run the ring's guide on any such page, a live game included (cloud review, 26 Oct)
     unring();
     remove();
+    if (KnightwiseContract.liveElsewhere()) return;  // a game may be running in another tab: no coach, no ring, nothing
     if (!here) {  // not a coach section: nothing at all, except the ring's next step on chess.com's Play menu page
       if (loadGuide() && playHub()) guideArrive();
       else if (loadGuide()) { guiding = null; saveGuide(); }  // arrived (a bots page), or somewhere a game can run: done
@@ -608,6 +619,12 @@
   }
   new MutationObserver(() => { clearTimeout(tagTimer); tagTimer = setTimeout(tagArchive, 600); })  // next pages load later
     .observe(document.body, { childList: true, subtree: true });
+
+  // a game started in another chess.com tab: she goes at once; it ended (or that tab closed): she comes back
+  KnightwiseContract.onLiveChange(elsewhere => {
+    if (elsewhere) { if (box || ring || guiding) { unring(); remove(); } }
+    else if (section(location.pathname)) arrive();
+  });
 
   // chess.com changes pages without reloading: notice the address changing
   let last = location.pathname;

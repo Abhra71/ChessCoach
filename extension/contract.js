@@ -47,8 +47,12 @@ const KnightwiseContract = (() => {
   }
 
   function board(doc) {
+    return boardByName(doc) || boardByMeaning(doc);
+  }
+  // only by chess.com's names for it: nothing about the pieces is read (the self-check on pages that aren't reviews)
+  function boardByName(doc) {
     for (const sel of list("boards", BOARDS)) { const el = one(doc, sel); if (el) return el; }
-    return boardByMeaning(doc);
+    return null;
   }
 
   // When every name has failed (chess.com renamed the board): the board is the smallest box that holds the pieces,
@@ -137,7 +141,84 @@ const KnightwiseContract = (() => {
     catch (e) {}
   }
 
-  return { GAME_ADDRESSES, BOARDS, gameId, unknownGameAddress, board, placement, boardPlacement, moveNode,
-           archiveRows, namesOnPage, report, off, fixes: () => FIX };
+  // ---- Fair play (audit 27 Nov, docs/FAIR-PLAY-AUDIT.md) ----
+  // Could a game against a real person be running on this page? Any game page (a live game and the same game once
+  // finished can have the same address), any play page, Puzzle Battle, or a page that looks like a game we don't know.
+  // A game page stops counting only once the review has seen that it holds the finished, archived game (finished()).
+  const LIVE_PLACES = /^\/(?:play|live|game|games\/live|daily|variants|tournament|arena|puzzles\/(?:battle|rush\/battle))(?:[/?#]|$)/;
+  function mayBeLive(path) {
+    path = path || "";
+    return !!gameId(path) || LIVE_PLACES.test(path) || (/\/\d{6,}(?:[/?#]|$)/.test(path) && !NOT_OURS.test(path));
+  }
+
+  // The page's move list against the archived game's number of half-moves: "same" (this is that finished game),
+  // "shorter" (still loading, or a NEW game started on this page, e.g. a rematch), "longer" (a different game), or
+  // "unknown" (we weren't told how long the game was). Only "same" lets the review show anything.
+  function movesOnPage(doc, plies) {
+    if (!(plies > 0)) return "unknown";
+    if (one(doc, moveNode(plies))) return "longer";
+    return one(doc, moveNode(plies - 1)) ? "same" : "shorter";
+  }
+
+  // Across tabs: each chess.com tab writes "a game may be running here" in chess.com's own local storage, which all its
+  // tabs share, and refreshes it every 20 s. It needs nothing from the browser extension's background, so a tab whose
+  // Knightwise was updated underneath it (its old script can't reach Knightwise any more) still tells the others.
+  // A closed tab removes its mark; a crashed one is ignored after 150 s (a hidden tab's timer can slow to once a minute).
+  const LIVE_KEY = "kw-live:", BEAT = 20000, STALE = 150000;
+  const me = Math.random().toString(36).slice(2, 10);
+  let confirmed = null, beatAt = 0, beatPath = null, beatLive = null;
+  const liveHere = (path = location.pathname) => mayBeLive(path) && confirmed !== path;
+  function beat() {
+    const live = liveHere();
+    beatAt = Date.now(); beatPath = location.pathname;
+    try { live ? localStorage.setItem(LIVE_KEY + me, String(beatAt)) : localStorage.removeItem(LIVE_KEY + me); } catch (e) {}
+    if (live !== beatLive) {  // the background keeps the same answer (for a profile's prep, and to hold an update)
+      beatLive = live;
+      try { chrome.runtime.sendMessage({ type: "page", live }, () => void chrome.runtime.lastError); } catch (e) {}
+    }
+    return live;
+  }
+  // Is a game against a real person maybe running in ANOTHER chess.com tab? If the storage can't be read: yes (stay off).
+  function liveElsewhere(now = Date.now()) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(LIVE_KEY) || k === LIVE_KEY + me) continue;
+        const at = Number(localStorage.getItem(k));
+        if (now - at < STALE) return true;
+        if (now - at > 86400000) localStorage.removeItem(k);  // a day old: a crashed tab's mark, tidied
+      }
+      return false;
+    } catch (e) { return true; }
+  }
+  // the review saw the finished, archived game on this page (path), or no longer does (null)
+  function finished(path) { if (confirmed !== path) { confirmed = path; beat(); } }
+  // the page scripts hear when the answer of liveElsewhere() changes
+  const watchers = [];
+  let elsewhere = null;
+  function onLiveChange(f) { watchers.push(f); }
+  function check() {
+    const v = liveElsewhere();
+    if (v === elsewhere) return;
+    elsewhere = v;
+    watchers.forEach(f => { try { f(v); } catch (e) {} });
+  }
+  if (typeof window !== "undefined" && typeof location !== "undefined") {
+    beat();
+    elsewhere = liveElsewhere();  // the answer now; the page scripts hear only when it changes
+    // a new address (chess.com changes pages without reloading) is marked within a second; the mark kept fresh
+    setInterval(() => {
+      if (location.pathname !== beatPath) { if (confirmed && confirmed !== location.pathname) confirmed = null; beat(); }
+      else if (Date.now() - beatAt > BEAT) beat();
+      check();  // another tab's mark may have gone stale meanwhile
+    }, 1000);
+    addEventListener("storage", e => { if (!e.key || e.key.startsWith(LIVE_KEY)) check(); });  // another tab, at once
+    addEventListener("pagehide", () => { try { localStorage.removeItem(LIVE_KEY + me); } catch (e) {} });
+    addEventListener("pageshow", e => { if (e.persisted) beat(); });  // back from the browser's back/forward cache
+  }
+
+  return { GAME_ADDRESSES, BOARDS, gameId, unknownGameAddress, board, boardByName, placement, boardPlacement, moveNode,
+           archiveRows, namesOnPage, report, off, fixes: () => FIX,
+           mayBeLive, movesOnPage, liveHere, beat, liveElsewhere, finished, onLiveChange };
 })();
 if (typeof module !== "undefined") module.exports = KnightwiseContract;  // for the tests (tests/test_contract.py)

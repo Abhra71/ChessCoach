@@ -287,6 +287,9 @@ class Handler(BaseHTTPRequestHandler):
                 from coach import insights, nudge
                 nudge.seen(f"games/{path.rsplit('/', 1)[-1]}")  # reviewed on chess.com: not "new" any more
                 body.update(insights.extras_for(path.rsplit("/", 1)[-1]))
+                # how many half-moves the finished game has: the page must show exactly this game's moves before
+                # anything is drawn (a rematch can start a new game on the same page; fair-play audit, 27 Nov)
+                body["plies"] = len(played_moves(path.rsplit("/", 1)[-1]))
                 try:  # every move, so the coach follows chess.com's own arrows too (22 Oct test)
                     d = insights.game_detail(path.rsplit("/", 1)[-1])
                     body["moves"] = [{"placement": d["positions"][m["ply"]]["fen"].split()[0], "ply": m["ply"],

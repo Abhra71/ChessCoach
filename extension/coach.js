@@ -2,6 +2,9 @@
 //
 // Fair play: the coach on your computer only knows games that chess.com has already archived as finished.
 // For any other game (including one being played right now) it answers "unknown" and this script shows nothing.
+// And even for a known game, nothing shows unless chess.com's move list on this page is exactly that game, move for
+// move count (a rematch can start a NEW game on the same page), and no other chess.com tab may hold a live game
+// (audit 27 Nov, docs/FAIR-PLAY-AUDIT.md).
 (() => {
   if (window.top !== window) return;
   const FILES = "abcdefgh";
@@ -12,7 +15,7 @@
   let moves = [], onMove = null, spokenPly = null, scrolledTo = null;  // every move's line; the one on chess.com's board
   // one key moment at a time, one step at a time (the same as the app's review): which moment, which step, how many shown
   let mi = 0, si = 0, shown = 0, extra = { clock: null, rematch: null }, voice = null;
-  let small = false;
+  let small = false, plies = 0, paused = false;  // plies: the archived game's half-moves, from the app
   let maya = { mood: "calm", line: "" };  // Maya, the coach for game reviews: her face and her first line
   try { small = localStorage.getItem("chess-coach-small") === "1"; } catch (e) {}
 
@@ -46,8 +49,23 @@
 
   function clearArrows() { if (overlay) overlay.innerHTML = ""; }
 
+  // May the review show on this page right now? Only this finished game's own move list, and no live game elsewhere.
+  function allowed() {
+    const same = KnightwiseContract.movesOnPage(document, plies) === "same";
+    KnightwiseContract.finished(same && gameId ? location.pathname : null);  // this tab: not a live game
+    return same && !KnightwiseContract.liveElsewhere();
+  }
+  // not allowed: everything away at once (arrows, Maya's box, her voice); the moments are kept for when it is again
+  function pause() {
+    clearArrows();
+    if (panel) { panel.remove(); panel = null; }
+    if (!paused) { paused = true; send("hush"); }
+  }
+
   function draw() {
-    if (!moments.length || (fallback && fallback !== FALLBACK.pieces)) return;  // after a fallback: the panel only, no arrows
+    if (!moments.length) return;
+    if (!allowed()) return pause();
+    if (fallback && fallback !== FALLBACK.pieces) { if (!panel) renderPanel(); return; }  // after a fallback: the panel only
     const board = boardEl();
     if (!board) return;  // start() waits for it and reports if it never comes
     const now = KnightwiseContract.boardPlacement(board);
@@ -108,7 +126,7 @@
     setTimeout(draw, 300);
   }
 
-  function say(text) { if (voice && voice.on) chrome.runtime.sendMessage({ type: "say", text, voice: voice.name, slow: true }); }
+  function say(text) { if (voice && voice.on && !paused) chrome.runtime.sendMessage({ type: "say", text, voice: voice.name, slow: true }); }
 
   function pick(i, speak = true) {  // one step: the board where it belongs, its arrows, and Maya says it
     const k = moments[mi], st = k.steps[i];
@@ -119,6 +137,8 @@
   }
 
   function renderPanel() {
+    if (!moments.length || !allowed()) return pause();
+    paused = false;
     if (!panel) {
       panel = document.createElement("div");  // Maya, leaning on the top of her review box
       panel.className = "kw-coach kw-review";
@@ -199,15 +219,16 @@
     const id = idFromUrl();
     if (id === gameId) return;
     if (!id) {  // left the game page (chess.com changes pages without reloading): take everything away
-      gameId = null; moments = []; fallback = null; clearTimeout(waiting); clearArrows();
-      if (panel) { panel.remove(); panel = null; }
+      gameId = null; moments = []; plies = 0; fallback = null; clearTimeout(waiting); clearArrows();
+      if (panel) { panel.remove(); panel = null; send("hush"); }
+      KnightwiseContract.finished(null);
       return;
     }
-    gameId = id; fallback = null;
+    gameId = id; fallback = null; paused = false;
     report("game-address", true);
     clearTimeout(waiting);
-    moments = []; clearArrows();
-    if (panel) { panel.remove(); panel = null; }
+    moments = []; plies = 0; clearArrows(); KnightwiseContract.finished(null);
+    if (panel) { panel.remove(); panel = null; send("hush"); }
     const since = Date.now();
     const look = async () => {
       if (gameId !== id) return;
@@ -245,15 +266,19 @@
   async function show(id, data) {
     if (!data.moments.length) return;  // a clean game: nothing to show on the board
     if (KnightwiseContract.off("review")) return;  // paused for everyone in fixes.json: the review is in the app
-    let names = false, board = null;
-    for (let i = 0; i < 45 && gameId === id; i++) {  // chess.com fills in the names and the board a few seconds late
+    let names = false, board = null, list = "unknown";
+    for (let i = 0; i < 45 && gameId === id; i++) {  // chess.com fills in the names, board and moves a few seconds late
       names = names || samePlayers(data.players || [], i); board = boardEl();
-      if (names && board) break;
+      list = KnightwiseContract.movesOnPage(document, data.plies);
+      if (names && board && list === "same") break;
       await new Promise(r => setTimeout(r, 1000));
     }
     if (gameId !== id) return;
     report("player-names", names, names ? "" : "names not on the page after 45 s");
     report("board", !!board, board ? "" : "no board element after 45 s");
+    // not the finished game's move list: nothing shows (looked at again whenever chess.com's page changes)
+    if (list === "shorter" && board) report("move-list", false, "the move list doesn't hold the finished game after 45 s");
+    plies = data.plies || 0;
     moments = data.moments; mi = 0; si = 0; shown = 0; moves = data.moves || []; spokenPly = null;
     extra = { clock: data.clock || null, rematch: data.rematch || null };
     if (!names || !board) useFallback(!names ? "player-names" : "board");
@@ -264,12 +289,16 @@
       catch (e) { res(null); }
     });
     if (gameId !== id) return;
+    if (!allowed()) return pause();  // nothing said or drawn; draw() shows it once the page is that game
     if (r && r.ok) voice = { on: !!r.data.voice_on, name: r.data.voice };
     if (r && r.ok && r.data.lines.length) maya = { mood: r.data.mood, line: r.data.lines[0] };
     say(maya.line);
     pick(0, false);  // the first moment's first step, on the board at once
   }
 
+
+  // a game may have started (or ended) in another chess.com tab: away at once, or back
+  KnightwiseContract.onLiveChange(() => { if (moments.length) draw(); });
 
   // Maya's mouth moves while her voice plays
   chrome.runtime.onMessage.addListener(msg => { if (msg.type === "speaking" && panel) panel.classList.toggle("talking", !!msg.on); });

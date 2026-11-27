@@ -25,7 +25,9 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   const [now, { stamp: mine }] = await Promise.all([stamp(), chrome.storage.local.get("stamp")]);
   if (!now) return;  // the app isn't running
   if (!mine) chrome.storage.local.set({ stamp: now });
-  else if (now !== mine) chrome.runtime.reload();
+  // not while a game may be running in a tab (fair-play audit, 27 Nov): a reload forgets which tabs those are, and
+  // that tab's old script can't say it again. It waits for the game tab to close or leave; checked every minute.
+  else if (now !== mine && !(await liveQueue.then(liveTabs)).size) chrome.runtime.reload();
 });
 
 // The coach's voice plays in a hidden extension page (chess.com's page can't play sound from our app).
@@ -45,18 +47,21 @@ let listeningTab = null;
 // in another tab (cloud review, 26 Oct: "Prep against" your opponent's profile mid-game, in a second tab)
 // kept in session storage: the background can restart at any time and must not forget a live game
 const liveTabs = async () => new Set((await chrome.storage.session.get("liveTabs")).liveTabs || []);
-const setLive = async (tabId, on) => {
+// one change at a time: two at once (a tab loading while another says it's a game) could each undo the other's
+let liveQueue = Promise.resolve();
+const setLive = (tabId, on) => (liveQueue = liveQueue.then(async () => {
   const tabs = await liveTabs();
   if (on) tabs.add(tabId); else tabs.delete(tabId);
   await chrome.storage.session.set({ liveTabs: [...tabs] });
-};
+}).catch(() => {}));
 const stopListening = tabId => {
   if (tabId !== listeningTab) return;
   listeningTab = null;
   chrome.runtime.sendMessage({ type: "kw-record-stop", send: false }).catch(() => {});
 };
 chrome.tabs.onRemoved.addListener(tabId => { stopListening(tabId); setLive(tabId, false); });
-chrome.tabs.onUpdated.addListener((tabId, change) => { if (change.status === "loading") stopListening(tabId); });
+// a tab loading a new page: its mark goes (the new chess.com page says again at once; another site never will)
+chrome.tabs.onUpdated.addListener((tabId, change) => { if (change.status === "loading") { stopListening(tabId); setLive(tabId, false); } });
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === "game" && /^\d+$/.test(msg.id)) {
     json(`${COACH}/api/game/${msg.id}`, reply);
@@ -72,7 +77,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
     return true;
   }
   if (msg.type === "coach" && msg.section === "member") {  // a profile while a game may be on in another tab: quiet
-    liveTabs().then(tabs => {
+    liveQueue.then(liveTabs).then(tabs => {
       if (tabs.size) return reply({ ok: true, data: { lines: [] } });
       const q = new URLSearchParams({ section: "member", hour: String(msg.hour ?? "") });
       if (msg.again) q.set("again", "1");
