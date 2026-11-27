@@ -259,6 +259,15 @@ def feedback_mail(text):
     return f"mailto:{FEEDBACK_TO}?subject={quote(f'Knightwise feedback ({VERSION})')}&body={quote(text[:1800])}"
 
 
+
+def whole(value, default=0):
+    """A whole number from a header or a JSON field the page sent; `default` for anything else ("abc", None, NaN,
+    a list): a bad value from a page must never crash the coach (27 Nov bug hunt)."""
+    try:
+        return int(float(value))
+    except (TypeError, ValueError, OverflowError):
+        return default
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.0"
 
@@ -733,7 +742,7 @@ class Handler(BaseHTTPRequestHandler):
             entry = {k: str(body.get(k, ""))[:1500] for k in ("doing", "wrong", "page")}
             reply = str(body.get("reply", "")).strip()[:120]  # optional, so the maker can press Reply (22 Oct)
             reply = reply if "@" in reply and "." in reply.split("@")[-1] and " " not in reply else ""
-            entry.update(helped=max(0, min(5, int(body.get("helped") or 0))), version=VERSION, at=time.strftime("%Y-%m-%d %H:%M"))
+            entry.update(helped=max(0, min(5, whole(body.get("helped")))), version=VERSION, at=time.strftime("%Y-%m-%d %H:%M"))
             DATA.mkdir(parents=True, exist_ok=True)
             with open(DATA / "feedback.jsonl", "a", encoding="utf-8") as fh:
                 fh.write(json.dumps(entry) + "\n")
@@ -866,7 +875,7 @@ class Handler(BaseHTTPRequestHandler):
         """A recorded film (webm, at most 80 MB; the trailer is an MP4, larger) into Videos\\Knightwise, shown in Explorer (1.0)."""
         from urllib.parse import parse_qs, urlsplit
         from coach import film
-        size = int(self.headers.get("Content-Length", 0))
+        size = whole(self.headers.get("Content-Length"))
         if not 0 < size <= (150_000_000 if self.headers.get("Content-Type") == "video/mp4" else 80_000_000):
             return self.send(400, json.dumps({"message": "Too big or empty."}), "application/json")
         gid = (parse_qs(urlsplit(self.path).query).get("game") or [""])[0]
@@ -879,14 +888,16 @@ class Handler(BaseHTTPRequestHandler):
         """The player's voice: 16 kHz 16-bit mono samples from the app -> text. Through the player's own Groq or
         Gemini key first (fast and accurate, Jarvis's record); Whisper on this computer only if they installed it."""
         from coach import ai, hearing
-        size = int(self.headers.get("Content-Length", 0))
+        size = whole(self.headers.get("Content-Length"))
         if not 0 < size <= 60 * hearing.RATE * 2:  # at most a minute of speech
             return self.send(400, json.dumps({"message": "Too long or empty."}), "application/json")
         pcm = self.rfile.read(size)
+        pcm = pcm[:len(pcm) // 2 * 2]  # whole 16-bit samples only (an odd byte broke the on-PC hearing, 27 Nov)
+        size = len(pcm)
         if size < hearing.RATE // 2:  # under a quarter of a second: nothing said
             return self.send(200, json.dumps({"text": ""}), "application/json")
         import numpy as np
-        if np.abs(np.frombuffer(pcm[:size // 2 * 2], dtype="<i2")).max(initial=0) < 200:  # silence: a dead microphone
+        if np.abs(np.frombuffer(pcm, dtype="<i2")).max(initial=0) < 200:  # silence: a dead microphone
             # (19 Oct: Bluetooth headphones switched off, the recording was all zeros, and Whisper wrote
             # "Thanks for watching!" for it). Never sent: the coach would answer words nobody said.
             return self.send(200, json.dumps({"text": "", "silent": True}), "application/json")

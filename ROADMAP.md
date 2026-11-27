@@ -11,12 +11,14 @@ For the release after 1.2, after the owner's hand test. Nothing merged into dev-
 - **Bug hunt fixed:** a half-written `moves.jsonl` (the game check writing while the review reads) crashed the review's
   answer, so the instant review never came; one missed answer from the app ended the page's wait for the review; the
   quiet-update comeback could pop the window up if Knightwise was already running.
-- **Found, not fixed (small, or a decision):** `/api/feedback` crashes on a non-number "helped" (our page always sends
-  a number); `/api/listen`'s on-PC path fails on an odd number of bytes or a bad Content-Length (our pages never send
-  those); `fixes.refresh` raises if the saved file is valid JSON but not an object (only a hand edit); the game page's
-  ask box sends every question to both `/api/ask` and `/api/talk`, so two AI calls per question, and Talk may open a
-  chess.com page by itself (owner decision); the tests need Stockfish and fail (not skip) in a checkout without
-  `engine/` (set `KNIGHTWISE_ENGINE`); two new tests take ~45 s and ~21 s (they wait out the page's real timers).
+- **Fixed after the hand-over (branch `claude/fixes-after-1-2`, from dev-0.6, not merged):** a word instead of
+  a number for "helped" in feedback, a broken Content-Length on `/api/listen` or a film save, an odd byte in on-PC
+  listening, and a saved fix file that is valid JSON but not an object no longer crash anything (`tests/test_bad_input.py`,
+  each test fails on the old code); without Stockfish the 9 engine tests are skipped with a reason instead of failing
+  (`needs_engine` mark in `tests/conftest.py`).
+- **Still not fixed (a decision, or test speed):** the game page's ask box sends every question to both `/api/ask` and
+  `/api/talk`, so two AI calls per question, and Talk may open a chess.com page by itself (owner decision); two
+  fair-play tests take ~45 s and ~21 s (they wait out the page's real timers, on purpose).
 - **Owner decisions:** pause the app's engine/AI while the extension says a game may be running; exclude bot games
   from "may be live"; Prep while a daily game is going. Hand test on real chess.com: see the end of the audit.
 

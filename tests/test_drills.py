@@ -1,3 +1,4 @@
+import pytest
 import chess
 import chess.engine
 
@@ -11,6 +12,7 @@ def test_why_wrong_names_the_capture():
     assert why_wrong(board, move, reply) == "Then their pawn takes your queen on e5."
 
 
+@pytest.mark.needs_engine
 def test_drill_marks_hanging_the_queen_as_wrong_and_saving_it_as_right():
     # White queen d4, black pawn d6: Qe5 hangs the queen, Qd5 is safe.
     r = dict(fen="4k3/8/3p4/8/3Q4/8/8/4K3 w - - 0 1", move="Qe5", ply=1, url="g")
@@ -22,6 +24,7 @@ def test_drill_marks_hanging_the_queen_as_wrong_and_saving_it_as_right():
     assert moves["d4d5"]["good"] or moves["d4d5"].get("close")  # safe: right, or at least "playable"
 
 
+@pytest.mark.needs_engine
 def test_one_right_move_two_at_most():
     """13 Oct test: queen on b7, 8 moves were accepted, d3 among them, which lets ...Rb8 trap the queen."""
     r = dict(fen="r2qkb1r/pQ1p1ppp/2n5/8/4n3/8/PPPP1PPP/RNB1KBNR w KQkq - 0 7", move="Qb4", ply=13, url="g")
