@@ -221,6 +221,9 @@ to do by accident**, and never tempting:
    Apache-2.0). F-Droid may label it for using chess.com (a non-free online service); to check when we get there.
 8. **Google sign-in details**: the decisions marked **[OWNER]** in section 11.
 
+**Decided by the owner (28 Nov):** no backend and no Vercel / Cloudflare hosting. The phone app stays on GitHub
+Pages, every phone does its own work (lite engine), and sync goes through each player's own Google Drive.
+
 ## 8. Time estimates (honest)
 
 Work by Claude in sessions, with you testing on your phone. "Day" = one working session.
