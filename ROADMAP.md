@@ -8,6 +8,9 @@
   replay on the PC's board; installable, opens offline. 300 real games replayed, all 180 chess.com final positions match.
 - Waiting for the owner: the engine (Stockfish.js 19 lite, 1.9 MB, GPL-3), JS rewrite vs Pyodide, the v1 list, order
   with 1.3 Lichess and 2.0, the look. v1 is about 3-4 weeks of work after that.
+- Owner decision 27 Nov: v1 has OPTIONAL Google sign-in (own Drive app-data folder, scope `drive.appdata`, non-sensitive:
+  brand check only) to sync progress phone <-> PC; design, Google Cloud steps (a parent accepts the terms), privacy
+  changes in `docs/MOBILE-PLAN.md` section 11. Adds about 2 weeks: v1 about 5-6 weeks.
 
 ## 26 Nov 2026: 1.2 in progress (submit before the exams, 1-11 Dec)
 

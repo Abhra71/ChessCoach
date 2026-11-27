@@ -7,8 +7,9 @@ Section 7 lists the decisions waiting for you.
 Lichess username, see your newest finished games (60, or fewer on a phone with little memory), replay any of them
 on a board. It is built for **cheap phones** (section 4b) and measured on a simulated one: first screen in 1.8 s on
 slow 3G with the processor slowed 6 times. The next big step is the engine (Stockfish built for the browser,
-"lite" 1.9 MB, GPL-3, needs your OK). A first real version (review, habits, practice from your own mistakes) is
-about **3-4 weeks of work** after you approve it.
+"lite" 1.9 MB, GPL-3, needs your OK). A first real version (review, habits, practice from your own mistakes,
+optional Google sign-in to sync phone and PC: section 11) is about **5-6 weeks of work** after you approve it
+(3-4 weeks without the sign-in).
 
 ---
 
@@ -90,6 +91,7 @@ key (same game in, same habit out).
 3. **Your habits**: the top 2-3 habits from your last 20-60 games, with numbers ("hung a piece in 9 of 20 games").
 4. **Practice**: positions from your own mistakes, spaced repetition, a streak.
 5. **One-line coach**, calm look, one green button per screen, works offline after the first download.
+6. **Optional Google sign-in** to carry your progress between phone and PC (owner decision 27 Nov; section 11).
 
 Not in v1: course, ladder, openings, prep, voice conversation, AI keys. They come one by one later.
 
@@ -217,6 +219,7 @@ to do by accident**, and never tempting:
    Link it from the website's home page then, or keep it quiet until v1?
 7. **Free stores later** (F-Droid, Galaxy Store, Indus): a PWA can be wrapped as an Android app (Bubblewrap,
    Apache-2.0). F-Droid may label it for using chess.com (a non-free online service); to check when we get there.
+8. **Google sign-in details**: the decisions marked **[OWNER]** in section 11.
 
 ## 8. Time estimates (honest)
 
@@ -229,8 +232,10 @@ Work by Claude in sessions, with you testing on your phone. "Day" = one working 
 | Check your moves + review screen with arrows | 3-4 days | |
 | Habits (port the sorting and top "why" reasons) + compare with the PC on your 142 games | 5-7 days | |
 | Practice + spaced repetition + streak | 3-4 days | |
-| Your phone test, fixes, retest | 5-7 days | needs you |
-| **v1 total** | **about 3-4 weeks** | |
+| Optional Google sign-in + sync, phone side | 4-5 days | needs the Google setup (section 11) |
+| Optional Google sign-in + sync, PC side (Python app) | 4-5 days | |
+| Your phone test, fixes, retest (now with sync between your phone and PC) | 7-9 days | needs you |
+| **v1 total** | **about 5-6 weeks** (3-4 without sign-in) | |
 
 Risks: the engine might be too slow on cheaper phones (then: fewer games, or shallower checks, decided on real
 measurements); the phone's verdicts may differ from the PC's until tuned; iPhone storage rules.
@@ -272,3 +277,151 @@ replayed with no errors; for all 180 chess.com games the final position matched 
 recorded. Also tried in a phone-sized browser window (username, list, replay, a wrong username, no sideways
 scrolling) and on the simulated cheap phone (section 4b). **Not yet tried on a real phone or installed to a home
 screen.**
+
+## 11. Optional Google sign-in: your progress on phone and PC (owner decision, 27 Nov)
+
+**Decided:** mobile v1 has an **optional** "Sign in with Google" from day one. It keeps your progress the same on
+your phone and your PC, in a hidden folder in **your own Google Drive**. There is still no Knightwise server.
+Everything works fully without signing in, as it does today. Not built yet; this is the design.
+Decisions for you are marked **[OWNER]**.
+
+### What syncs, and what never does
+
+| Syncs (small, about 50-500 KB in all) | Never syncs |
+|---|---|
+| Practice boxes (which positions, which box, when they're due) | AI keys (they stay in Windows Credential Manager / on the phone) |
+| Streak and the days you practised | What the coach heard you say, voice recordings |
+| Settings (theme, coach, voice on/off, chess.com and Lichess usernames) | Your games themselves (both apps download them again from chess.com / Lichess) |
+| Checked-game results: per finished game, its mistakes and the engine's verdicts | Logbooks, debug logs, feedback |
+| Badges earned, lessons passed | Anything about a game that isn't finished and archived (see Fair play below) |
+
+**[OWNER]** Is that the right list? Adding the course and ladder later is easy; they're built from the same data.
+
+### How it works
+
+- **Where:** one small file (`knightwise-sync.json`) in Google Drive's **app-data folder**: a hidden folder
+  only Knightwise can see. It isn't in your Drive's file list, other apps can't read it, and Knightwise can't
+  see any of your other files.
+- **When:** on opening the app, after each practice session or checked game (a few seconds later, so several
+  changes go together), and when the internet comes back. Never while the app is hidden (battery, cheap phones).
+- **Conflict rule, item by item:**
+  - Most things: **the newest change wins.** Each item carries when it last changed and on which device.
+    Example: you move a position to box 3 on the phone at 18:00, and to box 2 on the PC at 18:05. Box 2 wins.
+  - **Practice days and badges are added together, never lost.** The streak is worked out from the days, so
+    practising on both devices on the same day can't break it.
+  - Checked games: whichever check is deeper or newer (the PC's full engine beats the phone's lite check).
+  - Deleting something leaves a short "deleted" mark, so the other device doesn't bring it back.
+  - A device clock that is wrong by a few minutes can pick the wrong "newest". Rare, and it only affects that item.
+- **Offline:** changes wait on the device and go up the next time it's online. Nothing is lost by being offline.
+- **Signing out** keeps everything on this device; it just stops syncing. A **"Delete my synced data"** button
+  removes the file from your Drive.
+
+### Which Google permission (scope)
+
+| Scope | What it allows | Google's checks | Fits? |
+|---|---|---|---|
+| **`drive.appdata`** (recommended) | Only Knightwise's own hidden app folder | **Non-sensitive**: brand check only (name, logo, website, privacy page; Google says about 2-3 days). No "unverified app" warning, no 100-user cap | Yes: exactly what we need, nothing more |
+| `drive.file` | Files Knightwise creates or you open with it, **visible** in your Drive | Also non-sensitive; same brand check | Works, but the file shows in your Drive and can be moved or deleted by accident |
+| `drive` (full Drive) | All your files | **Restricted**: full review plus a paid security assessment | No |
+
+Checked on Google's pages on 27 Nov: [Drive scopes](https://developers.google.com/workspace/drive/api/guides/api-specific-auth),
+[app-data folder](https://developers.google.com/workspace/drive/api/guides/appdata),
+[unverified apps](https://support.google.com/cloud/answer/7454865),
+[app audience and testing](https://support.google.com/cloud/answer/15549945). Two limits to know:
+- **While the Google project is in "Testing":** only up to 100 test users you list by email, and their sign-in
+  expires after 7 days. So we test with your own account (and a parent's or friend's), then publish.
+- **After publishing ("In production") with `drive.appdata` only:** no user cap, and no warning screen once the
+  brand check passes. The 100-user cap and the warning are for sensitive or restricted scopes, which we don't use.
+
+No email or profile scope is needed: the app doesn't need to know who you are, only to reach its own folder.
+**[OWNER]** Show "Signed in as name@gmail.com"? That adds the basic `email` scope (also non-sensitive). Friendlier,
+but one more piece of data. My suggestion: no.
+
+### What you (and a parent) do in Google Cloud: about 1-2 hours, then a 2-3 day wait
+
+**A parent is needed** (you're under 18): Google Cloud's terms must be accepted by an adult. Either the project
+lives in a parent's Google account (you added as an editor), or a parent accepts the terms on the developer
+account with you. **[OWNER]** Which account owns the project? (The developer account is the natural choice.)
+
+1. console.cloud.google.com -> **New project** "Knightwise". **A parent accepts the Google Cloud Terms of
+   Service here.** No billing account should be needed for the Drive API at our size (to confirm on the day).
+2. **APIs & Services -> Enable APIs -> Google Drive API.**
+3. **Google Auth Platform -> Branding:** app name "Knightwise", support email (the developer inbox), logo, home page
+   `https://abhra71.github.io/ChessCoach/`, privacy policy link, authorised domain `abhra71.github.io`. The domain
+   must be verified in Search Console by an owner of the project: the portfolio was verified on 24 Nov with the
+   main Gmail, so that account must be an owner or editor of the project, or verify the domain again.
+4. **Audience:** External. Leave it in **Testing** and add test users (your account, a parent's).
+5. **Data access:** add the scope `https://www.googleapis.com/auth/drive.appdata` only.
+6. **Clients:** create two OAuth client IDs:
+   - **Web application** (the phone app): authorised JavaScript origins `https://abhra71.github.io` and
+     `http://localhost:8771` (testing on the PC).
+   - **Desktop app** (the PC app).
+   Paste both client IDs to Claude. They aren't secret (Google says a desktop app can't keep its "secret" secret
+   either), so they can go in the open-source code.
+7. When sync works for you: **Publish app** (In production) and **submit the brand check** (about 2-3 days).
+   **A parent may need to confirm** anything Google emails the project owner about.
+
+### The phone side (web app)
+
+- Signing in uses Google's own sign-in window. Two ways:
+  - **Google Identity Services** script from `accounts.google.com` (Google's terms, not open source; size to
+    measure), loaded **only when you tap "Sign in"**, never on the first screen. The usual way.
+  - **No library:** the plain OAuth redirect to Google and back. Nothing extra to load, a little more code.
+  **[OWNER]** Which one? My suggestion: no library (smaller, nothing extra to approve), unless it turns out clumsy
+  on iPhone.
+- A web app gets a 1-hour pass from Google, with no long-lasting key. After an hour, the next sync asks Google again
+  quietly; if that fails (cookies blocked), the app says "Sign in again to sync" and keeps working.
+- Talks to Drive with plain `fetch` (no Google library): read the file, merge, write it back.
+
+### The PC side (Python app)
+
+- The **desktop sign-in flow Google recommends**: Knightwise opens your browser at Google's sign-in page, and
+  Google sends you back to `http://127.0.0.1:<port>` on your own PC (Knightwise's local server already runs
+  there), with PKCE (a one-time check so nothing else can use the answer). No new Python package: `urllib` is
+  enough (about 150 lines). A library (`google-auth-oauthlib`, Apache-2.0) would be shorter but is a new download
+  needing your OK. My suggestion: no library.
+- The long-lasting Google key is kept in **Windows Credential Manager** (like the AI keys), never in a file.
+- **The Store app:** the packaged app already runs its local server, so returning to `127.0.0.1` needs no change to
+  the package or the Store listing, and the Store app already opens the browser (Send feedback, chess.com links).
+  To test on the Store build before release.
+- Sync runs in the background service at the same calm moments as the phone (after practice, after a checked game,
+  on start), never on a timer that wakes the PC.
+- Settings gets a "Sync with Google (optional)" card: Sign in / Signed in, Sync now, Sign out, Delete my synced data.
+
+### Privacy policy changes (`PRIVACY.md`)
+
+Today it promises no accounts. Before the release that adds sign-in it needs:
+- "Sign in with Google is optional. If you use it, your progress (the list above) is saved in a hidden app folder
+  in **your own Google Drive**. Knightwise has no server; the maker never sees it."
+- What is sent to Google, when, and that Google's privacy policy applies to it.
+- How to delete it: the app's "Delete my synced data", or Google Drive -> Settings -> Manage apps -> Knightwise ->
+  Delete hidden app data; and how to remove Knightwise's access at myaccount.google.com/permissions.
+- Google's required line: Knightwise's use of information from Google APIs follows the
+  [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy),
+  including the Limited Use requirements.
+- The Children section: signing in uses the player's own Google account, under Google's own age rules.
+- Also update, with a parent: the Store's data questions in Partner Center and the age rating (IARC).
+
+### Fair play
+
+- Sync only carries what both apps already allow: progress, settings, and results of **finished, archived** games.
+  There is no item for a position, a move suggestion or a game in progress, and the merge **drops anything it
+  doesn't know**, so even an edited sync file can't carry help into a game.
+- Neither app ever syncs from a chess.com or Lichess game page, and the PC doesn't sync while the extension says a
+  game may be running in any tab (it already pauses the coach then).
+- The phone can't send a position to the PC for analysis, nor the PC to the phone. No "analyse this" path exists in
+  any direction.
+
+### Time added to v1 (honest)
+
+| Piece | Estimate |
+|---|---|
+| Your Google Cloud setup (with a parent) | 1-2 hours, then a 2-3 day wait for the brand check |
+| Phone: sign-in, Drive file, merge rules, offline queue, Settings card, tests | 4-5 days |
+| PC: desktop sign-in, Credential Manager, the same merge rules in Python, Settings card, tests | 4-5 days |
+| Testing both together (two devices, offline, conflicts, sign out, delete), fixes | inside your phone test (now 7-9 days) |
+| **Added to v1** | **about 2 weeks**: v1 goes from about 3-4 weeks to **about 5-6 weeks** |
+
+The merge rules would be written once in Python and once in JS, with the **same test cases** for both, so phone
+and PC always agree. ⭐ A good learning task: write the Python merge for one item kind (the practice days) from
+the JS version, with its test.
