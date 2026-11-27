@@ -68,7 +68,7 @@ feedback. Puzzles come with the app, so the first start is quick.
 **Additional information / "Notes for certification"** (Submission options → Notes for certification):
 
 > Knightwise is a desktop chess coach (Python app packaged as MSIX, runFullTrust). To test without a chess.com account,
-> type the public username "annacramling" (a well-known chess creator) on the welcome screen; the app downloads that user's public games and
+> type the public username "thevish" (GM Viswanathan Anand, 74 public games, so it loads fast) on the welcome screen; the app downloads that user's public games and
 > analyses them with the bundled Stockfish engine (the first check takes a few minutes). AI replies and Talk are
 > optional and need a key the user supplies (Groq or Google Gemini), so they can be skipped. The browser extension is
 > optional and loaded by the user from Documents\Knightwise\extension. runFullTrust is needed because the app runs
