@@ -168,7 +168,8 @@ def pieces_lost(rows, end_time, last=20):
 
 
 def build():
-    rows = [json.loads(line) for line in open(DATA / "moves.jsonl")]
+    from coach.analyze import read_rows
+    rows = read_rows(DATA / "moves.jsonl")  # a half-written last line (a check still running) is skipped
     games_by_url = {g["url"]: g for f in DATA.glob("games-*.json")
                     for g in json.loads(f.read_text())["games"]}
     end_time = {u: g["end_time"] for u, g in games_by_url.items()}

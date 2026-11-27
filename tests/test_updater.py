@@ -116,3 +116,14 @@ def test_the_watch_restarts_by_itself(store, monkeypatch):
     quit = threading.Event()
     updater.watch(dict(READY), threading.Lock(), quit.set)
     assert quit.wait(3)
+
+
+def test_the_quiet_comeback_never_pops_up_a_running_window(monkeypatch):
+    """Bug hunt 27 Nov: chesscoach://background finding Knightwise already running used to ask it to show Home."""
+    from coach import app
+    shown = []
+    monkeypatch.setattr(app, "ask_running_copy", lambda route: shown.append(route) or True)
+    app.hand_over("home", background=True)
+    assert shown == []
+    app.hand_over("practice", background=False)  # the player's own start still brings it forward
+    assert shown == ["practice"]

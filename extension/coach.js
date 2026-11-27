@@ -235,8 +235,10 @@
       const data = await ask(id);
       if (gameId !== id) return;
       if (data && data.known) return show(id, data);
-      if (!data || Date.now() - since > WAIT_FOR) return;  // the app isn't running, or it's been too long
-      chrome.runtime.sendMessage({ type: "check-now" });  // the app looks at chess.com's archive for new games
+      if (Date.now() - since > WAIT_FOR) return;  // it's been too long
+      // no answer at all (the app busy, restarting for an update, or not running): ask again, it may be back soon
+      // (bug hunt 27 Nov: one missed answer used to end the wait, so the review never came on that page)
+      if (data) chrome.runtime.sendMessage({ type: "check-now" });  // the app looks at chess.com's archive for new games
       waiting = setTimeout(look, WAIT_EVERY);
     };
     look();

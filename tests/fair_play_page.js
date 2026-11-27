@@ -172,6 +172,16 @@ const SCENARIOS = {
     await wait(2200);
     return { coach: p.coach(), said: p.said().filter(t => t.includes("e4")) };
   },
+  // the app didn't answer the first time (busy or restarting): the page asks again and the review still comes
+  async app_missed_once() {
+    const p = page("/game/123");
+    let n = 0;
+    p.answers.game = () => (n++ ? { ok: true, data: GAME } : { ok: false });
+    p.answers.coach = { ok: true, data: COACH };
+    finishedGame(p);
+    p.mutate(); await wait(21000);
+    return { review: p.review(), asked: n };
+  },
   // every address a game against a person can have counts as "may be live" (the old check knew only /game/live)
   async addresses() {
     const p = page("/home");

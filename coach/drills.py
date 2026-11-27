@@ -349,7 +349,8 @@ def pick_puzzles(by_pattern, top, seed, rating=None):
 
 
 def build():
-    rows = [json.loads(line) for line in open(DATA / "moves.jsonl")]
+    from coach.analyze import read_rows
+    rows = read_rows(DATA / "moves.jsonl")  # a half-written last line (a check still running) is skipped
     by_pattern = {}
     for r in rows:
         p = classify(r)

@@ -56,6 +56,14 @@ def replace_older_copy():
     return bool(pids)
 
 
+def hand_over(route, background):
+    """Knightwise is already running: a start by the player brings its window forward. The quiet comeback after an
+    update (chesscoach://background, coach/updater.py) does nothing: it was meant to come back by the clock with no
+    window, and a copy that is already running (it didn't close in time, or was started meanwhile) is just that."""
+    if not background:
+        ask_running_copy(route)
+
+
 def tray(show, quit_app):
     import pystray
     from PIL import Image
@@ -148,7 +156,7 @@ def main():
     if server is None and replace_older_copy():
         server = service.start()
     if server is None:  # already running: bring that window forward instead
-        ask_running_copy(route)
+        hand_over(route, background)
         return
 
     state = {"quitting": False}

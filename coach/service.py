@@ -64,8 +64,7 @@ class Moments:
     @staticmethod
     def load(path):
         games = {}
-        for line in open(path):
-            r = json.loads(line)
+        for r in analyze.read_rows(path):  # a line still being written is skipped
             games.setdefault(game_id(r["url"]), []).append(r)
         return games
 
@@ -1423,7 +1422,7 @@ def warm_up():
 
 def summary_of_new(n):
     """One line about the newest games for the notification, and the newest game's id."""
-    rows = [json.loads(line) for line in open(DATA / "moves.jsonl")]
+    rows = analyze.read_rows(DATA / "moves.jsonl")
     end = {g["url"]: g["end_time"] for f in DATA.glob("games-*.json") for g in json.loads(f.read_text())["games"]}
     newest = sorted({r["url"] for r in rows}, key=lambda u: end.get(u, 0))[-n:]
     lost = sum(1 for r in rows if r["url"] in newest and classify(r) in review.LOSING_MATERIAL)

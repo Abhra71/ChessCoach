@@ -90,12 +90,29 @@ def analyse_game(game_json, player, depth=DEPTH):
     return out
 
 
+def read_rows(path=None):
+    """Every checked move saved in moves.jsonl, in order. The game check appends to the file while the app reads it
+    (the review on chess.com asks the moment a game is archived), so the last line can be half written; a line that
+    isn't whole JSON is skipped, never an error (bug hunt 27 Nov: it broke the instant review, which then stopped
+    looking). The file changes again when the line is finished, and the readers read it again then."""
+    rows = []
+    with open(path or MOVES, encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(r, dict) and "url" in r:
+                rows.append(r)
+    return rows
+
+
 def checked_games():
     """URLs of games already checked (kept in data/checked.txt, so games with no moves of ours are skipped too)."""
     if CHECKED.exists():
         return set(CHECKED.read_text().split())
     if MOVES.exists():  # older data from before checked.txt existed
-        return {json.loads(line)["url"] for line in open(MOVES)}
+        return {r["url"] for r in read_rows()}
     return set()
 
 

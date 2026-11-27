@@ -70,6 +70,13 @@ def test_a_late_answer_never_appears_on_a_game_page():
 
 
 @node
+def test_the_review_still_comes_when_the_app_missed_one_answer():
+    """Bug hunt 27 Nov: one failed answer from the app ended the wait for good."""
+    r = run("app_missed_once")
+    assert r["review"] is True and r["asked"] == 2
+
+
+@node
 def test_every_game_address_counts_as_maybe_live():
     """The old check knew only /game/live and /play/online; chess.com's live games moved to /game/<id> on 13 Oct."""
     r = run("addresses")

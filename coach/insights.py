@@ -48,8 +48,8 @@ def _moves():
     if mtime != _CACHE["mtime"] or _CACHE["rows"] is None:  # no games yet: empty, not None (26 Oct: a new account)
         rows = collections.defaultdict(list)
         if path.exists():
-            for line in open(path):
-                r = json.loads(line)
+            from coach.analyze import read_rows
+            for r in read_rows(path):  # a line still being written by the game check is skipped
                 r["pattern"] = classify(r)
                 rows[r["url"]].append(r)
         _CACHE.update(mtime=mtime, rows=rows)
