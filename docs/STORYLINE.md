@@ -302,8 +302,11 @@ wherever they add value, not only the Book (owner, 28 Nov); calm by default, a s
 
 ## 12. Notes for step 4 (feel), from the owner (28 Nov 2026)
 
-- **The whole UI takes a book theme** (paper, ink, the notebook's warmth), not only the Book page. The Explore/Book
-  search would then be highlighted in white rather than green; leave it as it is until the theme is designed.
+- **No theme change (owner, corrected 28 Nov).** The app stays uniform, in today's colours, like big apps. The
+  "book" look belongs to the hero feature only: inside the Book, Viktor's burnt notebook (scorched pages, embers, a
+  page healing). Every section gets its own small attraction in the same colours and style (the Book: burnt pages;
+  Hall of Champions: a trophy-room feel; Practice: a moment when a position sticks; Your level: the notebook page
+  restoring; Rematch / Play on: a second-chance moment), never a different theme. The search keeps its current look.
 - **Realistic talking and movement for both coaches.** Today: a slow idle bob (Viktor slower, every 6 s), blinking,
   a simple open-close mouth and an arm gesture while speaking, waves and hops for greetings and celebrations. Step 4:
   the mouth follows the real voice (its loudness, read live from the audio, so it moves with the words), head tilts and
