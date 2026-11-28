@@ -40,7 +40,40 @@ never claim real titles, results or friendships with real players.
   history pages.
 - **Little things:** opens his notebook when you reach a new rank; remembers your first win; once a month tells a
   short "on this day" story from chess history.
+- **His regret (the heart of his story):** in the last round of his country's championship, the title one win away,
+  he had a winning combination on the board. He saw it, felt sure, and played the quick, safe-looking move instead
+  of calculating it to the end. He lost, and never came that close again. He doesn't say it with self-pity: "I didn't
+  lose to a better player. I lost to a move I didn't check." It's why he became a teacher, why he keeps the notebook,
+  and why he says *see it before you move it*. He tells it **once**, the first time you open the calculation trainer
+  ("In your head"), and never again unless you ask him.
+- **A quieter second regret:** for years he didn't write his games down. "Half my chess life is gone because I
+  thought I'd remember." That's why he loves that Knightwise keeps every game you play, and why your match records
+  matter to him.
 - **His new look:** the owner wants to change it; to discuss separately.
+
+### Maya's moments: why players feel "she's like me"
+Short memories she shares at the right time, never with a year, never more than one a week. Each is a real
+beginner's experience, so the player thinks "that's me too".
+- **Her first tournament:** she left her queen hanging on move 12 and cried in the corridor. Her coach said: "Now
+  you'll never forget to look." She tells it after your first queen blunder: "Happens to everyone. It happened to me
+  at my very first tournament."
+- **The clock:** at a junior final she had a winning position and lost on time. That's why she built the clock drill
+  ("Slow down"). Said when your games show time trouble.
+- **The losing streak:** once she lost seven games in a row online and kept clicking "new game". Her rule since:
+  "One more game only if the last one was fun." Said on your losing streaks, with a gentle suggestion to stop or
+  practise instead.
+- **Memorising vs understanding:** she learned twenty moves of an opening by heart and was lost when someone played
+  something different on move 4. "Know why each move is there, not just the moves." Said when you open your
+  repertoire, and it leads into the Book's opening chapters.
+- **Her first win against a stronger player:** it came from a simple fork she'd practised that same morning. Said
+  when your practice pays off in a real game (the app can see it).
+
+### Tone: warm, believable, never cringe
+- A memory is **one or two lines**, then back to chess. The emotion is in what happened, not in big words.
+- Every memory ends in something **useful**: a habit, a drill, a chapter.
+- Regrets are told once. Nobody is guilt-tripped: the coaches never make the player feel bad.
+- Max one memory a week per coach, so they stay special.
+- Test: would a real coach say this to a student? If it sounds like a movie trailer, it's cut.
 
 ### How they talk together
 They're colleagues with different styles. Maya: "Go for it!" Viktor: "Calculate first." Rarely, a two-line exchange
@@ -64,6 +97,32 @@ the coaches' words and small touches.
 | Progress | **Your record** | Your story so far; Viktor's short letter at each milestone |
 | Later: master games | **The Hall of Champions** | World Championship games and famous positions, Viktor's notes |
 | Later: analysis board | **The analysis room** | The free board with arrows; load any game by name |
+
+---
+
+## 3b. Every mode is there for a reason (the story feeds everything)
+
+Each feature in the app exists because of something in the coaches' lives. That way nothing feels bolted on, and the
+story quietly explains why each mode is worth using.
+
+| Mode | Its reason in the story | Who brings it |
+|---|---|---|
+| Game review, key moments | Viktor's lost notebook years: "every game written down, every lesson kept" | Maya |
+| Practice from your own positions | Maya's coach made her replay her own mistakes until they stuck | Maya |
+| Today's 5 minutes, streak | Maya's morning routine as a junior: five minutes, every day | Maya |
+| Slow down (clock drill) | Maya's junior final, lost on time | Maya |
+| In your head (calculation) | Viktor's championship regret | Viktor |
+| Repertoire, opening tree | Maya's "memorising vs understanding" lesson | Maya, then Viktor |
+| Rematch | "If I could play that last round again…": Viktor's wish, the player's chance | Viktor |
+| Prep before a game | Viktor's chess-school habit: study the opponent the night before | Viktor |
+| Blindfold, Guess the move | Viktor's training as a boy in Riga: whole games in his head | Viktor |
+| Endgames | "Most games are decided after the queens are gone," Viktor's school motto | Viktor |
+| Your level, ranks | Club membership, and Viktor's notebook pages | Viktor |
+| The Book (later) | Viktor's teaching notes from thirty years, finally written properly | Both |
+| Hall of Champions (later) | Viktor's notebook of games that changed chess | Viktor |
+| Analysis board (later) | The club's analysis room, where Maya and Viktor argue over positions | Both |
+| Centaur (later) | Kasparov's idea after Deep Blue†: man and machine together | Viktor |
+| Losing-streak care | Maya's "one more game only if it was fun" rule | Maya |
 
 ---
 
@@ -106,6 +165,18 @@ during a live game (fair play).
 
 The app uses the words strong players use. The first time a word appears, it's underlined: tap it for one plain line
 and, where useful, a tiny board. A glossary page lists them all.
+
+**Is 33 enough? No: 33 is only the first layer.** Going from beginner to 2,000 takes about **150–200 words**. They
+come in three layers, and a word appears when the player first meets it (in their games, a chapter or a rank), so
+nobody faces 200 at once:
+
+| Layer | For | About | Examples |
+|---|---|---|---|
+| 1. Basics | up to ~1,200 | 35 | the table below |
+| 2. Club | ~1,200–1,600 | 60 | deflection, decoy, overloading, X-ray, smothered mate, Greek gift sacrifice, desperado, clearance, bishop pair, good and bad bishop, doubled and backward pawns, pawn majority, space advantage, minority attack, Lucena and Philidor positions |
+| 3. Advanced | ~1,600–2,000+ | 80 | interference, windmill, colour complex, hanging pawns, isolated queen's pawn (IQP), the principle of two weaknesses, fortress, opposite-coloured bishops, triangulation, the Réti manoeuvre, rook behind the passed pawn, positional sacrifice, exchange sacrifice |
+
+Layer 1, the first 33:
 
 | Word | Plain meaning |
 |---|---|
@@ -165,7 +236,8 @@ and, where useful, a tiny board. A glossary page lists them all.
 
 ## 9. Questions for the owner
 
-1. **Maya from Chennai, Viktor from Riga:** do these feel right? Other countries in mind?
+1. **Maya from Chennai, Viktor from Riga:** do these feel right? Other countries in mind? Do Viktor's regret and
+   Maya's moments feel warm enough without being too much?
 2. **Rank names** (New member → Club master): keep, or something else?
 3. **Club words in the menu**, or plain names (recommended) with the club feel inside the pages?
 4. **"On this day" history:** once a month, or more often?
