@@ -39,7 +39,8 @@ Fully on everywhere else (game review, analysis, puzzles, lessons, before/after 
   the coaches' duty is to make them crave to use it. So every feature must be connected: (1) a coach brings it up at
   the right time, triggered by the player's own data (not only the one-time tour); (2) every piece of data we collect
   is used somewhere the player benefits; (3) it has a reason in the storyline (docs/STORYLINE.md). A feature without
-  all three isn't finished. `tests/test_connected.py` checks every page is in the coaches' tour.
+  all three isn't finished. Every feature is listed in `coach/features.py` (page, coach, story, tour, moments, data);
+  `tests/test_features.py` fails when anything is missing from it, and its gap list may only shrink.
 - **Keep the portfolio in sync:** any important change (a release or version, contact email, accounts, a new feature,
   new numbers) also goes on the owner's portfolio https://abhra71.github.io (repo `Abhra71/Abhra71.github.io`).
 - End every reply with: `Coach: ~N% · Feel: ~N%` (feel = from the user's own use, not tests).

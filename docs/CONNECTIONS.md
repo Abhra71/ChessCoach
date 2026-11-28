@@ -48,7 +48,10 @@ Every data file the app keeps is listed with the features that use it. A data fi
 connect or data to stop collecting.
 
 ## Order of building (one thing at a time, each tested)
-1. The feature map for the features that exist today (no change in behaviour) + the coverage test.
+1. ✅ **Done 28 Nov:** the feature map (`coach/features.py`, 24 features) + `tests/test_features.py` (every page,
+   tour item, suggestion kind and data file is mapped; each check proven by breaking the map on purpose). No change
+   in behaviour. **It found 8 gaps, not 4:** Practice, Your plan, Your level, the weekly report, Game of the month,
+   Wrapped, Blindfold and Guess the move are only ever brought up by the tour. Every data file is used by something.
 2. The use record.
 3. The picker, replacing "once opened, never again", tested on the owner's real games ("is this me?").
 4. Moments for the four features that have none, with their story lines.

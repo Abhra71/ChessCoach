@@ -136,6 +136,12 @@ same day: In your head and the weekly report already have one, in coach/nudge.py
 | Game of the month (film) | The month's best win, on the 1st | Maya: "This one deserves to be watched" |
 | Monthly Wrapped | The 1st of the month, when there were games | Viktor's short letter |
 | In your head (has one) | Gets Viktor's regret the first time it comes up | Viktor's regret, told once |
+| Practice | Positions due again today (1, 3, 7 days), or a habit that came back in recent games | Maya's coach and her own mistakes |
+| Your plan | A new card picked for a fresh weakness | Viktor picks what matters now |
+| Your level | One skill away from the next rank | Viktor's notebook page waiting |
+| Weekly report | Sunday evening, after a week with games | Viktor's short letter |
+
+(The feature map, coach/features.py, found these four more on 28 Nov: 8 gaps in all.)
 
 **The bigger gap (docs/CONNECTIONS.md):** a feature brought up from your data is never brought up again once it was
 opened, even if the need comes back months later.
