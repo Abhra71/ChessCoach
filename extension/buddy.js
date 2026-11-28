@@ -75,7 +75,7 @@
     const face = `<button class="kw-char" title="${esc(s.name)}, your Knightwise coach">${KnightwiseFaces.figure(s.coach, s.pose || s.mood)}</button>`;
     box.innerHTML = open ? `${face}
       <div class="kw-box" role="status">
-        <div class="kw-head"><b>${esc(s.name)}</b><span>${esc(s.role || "Knightwise coach")}</span>
+        <div class="kw-head"><b>${esc(s.name)}${KnightwiseFaces.flag ? KnightwiseFaces.flag(s.coach) : ""}</b><span>${esc(s.role || "Knightwise coach")}</span>
           ${s.talk_ready && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(s.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
         ${(full ? s.lines : [brief(s.lines[0] || "")]).map(l => `<p>${esc(l)}</p>`).join("")}

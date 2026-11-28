@@ -63,7 +63,7 @@ every history fact needs a source, the owner tastes about 1 in 10 plus the begin
   Hinglish. Relatable moments: her hung queen at her first tournament, the junior final lost on time (→ the clock
   drill), seven losses in a row (→ "one more game only if the last one was fun"), memorising vs understanding
   (→ the Book).
-- **Viktor:** from Riga (Tal's city), played his country's championship, taught for 30 years, keeps a notebook of the
+- **Viktor:** from Berlin, Germany (Lasker's city), played the German championship, taught for 30 years, keeps a notebook of the
   games that changed chess. **His regret:** one win from the title, he played the quick move without checking the
   winning combination and lost ("I lost to a move I didn't check") → why he teaches calculation. A second regret:
   he never wrote his games down → why he values your match records.

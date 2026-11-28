@@ -31,9 +31,11 @@ never claim real titles, results or friendships with real players.
   has a running joke about pawns ("the most underestimated piece in the club, like you").
 
 ### Viktor: the old master of the club
-- **Who:** grew up in **Riga, Latvia**, the city of Mikhail Tal†, the "magician" world champion. Played his
-  country's championship for years, never became a grandmaster, and taught at a chess school for thirty years. Has
-  studied every World Championship match and keeps a **notebook** of the games that changed chess.
+- **Who:** grew up in **Berlin, Germany** 🇩🇪 (the owner's choice, 28 Nov), the city where Emanuel Lasker†, world
+  champion for 27 years, lived and played. Played the German championship for years, never became a grandmaster,
+  and taught at a Berlin chess school for thirty years. Has studied every World Championship match and keeps a
+  **notebook** of the games that changed chess. Maya is from **Chennai, India** 🇮🇳. Both show their flag by
+  their name.
 - **How he teaches:** calm, dry humour, patient, a storyteller. Strict about calculation ("see it before you move it").
   Believes every opening has a story and every mistake has a reason.
 - **His room:** your progress, your plan, your level, the course, and later the Hall of Champions and the Book's
@@ -116,7 +118,7 @@ story quietly explains why each mode is worth using.
 | Repertoire, opening tree | Maya's "memorising vs understanding" lesson | Maya, then Viktor |
 | Rematch | "If I could play that last round again…": Viktor's wish, the player's chance | Viktor |
 | Prep before a game | Viktor's chess-school habit: study the opponent the night before | Viktor |
-| Blindfold, Guess the move | Viktor's training as a boy in Riga: whole games in his head | Viktor |
+| Blindfold, Guess the move | Viktor's training as a boy in Berlin: whole games in his head | Viktor |
 | Endgames | "Most games are decided after the queens are gone," Viktor's school motto | Viktor |
 | Your level, ranks | Club membership, and Viktor's notebook pages | Viktor |
 | The Book (later) | Viktor's teaching notes from thirty years, finally written properly | Both |
@@ -132,7 +134,7 @@ same day: In your head and the weekly report already have one, in coach/nudge.py
 
 | Feature | Its right-time moment (from the player's data) | Story |
 |---|---|---|
-| Blindfold | Reaching "Club player", or practice scores high but games keep missing pieces far away on the board | Viktor's boyhood training in Riga |
+| Blindfold | Reaching "Club player", or practice scores high but games keep missing pieces far away on the board | Viktor's boyhood training in Berlin |
 | Guess the move | Repeatedly missing what the opponent threatened ("they had…" moments) | Maya: "Think like them for five minutes" |
 | Game of the month (film) | The month's best win, on the 1st | Maya: "This one deserves to be watched" |
 | Monthly Wrapped | The 1st of the month, when there were games | Viktor's short letter |
@@ -277,8 +279,8 @@ Layer 1, the first 33:
 | Question | Answer |
 |---|---|
 | Maya from Chennai | Yes |
-| Viktor's country | A known country (not Latvia). Choice pending: Russia (Moscow), England (London), Germany (Berlin) or USA (New York) |
-| Rank names | Explained; confirmation pending (New member, Club player, Team player, First board, Club master) |
+| Viktor's country | **Germany (Berlin)**, his flag by his name; Maya's flag: India |
+| Rank names | **Yes**: New member, Club player, Team player, First board, Club master |
 | Club words in the menu | No: plain menu names, the club feel inside the pages (Claude's recommendation, accepted) |
 | "On this day" | More often: once a week, only on days with a real historic event, never repeated |
 | Viktor's new look | Made with the animation tool (Rive), in step 4 |

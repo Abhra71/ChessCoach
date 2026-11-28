@@ -151,5 +151,19 @@
     </svg>`;
   }
 
-  window.KnightwiseFaces = { svg, figure, coaches: Object.keys(LOOK), moods: Object.keys(BROWS), situations: Object.keys(SITUATION) };
+  // each coach's country next to their name (28 Nov, the owner: Maya from India, Viktor from Germany). Drawn, not
+  // emoji: Windows shows flag emoji as two letters ("IN").
+  const FLAGS = {
+    maya: { name: "India", art: `<rect width="18" height="4" fill="#FF9933"/><rect y="4" width="18" height="4" fill="#fff"/>
+      <rect y="8" width="18" height="4" fill="#138808"/><circle cx="9" cy="6" r="1.5" fill="none" stroke="#000080" stroke-width=".5"/>` },
+    viktor: { name: "Germany", art: `<rect width="18" height="4" fill="#000"/><rect y="4" width="18" height="4" fill="#DD0000"/>
+      <rect y="8" width="18" height="4" fill="#FFCE00"/>` },
+  };
+  function flag(coach) {
+    const f = FLAGS[coach];
+    return f ? `<svg class="kw-flag" viewBox="0 0 18 12" width="18" height="12" role="img" aria-label="${f.name}"
+      style="vertical-align:-1px;margin-left:5px;border-radius:2px"><title>${f.name}</title>${f.art}</svg>` : "";
+  }
+
+  window.KnightwiseFaces = { svg, figure, flag, coaches: Object.keys(LOOK), moods: Object.keys(BROWS), situations: Object.keys(SITUATION) };
 })();

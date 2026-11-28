@@ -27,7 +27,7 @@ const Coach = (() => {
     box.className = `kw-coach kw-app ${open ? "open" : "folded"}`;
     const face = `<button class="kw-char" title="${esc(who.name)}">${KnightwiseFaces.figure(s.coach, s.pose || s.mood || "calm")}</button>`;
     box.innerHTML = open ? `${face}<div class="kw-box" role="status">
-        <div class="kw-head"><b>${esc(who.name)}</b><span>${esc(who.role)}</span>
+        <div class="kw-head"><b>${esc(who.name)}${KnightwiseFaces.flag ? KnightwiseFaces.flag(COACHES[s.coach] ? s.coach : "maya") : ""}</b><span>${esc(who.role)}</span>
           ${TALK && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(who.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
         ${(more ? s.lines : [brief(s.lines[0] || "")]).map(l => `<p>${esc(l)}</p>`).join("")}
