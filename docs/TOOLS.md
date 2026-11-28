@@ -29,6 +29,7 @@ version and licence on the day it is installed and updates this file.
 | Analysis board | **chess.js** (BSD-2) | Moves and notation in the page | <1 MB | The standard JavaScript chess rules library |
 | Storyline, life | **Rive** runtime (MIT) | Coaches that move and react | ~1–2 MB | Light, smooth, made for interactive characters |
 | Storyline, life | **lottie-web** (MIT) | Celebrations, short effects | ~0.3 MB | The common format for app animations |
+| Feel (step 4) | **PixiJS** (MIT) | Particles and effects on the graphics card: embers and glow for Viktor's burnt notebook, celebrations, a brilliant move | ~0.5 MB | The standard fast 2D effects engine for the web |
 | Life | **Kenney** sounds (CC0), **Freesound** (CC0 only) | Move and UI sounds | ~5 MB | No strings attached |
 | Life | **Incompetech / Kevin MacLeod** (CC BY, credited) | Calm study music | ~20 MB | Widely used, clear licence |
 | Book | Public-domain classics (Project Gutenberg): Capablanca *Chess Fundamentals* (1921), Lasker *Common Sense in Chess* (1896) | Teaching backbone, in our own words | ~1 MB | World champions' own teaching, free |

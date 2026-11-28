@@ -285,3 +285,15 @@ Layer 1, the first 33:
 | "On this day" | More often: once a week, only on days with a real historic event, never repeated |
 | Viktor's new look | Made with the animation tool (Rive), in step 4 |
 | Music | In the library, on by default; never during games |
+
+---
+
+## 11. Viktor's burnt notebook: the Book's story and look (owner's idea, 28 Nov 2026)
+
+The Book is Viktor's old notebook, damaged in a fire at his Berlin chess school: many pages scorched and unreadable.
+Every chapter the player finishes restores a page: the burnt edges heal, the ink comes back, the page glows for a
+moment. Chapters not reached yet sit there charred. It gives the Book a reason in the story (Viktor rebuilds what he
+lost, with you; his regret was the games he never wrote down) and makes progress visible.
+Tone: warm, embers and restoration, never gloom. Built in step 4 (feel) with real effects: PixiJS particles (embers,
+glow), Lottie (the page restoring), Rive (Viktor), built-in web animations. Animation and effects reach the whole app
+wherever they add value, not only the Book (owner, 28 Nov); calm by default, a switch for fewer effects.
