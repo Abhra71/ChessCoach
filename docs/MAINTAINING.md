@@ -93,6 +93,7 @@ Open **PowerShell** in the project folder (in Explorer: the folder, then type `p
 | Commit and push | `git add -A` then `git commit -m "What changed, in plain words"` then `git push` |
 | See the app's own log | open `logbook/service.log` |
 | A test copy with its own data and no keys (kept between sessions) | `try test`; start it again from nothing: `try test new`. Its data is in `%TEMP%\knightwise-test` |
+| **The UI check:** every page opened in a hidden, muted Edge, twice (normal and small window); catches JavaScript errors, missing files, empty pages, sideways scrolling; about 2 minutes | double-click `check-ui.bat`; screenshots of every page in `logbook/ui-check/` |
 
 **After a change, what to restart:**
 - a `.py` file: quit Knightwise from the tray (or close its `pythonw` processes) and start it again;
