@@ -116,9 +116,12 @@ def _human(rating):
 
 
 def setup(gid, ply):
-    """Where a rematch starts: the board just before your move at this ply (a win too: the slip they let go)."""
+    """Where a rematch starts: the board just before your move at this ply (a win too: the slip they let go). At the
+    last position, a game you gave up while it wasn't lost (insights.the_end): play on from where you resigned."""
     from coach import insights
     g = insights.game_detail(gid)
+    if g and ply == len(g["positions"]) and (g.get("the_end") or {}).get("play_on"):
+        return play_on(g)
     if not g or not 1 <= ply < len(g["positions"]):
         return None
     board = chess.Board(g["positions"][ply - 1]["fen"])
@@ -129,3 +132,23 @@ def setup(gid, ply):
             "opponent": g["opponent"], "rating": g["opponent_rating"], "real": g["result"], "human": _human(g["opponent_rating"]),
             "real_move": g["positions"][ply]["san"], "move_number": (ply + 1) // 2,
             "lead_in": [p["fen"] for p in g["positions"][max(0, ply - 6):ply]]}
+
+
+def play_on(g, rng=random):
+    """From the very end of a game the player gave up: if it's their opponent's move, the opponent (at their level)
+    plays first, then it's yours. The game had ended, so nothing here touches a game being played."""
+    white = g["color"] == "white"
+    board = chess.Board(g["positions"][-1]["fen"])
+    lead = [p["fen"] for p in g["positions"][-6:]]
+    first = None
+    if board.turn != white:
+        m = pick(board, g["opponent_rating"], rng)
+        first = board.san(m)
+        board.push(m)
+        lead.append(board.fen())
+    n = len(g["positions"])
+    return {**state(board, white), "game": g["id"], "ply": n, "color": g["color"], "flip": not white,
+            "opponent": g["opponent"], "rating": g["opponent_rating"], "real": g["result"],
+            "human": _human(g["opponent_rating"]), "real_move": None, "play_on": True, "first_reply": first,
+            "move_number": board.fullmove_number,  # the move you play first
+            "said": (g.get("the_end") or {}).get("say"), "lead_in": lead}

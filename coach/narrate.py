@@ -232,8 +232,12 @@ def game(positions, played, rows, me, opponent):
                     # did you take the chance? Then the next move says so; the arrow is only for a chance you missed
                     # (22 Oct test: a green "Better" on their move showed your next move, and you played it anyway)
                     took = i < len(played) and after.san(played[i]) == nxt["best"]
-                    if took:
-                        text += " A blunder by them." if label == "Blunder" else " A mistake by them."
+                    if took:  # say what they should have played and what it gave you (28 Nov, the owner's game:
+                        # "Qe2? A mistake by them." and nothing more)
+                        said_it, u = missed(board, prev, "Blunder" if label == "Blunder" else "Mistake")
+                        text += said_it[:-1] + f", and it let you play {nxt['best']}." if u else said_it
+                        if u:
+                            arrows.append([u, "reply", "They missed"])
                         punish = True
                     else:
                         b = nxt["best"]

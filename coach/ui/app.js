@@ -784,7 +784,8 @@ async function rematchView(gid, ply) {
   $("#page").innerHTML = `
     <div class="page-head"><div><a href="#/games/${esc(gid)}" class="small muted" style="text-decoration:none">← Back to the game</a>
       <h1 style="margin-top:6px">Rematch vs ${esc(s.opponent)} <span class="faint num">${s.rating}</span></h1>
-      <p class="sub">From move ${s.move_number} · you played ${esc(s.real_move)} and ${s.real === "loss" ? "lost" : s.real === "win" ? "still won" : "drew"}</p></div></div>
+      <p class="sub">${s.play_on ? `From where the game ended · ${esc(s.said || "")}`
+        : `From move ${s.move_number} · you played ${esc(s.real_move)} and ${s.real === "loss" ? "lost" : s.real === "win" ? "still won" : "drew"}`}</p></div></div>
     <div class="game-layout">
       <div><div class="board-wrap" id="board"></div></div>
       <div class="stack">
@@ -808,9 +809,9 @@ async function rematchView(gid, ply) {
     Board.render($("#board"), { fen: cur().fen, flip: s.flip, highlights: hl, targets, onClick: click });
     let html = "";
     // numbered from the real game: you, then their answer
-    html += `<span class="rstart">▶ Starts here: move ${s.move_number}, you to move</span>`;  // 22 Oct: "where does it start from?"
+    html += `<span class="rstart">▶ Starts ${s.play_on ? "where the game ended" : "here"}: move ${s.move_number}, you to move</span>`;  // 22 Oct: "where does it start from?"
     played.forEach((p, i) => { html += `<span class="n">${s.move_number + i}.</span><span>${esc(p[0])}</span><span>${esc(p[1] || "")}</span>`; });
-    $("#rmoves").innerHTML = html + (played.length ? "" : `<span class="small muted" style="grid-column:1/-1">Not ${esc(s.real_move)} this time.</span>`);
+    $("#rmoves").innerHTML = html + (played.length || !s.real_move ? "" : `<span class="small muted" style="grid-column:1/-1">Not ${esc(s.real_move)} this time.</span>`);
     // nothing played yet: nothing to take back or start again, so they look it (19 Nov hand test: "they don't work")
     for (const b of [$("#undo"), $("#again")]) { b.disabled = !played.length; b.title = played.length ? "" : "Make your first move"; }
   }
@@ -837,7 +838,7 @@ async function rematchView(gid, ply) {
     if (r.reply) { last = { [r.reply.uci.slice(0, 2)]: "hl-last", [r.reply.uci.slice(2, 4)]: "hl-last" }; Sound.move(r.reply.san); }
     history.push(r);
     busy = false; draw();
-    if (played.length === 1) Coach.react("maya", "pleased", `${r.mine.san} instead of ${s.real_move}. Now play it out.`);
+    if (played.length === 1 && s.real_move) Coach.react("maya", "pleased", `${r.mine.san} instead of ${s.real_move}. Now play it out.`);
     if (r.over) {
       gameOver($("#rmsg"), r);
       Coach.react("maya", r.result === "win" ? "celebrate" : r.result === "loss" ? "encourage" : "explain", r.say,
@@ -850,7 +851,9 @@ async function rematchView(gid, ply) {
   // the real game, its last few moves, so you see how you got here
   for (const fen of s.lead_in) { Board.render($("#board"), { fen, flip: s.flip }); await wait(420); }
   busy = false; draw();
-  Coach.react("maya", "explain", `Your game against ${s.opponent}, just before move ${s.move_number}. In the real game you played ${s.real_move}` +
+  Coach.react("maya", "explain", s.play_on
+    ? `Your game against ${s.opponent}, where it ended. ${s.said || ""} ${s.first_reply ? `They played ${s.first_reply}. ` : ""}Your move: play it out this time. They'll play at about their level.`
+    : `Your game against ${s.opponent}, just before move ${s.move_number}. In the real game you played ${s.real_move}` +
     (s.real === "win" ? `. You still won, because they didn't punish it. This time they might: play something better, then play it out.`
       : ` and ${s.real === "loss" ? "lost" : "drew"}. Play something better this time, then play it out. They'll play at about their level.`));
 }
@@ -2056,6 +2059,7 @@ async function gameView(id) {
     insufficient: "A draw: not enough pieces to mate.", timevsinsufficient: "A draw: time ran out, but no mate was possible.",
     "50move": "A draw by the 50-move rule." };
   const ending = () => {  // how the game ended, said on its last move
+    if (g.the_end && g.the_end.say) return g.the_end.say;  // gave up a game that wasn't lost: say so (28 Nov)
     const h = END[g.how] || "";
     if (!h || h[0] === h[0].toUpperCase()) return h;
     if (g.how === "checkmated") return g.result === "win" ? "You won by checkmate." : "Checkmate: they won.";
@@ -2067,6 +2071,7 @@ async function gameView(id) {
       <p class="sub">${cap(g.result)} · ${esc(g.time_class)} · you were ${g.color}${g.opening ? " · " + esc(g.opening) : ""}</p></div>
       <div class="row">${g.result === "win" && g.positions.length > 20 ? `<a class="btn" href="#/film/${g.id}">▶ Watch it as a film</a>` : ""}
         ${g.rematch ? `<a class="btn" href="#/rematch/${g.id}/${g.rematch.ply}" title="Play on from move ${g.rematch.move_number}, where it went wrong, against an opponent at their level">↻ Rematch from move ${g.rematch.move_number}</a>` : ""}
+        ${g.the_end && g.the_end.play_on ? `<a class="btn ${g.rematch ? "" : "primary"}" href="#/rematch/${g.id}/${g.the_end.play_on.ply}" title="${esc(g.the_end.say)} Play it out against an opponent at their level.">▶ Play on from ${{ resigned: "where you resigned", timeout: "where your time ran out", abandoned: "where you left" }[g.how] || "the end"}</a>` : ""}
         <a class="btn" href="${esc(g.url)}" target="_blank" rel="noopener">Open on chess.com ↗</a></div></div>
     <div class="game-layout">
       <div><div class="evalwrap"><div class="evalbar ${flip ? "flip" : ""}" id="evalbar" title="Who's winning"><i></i><span></span></div>
@@ -2173,6 +2178,7 @@ async function gameView(id) {
         <span class="small faint">◀ ▶ under the board</span></div>
       <p style="margin:0">${ply && m ? `${badge(m.label)} ${esc(m.text)}` : "The starting position. Press ▶ for the first move."}</p>
       ${last && ending() ? `<p class="small" style="margin:0"><b>The end:</b> ${esc(ending())}</p>` : ""}
+      ${last ? report() : ""}
       ${k ? `<div class="box keycard" title="${esc([k.habit && "Habit: " + k.habit, k.humans].filter(Boolean).join(" · "))}">
         <div class="row spread"><span class="what">${svg("bolt")} Key moment ${ki + 1}/${moments.length}</span>
           <span class="small bad-text" title="How much of your chance to win this move cost">−${Math.round(k.loss)}%</span></div>

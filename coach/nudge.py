@@ -239,8 +239,12 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
                 else "Today's 5 minutes are waiting: three positions from your own games.")
         add("daily", "daily", line + ("" if app else " They're in Knightwise."), "daily")
     if rematch and g.get("checked") and g.get("result") in ("loss", "draw") and not opened(f"rematch/{g['id']}"):
-        add("rematch", f"rematch-{g['id']}", f"Against {opp} it went wrong at move {rematch['move_number']}. "
-            "Play it again from there?", f"rematch/{g['id']}/{rematch['ply']}")
+        if rematch.get("play_on"):  # gave up a game that wasn't lost (28 Nov): play it on from the end
+            add("rematch", f"rematch-{g['id']}", f"Your game against {opp}: {rematch.get('say') or 'it was not lost.'} "
+                "Play it on from there?", f"rematch/{g['id']}/{rematch['ply']}")
+        else:
+            add("rematch", f"rematch-{g['id']}", f"Against {opp} it went wrong at move {rematch['move_number']}. "
+                "Play it again from there?", f"rematch/{g['id']}/{rematch['ply']}")
     for b in (prog or {}).get("badges") or []:  # close to the next badge: a reason to play carefully today
         need = (b.get("next") or 0) - (b.get("current") or 0)
         if b.get("group") == "Habits" and b.get("next") and 1 <= need <= 2:

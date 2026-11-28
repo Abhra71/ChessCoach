@@ -9,6 +9,7 @@ import re
 from datetime import datetime
 
 import chess
+import chess.engine
 import chess.pgn
 
 from coach import memory
@@ -213,9 +214,60 @@ def game_detail(gid):
     from coach import narrate  # the whole game, move by move, no AI (22 Oct)
     side, other = _side(g, player)
     every = narrate.game(positions, played, rows, chess.WHITE if side == "white" else chess.BLACK, g[other]["username"])
-    return {**game_row(g, rows, player), "positions": positions, "key_moments": key, "narration": every,
-            "summary": narrate.summary(every),
-            "move_numbers": [move_number({"ply": i}) for i in range(1, len(positions))], **extras(g, rows, player)}
+    out = {**game_row(g, rows, player), "positions": positions, "key_moments": key, "narration": every,
+           "summary": narrate.summary(every),
+           "move_numbers": [move_number({"ply": i}) for i in range(1, len(positions))], **extras(g, rows, player)}
+    out["the_end"] = the_end(game_id(g["url"]), board, side == "white", out.get("result"), out.get("how"), len(positions))
+    return out
+
+
+_END = {}  # game id -> where the player stood at the end (the engine looks once per game while the app runs)
+END_DEPTH = 16
+GAVE_UP = {"resigned": "You resigned", "abandoned": "You left the game", "timeout": "You ran out of time"}
+
+
+def the_end(gid, board, white, result, how, n_positions, engine=None):
+    """A game the player gave up (resigned, left, ran out of time): where they really stood, in plain words, and a
+    "play on from here" when it wasn't lost (28 Nov, the owner's game: resigned a pawn up after five Best moves, and
+    the review said only "You resigned"). A finished game only, from the chess.com archive."""
+    if result == "win" or how not in GAVE_UP or board.is_game_over():
+        return None
+    if gid in _END:
+        return _END[gid]
+    from coach import live_engine
+    from coach.analyze import score_cp
+    try:
+        if engine is None:
+            with live_engine.LOCK:
+                info = live_engine.get().analyse(board, chess.engine.Limit(depth=END_DEPTH))
+        else:
+            info = engine.analyse(board, chess.engine.Limit(depth=END_DEPTH))
+        cp = score_cp(info["score"].pov(chess.WHITE if white else chess.BLACK))
+    except Exception:  # no engine: say nothing rather than guess
+        return None
+    if cp >= 100:
+        pawns = round(cp / 100, 1)
+        say = (f"{GAVE_UP[how]} while ahead: the engine gives you +{pawns}, worth about "
+               f"{_pawns(pawns)}. It wasn't lost.")  # "worth": the count of the position, not only the material
+    elif cp > -100:
+        say = f"{GAVE_UP[how]} with the game still about even ({cp / 100:+.1f}). It wasn't lost."
+    else:
+        say = None  # behind: the plain ending says it
+    out = {"cp": cp, "say": say, "play_on": {"ply": n_positions} if say else None}
+    _END[gid] = out
+    return out
+
+
+def _pawns(p):
+    """+1.4 -> "a pawn and a half"; the words a coach would use."""
+    whole = round(p * 2) / 2
+    if whole >= 9:
+        return "a queen"
+    if whole >= 5:
+        return "a rook"
+    names = {0.5: "half a pawn", 1: "a pawn", 1.5: "a pawn and a half", 2: "two pawns", 2.5: "two and a half pawns",
+             3: "a piece", 3.5: "a piece", 4: "a piece and a pawn", 4.5: "a piece and a pawn"}
+    return names.get(max(0.5, whole), "a piece")
 
 
 def extras(g, rows, player):

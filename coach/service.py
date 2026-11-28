@@ -1166,6 +1166,10 @@ def with_point(said, q):
     rematch = insights.extras_for(g["id"]).get("rematch") if in_app and g.get("checked") and g.get("result") != "win" else None
     rematch = rematch if rematch is not None else (insights.extras_for(g["id"]).get("rematch")
                                                    if g.get("checked") and g.get("result") != "win" else None)
+    if rematch is None and g.get("checked") and g.get("result") != "win" and g.get("how") in insights.GAVE_UP:
+        end = (insights.game_detail(g["id"]) or {}).get("the_end") or {}  # gave up a game that wasn't lost (28 Nov)
+        if end.get("play_on"):
+            rematch = {"ply": end["play_on"]["ply"], "play_on": True, "say": end.get("say")}
     try:
         from coach import progress
         prog = progress.page()
