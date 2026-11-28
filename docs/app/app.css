@@ -114,3 +114,6 @@ h2 { font-size: 15px; margin: 22px 0 10px; }
 .end { margin: 12px 0; text-align: center; font-weight: 650; }
 .links { display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 14px; }
 @media (min-width: 900px) { .page.game-page { max-width: 980px; } .game-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; } }
+.all-moves { background: var(--surface); border-radius: 12px; padding: 12px 14px; }
+.all-moves summary { cursor: pointer; min-height: 28px; }
+.all-moves .moves { background: none; padding: 10px 0 0; }

@@ -190,11 +190,11 @@
           <button class="btn" data-go="end" aria-label="End">⏭</button>
         </div>
         <p class="ply" id="ply"></p>
-        <button class="btn" id="analyse" style="width:100%">Analyse from here</button>
       </div><div>
         <p class="end">${word}${g.how ? ", " + esc(g.how) : ""}${g.opening ? `<br><span class="muted small">${esc(g.opening)}</span>` : ""}</p>
+        <details class="all-moves"><summary><b>All moves</b> <span class="muted small">tap one to see the board there</span></summary>
         <div class="moves" id="moves">${line.moves.map((m, i) =>
-          `${i % 2 === 0 ? `<span class="n">${i / 2 + 1}.</span>` : ""}<button data-i="${i + 1}">${esc(m.san)}</button>`).join("")}</div>
+          `${i % 2 === 0 ? `<span class="n">${i / 2 + 1}.</span>` : ""}<button data-i="${i + 1}">${esc(m.san)}</button>`).join("")}</div></details>
       </div></div>`;
 
     const boardEl = view.querySelector("#board"), ply = view.querySelector("#ply"), list = view.querySelector("#moves");
@@ -228,7 +228,6 @@
       if (Math.abs(dx) > 30) go(at + (dx < 0 ? 1 : -1));
     });
     keys = e => { if (e.key === "ArrowLeft") moves.back(); if (e.key === "ArrowRight") moves.next(); };
-    view.querySelector("#analyse").onclick = () => { location.hash = `#/board/${encodeURIComponent(g.id)}/${at}`; };
     draw();
   }
   let keys = null;

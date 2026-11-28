@@ -113,6 +113,11 @@ Owner: "the core and 1 or 2 small mobile features", plus one flagship. Decided o
 - **Phone touches:** a home-screen shortcut to Today's 5 minutes; swipe between a game's key moments.
 - A gentle "the full coach is on PC" pointer to the Store page.
 - Google sign-in (section 11) and the rest of section 4 wait until after the first launch.
+- **Owner, 28 Nov (after trying it):** rewrite the PC's thinking in **JavaScript** (option A, section 2), with the PC's
+  rules and tests as the answer key. Build the **core first**, then the board. The phone must open on a **Home page like
+  the PC's** (Today 5 min + Start, last game + Review, Your focus + Practise, habit numbers, streak), and a game page
+  like the PC's review (key moments with "You played / Better" arrows; all moves folded away). The analysis board
+  stays built but hidden until the core is done.
 
 ## 4b. Built for cheap phones (owner's rule, 27 Nov)
 
