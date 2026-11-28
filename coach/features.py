@@ -99,7 +99,7 @@ FEATURES = [
      "data": ["preps.json"]},
     # the club (storyline 3.4 and 3.6, 28 Nov)
     {"id": "words", "name": "Chess words (tap to explain, and the list)", "page": "words", "coach": "viktor",
-     "tour": ["words"], "moments": ["words", "word"],  # the list; a coach introducing one word
+     "tour": ["words"], "moments": ["words", "word"],  # the list; a coach introducing one word (features.SPOKEN)
      "story": "The library's dictionary: the words strong players use, in plain language",
      "data": ["words.json"]},
     {"id": "coaches", "name": "Meet your coaches", "page": "coaches", "coach": "maya", "tour": ["coaches"],
@@ -114,7 +114,7 @@ FEATURES = [
 # Moments the coach says in her own greeting (coach/coaches.py speak) rather than as a suggestion (coach/nudge.py):
 # kind -> where. "novelty": Home's "Something new for you: ...", when coach/plan.py picks a new card for a fresh
 # weakness in the player's games (found by the step 3.2 audit, 28 Nov: it was there, the map had missed it).
-SPOKEN = {"novelty": "coach/coaches.py"}
+SPOKEN = {"novelty": ("coach/coaches.py", 'extra.get("novelty")'), "word": ("coach/service.py", "def with_word(")}
 
 # Data the app keeps for itself, not for one feature (the machinery): never shown to the player directly.
 SYSTEM_DATA = ["service.pid", "health.json", "fixes.json", "update-try.json", "voice-cache", "said.json",

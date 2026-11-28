@@ -11,7 +11,8 @@ checked against their Wikipedia pages before they go into the app.
   he never wrote down, at 30 match records). Each told once, one a week per coach at most, two sentences.
 - 3.4 Chess words, layer 1 (coach/words.py, coach/ui/club.js), learned one at a time (owner, 28 Nov): a coach
   introduces a word, with a reason from your newest game (a fork in their reply, a hanging piece, a stalemate, a
-  blunder) or, once a week at most, just because ("A chess word for you: …"). A word you haven't met has a small
+  blunder) or, every few days, just because ("A chess word for you: …"). The word is the coach's first line, said
+  aloud, one a day; it no longer waits for one of the day's three suggestions (owner, 29 Nov: "where are the words?"). A word you haven't met has a small
   dotted line the first time it appears (two a page at most); hover or tap shows its meaning; after that it's
   ordinary text and the coaches simply use it. The Chess words page (under Explore in Your plan) has all 33, ✓ on
   the ones met; Explore answers a chess word typed there. Viktor points at the list once you've looked up three.
@@ -329,6 +330,9 @@ wherever they add value, not only the Book (owner, 28 Nov); calm by default, a s
 ---
 
 ## 12. Notes for step 4 (feel), from the owner (28 Nov 2026)
+
+- **Meet your coaches needs more (owner, 29 Nov):** today it's two cards of text. In step 4 it gets the coaches'
+  new look, movement and voice: the page should feel like meeting them, not reading about them.
 
 - **No theme change (owner, corrected 28 Nov).** The app stays uniform, in today's colours, like big apps. The
   "book" look belongs to the hero feature only: inside the Book, Viktor's burnt notebook (scorched pages, embers, a

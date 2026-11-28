@@ -323,8 +323,8 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
 
 
 
-STORY = ("rank", "memory", "story", "history", "word")  # the club's own moments: before the day's other things, one a day
-TOLD = ("memory", "story", "history", "word")  # said once ever: remembered when said, not when opened
+STORY = ("rank", "memory", "story", "history")  # the club's own moments: before the day's other things, one a day
+TOLD = ("memory", "story", "history")  # said once ever: remembered when said, not when opened
 
 
 def _club(out, add, home, games, player, prog, day, m):
@@ -335,9 +335,6 @@ def _club(out, add, home, games, player, prog, day, m):
         for kind, cid, coach, line, route, _ in said + ([clock] if clock else []):
             add(kind, cid, line, route)
             out[-1]["voice"] = coach
-        from coach import words  # a chess word, introduced by a coach (owner, 28 Nov: one at a time)
-        for word, coach, line in words.introductions(home, games, player, day)[:1]:
-            out.append({"kind": "word", "id": f"word-{word}", "line": line, "voice": coach})
         h = memories.on_this_day(day) if home.get("games") else None
         if h:
             out.append({"kind": "history", "id": h[0], "line": h[1], "voice": "viktor",
@@ -552,10 +549,7 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
             _use(m, today, "brought", tour=c["id"][len("tour-"):])
         else:
             _use(m, today, "brought", kind=c["kind"])
-            if c["kind"] == "word":
-                from coach import words
-                words.introduced(c["id"][len("word-"):], day)
-            elif c["kind"] in TOLD:
+            if c["kind"] in TOLD:
                 from coach import memories
                 memories.told(c["id"], day)
             m["shown"] = {**shown, place: mine + [c["id"]]}

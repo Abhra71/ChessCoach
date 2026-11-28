@@ -19,7 +19,7 @@ FILE = DATA / "words.json"
 _LOCK = threading.Lock()  # two words met at once both arrive: one read-change-write at a time (28 Nov)
 LAYER = 1
 LOOKED_UP = 3  # after this many different words, Viktor points at the whole list (coach/nudge.py, kind "words")
-JUST_SAYING = 7  # a word without a reason: at most one a week
+JUST_SAYING = 3  # a word without a reason: every few days (owner, 29 Nov: the words should actually be heard)
 NEW_PER_PAGE = 2  # the app underlines at most this many new words on one page (coach/ui/club.js): never busy
 
 # (word, its plain meaning, the forms underlined in the app's text; empty: only on the Chess words page, because the
@@ -108,6 +108,10 @@ def met(word, day=None):
 def introduced(word, day=None):
     """A coach introduced this word."""
     return _mark("introduced", word, day)
+
+
+def introduced_today(day=None):
+    return (day or datetime.date.today()).isoformat() in _load().get("introduced", {}).values()
 
 
 TACTICS = {"Candidate moves", "Hanging piece", "Blunder, mistake, inaccuracy", "Fork", "Pin", "Skewer",

@@ -38,8 +38,8 @@ def test_every_suggestion_kind_belongs_to_a_feature():
     kinds = set(re.findall(r'\badd\("(\w+)"', src)) | set(re.findall(r'"kind": "(\w+)"', src))
     kinds.discard("tour")  # the tour itself
     kinds |= set(nudge.TOLD)  # the club's moments, added from coach/memories.py
-    for kind, where in features.SPOKEN.items():  # said in the coach's greeting: it must really be there
-        assert f'extra.get("{kind}")' in (ROOT / where).read_text(encoding="utf-8"), f"{kind} isn't in {where}"
+    for kind, (where, marker) in features.SPOKEN.items():  # said in the coach's greeting: it must really be there
+        assert marker in (ROOT / where).read_text(encoding="utf-8"), f"{kind} isn't in {where}"
         kinds.add(kind)
     mapped = {m for f in F for m in f.get("moments", [])}
     assert kinds - mapped == set(), f"suggestions with no feature: {sorted(kinds - mapped)}"

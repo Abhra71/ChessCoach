@@ -148,7 +148,7 @@ const MEET = [
     rooms: "Your games, Practice, Today's 5 minutes, and the coach beside you on chess.com." },
   { id: "viktor", from: "Berlin, Germany", lines: [
       "From Berlin, the city where Emanuel Lasker, world champion for 27 years, lived. Played the German championship for years, never became a grandmaster, and taught at a Berlin chess school for thirty years.",
-      "Keeps a notebook of the games that changed chess. Each rank you reach opens a page of it."],
+      "Keeps a notebook of the games that changed chess. Reach a new rank and he tells you one of its stories."],
     teaches: "Calm, patient, a storyteller. Strict about one thing: see it before you move it.",
     rooms: "Progress, Your plan, Your level, Your course and the practice hall (Train)." },
 ];

@@ -204,6 +204,8 @@ def test_a_suggestion_always_comes_after_a_greeting(monkeypatch):
     used to show the suggestion alone."""
     from coach import coaches, insights, nudge, progress, service, talk
     monkeypatch.setattr(nudge, "seen", lambda route: None)  # nothing written to the real memory
+    from coach import words
+    monkeypatch.setattr(words, "introductions", lambda *a, **k: [])  # a new chess word comes first: tests/test_words_one_at_a_time.py
     monkeypatch.setattr(coaches, "line", lambda kind, coach, *a, **k: "Welcome back.")
     monkeypatch.setattr(insights, "home", lambda: {"games": 5, "last_game": {}})
     monkeypatch.setattr(insights, "_games", lambda: [])

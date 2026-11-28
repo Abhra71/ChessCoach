@@ -1182,6 +1182,38 @@ HUBS = ("home", "games", "train", "progress", "plan", "course", "level")  # app 
 
 
 def with_point(said, q):
+    """The coach's words on an app page, with the day's one suggestion, then a chess word to introduce."""
+    return with_word(_with_point(said, q), q)
+
+
+def with_word(said, q):
+    """A chess word, introduced by its coach as the first thing they say (owner, 29 Nov: "where are the words?"): it
+    doesn't wait for one of the day's three suggestions any more. One word a day at most; a word another coach's own
+    story (a memory, a rank) is being told is left for another day."""
+    import datetime
+    from coach import coaches, insights, words
+    if q.get("in") != "app" or q.get("nopoint") == "1" or q.get("tab", "home") not in HUBS:
+        return said
+    if not said.get("lines") and not said.get("quiet"):
+        return said
+    if (said.get("point") or {}).get("voice") or words.introduced_today():
+        return said
+    try:
+        got = words.introductions(insights.home(), insights._games(), (insights._player() or "").lower(),
+                                  datetime.date.today())[:1]
+    except Exception:
+        log.warning("word to introduce", exc_info=True)
+        return said
+    if not got:
+        return said
+    word, coach, line = got[0]
+    words.introduced(word)
+    rest = (said.get("lines") or [])[1:] if not said.get("quiet") else []
+    return {**said, "coach": coach, "role": coaches.COACHES[coach]["role"], "lines": [line] + rest, "quiet": False,
+            "word": word}
+
+
+def _with_point(said, q):
     from coach import coaches, insights, nudge, talk
     in_app, section = q.get("in") == "app", q.get("section", "home")
     if q.get("tab"):

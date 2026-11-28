@@ -44,28 +44,39 @@ def test_once_met_never_introduced_again(tmp_path, monkeypatch):
     assert "Fork" not in got
 
 
-def test_without_a_reason_one_word_a_week(tmp_path, monkeypatch):
+def test_without_a_reason_one_word_every_few_days(tmp_path, monkeypatch):
     home, games = setup(tmp_path, monkeypatch, [])
     first = words.introductions(home, games, ME, DAY)
     assert first == [("Candidate moves", "maya", "A chess word for you: candidate moves. The 2–3 moves worth "
                       "thinking about before you choose.")]  # Notation has no form to mark, so the list starts here
     words.introduced("Candidate moves", DAY)
-    assert words.introductions(home, games, ME, DAY + datetime.timedelta(days=3)) == []
-    nxt = words.introductions(home, games, ME, DAY + datetime.timedelta(days=7))
+    assert words.introductions(home, games, ME, DAY + datetime.timedelta(days=2)) == []
+    nxt = words.introductions(home, games, ME, DAY + datetime.timedelta(days=3))
     assert nxt[0][0] == "Hanging piece"
 
 
-def test_a_coach_introduces_it_first_in_their_own_voice(tmp_path, monkeypatch):
-    fresh(tmp_path, monkeypatch, club=True)
-    from coach import memories
+def test_the_coach_says_the_word_first_without_waiting_for_a_suggestion_slot(tmp_path, monkeypatch):
+    """Owner, 29 Nov ("where are the words?"): the day's three suggestions were all taken by the new game, the
+    5 minutes and the rematch, so no word was ever introduced. Now the word is the coach's first line, once a day."""
+    from coach import insights, service
     home, games = setup(tmp_path, monkeypatch, [FORK])
-    for told in ("welcome", "hundred"):
-        memories.told(told)
-    p = nudge.pick("app", "home", home, DAY, games=games, player=ME)
-    assert p["kind"] == "word" and p["id"] == "word-Fork" and p["voice"] == "maya"
-    assert "Fork" in words._load()["introduced"]
-    later = nudge.candidates("app", home, games=games, player=ME, day=DAY + datetime.timedelta(days=1))
-    assert not [c for c in later if c["id"] == "word-Fork"]
+    monkeypatch.setattr(insights, "home", lambda: home)
+    monkeypatch.setattr(insights, "_games", lambda: games)
+    monkeypatch.setattr(insights, "_player", lambda: ME)
+    q = {"in": "app", "section": "home", "tab": "home"}
+    busy = {"coach": "viktor", "lines": ["Good evening.", "New game in, against Rival."], "actions": [],
+            "point": {"kind": "game", "line": "New game in, against Rival."}}
+    said = service.with_word(busy, q)
+    assert said["coach"] == "maya" and said["word"] == "Fork"
+    assert said["lines"][0].startswith("Against Rival, one of their pieces attacked two of yours")
+    assert said["lines"][1] == "New game in, against Rival."  # the day's suggestion is still there
+    assert service.with_word(busy, q) is busy  # one word a day
+    quiet = {"coach": "maya", "lines": [], "quiet": True}
+    assert service.with_word(quiet, {**q, "tab": "train"}) is quiet  # already one today
+    assert service.with_word(busy, {**q, "tab": "practice"}) is busy  # never where you're working
+    story = {**busy, "point": {"kind": "memory", "voice": "viktor", "line": "x"}}
+    words.FILE.write_text("{}")
+    assert service.with_word(story, q) is story  # a coach's own story is being told: the word waits
 
 
 def test_the_app_learns_which_words_were_met(tmp_path, monkeypatch):

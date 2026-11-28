@@ -103,7 +103,7 @@ const Coach = (() => {
       return;
     }
     render(true);  // the full welcome first, later just where things stand (once a day)
-    if (first || force) { remember(`kw-app-greeted-${section}`, today()); talk(); }
+    if (first || force || r.word) { remember(`kw-app-greeted-${section}`, today()); talk(); }  // a new chess word is said aloud too
     else { const now = said; clearTimeout(quiet); quiet = setTimeout(() => { if (said === now) render(false); }, 20000); }
   }
   // what the page itself said while the conversation spoke (the page's own coach line), taken once
