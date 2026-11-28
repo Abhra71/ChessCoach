@@ -144,8 +144,8 @@ same day: In your head and the weekly report already have one, in coach/nudge.py
 
 (The feature map, coach/features.py, found these four more on 28 Nov: 8 gaps in all.)
 
-**The bigger gap (docs/CONNECTIONS.md):** a feature brought up from your data is never brought up again once it was
-opened, even if the need comes back months later.
+**Fixed in step 2 (28 Nov):** a feature brought up from your data used to stop for good once it was opened; now it
+rests 21 days and comes back if your games still show the need (docs/CONNECTIONS.md).
 
 The same check applies to every future feature: no right-time moment, not finished. (A test,
 `tests/test_connected.py`, makes sure every page is at least in the coaches' tour.)
@@ -269,3 +269,17 @@ Layer 1, the first 33:
 4. **"On this day" history:** once a month, or more often?
 5. **Viktor's new look:** what do you have in mind? (Older, a cardigan and notebook? Something else?)
 6. **Music:** in the library only (recommended), or a soft option everywhere?
+
+---
+
+## 10. The owner's answers (28 Nov 2026)
+
+| Question | Answer |
+|---|---|
+| Maya from Chennai | Yes |
+| Viktor's country | A known country (not Latvia). Choice pending: Russia (Moscow), England (London), Germany (Berlin) or USA (New York) |
+| Rank names | Explained; confirmation pending (New member, Club player, Team player, First board, Club master) |
+| Club words in the menu | No: plain menu names, the club feel inside the pages (Claude's recommendation, accepted) |
+| "On this day" | More often: once a week, only on days with a real historic event, never repeated |
+| Viktor's new look | Made with the animation tool (Rive), in step 4 |
+| Music | In the library, on by default; never during games |
