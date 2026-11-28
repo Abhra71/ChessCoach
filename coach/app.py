@@ -167,10 +167,19 @@ def main():
                                    min_size=(900, 620), background_color="#0A0A0A")
     updater.window(not hidden)
 
+    def quiet(away):  # the page goes silent while the window is closed or minimised (28 Nov: voice and badge sounds
+        try:          # kept playing after closing); its music comes back with the window
+            if not away:
+                state["shown"] = True
+            window.evaluate_js(f"window.kwAway && window.kwAway({'true' if away else 'false'})")
+        except Exception as e:  # never stop the app over the sound
+            service.log.warning("quiet(%s) failed: %s", away, e)
+
     def show(where):
         window.evaluate_js(f"location.hash = '#/{where.strip('/')}'")
         window.show()
         window.maximize()  # also un-minimises; restore() would shrink it back to 1240×820
+        quiet(False)
         updater.window(True)
 
     def quit_app():
@@ -181,6 +190,7 @@ def main():
     def on_closing():
         if state["quitting"]:
             return True
+        quiet(True)  # silent first: the hidden page must not keep talking
         window.hide()  # keep coaching in the background; the icon by the clock brings it back
         updater.window(False)
         return False
@@ -188,6 +198,8 @@ def main():
     window.events.closing += on_closing
 
     def on_loaded():
+        if hidden and not state.get("shown"):  # started hidden (with Windows): silent until the window is opened
+            quiet(True)
         if not state.get("mic"):
             state["mic"] = True
             try:
@@ -196,9 +208,9 @@ def main():
                 service.log.warning("microphone permission hook failed: %s", e)
 
     window.events.loaded += on_loaded
-    window.events.minimized += lambda: updater.window(False)  # minimised counts as away (the quiet update, 1.2)
-    window.events.restored += lambda: updater.window(True)
-    window.events.maximized += lambda: updater.window(True)
+    window.events.minimized += lambda: (quiet(True), updater.window(False))  # minimised counts as away (quiet update, 1.2)
+    window.events.restored += lambda: (quiet(False), updater.window(True))
+    window.events.maximized += lambda: (quiet(False), updater.window(True))
     service.SHOW = lambda where: threading.Thread(target=show, args=(where,), daemon=True).start()
     icon = tray(show, quit_app)
     service.QUIT[0] = quit_app

@@ -125,6 +125,35 @@ function applyTheme(theme) {
   else delete document.documentElement.dataset.theme;
 }
 
+// ---------- quiet while the window is closed or minimised (28 Nov, owner: "the coach still continues to say, and I
+// could hear sound of badges even when the app is closed"). Closing only hides the window (the coach keeps checking
+// games by the clock), so the page itself must go silent: the voice stops, music pauses (and comes back with the
+// window), and nothing new may play until the window is back. coach/app.py calls kwAway on close, minimise and show.
+let KW_AWAY = false;
+const kwLive = new Set(), kwResume = new Set();
+(() => {
+  const play = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function () {
+    kwLive.add(this);
+    this.addEventListener("ended", () => kwLive.delete(this), { once: true });
+    return KW_AWAY ? Promise.reject(new DOMException("Knightwise is closed", "NotAllowedError")) : play.call(this);
+  };
+})();
+function kwAway(away) {
+  away = !!away;
+  if (away === KW_AWAY) return;
+  KW_AWAY = away;
+  if (away) {
+    try { Voice.stop(); } catch (e) {}
+    kwLive.forEach(a => { if (!a.paused) { if (a.loop || a.duration > 20) kwResume.add(a); a.pause(); } });  // music comes back
+  } else {
+    kwResume.forEach(a => a.play().catch(() => {}));
+    kwResume.clear();
+  }
+}
+window.kwAway = kwAway;
+document.addEventListener("visibilitychange", () => kwAway(document.hidden));
+
 // ---------- voice ----------
 const Voice = (() => {  // the coach speaks sentence by sentence; the next one is made while this one plays
   let on = true, playing = null, token = 0;
@@ -137,7 +166,7 @@ const Voice = (() => {  // the coach speaks sentence by sentence; the next one i
   function stop() { token++; if (playing) { playing.pause(); playing = null; } tell(false); }
   async function speak(text, force, voice, slow = false) {  // slow: the teaching pace (reviews, training, numbers)
     stop();
-    if ((!on && !force) || !text) return;
+    if ((!on && !force) || !text || KW_AWAY) return;  // never while the window is closed
     const mine = ++token, parts = split(text);
     let next = audio(parts[0], voice, slow);
     for (let i = 0; i < parts.length; i++) {
@@ -2838,6 +2867,7 @@ function kwBadgeBanner(b, opts) {
   setTimeout(close, DONE + STAY);
 }
 function kwChime() {  // three rising notes and a shimmer, made here: no sound file
+  if (KW_AWAY) return;  // a badge earned while the window is closed makes no sound
   try {
     const ac = new (window.AudioContext || window.webkitAudioContext)(), t0 = ac.currentTime + 0.02;
     [[659.25, 0], [830.61, 0.12], [987.77, 0.24], [1318.5, 0.38]].forEach(([f, at], i) => {
