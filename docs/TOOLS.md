@@ -37,5 +37,5 @@ version and licence on the day it is installed and updates this file.
 | Hall of Champions | World Championship game moves (facts) from a source with clear terms | Master games | ~2–5 MB | Checked licence first |
 | Book, endgames | **Lichess tablebase** (online, optional) | Exact endgame answers | 0 | Perfect play; the app works without it |
 
-Already inside: Stockfish 19 (GPL-3), Maia-3, python-chess (GPL-3), Kokoro voice (Apache-2.0), Lichess puzzles and
+Already inside: three.js (MIT, the 3D Game-of-the-month film), Stockfish 19 (GPL-3), Maia-3, python-chess (GPL-3), Kokoro voice (Apache-2.0), Lichess puzzles and
 openings (CC0), pywebview, onnxruntime. Every credit goes on an "About and thanks" page in the app.
