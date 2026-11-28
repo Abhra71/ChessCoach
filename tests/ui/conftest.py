@@ -57,7 +57,9 @@ def app(tmp_path_factory):
         else:
             pytest.fail("the private copy of the app didn't start")
         yield home
-    finally:
+    finally:  # the whole tree: its game-checking helpers too (28 Nov: 16 were left behind, idle, after test runs)
+        if sys.platform == "win32":
+            subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True)
         proc.kill()
         proc.wait(timeout=10)
 
