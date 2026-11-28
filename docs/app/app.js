@@ -1,6 +1,6 @@
 // Knightwise on the phone (preview): three screens.
 //   #/          who are you? (chess.com or Lichess username)
-//   #/games     your newest finished games, with wins / losses / draws on top
+//   #/games     every finished game of yours, with wins / losses / draws on top
 //   #/game/ID   one game, move by move on a board
 // Everything stays on this phone (IndexedDB, see store.js). No server of ours, no engine yet (docs/MOBILE-PLAN.md).
 // Cheap phones first: the first screen needs only this file, games.js and store.js; the board, pieces and
@@ -32,10 +32,11 @@
     const still = () => { const q = player(); return q && q.site === site && q.user === user; };   // not changed player meanwhile
     return new Promise((first, fail) => {
       let started = false;
-      Games.load(site, user, some => {
+      Games.load(site, user, (some, month) => {
         if (!still()) return;
         games = some;
-        note = `Downloading... ${some.length} so far.`;
+        const when = month ? new Date(month.replace("/", "-") + "-15").toLocaleDateString(undefined, { month: "short", year: "numeric" }) : "";
+        note = `Downloading${when ? " " + when : ""}... ${some.length} so far.`;
         if (!started && some.length) { started = true; first(); }
         else if (location.hash === "#/games") drawGames(player());
       }).then(all => {
@@ -122,27 +123,33 @@
     }
   }
 
+  // every game is kept; the list shows 100 at a time, so a phone with thousands of games stays quick
+  let shown = 100;
   function drawGames(p) {
     const n = r => games.filter(g => g.result === r).length;
+    const more = games.length - shown;
     view.innerHTML = `
       <div class="links"><h1>${esc(p.user)}</h1>
         <button id="change" class="btn ghost small">Change player</button></div>
-      <p class="sub small">${games.length} newest finished games on ${p.site === "lichess" ? "Lichess" : "chess.com"}. ${esc(note)}</p>
+      <p class="sub small">${games.length} finished games on ${p.site === "lichess" ? "Lichess" : "chess.com"}. ${esc(note)}</p>
       <div class="stats">
         <div class="stat"><b class="num">${n("win")}</b><span>won</span></div>
         <div class="stat"><b class="num">${n("loss")}</b><span>lost</span></div>
         <div class="stat"><b class="num">${n("draw")}</b><span>drawn</span></div>
       </div>
       <h2>Games</h2>
-      <ul class="games">${games.map(g => {
+      <ul class="games">${games.slice(0, shown).map(g => {
         const opp = g.me === "w" ? g.black : g.white, oppR = g.me === "w" ? g.blackRating : g.whiteRating;
         return `<li><a class="game" href="#/game/${encodeURIComponent(g.id)}">
           <span class="chip ${g.result}">${g.result === "win" ? "W" : g.result === "loss" ? "L" : "½"}</span>
           <span class="grow"><div class="who">${esc(opp)} <span class="muted small num">${esc(oppR || "")}</span></div>
             <div class="meta">${esc(g.how)} · ${esc(g.speed)} · ${Math.ceil(g.plies / 2)} moves · ${dateOf(g.endedAt)}</div></span>
           <span class="side ${g.me}" title="You played ${g.me === "w" ? "White" : "Black"}"></span></a></li>`;
-      }).join("")}</ul>`;
-    view.querySelector("#change").onclick = () => { setPlayer(null); games = []; note = ""; location.hash = "#/"; };
+      }).join("")}</ul>
+      ${more > 0 ? `<button id="more" class="btn" style="width:100%;margin-top:12px">Show ${Math.min(100, more)} more (${more} older)</button>` : ""}`;
+    view.querySelector("#change").onclick = () => { setPlayer(null); games = []; note = ""; shown = 100; location.hash = "#/"; };
+    const moreBtn = view.querySelector("#more");
+    if (moreBtn) moreBtn.onclick = () => { const y = scrollY; shown += 100; drawGames(p); scrollTo(0, y); };
   }
 
   // ---------- screen 3: one game on the board ----------

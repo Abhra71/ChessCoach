@@ -66,16 +66,41 @@ test("a Lichess game: finished games kept, aborted ones dropped, moves kept as o
   assert.equal(Games.fromLichess({ ...base, variant: "chess960" }, "me"), null);
 });
 
-test("fewer games on phones with little memory", () => {
-  const was = Object.getOwnPropertyDescriptor(globalThis, "navigator");
-  const as = (deviceMemory, hardwareConcurrency) => {
-    Object.defineProperty(globalThis, "navigator", { value: { deviceMemory, hardwareConcurrency }, configurable: true });
-    return Games.howMany();
+// every game is taken (owner, 28 Nov); the second time only the newest saved month and newer ones are downloaded
+async function everyGameThenOnlyNewMonths() {
+  const game = (id, month, day) => ({ uuid: id, url: "https://www.chess.com/game/live/" + id, rules: "chess",
+    pgn: `[Event "Live"]\n\n1. e4 e5 1-0`, end_time: Date.UTC(2026, month - 1, day) / 1000, time_class: "blitz", fen: "",
+    white: { username: "Me", rating: 1000, result: "win" }, black: { username: "Them", rating: 1000, result: "resigned" } });
+  const months = { "2026/09": [game("a", 9, 3)], "2026/10": [game("b", 10, 5), game("c", 10, 20)], "2026/11": [game("d", 11, 2)] };
+  const asked = [];
+  global.fetch = async url => {
+    asked.push(url);
+    const body = url.endsWith("/archives") ? { archives: Object.keys(months).map(m => "https://api.chess.com/pub/player/me/games/" + m) }
+      : { games: months[url.slice(-7)] };
+    return { ok: true, status: 200, json: async () => body };
   };
-  assert.equal(as(1, 4), 20); assert.equal(as(2, 8), 30); assert.equal(as(4, 2), 30); assert.equal(as(8, 8), 60);
-  assert.equal(as(undefined, undefined), 60);   // the phone doesn't say: assume a normal phone
-  if (was) Object.defineProperty(globalThis, "navigator", was);
-});
+  const saved = {};
+  global.Store = { get: async k => saved[k] || null, set: async (k, v) => { saved[k] = JSON.parse(JSON.stringify(v)); } };
+  const seen = [];
+  const all = await Games.load("chesscom", "Me", (some, month) => seen.push([month, some.length]));
+  assert.deepEqual(all.map(g => g.id), ["cc-d", "cc-c", "cc-b", "cc-a"]);   // every game, newest first
+  assert.deepEqual(seen, [["2026/11", 1], ["2026/10", 3], ["2026/09", 4]]);   // shown month by month
+  months["2026/11"].push(game("e", 11, 25));                                   // a new game is played
+  asked.length = 0;
+  const again = await Games.load("chesscom", "Me");
+  assert.equal(again.length, 5);
+  assert.deepEqual(asked.map(u => u.slice(-8)), ["archives", "/2026/11"]);    // only the newest month again
+
+  // a first download that stopped halfway (only November saved, never reached the first game): carry on backwards
+  const k = "games.chesscom.me";
+  saved[k] = { at: 1, games: saved[k].games.filter(g => g.id === "cc-d" || g.id === "cc-e") };   // no "complete"
+  asked.length = 0;
+  const resumed = await Games.load("chesscom", "Me");
+  assert.equal(resumed.length, 5);
+  assert.deepEqual(asked.map(u => u.slice(-8)), ["archives", "/2026/11", "/2026/10", "/2026/09"]);
+  assert.equal(saved[k].complete, true);
+  passed++; console.log("ok  every finished game, shown month by month; next time only the new month");
+}
 
 // perft: count every position a few moves deep; the right numbers are known (chessprogramming.org/Perft_Results),
 // so any mistake in castling, en passant, promotion or pins shows up as a wrong count
@@ -106,4 +131,4 @@ test("moves are written back the usual way: Nbd7, exd6, O-O-O, a8=Q, Qxf7#", () 
   check("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4", "Qxf7#");
 });
 
-console.log(`\n${passed} passed`);
+everyGameThenOnlyNewMonths().then(() => console.log(`\n${passed} passed`), e => { console.error(e); process.exit(1); });

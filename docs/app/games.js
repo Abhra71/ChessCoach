@@ -5,23 +5,16 @@
 // we also drop anything not ended by the rules (aborted, never started). Nothing here can look at a
 // game in progress, and nothing lets you set up a position of your own.
 //
-// Made for cheap phones: one month (or a few Lichess games) at a time, newest first, shown as they arrive;
-// only a short summary of each game is kept (the moves stay one text line until you open the game);
-// fewer games on phones with little memory.
+// EVERY finished game is taken (owner, 28 Nov), made light for cheap phones: one month (or a stream of Lichess
+// games) at a time, newest first, shown and saved as they arrive; each game is a short summary (the moves stay one
+// text line until you open the game); next time only the new games are downloaded.
 //
 // Every game, from either site, becomes the same small object:
 //   { id, site, url, white, black, whiteRating, blackRating, me: "w"|"b", result: "win"|"loss"|"draw",
 //     how, speed, endedAt, moves: "e4 e5 Nf3 ...", plies, startFen (only if not the usual start), finalFen, opening }
 const Games = (() => {
+  const NL = String.fromCharCode(10);   // a new line (one Lichess game per line)
   const START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-  // how many games to load: 60 on most phones, fewer when the phone says it has little memory or few cores
-  // (navigator.deviceMemory is rounded: 0.5, 1, 2, 4, 8; not every browser tells, then we assume a normal phone)
-  function howMany() {
-    const mem = (typeof navigator !== "undefined" && navigator.deviceMemory) || 4;
-    const cores = (typeof navigator !== "undefined" && navigator.hardwareConcurrency) || 4;
-    return mem <= 1 ? 20 : mem <= 2 || cores <= 2 ? 30 : 60;
-  }
 
   // ---------- reading a PGN (the text format chess.com uses for a game) ----------
   function pgnHeaders(pgn) {
@@ -65,21 +58,23 @@ const Games = (() => {
     };
   }
 
-  async function chesscom(user, want, onSome) {
+  // newest, oldest: the times (ms) of the newest and oldest games already saved (0 if none); complete: the oldest
+  // month was reached once. Downloads the newest saved month and newer ones, then, if an earlier download stopped
+  // halfway, carries on backwards from the oldest saved month.
+  const monthOf = ms => new Date(ms).toISOString().slice(0, 7).replace("-", "/");   // "2026/11"
+  async function chesscom(user, { newest, oldest, complete }, add) {
     const name = user.trim().toLowerCase();
     const { archives = [] } = await getJson(`https://api.chess.com/pub/player/${encodeURIComponent(name)}/games/archives`);
-    const out = [];
-    for (const month of archives.slice().reverse()) {   // newest month first, one at a time (chess.com asks for that)
+    const months = archives.slice().reverse();   // newest month first, one at a time (chess.com asks for that)
+    const todo = !newest ? months
+      : months.filter(m => m.slice(-7) >= monthOf(newest) || (!complete && m.slice(-7) <= monthOf(oldest)));
+    for (const month of todo) {
       let { games = [] } = await getJson(month);
-      for (let i = games.length - 1; i >= 0 && out.length < want; i--) {
-        const g = games[i];
-        if (g.rules === "chess" && g.pgn) out.push(fromChesscom(g, name));   // standard chess only for now
-      }
+      const found = [];
+      for (const g of games) if (g.rules === "chess" && g.pgn) found.push(fromChesscom(g, name));   // standard chess only
       games = null;                                        // let the phone free the month's big download
-      if (onSome) onSome(out.slice());
-      if (out.length >= want) break;
+      await add(found, month.slice(-7));
     }
-    return out;
   }
 
   // ---------- Lichess (read as it streams in, one game per line) ----------
@@ -100,45 +95,74 @@ const Games = (() => {
     };
   }
 
-  async function lichess(user, want, onSome) {
+  // the same range idea as chess.com: games newer than the newest saved one, then (if an earlier download
+  // stopped halfway) games older than the oldest saved one; everything when nothing is saved yet
+  async function lichess(user, { newest, oldest, complete }, add) {
     const name = user.trim().toLowerCase();
-    const url = `https://lichess.org/api/games/user/${encodeURIComponent(name)}` +
-      `?max=${want}&ongoing=false&finished=true&moves=true&opening=true&clocks=false&evals=false`;
+    const base = `https://lichess.org/api/games/user/${encodeURIComponent(name)}` +
+      "?ongoing=false&finished=true&moves=true&opening=true&clocks=false&evals=false";
+    await stream(newest ? `${base}&since=${newest + 1}` : base, name, add);
+    if (newest && !complete) await stream(`${base}&until=${oldest - 1}`, name, add);
+  }
+  async function stream(url, name, add) {
     const r = await fetch(url, { headers: { Accept: "application/x-ndjson" } });
     if (r.status === 404) throw new Error("no-player");
     if (!r.ok) throw new Error(`Lichess said ${r.status}`);
-    const out = [], take = line => { if (line.trim()) { const g = fromLichess(JSON.parse(line), name); if (g) out.push(g); } };
-    if (!r.body || !r.body.getReader) { (await r.text()).split("\n").forEach(take); if (onSome) onSome(out.slice()); return out; }
+    let batch = [];
+    const take = line => { if (line.trim()) { const g = fromLichess(JSON.parse(line), name); if (g) batch.push(g); } };
+    const flush = async () => { if (batch.length) { const b = batch; batch = []; await add(b, ""); } };
+    if (!r.body || !r.body.getReader) { (await r.text()).split(NL).forEach(take); return flush(); }
     const reader = r.body.getReader(), dec = new TextDecoder();
-    let rest = "", shown = 0;
+    let rest = "";
     for (;;) {
       const { done, value } = await reader.read();
       rest += dec.decode(value || new Uint8Array(), { stream: !done });
-      const lines = rest.split("\n"); rest = lines.pop();
+      const lines = rest.split(NL); rest = lines.pop();
       lines.forEach(take);
-      if (onSome && out.length - shown >= 10) { shown = out.length; onSome(out.slice()); }   // show every 10 games
+      if (batch.length >= 100) await flush();   // shown and saved every 100 games
       if (done) break;
     }
     take(rest);
-    if (onSome) onSome(out.slice());
-    return out;
+    await flush();
   }
 
   // ---------- kept on the phone (IndexedDB), so the list opens at once and works offline ----------
   const key = (site, user) => `games.${site}.${user.trim().toLowerCase()}`;
   const saved = (site, user) => Store.get(key(site, user));
 
-  // onSome(gamesSoFar) is called as games arrive, newest first, so the list can grow on screen
+  // Every finished game: the saved ones at once, then the new ones as they arrive (onSome(allSoFar, note) each
+  // month, or every 100 Lichess games), saved as they come, so a closed app loses nothing.
   async function load(site, user, onSome) {
-    const want = howMany();
-    const games = site === "lichess" ? await lichess(user, want, onSome) : await chesscom(user, want, onSome);
-    games.sort((a, b) => b.endedAt - a.endedAt);
-    await Store.set(key(site, user), { at: Date.now(), games });
-    return games;
+    const saved = (await Store.get(key(site, user))) || { games: [] };
+    const byId = new Map(saved.games.map(g => [g.id, g]));
+    const times = saved.games.map(g => g.endedAt || 0);   // (a loop, not Math.max(...): tens of thousands of games)
+    const range = { newest: times.reduce((a, b) => Math.max(a, b), 0), oldest: times.reduce((a, b) => Math.min(a, b), Infinity),
+      complete: !!saved.complete };
+    if (!times.length) range.oldest = 0;
+    let all = saved.games.slice(), savedAt = Date.now(), unsaved = false, complete = range.complete;
+    const keep = () => Store.set(key(site, user), { at: Date.now(), games: all, complete });
+    const add = async (found, month) => {
+      let fresh = 0;
+      for (const g of found) if (!byId.has(g.id)) { byId.set(g.id, g); fresh++; }
+      if (fresh) {
+        all = [...byId.values()].sort((a, b) => b.endedAt - a.endedAt);
+        unsaved = true;
+        // saved at most every 5 seconds: saving thousands of games after every month was slow on a cheap phone
+        if (Date.now() - savedAt > 5000) { await keep(); savedAt = Date.now(); unsaved = false; }
+      }
+      if (onSome) onSome(all, month);
+    };
+    try {
+      if (site === "lichess") await lichess(user, range, add); else await chesscom(user, range, add);
+      if (!complete) { complete = true; unsaved = true; }   // reached the very first game: only new ones from now on
+    } finally {   // what came in is kept even if the download stops halfway (no internet, the site busy)
+      if (unsaved || !saved.at) await keep();
+    }
+    return all;
   }
 
   const sansOf = g => (g.moves ? g.moves.split(" ") : []);
-  return { START, load, saved, howMany, sansOf, pgnMoves, pgnHeaders, fromChesscom, fromLichess };
+  return { START, load, saved, sansOf, pgnMoves, pgnHeaders, fromChesscom, fromLichess };
 })();
 
 if (typeof module !== "undefined") module.exports = Games;
