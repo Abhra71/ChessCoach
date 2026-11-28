@@ -109,6 +109,28 @@ SYSTEM_DATA = ["service.pid", "health.json", "fixes.json", "update-try.json", "v
 GAPS = ["practice", "plan", "level", "report", "film", "wrapped", "blindfold", "guess"]
 
 
+ROUTE_ALIASES = {"endgame": "endgames", "clockdrill": "clockdrill", "plan/explore": "plan", "plan/done": "plan",
+                 "punish": "prep", "spar": "prep", "film": "progress"}
+
+
+def feature_of(route=None, kind=None, tour=None):
+    """Which feature a page, a suggestion kind or a tour item belongs to (None if it's none of ours)."""
+    for f in FEATURES:
+        if kind and kind in f.get("moments", []):
+            return f["id"]
+        if tour and tour in f.get("tour", []):
+            return f["id"]
+    if route:
+        top = str(route).strip("/").split("/")[0].split("@")[0]
+        top = ROUTE_ALIASES.get(top, top)
+        if top == "report":
+            return "wrapped" if "/month" in str(route) else "report"
+        own = ([f for f in FEATURES if f["id"] == top] or [f for f in FEATURES if f["page"] == top and not f.get("always")]
+               or [f for f in FEATURES if f["page"] == top])
+        return own[0]["id"] if own else None
+    return None
+
+
 def gaps():
     """Features only the tour ever brings up (no moment from the player's data, not always in view)."""
     return [f["id"] for f in FEATURES if not f.get("moments") and not f.get("always")]

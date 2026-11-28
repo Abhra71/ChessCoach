@@ -52,8 +52,17 @@ connect or data to stop collecting.
    tour item, suggestion kind and data file is mapped; each check proven by breaking the map on purpose). No change
    in behaviour. **It found 8 gaps, not 4:** Practice, Your plan, Your level, the weekly report, Game of the month,
    Wrapped, Blindfold and Guess the move are only ever brought up by the tour. Every data file is used by something.
-2. The use record.
-3. The picker, replacing "once opened, never again", tested on the owner's real games ("is this me?").
+2. ✅ **Done 28 Nov (with step 3's main part):** the use record (per feature: times brought up and opened, last
+   dates, in nudges.json) and the return rule in coach/nudge.py: a suggestion from the player's data rests 21 days
+   after it was opened, or after 2 days shown without being opened, then comes back if the need is still there.
+   Tour introductions: 2 days, a rest, 4 tries in all, then only data moments (they used to repeat forever).
+   Players updating start gradually (pages opened before count as opened on the first day).
+   **60 days simulated on the owner's real data:** old rule: 2 data suggestions in 60 days (everything was opened
+   once, so the coaches went quiet) and 5 tour lines nagging until stopped; new rule: 21 data suggestions (rematch,
+   clock drill, lesson, endgames, every ~3 weeks), 36 of 60 days with something, quiet days between.
+   tests/test_nudge_returns.py.
+3. Still to do in the picker: score the need (how strongly the data shows it), not only yes/no, and prefer the
+   feature that helped this player before (from the use record).
 4. Moments for the four features that have none, with their story lines.
 5. Coverage in the weekly memo.
 Every new feature from then on (the Book, analysis board, master games, Centaur) is added to the map first.

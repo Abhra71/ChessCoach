@@ -21,6 +21,11 @@ DAILY = ("game", "daily")  # worth saying every day: never sent to the back for 
 # on their mistakes: why, the benefit, and exactly where")
 MISTAKE = ("rematch", "lesson", "clock", "endgame", "opening", "calc")
 MAX_DAYS = 2  # any other suggestion: shown on 2 days at most, opened or not (24 Oct: the same rematch again and again)
+# Step 2 of docs/CONNECTIONS.md (28 Nov, owner: "everything on the right time", "nothing unused"): a suggestion from the
+# player's own data no longer stops for good once its page was opened, or once it was shown on MAX_DAYS days. It rests
+# REST_DAYS, then comes back if the player's games still show the need. The tour's introductions still come once.
+REST_DAYS = 21
+TOUR_TRIES = 4  # an introduction is tried on at most 4 days in all
 CHESSCOM_SECTIONS = ("home", "puzzles", "lessons", "progress")  # never play, review or someone's profile
 _LOCK = threading.Lock()
 
@@ -97,17 +102,48 @@ def _save(m):
         pass
 
 
-def seen(route):
-    """The player opened this page or game (so a new game, or something untried, isn't suggested again)."""
+def seen(route, day=None):
+    """The player opened this page or game: dated, so its suggestion rests REST_DAYS (a new game, or a tour item, is
+    never suggested again)."""
     route = str(route or "").strip("/")[:60]
     if not route:
         return
+    today = (day or datetime.date.today()).isoformat()
     with _LOCK:
         m = _load()
+        _dated(m, today)
         done = m.get("seen", [])
         if route not in done:
             m["seen"] = (done + [route])[-500:]
-            _save(m)
+        on = m["opened_on"]
+        on.pop(route, None)
+        on[route] = today  # newest last, so the oldest go first when it's trimmed
+        m["opened_on"] = dict(list(on.items())[-500:])
+        _use(m, route=route, what="opened", day=today)
+        _save(m)
+
+
+def _dated(m, today):
+    """Pages opened before dates were kept (1.2 and older) count as opened today, so returns start gradually."""
+    if "opened_on" not in m:
+        m["opened_on"] = {r: today for r in m.get("seen", [])}
+
+
+def _use(m, day, what, route=None, kind=None, tour=None):
+    """The use record (CONNECTIONS.md step 2): per feature, how often it was brought up and opened, and when last."""
+    from coach import features
+    fid = features.feature_of(route=route, kind=kind, tour=tour)
+    if not fid:
+        return
+    u = m.setdefault("use", {}).setdefault(fid, {})
+    u[what] = u.get(what, 0) + 1
+    u[f"last_{what}"] = day
+
+
+def opened_lately(m, route, today):
+    """Opened within REST_DAYS (this route or anything under it): the coach doesn't bring it up again yet."""
+    cutoff = (datetime.date.fromisoformat(today) - datetime.timedelta(days=REST_DAYS)).isoformat()
+    return any((r == route or r.startswith(route + "/")) and d > cutoff for r, d in (m.get("opened_on") or {}).items())
 
 
 # where things are, said in words (23 Oct test: a ring in the app pointed at the wrong place; words can't)
@@ -136,7 +172,12 @@ def tour_next(coach=None, today=None, now=None, extension=False):
              "has_done": bool(plan._memory().get("done"))}
     shown = t.get("shown", {})
     needs["prep"] = opened("prep")
+    # respect (28 Nov simulation: Punish, Spar, Explore, Ask and the film came back every other day, forever, for a
+    # player who opened the page but never used them): shown on MAX_DAYS days lately -> rests REST_DAYS; TOUR_TRIES in
+    # all, then only a moment from the player's own data brings it up
+    rest = ((today or datetime.date.today()) - datetime.timedelta(days=REST_DAYS)).isoformat()
     left = [x for x in TOUR if not opened(x[3]) and needs.get(x[4], True) and day not in shown.get(x[0], [])
+            and len([d for d in shown.get(x[0], []) if d > rest]) < MAX_DAYS and len(shown.get(x[0], [])) < TOUR_TRIES
             and not (x[0] in IN_HER_VOICE and coach and coach != x[1])]  # "I can…" only from the coach it's about
     left.sort(key=lambda x: len(shown.get(x[0], [])))  # never shown first; stable, so the tour's order otherwise
     if not left:
@@ -156,15 +197,17 @@ def _tour_shown(m, tid, day, now):
     m["tour"] = t
 
 
-def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, player=None):
+def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, player=None, day=None):
     """Everything worth suggesting now, the most useful first (23 Oct test: "does she have the mindset to suggest
     everything, anywhere?"). place "app" points with a route; "chesscom" with a red-ring route (guide)."""
     from coach import coaches
     app = place == "app"
-    out, done = [], set(_load().get("seen", []))
+    out, m = [], _load()
+    today = (day or datetime.date.today()).isoformat()
+    _dated(m, today)
 
-    def opened(route):  # done or seen: never again
-        return any(d == route or d.startswith(route + "/") for d in done)
+    def opened(route):  # opened lately: not yet (it comes back after REST_DAYS if the need is still there)
+        return opened_lately(m, route, today)
 
     def add(kind, cid, line, route=None, guide=None):
         if app and route and WHERE.get(route.split("/")[0]):  # in the app she says exactly where it is (no rings there)
@@ -309,14 +352,16 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
     now = now or time.time()
     with _LOCK:
         m = _load()
+        _dated(m, today)  # kept with this save, so the gradual start is stamped once, not every day
         shown = m.get("shown", {}) if m.get("day") == today else {}
         mine = shown.get(place, [])
         kinds = m.get("kinds", {})
         before = set(kinds.get(yesterday, []))
         ever = m.get("ever", {})  # suggestion id -> the days it was shown
-        options = [] if no_games else [c for c in candidates(place, home, lesson, rematch, prog, games, player)
+        rest = (day - datetime.timedelta(days=REST_DAYS)).isoformat()  # shown on MAX_DAYS days: it rests, then may return
+        options = [] if no_games else [c for c in candidates(place, home, lesson, rematch, prog, games, player, day)
                    if c["id"] not in mine and c.get("guide") != section
-                   and (c["kind"] in DAILY or len([d for d in ever.get(c["id"], []) if d != today]) < MAX_DAYS)]  # not "this way to puzzles" on that page
+                   and (c["kind"] in DAILY or len([d for d in ever.get(c["id"], []) if d != today and d > rest]) < MAX_DAYS)]  # not "this way to puzzles" on that page
         options.sort(key=lambda c: c["kind"] in before and c["kind"] not in DAILY)  # stable: yesterday's kinds go last
         tour = m.get("tour") or {}
         used = len(mine) + (tour.get("n", 0) if place == "app" and tour.get("day") == today else 0)
@@ -339,7 +384,9 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
         if c["kind"] == "tour":
             _tour_shown(m, c["id"][len("tour-"):], today, now)
             m["shown"] = shown  # today's list only (a new day starts it again)
+            _use(m, today, "brought", tour=c["id"][len("tour-"):])
         else:
+            _use(m, today, "brought", kind=c["kind"])
             m["shown"] = {**shown, place: mine + [c["id"]]}
             days = ever.get(c["id"], [])
             m["ever"] = {**ever, c["id"]: days if today in days else (days + [today])[-MAX_DAYS - 1:]}
