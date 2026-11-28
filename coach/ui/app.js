@@ -23,6 +23,7 @@ const ICON = {
   draw: '<circle cx="12" cy="12" r="8.5"/><path d="M8 10h8M8 14h8"/>',
   flame: '<path d="M12 22c4 0 7-2.7 7-7 0-3.5-2.2-5.6-3.6-7.5-.5 1.9-1.4 3-2.6 3.5.3-3.4-1-6.6-3.8-9-.3 3.4-2 5.7-3.6 7.6C4.2 11.3 5 13 5 15c0 4.3 3 7 7 7Z"/>',
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
   book: '<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5c-.8 0-1.5-.7-1.5-1.5z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z"/>',
   down: '<path d="M12 5v14M6 13l6 6 6-6"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
   sparkles: '<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.8 2.2 2.2.8-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/>',
@@ -2050,11 +2051,20 @@ async function gameView(id) {
   shell("games", `<p class="muted">Loading…</p>`);
   const [g, cfg] = await Promise.all([api(`/api/games/${id}`), api("/api/settings")]);
   const aiReady = Object.values(cfg.slots).some(x => x.set);
-  const explained = {}, moments = g.key_moments, keyPly = new Set(moments.map(m => m.ply));
+  const explained = {};
   const flip = g.color === "black";
   // nothing shows or talks until you start (22 Oct test): then ◀ ▶ walk the review, and Maya says every step
   let ply = 0, mode = null;
   const said = g.narration || [];
+  // key moments like chess.com's, not only your big mistakes (28 Nov, the owner): a brilliant move, a mistake of
+  // theirs you punished, a chance they gave you that you missed. Your big mistakes keep their full card.
+  const isMistake = p => g.key_moments.some(k => k.ply === p);
+  const goodMoments = said.map((m, i) => ({ m, p: i + 1 })).filter(({ m, p }) => m && !isMistake(p) && !isMistake(p + 1) && (
+      m.label === "Brilliant" || / You punished their mistake\./.test(m.text) ||
+      (m.kind === "slip" && (m.arrows || []).some(a => a[2] === "Your chance"))))
+    .map(({ m, p }) => ({ ply: p, steps: [], loss: 0, move_number: g.move_numbers[p - 1],
+      good: m.label === "Brilliant" ? "Brilliant move" : m.kind === "slip" ? "A chance you missed" : "You punished their mistake" }));
+  const moments = [...g.key_moments, ...goodMoments].sort((a, b) => a.ply - b.ply), keyPly = new Set(moments.map(m => m.ply));
   const END = { checkmated: "checkmated.", resigned: "resigned.", timeout: "ran out of time.", abandoned: "left the game.",
     stalemate: "Stalemate: a draw.", agreed: "A draw by agreement.", repetition: "A draw by repetition.",
     insufficient: "A draw: not enough pieces to mate.", timevsinsufficient: "A draw: time ran out, but no mate was possible.",
@@ -2160,7 +2170,7 @@ async function gameView(id) {
   // the second way in is always there, greyed with the reason when the game had none (28 Nov, the owner: "why is
   // that missing?"). The report is the cover page only: before the review starts (the owner, 28 Nov: "it shouldn't
   // be always there")
-  const noKey = `<button class="btn small-btn" disabled title="No big mistakes in this game, so no key moments">Key moments only · none here</button>`;
+  const noKey = `<button class="btn small-btn" disabled title="Nothing stood out in this game: no big mistakes, no brilliant moves">Key moments only</button>`;
   const modes = () => `<div class="row">
       <button class="btn small-btn ${mode === "game" ? "primary" : ""}" data-mode="game">Whole game</button>
       ${moments.length ? `<button class="btn small-btn ${mode === "key" ? "primary" : ""}" data-mode="key">Key moments only</button>` : noKey}</div>`;
@@ -2170,9 +2180,8 @@ async function gameView(id) {
     if (!mode) {  // the start: the report, and two ways in
       w.innerHTML = `<h2 style="margin:0">Game review</h2>${report()}
         <p class="muted small" style="margin:0">${moments.length ? `${moments.length} key moment${moments.length === 1 ? "" : "s"}` : "No big mistakes"}</p>
-        <div class="row"><button class="btn primary" id="startreview">▶ Review the whole game</button>
-          ${moments.length ? `<button class="btn" data-mode="key">Key moments only</button>` : noKey.replace(" small-btn", "")}</div>
-        <p class="small faint" style="margin:0">◀ ▶ under the board: one move at a time.${moments.length ? " In Key moments only, they jump from one key moment to the next." : ""}</p>`;
+        <div class="review-ways"><button class="btn primary" id="startreview">▶ Review the whole game</button>
+          ${moments.length ? `<button class="btn" data-mode="key">Key moments only</button>` : noKey.replace(" small-btn", "")}</div>`;
       $("#startreview").onclick = () => setMode("game");
       wire(w);
       return;
@@ -2180,11 +2189,11 @@ async function gameView(id) {
     const m = said[ply - 1], last = ply === g.positions.length - 1, total = g.move_numbers[g.move_numbers.length - 1];
     const ki = momentAt(ply), k = moments[ki];
     const head = mode === "key" && k ? `Key moment ${ki + 1} of ${moments.length}` : ply ? `Move ${g.move_numbers[ply - 1]} of ${total}` : "The start";
-    w.innerHTML = `${modes()}<div class="row spread"><h2 style="margin:0">${head}</h2>
-        <span class="small faint">◀ ▶ under the board</span></div>
+    w.innerHTML = `${modes()}<div class="row spread"><h2 style="margin:0">${head}</h2></div>
       <p style="margin:0">${ply && m ? `${badge(m.label)} ${esc(m.text)}` : "The starting position. Press ▶ for the first move."}</p>
       ${last && ending() ? `<p class="small" style="margin:0"><b>The end:</b> ${esc(ending())}</p>` : ""}
-      ${k ? `<div class="box keycard" title="${esc([k.habit && "Habit: " + k.habit, k.humans].filter(Boolean).join(" · "))}">
+      ${k && k.good ? `<div class="box keycard keygood"><span class="what good-text">${svg("star")} Key moment ${ki + 1}/${moments.length} · ${esc(k.good)}</span></div>` : ""}
+      ${k && !k.good ? `<div class="box keycard" title="${esc([k.habit && "Habit: " + k.habit, k.humans].filter(Boolean).join(" · "))}">
         <div class="row spread"><span class="what">${svg("bolt")} Key moment ${ki + 1}/${moments.length}</span>
           <span class="small bad-text" title="How much of your chance to win this move cost">−${Math.round(k.loss)}%</span></div>
         <div class="kchips">${k.steps.map((st, i) => `<button class="kchip ${view && view[0] === ki && view[1] === i ? "on" : ""}" data-s="${i}" title="${esc(st.text)}">
@@ -2225,7 +2234,7 @@ async function gameView(id) {
     let text = !ply || !m ? "The starting position." : m.text;
     if (k) text = (mode === "key" ? `Key moment ${momentAt(ply) + 1}. ` : "Key moment! ") + text + " " + k.steps.slice(2).map(st => st.text).join(" ");
     if (ply === g.positions.length - 1 && ending()) text += ` ${ending()}`;
-    if (speak) Coach.react("maya", k || (m && m.kind === "bad") ? "worried" : m && (m.kind === "good" || m.kind === "slip") ? "pleased" : "explain", text);
+    if (speak) Coach.react("maya", k && k.good ? "pleased" : k || (m && m.kind === "bad") ? "worried" : m && (m.kind === "good" || m.kind === "slip") ? "pleased" : "explain", text);
     return text;
   }
   function setMode(md) {
@@ -2282,13 +2291,14 @@ async function gameView(id) {
   draw();
   // Maya gives the headline and waits for you: nothing is walked through until you start
   const s = g.summary || {}, acc = s.you && s.you.accuracy != null ? ` Your accuracy: ${Math.round(s.you.accuracy)}.` : "";
-  const worst = moments.reduce((a, b) => (b.loss > (a ? a.loss : -1) ? b : a), null);
+  const worst = g.key_moments.reduce((a, b) => (b.loss > (a ? a.loss : -1) ? b : a), null);  // mistakes only
+  const best = goodMoments.length ? ` ${goodMoments.length} good moment${goodMoments.length === 1 ? "" : "s"} to see again too.` : "";
   if (worst) Coach.react("maya", "explain",
     `${moments.length} key moment${moments.length === 1 ? "" : "s"} in this game; move ${worst.move_number} cost you the most.${acc} ` +
     "Review the whole game with me, or just the key moments.",
     [{ label: "▶ Whole game", run: () => setMode("game") }, { label: "Key moments", run: () => setMode("key") }]);
-  else Coach.react("maya", "celebrate", `No big mistakes in this game.${acc} Press Review and we'll go through it move by move.`,
-    [{ label: "▶ Review", run: () => setMode("game") }]);
+  else Coach.react("maya", "celebrate", `No big mistakes in this game.${acc}${best} Press Review and we'll go through it move by move.`,
+    [{ label: "▶ Review", run: () => setMode("game") }, ...(goodMoments.length ? [{ label: "Key moments", run: () => setMode("key") }] : [])]);
 }
 
 // ---------- practice ----------

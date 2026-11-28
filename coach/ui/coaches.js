@@ -520,7 +520,7 @@ async function planView(arg) {
       <div class="mini-board" data-board="${esc(x.id)}"></div>
       ${segs(x, done)}
       ${going ? `<div class="small muted ppath">${answeredOf(x)}</div>` : x.path ? `<div class="small muted ppath">${x.path.of ? `Topic ${x.path.at} of ${x.path.of}` : `Opening ${x.path.at}`}${
-        x.path.next ? ` · next: ${esc(x.path.next)}` : ""}</div>` : ""}
+        x.path.next ? ` · next: ${esc(x.path.next)}` : ""}</div>` : x.intro ? `<div class="small muted ppath">${esc(x.intro)}</div>` : ""}
       <button class="btn ${isNew || going ? "primary" : ""}">${done ? "Again" : going ? "Continue" : "Start"}</button>${resets}</div>`;
   };
   const startedRow = started.length ? `<h3 class="plan-done-head">In progress · ${started.length}</h3>

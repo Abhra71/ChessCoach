@@ -1131,3 +1131,10 @@ a.pcard, a.pcard * { text-decoration: none; } a.pcard { color: inherit; } a.pcar
   .report-foot { margin-top: 14px; text-align: center; }
 }
 @media print { .report .report-head .small.muted { display: none; } }  /* the dates are in the green band */
+
+/* the two ways into a review, the same size, never overflowing (28 Nov, the owner) */
+.review-ways { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.review-ways .btn { width: 100%; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* a good key moment: a brilliant move, a punished mistake, a missed chance (28 Nov) */
+.keycard.keygood { border-color: color-mix(in srgb, var(--good, #81b64c) 45%, var(--line)); }
+.keycard.keygood svg { width: 15px; height: 15px; vertical-align: -2px; }
