@@ -1348,7 +1348,8 @@ def update_once():
     STATE.update(phase="downloading your games", done=0, total=0, error=None)
     from coach import fixes
     fixes.refresh()  # once a day: the fix file from GitHub (never fails; offline keeps the last copy)
-    fetch.fetch(player())
+    fetch.fetch(player(), progress=lambda done, total: STATE.update(done=done, total=total))  # month by month (28 Nov)
+    STATE.update(done=0, total=0)
     if not puzzles.current() and not puzzles.from_pack():  # first run (the packed set), or the library grew
         STATE["phase"] = "downloading puzzles"
         puzzles.main()

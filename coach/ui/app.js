@@ -2658,7 +2658,9 @@ async function welcome() {
       if (s.phase === "ready" && (s.review_ready || s.no_games)) { try { sessionStorage.setItem("kw-new", "1"); } catch (e) {} return go("home"); }
       $("#phase").textContent = s.phase === "error" ? (s.error === "offline" ? "Can't reach chess.com. Check your internet: it tries again by itself." : "Something went wrong. Retrying by itself.") : cap(s.phase || "working") + "…";
       $("#fill").style.width = (s.total ? Math.max(3, 100 * s.done / s.total) : s.phase === "building your pages" ? 100 : 3) + "%";
-      $("#cnt").textContent = s.total ? `Your newest ${s.total} games: ${s.done} of ${s.total}` : "";  // why 16 (19 Nov hand test)
+      const dl = s.phase === "downloading your games";  // month by month from chess.com: it moves, never looks stuck (28 Nov)
+      $("#cnt").textContent = !s.total ? "" : dl ? `From chess.com, one month at a time: ${s.done} of ${s.total}`
+        : `Your newest ${s.total} games: ${s.done} of ${s.total}`;  // why 16 (19 Nov hand test)
       await wait(1000);
     }
   }

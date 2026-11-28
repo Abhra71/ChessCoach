@@ -33,9 +33,10 @@ def get_json(url, waits=RETRY_WAITS):
         time.sleep(waits[attempt])
 
 
-def fetch(user, refresh_all=False):
+def fetch(user, refresh_all=False, progress=None):
     """Save the player's monthly game files. Only months not saved yet, plus the latest month, are downloaded.
-    Returns the number of games that were not saved before."""
+    Returns the number of games that were not saved before. progress(done, total): months downloaded so far, for the
+    waiting screen (28 Nov, the owner: "sat as if it's hanging" for a minute with nothing moving)."""
     DATA.mkdir(exist_ok=True)
     try:  # the self-check: chess.com's API still answers, in the shape Knightwise reads
         archives = get_json(f"https://api.chess.com/pub/player/{user}/games/archives")["archives"]
@@ -50,12 +51,15 @@ def fetch(user, refresh_all=False):
         raise
     health.record("api-archives", True)
     new = 0
+    todo = []
     for i, url in enumerate(archives):
         year, month = url.rstrip("/").split("/")[-2:]
         path = DATA / f"games-{year}-{month}.json"
-        latest = i == len(archives) - 1
-        if path.exists() and not latest and not refresh_all:
-            continue
+        if not (path.exists() and i != len(archives) - 1 and not refresh_all):
+            todo.append((url, path))
+    for k, (url, path) in enumerate(todo):
+        if progress:
+            progress(k, len(todo))
         before = len(json.loads(path.read_text())["games"]) if path.exists() else 0
         games = get_json(url)
         missing = health.missing_fields(games)
@@ -64,6 +68,8 @@ def fetch(user, refresh_all=False):
             continue
         path.write_text(json.dumps(games))
         new += len(games["games"]) - before
+    if progress and todo:
+        progress(len(todo), len(todo))
     (DATA / "player.txt").write_text(user)
     return new
 

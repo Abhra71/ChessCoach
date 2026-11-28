@@ -61,7 +61,8 @@ const Coach = (() => {
   Voice.onTalk(on => {
     if (!box) return;
     box.classList.toggle("talking", on);
-    if (!on) { clearTimeout(foldTimer); foldTimer = setTimeout(() => render(false), 30000); }
+    // folds away by itself; sooner in a smaller window, where it covers more of the page (28 Nov)
+    if (!on) { clearTimeout(foldTimer); foldTimer = setTimeout(() => render(false), innerWidth < 1180 ? 12000 : 30000); }
   });
 
   // say something now (open, with voice)

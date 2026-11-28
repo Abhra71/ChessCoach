@@ -1138,3 +1138,11 @@ a.pcard, a.pcard * { text-decoration: none; } a.pcard { color: inherit; } a.pcar
 /* a good key moment: a brilliant move, a punished mistake, a missed chance (28 Nov) */
 .keycard.keygood { border-color: color-mix(in srgb, var(--good, #81b64c) 45%, var(--line)); }
 .keycard.keygood svg { width: 15px; height: 15px; vertical-align: -2px; }
+
+/* the coach never sits on top of the page for long (28 Nov: Maya's bubble covered Home's buttons in a smaller window):
+   room at the bottom of every page to scroll past her; in a smaller window a narrower bubble and a smaller figure */
+#page::after { content: ''; display: block; height: 140px; }
+@media (max-width: 1180px) {
+  .kw-coach.kw-app .kw-box { width: 250px; }
+  .kw-coach.kw-app .kw-char { transform: scale(.82); transform-origin: bottom right; }
+}

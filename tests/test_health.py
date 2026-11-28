@@ -87,3 +87,15 @@ def test_api_down_is_reported_but_no_internet_is_not(monkeypatch):
     with pytest.raises(urllib.error.HTTPError):
         fetch.fetch("x")
     assert health.summary()["seen"] == []  # a mistyped username isn't a broken service
+
+
+def test_the_download_says_how_far_it_is(monkeypatch, tmp_path):
+    """28 Nov, the owner: "sat as if it's hanging". Month by month, only the months it really downloads (a saved older
+    month is skipped; the latest is always fetched again)."""
+    base = "https://api.chess.com/pub/player/x/games/2026/"
+    (tmp_path / "games-2026-08.json").write_text(json.dumps({"games": [GAME]}))  # saved already: skipped
+    answers(monkeypatch, {"archives": {"archives": [base + "08", base + "09", base + "10", base + "11"]},
+                          "month": {"games": [GAME]}})
+    seen = []
+    fetch.fetch("x", progress=lambda done, total: seen.append((done, total)))
+    assert seen == [(0, 3), (1, 3), (2, 3), (3, 3)]
