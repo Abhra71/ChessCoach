@@ -69,3 +69,23 @@ def test_viktors_regret_comes_once_in_your_head(app, browser):
         assert not errors, errors
     finally:
         page.close()
+
+
+def test_underlining_settles_and_never_loops(app, browser):
+    """28 Nov freeze: the word marker split text at every match, which woke its own watcher again and again. On a page
+    that isn't changing, the page must stop changing."""
+    page, errors = _page(browser)
+    try:
+        for name in ("progress", "home", "course"):
+            page.goto(f"{URL}/app#/{name}", wait_until="networkidle", timeout=30_000)
+            page.wait_for_timeout(2500)
+            # a word twice, like a game review saying "fork" twice: the case that looped
+            page.evaluate("document.getElementById('page').insertAdjacentHTML('beforeend', '<p>A fork here, a fork there, then a pin and a fork.</p>')")
+            page.wait_for_timeout(2500)
+            count = "(() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n = 0; while (w.nextNode()) n++; return n; })()"
+            before = page.evaluate(count)
+            page.wait_for_timeout(3000)
+            assert page.evaluate(count) == before, f"{name}: the page keeps changing"
+        assert not errors, errors
+    finally:
+        page.close()

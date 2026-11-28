@@ -19,24 +19,30 @@ function loadWords() {
   });
 }
 function markWords(root) {
+  // Changes the page only where it underlines a word, never otherwise (28 Nov: splitting text at every match, even a
+  // word already underlined, woke the watcher below again and again and froze the app)
   if (!KW_WORD_RE || !root) return;
   const done = new Set([...root.querySelectorAll(".term")].map(e => e.dataset.word));
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n =>
     n.nodeValue.trim().length > 2 && n.parentElement && !n.parentElement.closest(NO_MARK) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
   const nodes = [];
   while (walker.nextNode() && nodes.length < 4000) nodes.push(walker.currentNode);
-  for (let i = 0; i < nodes.length; i++) {
-    const n = nodes[i], m = KW_WORD_RE.exec(n.nodeValue);
-    if (!m) continue;
-    const x = KW_FORM[m[1].toLowerCase()];
-    const after = n.splitText(m.index + m[1].length);
-    nodes.push(after);  // the rest of this text may hold another word
-    if (!x || done.has(x.word)) continue;
-    done.add(x.word);
-    const word = n.splitText(m.index), b = document.createElement("button");
-    b.type = "button"; b.className = "term"; b.dataset.word = x.word; b.textContent = word.nodeValue;
+  const every = new RegExp(KW_WORD_RE.source, "gi");
+  for (let i = 0; i < nodes.length && i < 8000; i++) {
+    const n = nodes[i];
+    every.lastIndex = 0;
+    let m, hit = null;
+    while ((m = every.exec(n.nodeValue))) {
+      const x = KW_FORM[m[1].toLowerCase()];
+      if (x && !done.has(x.word)) { hit = { m, x }; break; }
+    }
+    if (!hit) continue;
+    done.add(hit.x.word);
+    const word = n.splitText(hit.m.index), after = word.splitText(hit.m[1].length), b = document.createElement("button");
+    b.type = "button"; b.className = "term"; b.dataset.word = hit.x.word; b.textContent = word.nodeValue;
     b.title = "What does it mean?";
     word.replaceWith(b);
+    if (after.nodeValue) nodes.push(after);  // the rest of this text may hold another new word
   }
 }
 function wordPop(b) {
@@ -62,12 +68,16 @@ document.addEventListener("click", e => {
 }, true);
 document.addEventListener("keydown", e => { if (e.key === "Escape") { const p = document.querySelector(".term-pop"); if (p) p.remove(); } });
 window.addEventListener("hashchange", () => { const p = document.querySelector(".term-pop"); if (p) p.remove(); });
-let markTimer = null;
-const markAll = () => { markWords(document.getElementById("page")); document.querySelectorAll(".kw-coach .kw-box").forEach(markWords); };
+let markTimer = null, markWatch = null;
+const WATCH = { childList: true, subtree: true };
+function markAll() {
+  if (markWatch) markWatch.disconnect();  // our own underlining must not wake the watcher
+  try { markWords(document.getElementById("page")); document.querySelectorAll(".kw-coach .kw-box").forEach(markWords); }
+  finally { if (markWatch) { markWatch.takeRecords(); markWatch.observe(document.body, WATCH); } }
+}
 loadWords().then(() => {
+  markWatch = new MutationObserver(() => { clearTimeout(markTimer); markTimer = setTimeout(markAll, 400); });
   markAll();
-  new MutationObserver(() => { clearTimeout(markTimer); markTimer = setTimeout(markAll, 350); })
-    .observe(document.body, { childList: true, subtree: true });
 }).catch(() => {});
 
 // the Chess words page: part of the library (Your plan), so the plan stays lit in the menu
