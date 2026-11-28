@@ -19,7 +19,6 @@ def test_a_new_word_is_marked_once_then_it_is_ordinary(app, browser):
     try:
         page.goto(f"{URL}/app#/progress", wait_until="networkidle", timeout=30_000)
         page.wait_for_selector("#page .term", timeout=15_000)
-        assert page.locator(".room").first.inner_text().strip().lower() == "your record"
         assert 1 <= page.locator("#page .term").count() <= 2  # never busy
         term = page.locator("#page .term").first
         word = term.get_attribute("data-word")

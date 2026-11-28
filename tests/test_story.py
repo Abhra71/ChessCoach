@@ -26,7 +26,9 @@ def test_where_you_already_stand_is_no_fanfare_but_a_new_rank_is():
     story.note_level(1)
     assert story.pending_rank() is None
     story.note_level(2)  # moved up
-    assert story.pending_rank() == {"id": "club", "rank": "Team player", "page": "The magician from Riga"}
+    up = story.pending_rank()
+    assert {k: up[k] for k in ("id", "rank", "page")} == {"id": "club", "rank": "Team player", "page": "The magician from Riga"}
+    assert up["story"].startswith("Mikhail Tal became world champion in 1960")
     story.note_level(1)  # a bad week never takes a rank away
     assert story.pending_rank()["rank"] == "Team player"
     story.told_rank()  # the player opened Your level
@@ -44,7 +46,7 @@ def test_viktor_brings_up_a_new_rank():
     story.note_level(1)
     home = {"games": 50, "daily": {"done_today": True}, "last_game": {"end_time": time.time() - 9 * 86400}}
     c = [x for x in nudge.candidates("app", home) if x["kind"] == "rank"]
-    assert c and c[0]["line"].startswith("A new rank: Club player. A page of my notebook is yours now: The Opera Game.")
+    assert c and c[0]["line"].startswith("A new rank: Club player, and a story from my notebook. Paris, 1858.")
     assert c[0]["route"] == "level"
 
 

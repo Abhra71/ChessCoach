@@ -330,6 +330,12 @@ class Handler(BaseHTTPRequestHandler):
             from urllib.parse import parse_qs, urlsplit
             return self.send(200, json.dumps({"ok": memories.told_on_page(parse_qs(urlsplit(self.path).query).get("id", [""])[0])}),
                              "application/json")
+        if path == "/api/coach-story":  # a coach's own small story (Settings, the quiet bubble)
+            from coach import coaches
+            from urllib.parse import parse_qs, urlsplit
+            who = parse_qs(urlsplit(self.path).query).get("coach", ["maya"])[0]
+            who = who if who in coaches.COACHES else "maya"
+            return self.send(200, json.dumps({"coach": who, "line": coaches.line("idle", who)}), "application/json")
         if path == "/api/words":  # chess words: the list, and which ones the player looked up (3.4)
             from coach import words
             return self.send(200, json.dumps(words.page()), "application/json")

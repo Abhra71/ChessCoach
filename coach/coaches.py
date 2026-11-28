@@ -208,6 +208,33 @@ def line(kind, coach, rng=random, **facts):
 AGAIN = ["Back again. Here's where we are.", "Good, you're back.", "Picking up where we were.", "Welcome back.",
          "There you are. Where were we?", "Back for more. Good."]
 SAY["again"] = {"maya": AGAIN}
+# Their own history, a crumb at a time (owner, 28 Nov: "where is the coach history told?"): said when the bubble has
+# nothing new, and when you press a coach in Settings. Two sentences at most; the once-only memories (coach/memories.py)
+# are kept for their moment, these can come again.
+SAY["idle"] = {
+    "maya": [
+        "I grew up in Chennai, where chess is everywhere: school tournaments from the age of seven. Ask me about any of your games.",
+        "At 14 I was state junior champion. The trophy mattered less than what I learned losing the year before.",
+        "Pawns are the most underestimated piece in the club. A bit like you, before your next good game.",
+        "When I played opens across Asia, I replayed my losses on the bus home. That's what your game reviews are for.",
+        "One move at a time. My first coach said it so often it became my rule for everything.",
+        "I chose coaching because watching someone get it beats winning myself. Show me what you're working on.",
+        "Chennai is Anand's city, and Carlsen won his first world title there in 2013. The whole city was watching.",
+        "Blitz is my favourite thing and my weakness. Too many quick games, though, and the same mistakes come back.",
+        "As a junior I did five minutes of puzzles every morning before school. That's where Today's 5 minutes comes from.",
+    ],
+    "viktor": [
+        "I taught at a chess school in Berlin for thirty years. Calculation first, always: see it before you move it.",
+        "Emanuel Lasker, world champion for 27 years, lived in Berlin. My students heard about him whether they liked it or not.",
+        "I played the German championship for years and never became a grandmaster. I became a teacher instead, and I don't regret that part.",
+        "Most games are decided after the queens are gone. That was the motto on our school's wall.",
+        "I keep a notebook of the games that changed chess. Reach a new rank and I'll tell you one of them.",
+        "At our school we studied the opponent the night before. Prep does that for you now, in a minute.",
+        "Every opening has a story, and every mistake has a reason. My job is to find yours.",
+        "As a boy I played whole games in my head on the tram. It's why I like Blindfold so much.",
+        "I've studied every World Championship match. The best players weren't the fastest: they checked.",
+    ],
+}
 
 
 def mood(home):
@@ -267,7 +294,7 @@ def speak(section, home=None, hour=12, moments=None, rng=random, extra=None, aga
         keep = [lines[-1]] if lines[-1].startswith("My pick") or len(lines) == 1 else lines[1:2]  # where things stand,
         # in one line (a profile has only one: who they are and the prep, cloud review 26 Oct)
         if keep and not fresh_today(keep[0]):  # the same stat once a day, not on every visit (22 Oct test)
-            return {**said, "lines": [], "again": True, "quiet": True}
+            return {**said, "lines": [], "again": True, "quiet": True, "idle": line("idle", said["coach"], rng)}
         said = {**said, "lines": [line("again", said["coach"], rng)] + keep, "again": True}
     return said
 

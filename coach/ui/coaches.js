@@ -92,7 +92,11 @@ const Coach = (() => {
     if (r.badge && hub && typeof badgeUnlocked === "function") setTimeout(() => still() && badgeUnlocked(r.badge), 900);
     said = { ...r, casual: true, pose: first ? "greet" : r.mood, actions: (r.actions || []).map(a => a.app ? a : { ...a, label: a.label + " ↗" }) };
     more = false;
-    if (r.quiet && !force) { said.lines = ["I'm here if you need anything."]; return render(false); }  // nothing new: just the tab
+    if (r.quiet && !force) {  // nothing new: just the tab; opened, a small story of their own, and what the button is for
+      const why = (said.actions[0] || {}).why;
+      said.lines = [r.idle || "I'm here if you need anything.", ...(why ? [why] : [])];
+      return render(false);
+    }
     if (r.point) {  // something new for you: she comes up by herself, says it and points at it (23 Oct)
       render(true); talk(); if (r.point.route) setTimeout(() => typeof kwPoint === "function" && kwPoint(r.point.route), 300);
       if (first) remember(`kw-app-greeted-${section}`, today());

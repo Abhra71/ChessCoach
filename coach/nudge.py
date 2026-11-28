@@ -260,8 +260,8 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
     except Exception:
         up = None
     if up:
-        add("rank", f"rank-{up['id']}", f"A new rank: {up['rank']}. A page of my notebook is yours now: "
-            f"{up['page']}.", "level")
+        add("rank", f"rank-{up['id']}", f"A new rank: {up['rank']}, and a story from my notebook. {up['story']}",
+            "level")
     if app:  # the coaches' memories, the club's story moments and "on this day" (storyline 3.3 and 3.5, 28 Nov)
         _club(out, add, home, games, player, prog, day or datetime.date.today(), m)
     for b in (prog or {}).get("badges") or []:  # close to the next badge: a reason to play carefully today

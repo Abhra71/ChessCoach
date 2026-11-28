@@ -18,8 +18,11 @@ checked against their Wikipedia pages before they go into the app.
 - 3.5 Story moments: welcome to the club, the first match record, a 7-day streak, a hundred games, a year; "on this
   day" from Viktor, weekly at most, never twice, 23 checked events with their source (the Immortal Game and
   Kasparov's Immortal are left out: their pages give no exact day).
-- 3.6 The club feel: each page's room name above its title (the menu stays plain), and Meet your coaches (click a
-  coach's name in the bubble; Maya brings it up after two days).
+- 3.6 Meet your coaches (click a coach's name in the bubble; Maya brings it up after two days). The coaches' own
+  history in small pieces (coaches.py SAY["idle"], 9 each): told when the bubble has nothing new, and by the voice
+  buttons in Settings. Owner's test, 28 Nov: the room names above page titles were easy to miss and added nothing,
+  so they're gone; nobody would read Viktor's notebook as a page, so Viktor tells the story aloud when you reach the
+  rank, and the pages wait for the Book (step 6), which is his notebook.
 Not built from this document yet: the coaches' rare two-line banter on Home, "First practice passed" sound and glow
 (step 4, feel), the Hall of Champions mention of a live World Championship (step 7).
 

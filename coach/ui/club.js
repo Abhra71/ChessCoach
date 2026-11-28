@@ -131,18 +131,6 @@ function wordsFor(q) {
   return KW_WORDS.words.filter(x => x.word.toLowerCase().includes(s) || x.forms.some(f => f.toLowerCase() === s)).slice(0, 2);
 }
 
-// ---------- each page is a room in the club: a small name above the title, the menu stays plain ----------
-const ROOMS = { home: "The clubhouse", games: "Your match records", practice: "The training ground", daily: "The training ground",
-  train: "The practice hall", plan: "The library", words: "The library", course: "The lesson path", level: "Your membership rank",
-  progress: "Your record", coaches: "The clubhouse" };
-function roomName(name) {
-  const room = ROOMS[name || "home"], page = $("#page"), h1 = page && page.querySelector("h1");
-  if (!room || !h1 || page.querySelector(".room")) return;
-  const r = document.createElement("div");
-  r.className = "room"; r.textContent = room;
-  h1.before(r);
-}
-
 // ---------- Meet your coaches ----------
 const MEET = [
   { id: "maya", from: "Chennai, India", lines: [

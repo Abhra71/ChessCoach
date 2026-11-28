@@ -1182,8 +1182,6 @@ a.pcard, a.pcard * { text-decoration: none; } a.pcard { color: inherit; } a.pcar
 .word { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; }
 .word span { color: var(--muted); font-size: 14px; line-height: 1.45; }
 .word.met b::after { content: " ✓"; color: var(--better, var(--accent)); font-weight: 400; font-size: 13px; }
-/* each page is a room in the club: a small name above the title */
-.room { font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--faint, var(--muted)); margin: 0 0 2px; }
 /* Meet your coaches */
 .meet { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .meet-card { display: flex; gap: 16px; padding: 18px; align-items: flex-start; }
@@ -1194,4 +1192,8 @@ a.pcard, a.pcard * { text-decoration: none; } a.pcard { color: inherit; } a.pcar
 .meet-note { margin-top: 14px; }
 .kw-name { color: inherit; text-decoration: none; }
 .kw-name:hover b { text-decoration: underline; }
+.voice-said { margin: 8px 0 0; max-width: 560px; }
+/* the coach box: name and role on one line, the role cut short rather than wrapping (28 Nov) */
+.kw-app .kw-head { align-items: center; }
+.kw-app .kw-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 @media (max-width: 560px) { .meet-card { flex-direction: column; } }

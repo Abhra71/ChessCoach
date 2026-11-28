@@ -81,7 +81,7 @@ def pending_rank():
     if reached is None or told is None or reached <= told:
         return None
     lid = ORDER[reached]
-    return {"id": lid, "rank": RANKS[lid], "page": NOTEBOOK[lid]["title"]}
+    return {"id": lid, "rank": RANKS[lid], "page": NOTEBOOK[lid]["title"], "story": NOTEBOOK[lid]["text"]}
 
 
 def told_rank():

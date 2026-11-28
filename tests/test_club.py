@@ -177,3 +177,34 @@ def test_the_page_memory_endpoints(tmp_path, monkeypatch):
         assert len(get("/api/words")["words"]) == 33
     finally:
         srv.shutdown()
+
+
+def test_the_coaches_tell_their_own_history_in_small_pieces(tmp_path, monkeypatch):
+    """Owner, 28 Nov: the quiet bubble and the Settings voice button tell a piece of the coach's own story, not one
+    generic line; never the same one twice in a row."""
+    import re
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+    from coach import coaches, service
+    for who in ("maya", "viktor"):
+        lines = coaches.SAY["idle"][who]
+        assert len(lines) >= 8 and all(len(re.split(r"(?<=[.!?])\s+", x)) <= 2 for x in lines)
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), service.Handler)
+    monkeypatch.setattr(service, "PORT", srv.server_port)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    get = lambda path: json.loads(urllib.request.urlopen(f"http://127.0.0.1:{srv.server_port}{path}", timeout=5).read())
+    try:
+        a, b = get("/api/coach-story?coach=viktor"), get("/api/coach-story?coach=viktor")
+        assert a["coach"] == "viktor" and a["line"] in coaches.SAY["idle"]["viktor"] and a["line"] != b["line"]
+        assert get("/api/coach-story?coach=nobody")["coach"] == "maya"
+    finally:
+        srv.shutdown()
+
+
+def test_a_new_rank_comes_with_viktor_telling_the_story(tmp_path, monkeypatch):
+    fresh(tmp_path, monkeypatch, club=True)
+    story.note_level(0)
+    story.note_level(1)
+    c = {c["kind"]: c for c in nudge.candidates("app", QUIET, day=DAY)}["rank"]
+    assert c["line"].startswith("A new rank: Club player, and a story from my notebook. Paris, 1858. Paul Morphy")
