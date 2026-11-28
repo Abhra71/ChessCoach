@@ -389,11 +389,13 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
                            "numbers_you_can_open": f"1 to {home.get('games') or 0}"}}
     facts.update(this_move(where))
     facts.update(this_line(where))
-    facts_text = json.dumps(facts)
+    from coach import privacy
+    names = privacy.for_games(games, home)  # opponents' names never go to the AI company; put back in the answer (28 Nov)
+    facts_text = names.hide_facts(facts)
     system = (ai.COACH_RULES.format(rating=home.get("rating") or "unknown") + coaches.PERSONA[coach] + RULES)
     name = coaches.COACHES[coach]["name"]
-    turns = "".join(f"{'Player' if who == 'player' else name}: {text}\n" for who, text in list(history)[-6:])
-    prompt = f"Facts:\n{facts_text}\n\n{turns}Player: {str(said)[:500]}\n{name} (JSON):"
+    turns = "".join(f"{'Player' if who == 'player' else name}: {names.hide_said(text)}\n" for who, text in list(history)[-6:])
+    prompt = f"Facts:\n{facts_text}\n\n{turns}Player: {names.hide_said(str(said)[:500])}\n{name} (JSON):"
     try:
         text, _provider = (ask_ai or ai.complete)(system, prompt, 400)
     except ai.NoKey:  # no key: the written sentences, as before
@@ -405,6 +407,7 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
         import logging  # what the AI wrote that couldn't be used, to see why (24 Oct: Gemini failed on "open my last review")
         logging.getLogger("knightwise").info("talk: unusable reply from %s: %r", _provider, (text or "")[:300])
         return fallback
+    out = names.show(out)  # the real names back ("Opponent B" -> sreejit), in her words and in what she asks to open
     order = out if "what" in out or isinstance(out.get("do"), str) else out.get("do")  # flat (do, what) or the old shapes
     done = action(order, games, where)
     wanted = plain(order) if isinstance(plain(order), dict) else {}
@@ -418,6 +421,7 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
         except Exception:
             pass
         if again and coaches.grounded(again["say"], facts_text):
+            again = names.show(again)
             order2 = again if "what" in again or isinstance(again.get("do"), str) else again.get("do")
             if action(order2, games, where) or not wanted:
                 out, order, done = again, order2, action(order2, games, where)
@@ -459,3 +463,4 @@ def reply(coach, said, history=(), where=None, home=None, ask_ai=None, games=Non
         offered = None
     return {"text": say, "mood": "pleased" if "!" in say else "calm", "ai": True, "action": done, "offer": offered,
             "asked": str(out.get("asked", ""))[:12]}  # for the debug logbook: what the AI took the message to be
+

@@ -609,13 +609,15 @@ def ai_idea(home, today=None, ask_ai=None, rating=None, rng=None):
         if not ai.ready():
             return None
         ask_ai = ai.complete
+    from coach import privacy
+    names = privacy.for_games([], home)  # opponents' names never go to the AI company (28 Nov)
     card = coaches.player_card(home)
     system = (coaches.PERSONA["maya"] + " Suggest ONE new way of approaching chess for this player, at their level, that "
               "would help with their main habit. Not a generic tip they already know from their card. Never name squares or "
               'moves. Reply as JSON only: {"title": "3 to 6 words", "text": "2 short sentences"}.')
     try:
-        text, _ = ask_ai(system, json.dumps(card), 200)
-        data = json.loads(text[text.index("{"): text.rindex("}") + 1])
+        text, _ = ask_ai(system, names.hide_facts(card), 200)
+        data = names.show(json.loads(text[text.index("{"): text.rindex("}") + 1]))
         title, body = str(data["title"]).strip()[:60], str(data["text"]).strip()[:400]
     except Exception:  # busy, down, or not JSON: the written ideas stay
         return None

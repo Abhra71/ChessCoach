@@ -517,13 +517,16 @@ def chat(coach, message, history=(), home=None, extra=None, ask_ai=None, rng=ran
     tip = focus.get("habit") or "Before every move, ask: what can they take, and is every piece of mine safe?"
     fallback = {"text": rng.choice(FALLBACK[coach]).format(tip=tip), "mood": "calm", "ai": False}
     ask_ai = ask_ai or ai.complete
+    from coach import privacy
+    names = privacy.for_games([], home)  # opponents' names never go to the AI company; put back in the answer (28 Nov)
     facts = {"player": player_card(home), **(extra or {})}
-    facts_text = json.dumps(facts)
+    facts_text = names.hide_facts(facts)
     system = (ai.COACH_RULES.format(rating=home.get("rating") or "unknown") + PERSONA[coach] +
               " Stay in character. Reply in at most 3 short sentences, like a real conversation. Only talk about chess and "
               "this player's games; never give advice about a game being played right now. The facts are all you know.")
-    turns = "".join(f"{'Player' if who == 'player' else COACHES[coach]['name']}: {said}\n" for who, said in list(history)[-6:])
-    prompt = f"Facts:\n{facts_text}\n\n{turns}Player: {str(message)[:500]}\n{COACHES[coach]['name']}:"
+    turns = "".join(f"{'Player' if who == 'player' else COACHES[coach]['name']}: {names.hide_said(said)}\n"
+                    for who, said in list(history)[-6:])
+    prompt = f"Facts:\n{facts_text}\n\n{turns}Player: {names.hide_said(str(message)[:500])}\n{COACHES[coach]['name']}:"
     try:
         text, _provider = ask_ai(system, prompt, 300)
     except Exception:  # no key, both providers busy or down: the conversation still goes on
@@ -531,6 +534,7 @@ def chat(coach, message, history=(), home=None, extra=None, ask_ai=None, rng=ran
     text = (text or "").strip()
     if not text or not grounded(text, facts_text):
         return fallback
+    text = names.show(text)
     return {"text": text[:700], "mood": "pleased" if "!" in text else "calm", "ai": True}
 
 
