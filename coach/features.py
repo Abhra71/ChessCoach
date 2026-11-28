@@ -99,7 +99,7 @@ FEATURES = [
      "data": ["preps.json"]},
     # the club (storyline 3.4 and 3.6, 28 Nov)
     {"id": "words", "name": "Chess words (tap to explain, and the list)", "page": "words", "coach": "viktor",
-     "tour": ["words"], "moments": ["words"],
+     "tour": ["words"], "moments": ["words", "word"],  # the list; a coach introducing one word
      "story": "The library's dictionary: the words strong players use, in plain language",
      "data": ["words.json"]},
     {"id": "coaches", "name": "Meet your coaches", "page": "coaches", "coach": "maya", "tour": ["coaches"],

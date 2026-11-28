@@ -13,7 +13,8 @@ def drills_cache_of_its_own(tmp_path, monkeypatch):
     from coach import coaches
     monkeypatch.setattr(coaches, "SAID", tmp_path / "said.json")
     # the coaches' right-time moments (step 3.2) read these: never the real player's files during a test
-    from coach import blindfold, guess, memory, story
+    from coach import blindfold, guess, memory, story, words
+    monkeypatch.setattr(words, "FILE", tmp_path / "words.json")
     monkeypatch.setattr(memory, "PRACTICE", tmp_path / "practice.jsonl")
     monkeypatch.setattr(memory, "VERDICTS", tmp_path / "verdicts.jsonl")
     monkeypatch.setattr(story, "FILE", tmp_path / "story.json")

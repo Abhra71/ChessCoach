@@ -738,6 +738,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/words/looked":  # a chess word tapped for its meaning
             from coach import words
             return self.send(200, json.dumps({"ok": words.looked_up(str(body.get("word", ""))[:60])}), "application/json")
+        if path == "/api/words/met":  # a new chess word was underlined in front of the player: ordinary from now on
+            from coach import words
+            return self.send(200, json.dumps({"ok": words.met(str(body.get("word", ""))[:60])}), "application/json")
         if path == "/api/plan/mark":  # the player saw or finished a new thing
             from coach import plan
             plan.mark(str(body.get("id", ""))[:200], done=bool(body.get("done")), novelty=bool(body.get("novelty")))

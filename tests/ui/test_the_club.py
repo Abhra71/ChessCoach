@@ -10,21 +10,36 @@ def _page(browser):
     return page, errors
 
 
-def test_a_tap_explains_a_chess_word(app, browser):
+def test_a_new_word_is_marked_once_then_it_is_ordinary(app, browser):
+    """Owner, 28 Nov: a word the player hasn't met has a small dotted line the first time (two a page at most); hover
+    or tap shows its meaning; next time it's ordinary text."""
+    import json
+    (app / "data" / "words.json").write_text("{}")  # a player who hasn't met any word yet (the page check ran first)
     page, errors = _page(browser)
     try:
         page.goto(f"{URL}/app#/progress", wait_until="networkidle", timeout=30_000)
         page.wait_for_selector("#page .term", timeout=15_000)
         assert page.locator(".room").first.inner_text().strip().lower() == "your record"
+        assert 1 <= page.locator("#page .term").count() <= 2  # never busy
         term = page.locator("#page .term").first
         word = term.get_attribute("data-word")
-        term.click()
+        term.hover()
         pop = page.locator(".term-pop")
-        pop.wait_for(timeout=3000)
+        pop.wait_for(timeout=3000)  # a hover shows it
         assert word in pop.inner_text() and len(pop.inner_text()) > len(word) + 10
-        page.mouse.click(5, 790)  # anywhere else closes it
+        page.mouse.move(5, 790)
+        page.wait_for_timeout(700)
+        assert page.locator(".term-pop").count() == 0  # moving away hides it
+        term.click()
+        pop.wait_for(timeout=3000)  # so does a tap
+        page.mouse.click(5, 790)
         page.wait_for_timeout(200)
         assert page.locator(".term-pop").count() == 0
+        page.wait_for_timeout(500)
+        assert word in json.loads((app / "data" / "words.json").read_text()).get("met", {})
+        page.reload(wait_until="networkidle")
+        page.wait_for_timeout(2500)
+        assert page.locator(f'#page .term[data-word="{word}"]').count() == 0  # met: ordinary text now
         assert not errors, errors
     finally:
         page.close()

@@ -9,9 +9,12 @@ checked against their Wikipedia pages before they go into the app.
 - 3.3 The coaches' memories (coach/memories.py): Maya's five (her queen, the clock, the losing streak, memorising,
   the practised fork) and Viktor's two regrets (the unchecked move, told the first time In your head opens; the games
   he never wrote down, at 30 match records). Each told once, one a week per coach at most, two sentences.
-- 3.4 Chess words, layer 1 (coach/words.py, coach/ui/club.js): 33 words; the first on a page is underlined, a tap
-  shows its meaning; the Chess words page (under Explore in Your plan); Explore answers a chess word typed there.
-  Viktor points at the list once you've looked up three.
+- 3.4 Chess words, layer 1 (coach/words.py, coach/ui/club.js), learned one at a time (owner, 28 Nov): a coach
+  introduces a word, with a reason from your newest game (a fork in their reply, a hanging piece, a stalemate, a
+  blunder) or, once a week at most, just because ("A chess word for you: …"). A word you haven't met has a small
+  dotted line the first time it appears (two a page at most); hover or tap shows its meaning; after that it's
+  ordinary text and the coaches simply use it. The Chess words page (under Explore in Your plan) has all 33, ✓ on
+  the ones met; Explore answers a chess word typed there. Viktor points at the list once you've looked up three.
 - 3.5 Story moments: welcome to the club, the first match record, a 7-day streak, a hundred games, a year; "on this
   day" from Viktor, weekly at most, never twice, 23 checked events with their source (the Immortal Game and
   Kasparov's Immortal are left out: their pages give no exact day).

@@ -43,6 +43,7 @@ def test_welcome_to_the_club_on_the_first_day_only(tmp_path, monkeypatch):
 def test_the_club_notices_a_streak_and_a_hundred_games(tmp_path, monkeypatch):
     fresh(tmp_path, monkeypatch, club=True)
     memories.told("welcome")
+    words.introduced("Candidate moves", DAY)  # this week's chess word already came
     home = {**QUIET, "games": 140, "daily": {"done_today": True, "streak": 7}}
     first = said(home=home, n=1)[0]
     assert first["kind"] == "story"  # one story moment a day, before everything else that day
@@ -99,6 +100,7 @@ def test_on_this_day_comes_from_viktor_with_its_source(tmp_path, monkeypatch):
     fresh(tmp_path, monkeypatch, club=True)
     memories.told("welcome")
     memories.told("hundred")
+    words.introduced("Candidate moves", datetime.date(2026, 12, 11))  # this week's word was yesterday
     p = said(datetime.date(2026, 12, 12), n=1)[0]
     assert p["kind"] == "history" and p["voice"] == "viktor" and p["action"]["url"].startswith("https://en.wikipedia.org")
 

@@ -1,18 +1,26 @@
 """Chess words, layer 1 (storyline step 3.4, docs/STORYLINE.md section 6): the 33 words strong players use, each in
-one plain line. In the app the first time a word appears on a page it's underlined; a tap (not a hover: it must work
-on touch too) shows its meaning. All of them are on the Chess words page, part of the library (Your plan).
+one plain line, learned one at a time (owner, 28 Nov):
+- a coach introduces a word, with a reason (your game just showed a fork) or sometimes just because;
+- the first time the player meets a word it has a small dotted line: hover or tap shows its meaning;
+- after that it's normal text, and the coaches simply use it. data/words.json keeps the words met.
+All of them are on the Chess words page, part of the library (Your plan).
 
 Layers 2 (club, ~60) and 3 (advanced, ~80) come with the Book. data/words.json keeps which words the player looked
 up, so Viktor can point at the whole list once they've started using it.
 """
 import datetime
 import json
+import threading
+import time
 
 from coach.paths import DATA
 
 FILE = DATA / "words.json"
+_LOCK = threading.Lock()  # two words met at once both arrive: one read-change-write at a time (28 Nov)
 LAYER = 1
 LOOKED_UP = 3  # after this many different words, Viktor points at the whole list (coach/nudge.py, kind "words")
+JUST_SAYING = 7  # a word without a reason: at most one a week
+NEW_PER_PAGE = 2  # the app underlines at most this many new words on one page (coach/ui/club.js): never busy
 
 # (word, its plain meaning, the forms underlined in the app's text; empty: only on the Chess words page, because the
 # word is too everyday to underline, like "mistake" or "the centre")
@@ -56,9 +64,10 @@ WORDS = [
 
 
 def page():
-    """The Chess words page and the app's underlining: {layer, words: [{word, meaning, forms}], looked}."""
+    """The Chess words page and the app's underlining: {layer, words: [{word, meaning, forms}], looked, met}."""
+    d = _load()
     return {"layer": LAYER, "words": [{"word": w, "meaning": m, "forms": f} for w, m, f in WORDS],
-            "looked": sorted(_load().get("looked", {}))}
+            "looked": sorted(d.get("looked", {})), "met": sorted(d.get("met", {})), "per_page": NEW_PER_PAGE}
 
 
 def _load():
@@ -69,18 +78,97 @@ def _load():
 
 
 def looked_up(word, day=None):
-    """The player tapped a word for its meaning."""
-    if word not in {w for w, _, _ in WORDS}:
-        return False
-    d = _load()
-    d["looked"] = {**d.get("looked", {}), word: (day or datetime.date.today()).isoformat()}
-    try:
-        FILE.parent.mkdir(parents=True, exist_ok=True)
-        FILE.write_text(json.dumps(d), encoding="utf-8")
-    except OSError:
-        return False
-    return True
+    """The player tapped (or hovered) a word for its meaning."""
+    return _mark("looked", word, day)
 
 
 def count_looked():
     return len(_load().get("looked", {}))
+
+
+def _mark(key, word, day=None):
+    if word not in {w for w, _, _ in WORDS}:
+        return False
+    with _LOCK:
+        d = _load()
+        d[key] = {**d.get(key, {}), word: (day or datetime.date.today()).isoformat()}
+        try:
+            FILE.parent.mkdir(parents=True, exist_ok=True)
+            FILE.write_text(json.dumps(d), encoding="utf-8")
+        except OSError:
+            return False
+    return True
+
+
+def met(word, day=None):
+    """The player has met this word (it was underlined in front of them): from now on it's ordinary text."""
+    return _mark("met", word, day)
+
+
+def introduced(word, day=None):
+    """A coach introduced this word."""
+    return _mark("introduced", word, day)
+
+
+TACTICS = {"Candidate moves", "Hanging piece", "Blunder, mistake, inaccuracy", "Fork", "Pin", "Skewer",
+           "Discovered attack", "Double attack", "In-between move (zwischenzug)", "Back-rank mate"}  # Maya's; the rest Viktor's
+VALUE = {1: 1, 2: 3, 3: 3, 4: 5, 5: 9, 6: 100}  # pawn .. king (python-chess piece types)
+
+
+def forked(r):
+    """Their reply to this move attacks two of the player's pieces worth a knight or more (or the king) at once."""
+    import chess
+    try:
+        b = chess.Board(r["fen"])
+        me = b.turn
+        b.push_san(r["move"])
+        reply = chess.Move.from_uci((r.get("reply_pv") or [""])[0])
+        b.push(reply)
+        hit = []
+        for s in b.attacks(reply.to_square):
+            p = b.piece_at(s)
+            if p and p.color == me and VALUE[p.piece_type] >= 3:
+                hit.append(s)
+        return len(hit) >= 2 and VALUE[b.piece_at(reply.to_square).piece_type] < 100
+    except Exception:
+        return False
+
+
+def introductions(home, games, player, day):
+    """[(word, coach, line)]: the words a coach could introduce today. First those the player's newest game just
+    showed (the reason), else, at most once a week, the next word in the list (just because). Never a word met before."""
+    from coach import insights
+    d = _load()
+    known = set(d.get("met", {})) | set(d.get("introduced", {}))
+    out = []
+    last = home.get("last_game") or {}
+    if games and last.get("id") and time.time() - (last.get("end_time") or 0) < 3 * 86400:
+        g = next((x for x in games if insights.game_id(x["url"]) == str(last["id"])), None)
+        rows = insights._moves().get(g["url"], []) if g else []
+        opp = last.get("opponent") or "them"
+
+        def said(w):
+            return w in known or w in [o[0] for o in out]
+        for r in rows:
+            if not said("Fork") and forked(r):
+                out.append(("Fork", "maya", f"Against {opp}, one of their pieces attacked two of yours at once. "
+                            "That's called a fork: one piece, two targets."))
+            if not said("Hanging piece") and r.get("pattern") == "left a piece hanging":
+                out.append(("Hanging piece", "maya", f"Against {opp} you left a piece where it could be taken for "
+                            "free. Players call that a hanging piece."))
+            if not said("Stalemate") and r.get("pattern") == "stalemated a won game":
+                out.append(("Stalemate", "viktor", f"You were winning against {opp}, but their king had no legal "
+                            "move and wasn't in check. That's stalemate, and it's only a draw."))
+            if not said("Blunder, mistake, inaccuracy") and r.get("pattern"):
+                out.append(("Blunder, mistake, inaccuracy", "maya", f"Your biggest slip against {opp} is what "
+                            "engines call a blunder: one move that throws a lot away."))
+    if out:
+        return out
+    recent = (day - datetime.timedelta(days=JUST_SAYING)).isoformat()
+    if any(v > recent for v in d.get("introduced", {}).values()):
+        return []
+    for w, m, forms in WORDS:
+        if w not in known and forms:
+            coach = "maya" if w in TACTICS else "viktor"
+            return [(w, coach, f"A chess word for you: {forms[0]}. {m}")]
+    return []
