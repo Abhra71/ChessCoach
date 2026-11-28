@@ -2,6 +2,11 @@
 
 ## 27 Nov 2026: phone version, first foundation (branch `claude/mobile-foundation-3a8a4d`, not merged)
 
+- **PAUSED 28 Nov (owner):** new order is the "Book of chess" pilot chapter, Lichess support, Centaur mode, then
+  mobile. To resume: read `docs/MOBILE-PLAN.md` (decisions in section 7 and [OWNER] marks in section 11), then the
+  first job is the engine (Stockfish.js 19 lite-single, 1.9 MB, GPL-3, after the owner's OK): measure it with
+  `tests/mobile/lowend_check.mjs` and on a real phone. Not yet tried: a real phone, a home-screen install.
+  The skeleton's Lichess download (`docs/app/games.js`) may help 1.3's Lichess work (finished games only, streamed).
 - Plan for the owner after exams: `docs/MOBILE-PLAN.md` (features, fair play on the phone, storage, size, time, decisions).
 - Skeleton web app in `docs/app/` (37 KB first screen, built for cheap phones: 2-3 GB, 4 slow cores, slow 3G; measured with
   CPU 6x slower + slow 3G: first screen 1.8 s, first games 1.4 s, next-move tap 28 ms; no downloads): chess.com or Lichess username -> newest 60 finished games ->
