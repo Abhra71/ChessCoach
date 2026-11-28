@@ -126,14 +126,19 @@ story quietly explains why each mode is worth using.
 
 ### Nothing unused: the four features that lack a right-time moment today (audit 28 Nov)
 Owner's rule: the user comes to *view*, so the coaches must bring every feature to them at the right time, from
-their own data. Today every page is in the one-time tour, but these four are never brought up again:
+their own data. Today every page is in the one-time tour; these have no data-driven moment after it (corrected the
+same day: In your head and the weekly report already have one, in coach/nudge.py):
 
 | Feature | Its right-time moment (from the player's data) | Story |
 |---|---|---|
-| In your head (calculation) | A game lost to a move that looked safe but lost to a 2–3 move line | Viktor's regret, told once |
 | Blindfold | Reaching "Club player", or practice scores high but games keep missing pieces far away on the board | Viktor's boyhood training in Riga |
 | Guess the move | Repeatedly missing what the opponent threatened ("they had…" moments) | Maya: "Think like them for five minutes" |
-| Weekly and monthly reports | Sunday evening and the 1st of the month, when there were games | Viktor's short letter |
+| Game of the month (film) | The month's best win, on the 1st | Maya: "This one deserves to be watched" |
+| Monthly Wrapped | The 1st of the month, when there were games | Viktor's short letter |
+| In your head (has one) | Gets Viktor's regret the first time it comes up | Viktor's regret, told once |
+
+**The bigger gap (docs/CONNECTIONS.md):** a feature brought up from your data is never brought up again once it was
+opened, even if the need comes back months later.
 
 The same check applies to every future feature: no right-time moment, not finished. (A test,
 `tests/test_connected.py`, makes sure every page is at least in the coaches' tour.)
