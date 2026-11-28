@@ -21,5 +21,5 @@ def test_a_week_that_came_out_short_keeps_its_best(tmp_path, monkeypatch):
 def test_ai_answers_get_plain_spaces_round_moves():
     """27 Oct, the owner's first 1.0 answers: the AI's narrow no-break spaces read as 'aftera6the' in the app."""
     from coach import ai
-    assert ai._plain_spaces("after a6 the, on e5 with​Nxe5") == "after a6 the, on e5 withNxe5"
+    assert ai._plain_spaces("after a6 the, on e5 with\u200bNxe5") == "after a6 the, on e5 withNxe5"
     assert ai._plain_spaces(None) is None

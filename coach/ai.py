@@ -186,7 +186,7 @@ def ready():
 
 # The AI puts odd spaces round chess moves ("the move a6"): the app's font draws U+202F with no width, so
 # answers read "aftera6the" (27 Oct, the owner's first 1.0 answers). Every kind becomes a plain space.
-_ODD_SPACES = str.maketrans({c: " " for c in "      　"} | {"​": ""})
+_ODD_SPACES = str.maketrans({c: " " for c in "      　"} | {"\u200b": ""})
 
 
 def _plain_spaces(text):

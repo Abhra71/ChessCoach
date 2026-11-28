@@ -12,3 +12,4 @@ faster-whisper==1.2.1
 anthropic==1.13.0
 pytest==9.1.1
 playwright==1.65.2  # tests only: the UI check (check-ui.bat) drives the PC's own Microsoft Edge
+ruff==0.17.6  # tests only: the code-quality check (ruff.toml), also run on GitHub

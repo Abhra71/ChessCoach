@@ -343,7 +343,7 @@ def _novelty(home=None, games=None, moves=None, engine=None, today=None, rng=Non
     fresh = lambda themes: next((t for t in themes if f"tactic:{t}" not in done and f"tactic:{t}" not in mem["shown"]), None)
     fill = lambda key, **kw: WHY[key].format(**kw)
 
-    if s["stalemates"] and f"endgame:queenEndgame" not in done:
+    if s["stalemates"] and "endgame:queenEndgame" not in done:
         return endgame("queenEndgame", rating, rng, fill("stalemate", n=f"{s['stalemates']} won game" + ("" if s["stalemates"] == 1 else "s")))
     for pattern, recent_n in s["new"]:
         theme = fresh(THEMES_FOR[pattern])

@@ -1,0 +1,6 @@
+# Ruff, the code-quality department (28 Nov 2026): only the kinds of finding that are real bugs (undefined or misused
+# names, unused variables, syntax errors), never style. Run: python -m ruff check coach tests
+line-length = 120
+[lint]
+select = ["F", "E9", "PLE"]
+ignore = ["F401"]  # an unused import is harmless here; some are kept on purpose for other modules and the tests

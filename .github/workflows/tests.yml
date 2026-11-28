@@ -27,7 +27,10 @@ jobs:
           SF=$(find "$RUNNER_TEMP/sf" -type f -name 'stockfish-linux-x86-64*' | head -1); chmod +x "$SF"
           echo uci | "$SF" | head -1  # the version, in the log
           echo "KNIGHTWISE_ENGINE=$SF" >> "$GITHUB_ENV"
-      - run: pip install chess==1.11.2 pytest==9.1.1 numpy==2.5.3 keyring==25.7.0 zstandard==0.25.0  # the same numbers as requirements.txt
+      - run: pip install chess==1.11.2 pytest==9.1.1 numpy==2.5.3 keyring==25.7.0 zstandard==0.25.0 ruff==0.17.6  # the same numbers as requirements.txt
+      # the code-quality department (28 Nov 2026): real-bug kinds only (ruff.toml); it found /api/stats always failing
+      - name: Ruff, real bugs only
+        run: ruff check coach tests --output-format github
       - name: All the tests
         env:
           KNIGHTWISE_HOME: ${{ runner.temp }}/knightwise

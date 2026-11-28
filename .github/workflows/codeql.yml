@@ -1,0 +1,29 @@
+# The security department (28 Nov 2026): GitHub's CodeQL reads Knightwise's Python and JavaScript (the app, the
+# extension, the pages) for security weaknesses. Free for public repositories. Findings appear in the repo's
+# Security tab -> Code scanning; nothing is sent anywhere else.
+name: codeql
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 1"  # every Monday morning
+  workflow_dispatch:
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

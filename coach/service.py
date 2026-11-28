@@ -507,8 +507,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(503, json.dumps({"message": "Couldn't reach chess.com. Are you online?"}), "application/json")
             return self.send(200 if out else 404, json.dumps(out or {"message": "They have no public games to spar against."}), "application/json")
         if path == "/api/calc":  # the calculation trainer: see the whole line before anything moves (0.9)
-            from coach import brief, drills
-            from coach import memory
+            from coach import brief, drills  # memory: imported at the top (a second import here broke /api/stats)
             items = drills.calculation(insights.home().get("rating"), time.strftime("%Y-%m-%d"), done_before=memory.seen_before())
             return self.send(200, json.dumps(brief.add(items)), "application/json")
         if path == "/api/repertoire" or path.startswith("/api/repertoire/"):  # your three opening lines (0.8)

@@ -129,7 +129,7 @@ def position(eid, rng=None):
     if not e:
         return None
     rng = rng or random.Random()
-    goal, pieces = e[3], e[5]
+    pieces = e[5]
     for _ in range(400):
         board = _random_position(pieces, rng)
         if not board.is_valid() or board.is_game_over() or board.is_check():

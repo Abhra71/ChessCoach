@@ -94,7 +94,7 @@ def _run_now(user):
         _set(user, result=result, phase="puzzles")
         result = {**result, "puzzles": punish(user, picked, rows, lambda n: _set(user, done=len(picked) + n))}
         _set(user, state="done", done=len(picked) + PUZZLES, result=result)
-    except Exception as e:  # noqa: BLE001  (shown to the player in plain words; the page keeps the quick stats)
+    except Exception:  # noqa: BLE001  (shown to the player in plain words; the page keeps the quick stats)
         import logging
         logging.getLogger("knightwise").exception("scout %s", user)
         _set(user, state="error", message="The deeper look didn't work this time. The numbers above still stand.")

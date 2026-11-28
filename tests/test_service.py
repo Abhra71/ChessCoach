@@ -216,3 +216,26 @@ def test_a_suggestion_always_comes_after_a_greeting(monkeypatch):
     assert out["lines"] == ["Welcome back.", "Open Your level."]
     again = {"coach": "maya", "lines": ["Picking up where we were.", "0.7 pieces a game."], "again": True}
     assert service.with_point(again, {"in": "app", "tab": "home"})["lines"] == ["Picking up where we were.", "Open Your level."]
+
+
+def test_practice_stats_answer(monkeypatch):
+    """/api/stats always failed: a later 'from coach import memory' inside the same function made the name local, so
+    the practice page never picked up where you were today (found by Ruff, 28 Nov)."""
+    import json
+    import threading
+    import urllib.request
+
+    from coach import memory, service
+    monkeypatch.setattr(memory, "practice_stats", lambda: {"done": 3})
+    monkeypatch.setattr(memory, "today", lambda: {"p1": "right"})
+    server = service.Server(("127.0.0.1", 0), service.Handler)
+    port = server.server_address[1]
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    old, service.PORT = service.PORT, port
+    try:
+        got = json.loads(urllib.request.urlopen(f"http://127.0.0.1:{port}/api/stats").read())
+        assert got == {"done": 3, "today": {"p1": "right"}}
+    finally:
+        service.PORT = old
+        server.shutdown()
+        server.server_close()
