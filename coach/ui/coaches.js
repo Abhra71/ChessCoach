@@ -531,12 +531,12 @@ async function planView(arg) {
   $("#page").innerHTML = `
     <div class="page-head"><div><h1>Your plan</h1>
       <p class="plan-line">Everything in chess, picked for you. Finish a card and the next most important one for you takes its place; finished cards go to Done.</p></div></div>
-    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${startedRow}
     <div class="explore">
       <label class="explore-box">${svg("search")}<input id="xq" type="search" autocomplete="off" spellcheck="false"
         placeholder="Explore on your own: an opening, a tactic, an ending…"></label>
       <div id="xres" hidden></div>
-    </div>${doneRow}`;
+    </div>
+    <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${startedRow}${doneRow}`;
   [...all, ...started, ...doneCards].forEach(x => {  // the position each one starts from
     const el = document.querySelector(`[data-board="${CSS.escape(x.id)}"]`), d0 = (x.drills || [])[0];
     if (!el) return;

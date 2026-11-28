@@ -882,12 +882,16 @@ a.kw-point:not(.nav a) { box-shadow: 0 0 0 2px var(--accent); animation: kwpoint
 .done-cards { grid-template-columns: repeat(auto-fill, minmax(150px, 170px)); }
 
 /* Explore: the whole library under Your plan (23 Oct) */
-.explore { margin-top: 22px; }
-.explore-box { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px;
-  background: var(--card, #2b2926); border: 1px solid var(--line, #3a3733); cursor: text; }
-.explore-box:focus-within { border-color: var(--good, #81b64c); }
-.explore-box svg { width: 18px; height: 18px; opacity: .6; flex: none; }
-.explore-box input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: inherit; font: inherit; font-size: 14px; }
+/* 28 Nov, the owner: "the search should go up slightly, more highlighted": above the cards, a soft green edge */
+.explore { margin: 2px 0 22px; }
+.explore-box { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 12px; cursor: text;
+  background: color-mix(in srgb, var(--good, #81b64c) 7%, var(--surface));  /* --surface: right in light and dark */
+  border: 1.5px solid color-mix(in srgb, var(--good, #81b64c) 55%, var(--line));
+  box-shadow: 0 2px 12px rgba(0,0,0,.12); transition: border-color .15s, box-shadow .15s; }
+.explore-box:hover { border-color: color-mix(in srgb, var(--good, #81b64c) 80%, var(--line, #3a3733)); }
+.explore-box:focus-within { border-color: var(--good, #81b64c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good, #81b64c) 22%, transparent); }
+.explore-box svg { width: 19px; height: 19px; opacity: .9; flex: none; color: var(--good, #81b64c); }
+.explore-box input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: inherit; font: inherit; font-size: 15px; }
 #xres { margin-top: 10px; }
 .xgroup { margin: 10px 0 14px; }
 .xgroup .label { margin-bottom: 8px; }
