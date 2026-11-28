@@ -43,7 +43,7 @@ def test_the_end_of_a_game_given_up_while_not_lost(app, browser):
         SHOTS.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(SHOTS / "review-the-end.png"))
         assert d["the_end"]["say"] in text, text
-        assert "Accuracy" in text, "the game's report should come back at the last move"
+        assert "Accuracy" not in text, "the report is the cover page only (owner, 28 Nov)"
         page.click("text=Play on from")
         page.wait_for_selector(".rstart", timeout=30_000)
         page.wait_for_timeout(4000)  # the lead-in

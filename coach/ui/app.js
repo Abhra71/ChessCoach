@@ -1803,10 +1803,11 @@ async function progressView() {
           ${s.improved ? `<div class="story-tile good"><div class="habit-icon">${svg((HABIT[s.improved.pattern] || ["hang"])[0])}</div>
             <div class="stat-label">Most improved</div><b>${esc((HABIT[s.improved.pattern] || [s.improved.pattern])[1] || s.improved.pattern)}</b>
             <div class="small muted">${s.improved.before} → ${s.improved.now} a game</div></div>` : ""}
-          ${s.best ? `<a class="story-tile click" href="#/games/${s.best.id}"><div class="stat-label">${esc(s.best.label)}</div>
+          ${s.best ? `<div class="story-tile"><a class="click" href="#/games/${s.best.id}" style="text-decoration:none;color:inherit"><div class="stat-label">${esc(s.best.label)}</div>
             <b>vs ${esc(s.best.opponent)} <span class="chip ${s.best.result}">${s.best.result === "win" ? "W" : s.best.result === "loss" ? "L" : "D"}</span></b>
-            <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div>
-</a>` : ""}
+            <div class="small muted">${s.best.moments ? `${s.best.moments} big mistake${s.best.moments > 1 ? "s" : ""}` : "No big mistakes"} · ${esc(s.best.date)}</div></a>
+            ${s.best.result === "win" ? `<a class="btn small-btn" href="#/film/${s.best.id}" style="margin-top:8px" title="Your best game of the week, as a short film">▶ Watch the film</a>` : ""}
+</div>` : ""}
         </div>
         ${s.next ? `<div class="story-next" title="Next week's one thing">${svg("bolt")}<span>${esc(s.next.habit)}</span></div>` : ""}
       </div>` : `<div class="empty">${afterGames("Your story")}</div>`}
@@ -2156,9 +2157,13 @@ async function gameView(id) {
         <td class="num">${you.counts[l] || 0}</td><td>${badge(l)}</td><td class="num">${them.counts[l] || 0}</td></tr>`).join("")}</table>
       ${g.opening ? `<p class="small muted" style="margin:0">Opening: ${esc(g.opening)}</p>` : ""}</div>`;
   }
+  // the second way in is always there, greyed with the reason when the game had none (28 Nov, the owner: "why is
+  // that missing?"). The report is the cover page only: before the review starts (the owner, 28 Nov: "it shouldn't
+  // be always there")
+  const noKey = `<button class="btn small-btn" disabled title="No big mistakes in this game, so no key moments">Key moments only · none here</button>`;
   const modes = () => `<div class="row">
       <button class="btn small-btn ${mode === "game" ? "primary" : ""}" data-mode="game">Whole game</button>
-      ${moments.length ? `<button class="btn small-btn ${mode === "key" ? "primary" : ""}" data-mode="key">Key moments only</button>` : ""}</div>`;
+      ${moments.length ? `<button class="btn small-btn ${mode === "key" ? "primary" : ""}" data-mode="key">Key moments only</button>` : noKey}</div>`;
   function draw() {
     board();
     const w = $("#walk");
@@ -2166,7 +2171,8 @@ async function gameView(id) {
       w.innerHTML = `<h2 style="margin:0">Game review</h2>${report()}
         <p class="muted small" style="margin:0">${moments.length ? `${moments.length} key moment${moments.length === 1 ? "" : "s"}` : "No big mistakes"}</p>
         <div class="row"><button class="btn primary" id="startreview">▶ Review the whole game</button>
-          ${moments.length ? `<button class="btn" data-mode="key">Key moments only</button>` : ""}</div>`;
+          ${moments.length ? `<button class="btn" data-mode="key">Key moments only</button>` : noKey.replace(" small-btn", "")}</div>
+        <p class="small faint" style="margin:0">◀ ▶ under the board: one move at a time.${moments.length ? " In Key moments only, they jump from one key moment to the next." : ""}</p>`;
       $("#startreview").onclick = () => setMode("game");
       wire(w);
       return;
@@ -2178,7 +2184,6 @@ async function gameView(id) {
         <span class="small faint">◀ ▶ under the board</span></div>
       <p style="margin:0">${ply && m ? `${badge(m.label)} ${esc(m.text)}` : "The starting position. Press ▶ for the first move."}</p>
       ${last && ending() ? `<p class="small" style="margin:0"><b>The end:</b> ${esc(ending())}</p>` : ""}
-      ${last ? report() : ""}
       ${k ? `<div class="box keycard" title="${esc([k.habit && "Habit: " + k.habit, k.humans].filter(Boolean).join(" · "))}">
         <div class="row spread"><span class="what">${svg("bolt")} Key moment ${ki + 1}/${moments.length}</span>
           <span class="small bad-text" title="How much of your chance to win this move cost">−${Math.round(k.loss)}%</span></div>
