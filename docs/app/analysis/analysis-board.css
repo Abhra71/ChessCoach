@@ -1,0 +1,81 @@
+/* The analysis board's look: Knightwise's calm colours on Lichess's board (chessground).
+   Uses the page's colour tokens when they exist (--sq-light, --accent, ...), with fallbacks so the PC app can reuse it. */
+.ab { --ab-light: var(--sq-light, #ebecd0); --ab-dark: var(--sq-dark, #739552); --ab-accent: var(--accent, #4f7a2a);
+  --ab-on-accent: var(--on-accent, #fff); --ab-raised: var(--raised, #ebe8e3); --ab-surface: var(--surface, #fff);
+  --ab-muted: var(--muted, #6a645c); --ab-red: var(--red, #c0281c); --ab-press: var(--press, rgba(0,0,0,.16)); }
+
+.ab-board-wrap { position: relative; width: 100%; aspect-ratio: 1; }
+.ab-board { width: 100%; height: 100%; }
+.ab .cg-wrap { width: 100%; height: 100%; }
+.ab cg-board {   /* the squares: one light/dark tile, repeated (a8 is light) */
+  background-color: var(--ab-light); border-radius: 6px;
+  background-image: conic-gradient(var(--ab-dark) 90deg, transparent 90deg 180deg, var(--ab-dark) 180deg 270deg, transparent 270deg);
+  background-size: 25% 25%;
+}
+.ab cg-board square.last-move { background: rgba(240, 164, 58, .38); }
+.ab cg-board square.selected { background: rgba(20, 85, 30, .45); }
+.ab cg-board square.check { background: radial-gradient(ellipse at center, rgba(217, 45, 32, 1) 0%, rgba(217, 45, 32, .6) 30%, rgba(217, 45, 32, 0) 80%); }
+.ab cg-board square.move-dest { background: radial-gradient(rgba(20, 85, 30, .45) 19%, transparent 21%); }
+.ab cg-board square.move-dest.oc { background: radial-gradient(transparent 0%, transparent 79%, rgba(20, 85, 30, .35) 80%); }
+.ab cg-board square.move-dest:hover { background: rgba(20, 85, 30, .3); }
+.ab coords { font-size: 9px; font-weight: 700; }
+/* each label in the colour of the other square colour, so it shows (a1 is dark: "1" and "a" are light) */
+.ab coords coord { color: var(--ab-dark); }
+.ab coords:not(.black) coord:nth-child(odd), .ab coords.black coord:nth-child(even) { color: var(--ab-light); }
+.ab .cg-wrap coords.ranks { left: 2px; right: auto; top: 1px; } .ab .cg-wrap coords.files { bottom: 1px; left: 0; top: auto; }
+.ab .cg-wrap coords { position: absolute; display: flex; pointer-events: none; user-select: none; }
+.ab .cg-wrap coords.ranks { flex-flow: column-reverse; height: 100%; width: 12px; }
+.ab .cg-wrap coords.ranks.black { flex-flow: column; }
+.ab .cg-wrap coords.files { flex-flow: row; width: 100%; height: 14px; text-align: right; }
+.ab .cg-wrap coords.files.black { flex-flow: row-reverse; }
+.ab .cg-wrap coords coord { flex: 1 1 auto; }
+.ab .cg-wrap coords.files coord { padding-right: 3px; display: flex; align-items: flex-end; justify-content: flex-end; }
+.ab-drawing cg-board { cursor: crosshair; outline: 2px dashed var(--ab-accent); outline-offset: 2px; }
+
+.ab-btn { border: 0; background: var(--ab-raised); border-radius: 9px; box-shadow: inset 0 -3px 0 var(--ab-press);
+  padding: 8px 12px 10px; min-height: 44px; cursor: pointer; font: inherit; font-weight: 600; color: inherit; }
+.ab-btn:active { box-shadow: inset 0 -1px 0 var(--ab-press); transform: translateY(1px); }
+.ab-btn.small { min-height: 36px; padding: 5px 10px 7px; font-size: 13.5px; }
+.ab-btn.primary { background: var(--ab-accent); color: var(--ab-on-accent); width: 100%; }
+.ab-btn[aria-pressed="true"] { background: var(--ab-accent); color: var(--ab-on-accent); }
+.ab-tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0 8px; }
+.ab-tools .ab-btn { font-size: 18px; }
+.ab-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.ab-flip { margin-left: auto; }
+.ab-setup .ab-flip { margin-left: 0; }
+.ab-brushes { display: inline-flex; gap: 6px; align-items: center; }
+.ab-brush { width: 30px; height: 30px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+.ab-brush.on { border-color: var(--ab-muted); }
+.ab-brush.green { background: #15781b; } .ab-brush.red { background: #882020; }
+.ab-brush.blue { background: #003088; } .ab-brush.yellow { background: #e68f00; }
+.ab-line { text-align: center; color: var(--ab-muted); font-size: 13.5px; margin: 6px 0; }
+.ab-moves { display: flex; flex-wrap: wrap; gap: 4px 2px; background: var(--ab-surface); border-radius: 12px; padding: 10px;
+  max-height: 28vh; overflow: auto; position: relative; min-height: 44px; }
+.ab-moves:empty::before { content: "Move a piece to start a line."; color: var(--ab-muted); font-size: 13.5px; padding: 4px; }
+.ab-moves .n { color: var(--ab-muted); font-size: 13px; padding: 4px 2px 4px 6px; }
+.ab-moves button { border: 0; background: none; border-radius: 6px; padding: 4px 6px; cursor: pointer; font: inherit; color: inherit; }
+.ab-moves button.on { background: var(--ab-accent); color: var(--ab-on-accent); font-weight: 650; }
+.ab-note { font-size: 12.5px; color: var(--ab-muted); text-align: center; margin: 10px 0 0; }
+
+/* promotion: four pieces over the board */
+.ab-promo { position: absolute; inset: 0; background: rgba(0,0,0,.55); border-radius: 6px; display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: center; gap: 8px; padding: 20%; z-index: 5; }
+.ab-promo[hidden] { display: none; }
+.ab-promo p { width: 100%; text-align: center; color: #fff; font-weight: 700; margin: 0; }
+.ab-promo button[data-p]:not(.ab-btn) { width: 22%; aspect-ratio: 1; border: 0; border-radius: 10px; background: var(--ab-light); cursor: pointer; padding: 4px; }
+
+/* setup: a palette of pieces to place, tap one then tap squares */
+.ab-palette { display: grid; grid-template-columns: repeat(6, 1fr) ; gap: 4px; margin-top: 12px; }
+.ab-palette button { aspect-ratio: 1; border: 0; border-radius: 8px; background: var(--ab-raised); cursor: pointer; padding: 3px; }
+.ab-palette button.on { background: var(--ab-accent); }
+.ab-palette .ab-del { grid-column: span 6; aspect-ratio: auto; min-height: 40px; font-weight: 700; color: var(--ab-red); }
+.ab-palette .ab-del.on { color: var(--ab-on-accent); }
+.ab-piece { display: block; position: relative; width: 100%; aspect-ratio: 1; }
+.ab-piece piece { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; }
+.ab-seg { display: flex; background: var(--ab-raised); border-radius: 10px; padding: 3px; flex: 1; }
+.ab-seg button { flex: 1; border: 0; background: none; border-radius: 8px; padding: 8px; font: inherit; font-weight: 600; color: inherit; cursor: pointer; min-height: 40px; }
+.ab-seg button.on { background: var(--ab-accent); color: var(--ab-on-accent); }
+.ab-fen { width: 100%; border: 0; background: var(--ab-raised); border-radius: 10px; padding: 10px 12px; font: 12.5px ui-monospace, monospace;
+  color: inherit; margin: 4px 0 8px; }
+.ab-err { color: var(--ab-red); font-weight: 600; margin: 0 0 8px; }
+.ab [hidden] { display: none !important; }

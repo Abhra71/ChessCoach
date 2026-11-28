@@ -77,4 +77,33 @@ test("fewer games on phones with little memory", () => {
   if (was) Object.defineProperty(globalThis, "navigator", was);
 });
 
+// perft: count every position a few moves deep; the right numbers are known (chessprogramming.org/Perft_Results),
+// so any mistake in castling, en passant, promotion or pins shows up as a wrong count
+function perft(pos, depth) {
+  if (depth === 0) return 1;
+  let n = 0;
+  for (const m of Rules.moves(pos)) n += depth === 1 ? 1 : perft(Rules.play(pos, m), depth - 1);
+  return n;
+}
+
+test("every legal move, counted (perft): the start, Kiwipete, en passant and promotion positions", () => {
+  const cases = [
+    [Rules.START, [20, 400, 8902]],
+    ["r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", [48, 2039]],
+    ["8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", [14, 191, 2812]],
+    ["r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", [6, 264, 9467]],
+  ];
+  for (const [fen, counts] of cases)
+    counts.forEach((want, i) => assert.equal(perft(Rules.parse(fen), i + 1), want, `${fen} depth ${i + 1}`));
+});
+
+test("moves are written back the usual way: Nbd7, exd6, O-O-O, a8=Q, Qxf7#", () => {
+  const check = (fen, san) => { const pos = Rules.parse(fen); assert.equal(Rules.toSan(pos, Rules.fromSan(pos, san)), san); };
+  check("4k3/8/8/b7/7N/8/3N4/4K3 w - - 0 1", "Nf3");            // the pinned knight needs no letter
+  check("4k3/8/8/8/8/8/8/R4RK1 w - - 0 1", "Rad1");
+  check("8/P7/8/8/8/8/8/k6K w - - 0 1", "a8=Q+");
+  check("r3k3/8/8/8/8/8/8/4K3 b q - 0 1", "O-O-O");
+  check("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4", "Qxf7#");
+});
+
 console.log(`\n${passed} passed`);

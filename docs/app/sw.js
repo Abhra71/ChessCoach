@@ -1,8 +1,10 @@
 // The service worker: keeps the app's own files on the phone so it opens offline, like an installed app.
 // Games are kept by the page itself (IndexedDB, store.js); requests to chess.com and Lichess are never touched here.
 // Change VERSION whenever any file below changes, so phones fetch the new copy.
-const VERSION = "kw-mobile-0.2.0";
+const VERSION = "kw-mobile-0.3.0";
 const FILES = ["./", "index.html", "app.css", "app.js", "board.js", "pieces.js", "rules.js", "games.js", "store.js",
+  "analysis/analysis-board.js", "analysis/analysis-board.css", "vendor/chessground/chessground.min.js",
+  "vendor/chessground/chessground.base.css", "vendor/chessground/chessground.cburnett.css",
   "manifest.webmanifest", "icons/icon-64.png", "icons/icon-192.png"];   // the big install icons are fetched only when installing
 
 self.addEventListener("install", e => {

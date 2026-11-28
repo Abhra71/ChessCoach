@@ -125,6 +125,59 @@ const Rules = (() => {
   // a move is legal if it doesn't leave your own king attacked
   const legal = (pos, mv) => !inCheck(play(pos, mv), pos.turn);
 
+  // every legal move for the side to move: [{ from, to, promo }] (squares as numbers 0..63).
+  // Used by the analysis board to know where a piece may go. Checked by "perft" counts in the tests.
+  function moves(pos) {
+    const out = [], me = pos.turn, them = me === "w" ? "b" : "w";
+    for (let from = 0; from < 64; from++) {
+      const p = pos.board[from];
+      if (colorOf(p) !== me) continue;
+      const lastRank = white(p) ? 7 : 0;
+      for (let to = 0; to < 64; to++) {
+        if (!reaches(pos, from, to)) continue;
+        if (p.toUpperCase() === "P" && rankOf(to) === lastRank) {
+          for (const promo of "qrbn") if (legal(pos, { from, to, promo })) out.push({ from, to, promo });
+        } else if (legal(pos, { from, to })) out.push({ from, to, promo: null });
+      }
+    }
+    // castling: the right still there, the squares between empty, and the king not in, through or into check
+    const row = me === "w" ? 7 : 0, king = row * 8 + 4, rights = pos.castle || "";
+    if (pos.board[king] === (me === "w" ? "K" : "k") && !inCheck(pos)) {
+      const sides = [[me === "w" ? "K" : "k", 7, [5, 6], [5, 6]], [me === "w" ? "Q" : "q", 0, [1, 2, 3], [3, 2]]];
+      for (const [right, rookFile, empty, safe] of sides) {
+        if (!rights.includes(right) || pos.board[row * 8 + rookFile] !== (me === "w" ? "R" : "r")) continue;
+        if (empty.some(f => pos.board[row * 8 + f])) continue;
+        if (safe.some(f => attacked(pos.board, row * 8 + f, them))) continue;
+        out.push({ from: king, to: row * 8 + safe[1], promo: null });
+      }
+    }
+    return out;
+  }
+
+  // the move written the usual way ("Nbd7", "exd8=Q+", "O-O") for a { from, to, promo } move
+  function toSan(pos, mv) {
+    const p = pos.board[mv.from], t = p.toUpperCase();
+    let san;
+    if (t === "K" && Math.abs(fileOf(mv.to) - fileOf(mv.from)) === 2) san = fileOf(mv.to) === 6 ? "O-O" : "O-O-O";
+    else {
+      const capture = !!pos.board[mv.to] || (t === "P" && fileOf(mv.from) !== fileOf(mv.to));
+      if (t === "P") san = (capture ? FILES[fileOf(mv.from)] + "x" : "") + name(mv.to) + (mv.promo ? "=" + mv.promo.toUpperCase() : "");
+      else {
+        const rivals = moves(pos).filter(m => m.to === mv.to && m.from !== mv.from && pos.board[m.from] === p);
+        let which = "";
+        if (rivals.length) {
+          if (!rivals.some(m => fileOf(m.from) === fileOf(mv.from))) which = FILES[fileOf(mv.from)];
+          else if (!rivals.some(m => rankOf(m.from) === rankOf(mv.from))) which = String(rankOf(mv.from) + 1);
+          else which = name(mv.from);
+        }
+        san = t + which + (capture ? "x" : "") + name(mv.to);
+      }
+    }
+    const next = play(pos, mv);
+    if (inCheck(next)) san += moves(next).length ? "+" : "#";
+    return san;
+  }
+
   // "Nbd7", "exd8=Q+", "O-O" ... -> { from, to, promo, san } or throws an Error saying what's wrong
   function fromSan(pos, san) {
     const clean = san.replace(/[+#?!]+$/g, "").replace(/0/g, "O");
@@ -163,7 +216,7 @@ const Rules = (() => {
     return { fens, moves };
   }
 
-  return { START, parse, fen, fromSan, play, replay, inCheck, name, idx };
+  return { START, parse, fen, fromSan, toSan, moves, play, replay, inCheck, name, idx };
 })();
 
 if (typeof module !== "undefined") module.exports = Rules;

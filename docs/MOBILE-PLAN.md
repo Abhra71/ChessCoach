@@ -101,6 +101,19 @@ app is open (a web app can't work when closed). Speed on a real phone is **not m
 first job once the engine is approved. Then compare the phone's verdicts with the PC's on your own 142 games, so
 the phone and PC agree on what a blunder is (the same 25-point "winning chance" drop, `coach/patterns.py`).
 
+## 4a. First launch: the owner's scope (28 Nov 2026) - this replaces section 4's list for the first launch
+
+Owner: "the core and 1 or 2 small mobile features", plus one flagship. Decided on 28 Nov:
+- **Core:** replay and review finished games with their key moments; today's 5 minutes + streak; your numbers and focus.
+- **Flagship: the analysis board** (`docs/app/analysis/`): move either side, arrows and circles, set up any position,
+  promotion, flip, step through a line, open from any moment of your finished games. **No engine on the board, ever**
+  (owner's choice: it stays a wooden board on a screen). Built on **chessground 9.2.1** (Lichess's board, GPL-3.0-or-later,
+  30 KB + 15 KB of CSS, approved 28 Nov, in `docs/app/vendor/chessground/`). A self-contained module the PC app can reuse.
+- **Engine for the core: Stockfish.js 19 lite**, single-threaded, 1.9 MB (approved 28 Nov). Never on the analysis board.
+- **Phone touches:** a home-screen shortcut to Today's 5 minutes; swipe between a game's key moments.
+- A gentle "the full coach is on PC" pointer to the Store page.
+- Google sign-in (section 11) and the rest of section 4 wait until after the first launch.
+
 ## 4b. Built for cheap phones (owner's rule, 27 Nov)
 
 **The phone we design for:** a cheap Android phone, Android 9 or newer, Chrome; **2-3 GB of memory, 4 slow

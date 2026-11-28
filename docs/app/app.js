@@ -183,6 +183,7 @@
           <button class="btn" data-go="end" aria-label="End">⏭</button>
         </div>
         <p class="ply" id="ply"></p>
+        <button class="btn" id="analyse" style="width:100%">Analyse from here</button>
       </div><div>
         <p class="end">${word}${g.how ? ", " + esc(g.how) : ""}${g.opening ? `<br><span class="muted small">${esc(g.opening)}</span>` : ""}</p>
         <div class="moves" id="moves">${line.moves.map((m, i) =>
@@ -220,21 +221,57 @@
       if (Math.abs(dx) > 30) go(at + (dx < 0 ? 1 : -1));
     });
     keys = e => { if (e.key === "ArrowLeft") moves.back(); if (e.key === "ArrowRight") moves.next(); };
+    view.querySelector("#analyse").onclick = () => { location.hash = `#/board/${encodeURIComponent(g.id)}/${at}`; };
     draw();
   }
   let keys = null;
   document.addEventListener("keydown", e => keys && keys(e));
 
+  // ---------- screen 4: the analysis board (no engine, ever) ----------
+  // #/board                 an empty start position
+  // #/board/<gameId>/<ply>  a finished game of yours, from that move (you can play on from there)
+  let board = null;
+  const css = href => { if (!document.querySelector(`link[href="${href}"]`)) {
+    const l = document.createElement("link"); l.rel = "stylesheet"; l.href = href; document.head.append(l); } };
+  async function showBoard(rest) {
+    view.className = "page game-page";
+    view.innerHTML = `<p class="muted">Opening the board...</p>`;
+    const [gid, ply] = rest.split("/").map(decodeURIComponent);
+    let line = { fen: undefined, moves: [], at: 0, orientation: "white", title: "Analysis board" };
+    try {
+      ["vendor/chessground/chessground.base.css", "vendor/chessground/chessground.cburnett.css", "analysis/analysis-board.css"].forEach(css);
+      await need("rules.js");
+      const mod = await import("./analysis/analysis-board.js");
+      if (gid) {
+        const p = player();
+        if (!games.length && p) { const s = await Games.saved(p.site, p.user); if (s) games = s.games; }
+        const g = games.find(x => x.id === gid);
+        if (g) line = { fen: g.startFen, moves: Games.sansOf(g), at: Number(ply) || 0, orientation: g.me === "b" ? "black" : "white",
+          title: `vs ${g.me === "w" ? g.black : g.white}`, back: "#/game/" + encodeURIComponent(gid) };
+      }
+      if (!location.hash.startsWith("#/board")) return;   // the player went elsewhere meanwhile
+      view.innerHTML = `<div class="links"><a href="${line.back || "#/games"}" class="btn ghost small">‹ ${line.back ? "Game" : "Games"}</a>
+        <span class="muted small">${esc(line.title)}</span></div><div id="ab"></div>`;
+      board = mod.mountAnalysisBoard(view.querySelector("#ab"), { rules: Rules, fen: line.fen, moves: line.moves, at: line.at, orientation: line.orientation });
+    } catch (x) {
+      view.innerHTML = `<p class="error">The board couldn't open: ${esc(x.message)}</p><a href="#/games">Back</a>`;
+    }
+  }
+
   // ---------- which screen ----------
   function route() {
     keys = null;
+    if (board) { board.destroy(); board = null; }
     view.className = "page";
     const h = location.hash || "#/";
-    if (h.startsWith("#/game/")) showGame(decodeURIComponent(h.slice(7)));
+    if (h.startsWith("#/board")) showBoard(h.slice(8));
+    else if (h.startsWith("#/game/")) showGame(decodeURIComponent(h.slice(7)));
     else if (h === "#/games") showGames();
     else if (player() && h === "#/" && !route.started) { location.hash = "#/games"; }
     else showStart();
     route.started = true;
+    document.querySelectorAll(".tabs a").forEach(a => a.classList.toggle("on",
+      a.getAttribute("href") === "#/board" ? h.startsWith("#/board") : h.startsWith("#/game")));
     window.scrollTo(0, 0);
   }
   addEventListener("hashchange", route);
