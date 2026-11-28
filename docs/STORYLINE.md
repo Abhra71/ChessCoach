@@ -124,6 +124,20 @@ story quietly explains why each mode is worth using.
 | Centaur (later) | Kasparov's idea after Deep Blue†: man and machine together | Viktor |
 | Losing-streak care | Maya's "one more game only if it was fun" rule | Maya |
 
+### Nothing unused: the four features that lack a right-time moment today (audit 28 Nov)
+Owner's rule: the user comes to *view*, so the coaches must bring every feature to them at the right time, from
+their own data. Today every page is in the one-time tour, but these four are never brought up again:
+
+| Feature | Its right-time moment (from the player's data) | Story |
+|---|---|---|
+| In your head (calculation) | A game lost to a move that looked safe but lost to a 2–3 move line | Viktor's regret, told once |
+| Blindfold | Reaching "Club player", or practice scores high but games keep missing pieces far away on the board | Viktor's boyhood training in Riga |
+| Guess the move | Repeatedly missing what the opponent threatened ("they had…" moments) | Maya: "Think like them for five minutes" |
+| Weekly and monthly reports | Sunday evening and the 1st of the month, when there were games | Viktor's short letter |
+
+The same check applies to every future feature: no right-time moment, not finished. (A test,
+`tests/test_connected.py`, makes sure every page is at least in the coaches' tour.)
+
 ---
 
 ## 4. Your journey: five ranks
