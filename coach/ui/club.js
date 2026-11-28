@@ -52,6 +52,12 @@ function markWords(root, where) {
   }
 }
 let popHide = null, popShow = null;
+function quietTitles(term, on) {  // the card around a word has its own hover text: it must not show on top (28 Nov)
+  for (let el = term.parentElement; el && el !== document.body; el = el.parentElement) {
+    if (on && el.hasAttribute("title")) { el.dataset.kwTitle = el.getAttribute("title"); el.removeAttribute("title"); }
+    else if (!on && el.dataset.kwTitle !== undefined) { el.setAttribute("title", el.dataset.kwTitle); delete el.dataset.kwTitle; }
+  }
+}
 function wordPop(b, keep) {
   const old = document.querySelector(".term-pop");
   if (old) { const same = old.dataset.word === b.dataset.word; if (same && keep) return; old.remove(); if (same) return; }
@@ -79,6 +85,7 @@ document.addEventListener("mouseover", e => {  // a hover: the meaning comes aft
   if (!on) return;
   clearTimeout(popHide);
   if (on.classList.contains("term")) {
+    quietTitles(on, true);
     clearTimeout(popShow);
     popShow = setTimeout(() => { wordPop(on, true); const p = document.querySelector(".term-pop"); if (p) p.classList.add("hovered"); }, 220);
   }
@@ -86,6 +93,7 @@ document.addEventListener("mouseover", e => {  // a hover: the meaning comes aft
 document.addEventListener("mouseout", e => {
   const from = e.target.closest && (e.target.closest(".term") || e.target.closest(".term-pop"));
   if (!from) return;
+  if (from.classList.contains("term")) quietTitles(from, false);
   clearTimeout(popShow);
   const p = document.querySelector(".term-pop.hovered");
   if (p) { clearTimeout(popHide); popHide = setTimeout(() => { if (!p.matches(":hover")) p.remove(); }, 300); }

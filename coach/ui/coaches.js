@@ -517,7 +517,7 @@ async function planView(arg) {
       <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span>${going ? "" : `<span class="pdone">${svg("check")}</span>`}</div>
       <h3>${esc(x.title)}</h3><div class="mini-board" data-board="${esc(x.id)}"></div>
       ${going ? `${segs(x, false)}<div class="small muted">${answeredOf(x)}</div>` : ""}
-      <button class="btn ${going ? "primary" : ""}">${going ? "Continue" : "Again"}</button>${resets}</div>`;
+      <div class="pfoot"><button class="btn ${going ? "primary" : ""}">${going ? "Continue" : "Again"}</button><div class="pnote">${resets}</div></div></div>`;
     return `<div class="box pcard ${isNew ? "new" : ""}" data-id="${esc(x.id)}" title="${esc(x.why || x.intro || "")}">
       <div class="row spread"><span class="pkind">${svg(ICONS[x.kind] || "plan")}${KIND_LABEL[x.kind]}</span>
         ${isNew ? `<span class="pnew">New</span>` : done ? `<span class="pdone">${svg("check")}</span>` : ""}</div>
@@ -526,7 +526,7 @@ async function planView(arg) {
       ${segs(x, done)}
       ${going ? `<div class="small muted ppath">${answeredOf(x)}</div>` : x.path ? `<div class="small muted ppath">${x.path.of ? `Topic ${x.path.at} of ${x.path.of}` : `Opening ${x.path.at}`}${
         x.path.next ? ` · next: ${esc(x.path.next)}` : ""}</div>` : x.intro ? `<div class="small muted ppath">${esc(x.intro)}</div>` : ""}
-      <button class="btn ${isNew || going ? "primary" : ""}">${done ? "Again" : going ? "Continue" : "Start"}</button>${resets}</div>`;
+      <div class="pfoot"><button class="btn ${isNew || going ? "primary" : ""}">${done ? "Again" : going ? "Continue" : "Start"}</button><div class="pnote">${resets}</div></div></div>`;
   };
   const startedRow = started.length ? `<h3 class="plan-done-head">In progress · ${started.length}</h3>
     <div class="plan-cards done-cards">${started.map(x => card(x, false, true)).join("")}</div>` : "";
@@ -540,7 +540,7 @@ async function planView(arg) {
       <label class="explore-box">${svg("search")}<input id="xq" type="search" autocomplete="off" spellcheck="false"
         placeholder="Explore on your own: an opening, a tactic, an ending…"></label>
       <div id="xres" hidden></div>
-      <a class="words-link small" href="#/words">${svg("book")}<span>Chess words, explained</span></a>
+      <a class="ltool words-link" href="#/words" title="The words strong players use, in plain language">${svg("book")}<span>Chess words</span></a>
     </div>
     <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${startedRow}${doneRow}`;
   [...all, ...started, ...doneCards].forEach(x => {  // the position each one starts from
