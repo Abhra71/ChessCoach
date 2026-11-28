@@ -1166,16 +1166,15 @@ a.pcard, a.pcard * { text-decoration: none; } a.pcard { color: inherit; } a.pcar
 .term { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: help;
   text-decoration: underline dotted 1px color-mix(in srgb, var(--accent) 55%, transparent); text-underline-offset: 3px; }
 .term:hover, .term:focus-visible { color: var(--accent); outline: none; }
-.term-pop { position: fixed; z-index: 9000; padding: 10px 12px; border-radius: 12px; background: var(--raised, var(--surface));
+.term-pop { position: fixed; z-index: 2147483646; padding: 10px 12px; border-radius: 12px; background: var(--raised, var(--surface));
   border: 1px solid var(--line); box-shadow: var(--shadow, 0 6px 24px rgba(0,0,0,.25)); color: var(--text); font-size: 13.5px;
   animation: termIn .14s ease-out; }
 .term-pop p { margin: 4px 0 8px; color: var(--muted); line-height: 1.45; }
 .term-pop a { font-size: 13px; color: var(--accent); }
 @keyframes termIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
-.explore { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.explore .explore-box { flex: 1 1 320px; }
-.explore #xres { flex-basis: 100%; }
-.words-link { flex: none; padding: 11px 14px; }
+.plan-head { display: flex; align-items: flex-start; gap: 16px; }
+.plan-head > div:first-child { flex: 1; min-width: 0; }
+.words-link { flex: none; padding: 9px 14px; margin-top: 6px; }
 .xword { display: block; margin: 6px 0 8px; padding: 10px 14px; border-radius: 10px; background: var(--surface);
   border-left: 3px solid var(--accent); color: var(--muted); text-decoration: none; font-size: 14px; }
 .xword b { color: var(--text); margin-right: 6px; }
@@ -1185,7 +1184,12 @@ a.pcard, a.pcard * { text-decoration: none; } a.pcard { color: inherit; } a.pcar
 .words-page { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
 .word { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; }
 .word span { color: var(--muted); font-size: 14px; line-height: 1.45; }
-.word.met b::after { content: " ✓"; color: var(--better, var(--accent)); font-weight: 400; font-size: 13px; }
+.word { position: relative; }
+.word.met::after { content: "✓"; position: absolute; top: 10px; right: 12px; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 13px; font-weight: 800; color: #fff;
+  background: radial-gradient(circle at 35% 30%, #a6dd6e, #6fae3a 60%, #4f8a24);
+  box-shadow: 0 0 0 2px color-mix(in srgb, #81b64c 25%, transparent), 0 0 10px color-mix(in srgb, #81b64c 45%, transparent); }
+.word.met b { padding-right: 28px; }
 /* Meet your coaches */
 .meet { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .meet-card { display: flex; gap: 16px; padding: 18px; align-items: flex-start; }

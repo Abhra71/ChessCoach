@@ -56,13 +56,18 @@ const Coach = (() => {
     if (a.url) window.open(a.url, "_blank", "noopener");
   }
   function fold() { clearTimeout(foldTimer); Voice.stop(); render(false); }
+  // never while you're reading it: the mouse on the box, or a word's meaning open (29 Nov: it folded under a tap)
+  function foldLater() {
+    if ((box && box.matches(":hover")) || document.querySelector(".term-pop")) { foldTimer = setTimeout(foldLater, 4000); return; }
+    render(false);
+  }
   function talk() { if (said) Voice.speak(said.spoken || said.lines.join(" "), false, (COACHES[said.coach] || {}).voice, !said.casual); }
 
   Voice.onTalk(on => {
     if (!box) return;
     box.classList.toggle("talking", on);
     // folds away by itself; sooner in a smaller window, where it covers more of the page (28 Nov)
-    if (!on) { clearTimeout(foldTimer); foldTimer = setTimeout(() => render(false), innerWidth < 1180 ? 12000 : 30000); }
+    if (!on) { clearTimeout(foldTimer); foldTimer = setTimeout(foldLater, innerWidth < 1180 ? 12000 : 30000); }
   });
 
   // say something now (open, with voice)
@@ -534,13 +539,13 @@ async function planView(arg) {
   const doneRow = doneCards.length ? `<section class="plan-done-sec"><h3 class="plan-done-head">Done ${svg("check")} ${(p.done_items || []).length}</h3>
     <div class="plan-cards done-cards">${doneCards.map(x => card(x, false, true)).join("")}</div></section>` : "";
   $("#page").innerHTML = `
-    <div class="page-head"><div><h1>Your plan</h1>
-      <p class="plan-line">Everything in chess, picked for you. Finish a card and the next most important one for you takes its place; finished cards go to Done.</p></div></div>
+    <div class="page-head plan-head"><div><h1>Your plan</h1>
+      <p class="plan-line">Everything in chess, picked for you. Finish a card and the next most important one for you takes its place; finished cards go to Done.</p></div>
+      <a class="ltool words-link" href="#/words" title="The words strong players use, in plain language">${svg("book")}<span>Chess words</span></a></div>
     <div class="explore">
       <label class="explore-box">${svg("search")}<input id="xq" type="search" autocomplete="off" spellcheck="false"
         placeholder="Explore on your own: an opening, a tactic, an ending…"></label>
       <div id="xres" hidden></div>
-      <a class="ltool words-link" href="#/words" title="The words strong players use, in plain language">${svg("book")}<span>Chess words</span></a>
     </div>
     <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${startedRow}${doneRow}`;
   [...all, ...started, ...doneCards].forEach(x => {  // the position each one starts from
