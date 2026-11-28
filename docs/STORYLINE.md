@@ -297,3 +297,15 @@ lost, with you; his regret was the games he never wrote down) and makes progress
 Tone: warm, embers and restoration, never gloom. Built in step 4 (feel) with real effects: PixiJS particles (embers,
 glow), Lottie (the page restoring), Rive (Viktor), built-in web animations. Animation and effects reach the whole app
 wherever they add value, not only the Book (owner, 28 Nov); calm by default, a switch for fewer effects.
+
+---
+
+## 12. Notes for step 4 (feel), from the owner (28 Nov 2026)
+
+- **The whole UI takes a book theme** (paper, ink, the notebook's warmth), not only the Book page. The Explore/Book
+  search would then be highlighted in white rather than green; leave it as it is until the theme is designed.
+- **Realistic talking and movement for both coaches.** Today: a slow idle bob (Viktor slower, every 6 s), blinking,
+  a simple open-close mouth and an arm gesture while speaking, waves and hops for greetings and celebrations. Step 4:
+  the mouth follows the real voice (its loudness, read live from the audio, so it moves with the words), head tilts and
+  nods, eyes that look at the board or the player, small posture changes, varied idle movement; ready-made packs and
+  Rive where they look better than code.
