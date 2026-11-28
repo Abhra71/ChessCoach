@@ -161,7 +161,7 @@ WHERE = {"daily": "It's the first card on Home.", "games": "It's on Home, or in 
          "level": "It's in Your level, in the menu.",
          "report": "In Progress, press Report.", "film": "In Progress, press Game of the month.",
          "blindfold": "In Train, open Blindfold.", "words": "It's in Your plan, under Explore: Chess words.",
-         "coaches": "Click my name, up here in this bubble.", "guess": "In Train, open Guess the move."}
+         "coaches": "Click my name up here, or open Settings: Meet your coaches.", "guess": "In Train, open Guess the move."}
 
 
 def tour_next(coach=None, today=None, now=None, extension=False):

@@ -1197,6 +1197,7 @@ a.pcard, a.pcard * { text-decoration: none; } a.pcard { color: inherit; } a.pcar
 .kw-name { color: inherit; text-decoration: none; }
 .kw-name:hover b { text-decoration: underline; }
 .voice-said { margin: 8px 0 0; max-width: 560px; }
+.meet-link { align-self: flex-start; margin-top: 4px; }
 /* the coach box: name and role on one line, the role cut short rather than wrapping (28 Nov) */
 .kw-app .kw-head { align-items: center; }
 .kw-app .kw-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

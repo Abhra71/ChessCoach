@@ -2437,6 +2437,7 @@ async function settingsView() {
           <span class="small muted">${s.voice_ready ? (s.voice ? "On" : "Off") : "Voice files not installed"}</span></div>
           <div class="voices">${Object.entries(COACHES).map(([id, c]) => `<button class="btn voice-chip" data-hear="${id}">
             ${KnightwiseFaces.svg(id, "pleased")}<span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span><i>▶</i></button>`).join("")}</div>
+          <a class="ltool meet-link" href="#/coaches" title="Where they're from, and why they coach">${svg("users")}<span>Meet your coaches</span></a>
           <div class="row"><span class="small ${s.talk_ready ? "ok-text" : "muted"}" id="listenstate">${s.talk_ready
             ? "✓ Talk is ready" : "Talking needs a key that can hear: add one below."}</span></div>
           ${s.heard ? `<details class="small muted" id="heard"><summary title="Kept as text on this PC: never the sound, never sent anywhere. It lets the hearing learn the names you use.">What your coaches heard (${s.heard})</summary>
