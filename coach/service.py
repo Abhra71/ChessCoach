@@ -1186,6 +1186,9 @@ def with_point(said, q):
                    coach=said.get("coach"), extension=bool(STATE.get("extension_in")))
     if not p:
         return said
+    who = p.get("voice")
+    if in_app and who in coaches.COACHES and who != said.get("coach"):  # it's the other coach's: they say it (step 3.2)
+        said = {**said, "coach": who, "role": coaches.COACHES[who]["role"], "lines": []}
     lines = said.get("lines") or []
     # a greeting always comes first, then the suggestion (30 Oct test: "its suggestion should not come before greeting");
     # on a second visit that's the short "Welcome back." line
@@ -1196,7 +1199,9 @@ def with_point(said, q):
     elif in_app and p.get("route"):  # in the app: the suggestion's own button, alone, so it's clear what it opens
         label = {"rematch": "Play it again", "game": "Open the game", "daily": "Start", "badge": "See your badges",
                  "clock": "Slow-down drill", "tour": "Show me", "lesson": "Open the lesson", "endgame": "Play it",
-                 "opening": "Opening tree", "calc": "In your head"}.get(p.get("kind"), "Open it")
+                 "opening": "Opening tree", "calc": "In your head",
+                 "practice": "Practise them", "report": "Read it", "film": "Watch the film",
+                 "wrapped": "Play it", "blindfold": "Blindfold", "guess": "Guess the move"}.get(p.get("kind"), "Open it")
         acts = [{"label": label, "app": p["route"].split("@")[0], "best": True}]
     return {**said, "point": p, "quiet": False, "lines": keep + [p["line"]], "actions": acts}
 

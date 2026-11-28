@@ -11,8 +11,8 @@ may sit unused. So each feature lists:
   always   True for the few things that are always in front of the player (Home, the ask box, Settings)
 
 A feature with no moment and not always in view is a GAP: it's only ever shown once, by the tour. GAPS lists them
-today; tests/test_features.py makes sure the list can only shrink, and that every new feature, page, suggestion and
-data file is mapped here. Nothing in the app reads this file yet; the picker (step 3) will.
+(empty since step 3.2, 28 Nov); tests/test_features.py makes sure the list can only shrink, and that every new feature, page, suggestion and
+data file is mapped here. coach/nudge.py reads it to know whose voice a suggestion is in.
 """
 
 FEATURES = [
@@ -40,14 +40,14 @@ FEATURES = [
      "story": "Maya's morning routine as a junior: five minutes, every day",
      "data": ["daily.json", "today-sets.json", "kept-sets.json"]},
     {"id": "practice", "name": "Practice from your own positions", "page": "practice", "coach": "maya",
-     "tour": ["practice"],
+     "tour": ["practice"], "moments": ["practice"],  # positions due again today (step 3.2)
      "story": "Maya's coach made her replay her own mistakes until they stuck",
      "data": ["drills.json", "drill-cache.json", "drills.html", "practice.jsonl", "verdicts.jsonl", "puzzles.json"]},
     {"id": "clock", "name": "Slow down (the clock drill)", "page": "clockdrill", "coach": "maya", "moments": ["clock"],
      "story": "Maya lost a winning junior final on time"},
     # Viktor's rooms
     {"id": "plan", "name": "Your plan (cards, Explore, Done)", "page": "plan", "coach": "viktor",
-     "tour": ["plan", "explore", "done"],
+     "tour": ["plan", "explore", "done"], "moments": ["novelty"],  # Home: "Something new for you" (features.SPOKEN)
      "story": "Viktor picks what matters for you now, from thousands of positions",
      "data": ["novelty.json"]},
     {"id": "course", "name": "Your course", "page": "course", "coach": "viktor", "tour": ["course"],
@@ -62,11 +62,11 @@ FEATURES = [
      "moments": ["badge", "week"],
      "story": "Your record as a member",
      "data": ["badges-golds.json"]},
-    {"id": "report", "name": "Weekly report", "page": "report", "coach": "viktor", "tour": ["report"],
+    {"id": "report", "name": "Weekly report", "page": "report", "coach": "viktor", "tour": ["report"], "moments": ["report"],  # Sunday, after a week with games
      "story": "Viktor's short letter about your week"},
-    {"id": "film", "name": "Game of the month (film)", "page": "progress", "coach": "maya", "tour": ["film"],
+    {"id": "film", "name": "Game of the month (film)", "page": "progress", "coach": "maya", "tour": ["film"], "moments": ["film"],  # the month's best win, on the 1st
      "story": "Maya: this one deserves to be watched"},
-    {"id": "wrapped", "name": "Your month as Wrapped", "page": "report", "coach": "maya", "tour": ["wrapped"],
+    {"id": "wrapped", "name": "Your month as Wrapped", "page": "report", "coach": "maya", "tour": ["wrapped"], "moments": ["wrapped"],  # the 1st, after a month with games
      "story": "Viktor's monthly letter, told as cards"},
     # the practice hall (Train)
     {"id": "train", "name": "Train (the practice hall)", "page": "train", "coach": "viktor", "always": True,
@@ -86,10 +86,10 @@ FEATURES = [
      "moments": ["endgame"],
      "story": "Most games are decided after the queens are gone (Viktor's school motto)",
      "data": ["endgames.json"]},
-    {"id": "blindfold", "name": "Blindfold", "page": "blindfold", "coach": "viktor", "tour": ["blindfold"],
-     "story": "Viktor's boyhood training in Riga: whole games in his head",
+    {"id": "blindfold", "name": "Blindfold", "page": "blindfold", "coach": "viktor", "tour": ["blindfold"], "moments": ["blindfold"],  # reaching Club player
+     "story": "Viktor's boyhood training in Berlin: whole games in his head",
      "data": ["blindfold.json"]},
-    {"id": "guess", "name": "Guess the move", "page": "guess", "coach": "viktor", "tour": ["guess"],
+    {"id": "guess", "name": "Guess the move", "page": "guess", "coach": "viktor", "tour": ["guess"], "moments": ["guess"],  # walking into what they planned, again and again
      "story": "Think like them for five minutes (Maya)",
      "data": ["guess.json"]},
     {"id": "prep", "name": "Prep, Punish and Spar", "page": "prep", "coach": "viktor",
@@ -102,13 +102,18 @@ FEATURES = [
      "data": ["settings.json"]},
 ]
 
+# Moments the coach says in her own greeting (coach/coaches.py speak) rather than as a suggestion (coach/nudge.py):
+# kind -> where. "novelty": Home's "Something new for you: ...", when coach/plan.py picks a new card for a fresh
+# weakness in the player's games (found by the step 3.2 audit, 28 Nov: it was there, the map had missed it).
+SPOKEN = {"novelty": "coach/coaches.py"}
+
 # Data the app keeps for itself, not for one feature (the machinery): never shown to the player directly.
 SYSTEM_DATA = ["service.pid", "health.json", "fixes.json", "update-try.json", "voice-cache", "said.json",
                "nudges.json", "feedback.jsonl", "feedback-sent.json"]
 
 # Features with no right-time moment today: only the tour ever brings them up. To be connected (STORYLINE.md 3b);
 # tests/test_features.py lets this list shrink, never grow.
-GAPS = ["practice", "plan", "report", "film", "wrapped", "blindfold", "guess"]
+GAPS = []  # all connected (step 3.2, 28 Nov)
 
 
 ROUTE_ALIASES = {"endgame": "endgames", "clockdrill": "clockdrill", "plan/explore": "plan", "plan/done": "plan",

@@ -19,7 +19,7 @@ NEW_FOR = 3 * 86400  # seconds a finished game counts as new
 DAILY = ("game", "daily")  # worth saying every day: never sent to the back for variety
 # from the player's own mistakes: one of these comes before the tour each day (25 Oct, owner: "nudge them to explore,
 # on their mistakes: why, the benefit, and exactly where")
-MISTAKE = ("rematch", "lesson", "clock", "endgame", "opening", "calc")
+MISTAKE = ("rematch", "lesson", "clock", "endgame", "opening", "calc", "guess")
 MAX_DAYS = 2  # any other suggestion: shown on 2 days at most, opened or not (24 Oct: the same rematch again and again)
 # Step 2 of docs/CONNECTIONS.md (28 Nov, owner: "everything on the right time", "nothing unused"): a suggestion from the
 # player's own data no longer stops for good once its page was opened, or once it was shown on MAX_DAYS days. It rests
@@ -140,9 +140,9 @@ def _use(m, day, what, route=None, kind=None, tour=None):
     u[f"last_{what}"] = day
 
 
-def opened_lately(m, route, today):
+def opened_lately(m, route, today, days=REST_DAYS):
     """Opened within REST_DAYS (this route or anything under it): the coach doesn't bring it up again yet."""
-    cutoff = (datetime.date.fromisoformat(today) - datetime.timedelta(days=REST_DAYS)).isoformat()
+    cutoff = (datetime.date.fromisoformat(today) - datetime.timedelta(days=days)).isoformat()
     return any((r == route or r.startswith(route + "/")) and d > cutoff for r, d in (m.get("opened_on") or {}).items())
 
 
@@ -153,7 +153,9 @@ WHERE = {"daily": "It's the first card on Home.", "games": "It's on Home, or in 
          "course": "It's the card at the top of Your course, in the menu.",
          "endgame": "In Train, open Endgames.", "openings": "In Train, open Opening tree.",
          "calc": "In Train, open In your head.", "practice": "It's Practice, in the menu.",
-         "level": "It's in Your level, in the menu."}
+         "level": "It's in Your level, in the menu.",
+         "report": "In Progress, press Report.", "film": "In Progress, press Game of the month.",
+         "blindfold": "In Train, open Blindfold.", "guess": "In Train, open Guess the move."}
 
 
 def tour_next(coach=None, today=None, now=None, extension=False):
@@ -290,6 +292,8 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
         why = f"{why}. " if why else (f"It teaches: {habit} " if habit else "")
         add("lesson", f"lesson-{lesson['title']}"[:80], f"{why}Your next lesson: {lesson['title']}.",
             f"course/{lesson['id']}" if lesson.get("id") else "course")
+    _right_time(add, lambda route, days=REST_DAYS: opened_lately(m, route, today, days), day or datetime.date.today(),
+                home, games, player)
     out.extend(_more_nerves(add, opened, games, player))
     wk = home.get("week") or {}
     this, last = wk.get("this") or {}, wk.get("last") or {}
@@ -309,6 +313,101 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
         add("bots", "bots", "Before a rated game, warm up against a bot at your level. I'll show you where.", guide="bots")
     return out
 
+
+
+# Step 3.2 (28 Nov, owner: "nothing unused"): six of the seven features only the tour used to bring up, each now
+# brought at its right time by its own coach, from the player's own data (docs/STORYLINE.md, the moments table). Each one is
+# quiet when its data isn't there, and never breaks the other suggestions. (The seventh, Your plan, already had one:
+# Home's "Something new for you", coach/coaches.py, from plan.novelty(); features.SPOKEN.)
+THREATS = ("walked into a fork or trick", "walked into checkmate")  # moves that missed what they had planned
+GUESS_AFTER = 4  # this many in the last 10 checked games: think like them
+OWN_VOICE = ("rank", "blindfold", "report", "wrapped")  # lines in Viktor's first person: he says them, on any page
+PRACTICE_DUE = 3  # positions due again today before Maya mentions them
+
+
+def _right_time(add, opened, day, home, games, player):
+    import logging
+    for moment in (_practice_due, _week_letter, _month_film, _month_wrapped, _blindfold, _guess):
+        try:
+            moment(add, opened, day, home, games, player)
+        except Exception:  # a suggestion is never worth an error
+            logging.getLogger("knightwise").warning("nudge %s", moment.__name__, exc_info=True)
+
+
+def _practice_due(add, opened, day, home, games, player):
+    """Maya: positions from your own mistakes due again today (1, 3, 7... days), when none were practised today."""
+    from coach import memory
+    if not home.get("games") or memory.today(day=day) or opened("practice", 3):
+        return
+    due = sum(1 for box, last in memory.boxes().values() if memory.is_due(box, last, day))
+    if due >= PRACTICE_DUE:
+        add("practice", f"practice-{day.isoformat()}", f"{due} positions from your own mistakes are due again today. "
+            "Seen again now, they stick.", "practice")
+
+
+def _week_letter(add, opened, day, home, games, player):
+    """Viktor, on Sunday after a week with games: his short letter about it."""
+    if day.weekday() != 6 or opened("report/week", 6):
+        return
+    this = (home.get("week") or {}).get("this") or {}
+    if this.get("games", 0) >= 3:
+        y, w, _ = day.isocalendar()
+        add("report", f"report-{y}-W{w:02d}", f"Your week is written up: {this['games']} games, and what they say. "
+            "My short letter is in your report.", "report/week")
+
+
+def _month_film(add, opened, day, home, games, player):
+    """Maya, in the first days of a month: the month's best win, as a film."""
+    from coach import film, insights
+    if day.day > 3 or not games or opened("film", 20):
+        return
+    gid = film.month_game()
+    if not gid:
+        return
+    g = next((x for x in games if insights.game_id(x["url"]) == gid), None)
+    them = ""
+    if g and player:
+        them = (g["black"] if g["white"]["username"].lower() == player else g["white"])["username"]
+    add("film", f"film-{day.strftime('%Y-%m')}", f"Your best win of the month{f', against {them},' if them else ''} "
+        "deserves to be watched. It's ready as a film.", "film/month")
+
+
+def _month_wrapped(add, opened, day, home, games, player):
+    """Viktor, in the first days of a month with games: the month told as cards."""
+    import time
+    if day.day > 3 or not games or opened("report/month", 20):
+        return
+    n = sum(1 for x in games if (x.get("end_time") or 0) >= time.time() - 30 * 86400)
+    if n >= 5:
+        add("wrapped", f"wrapped-{day.strftime('%Y-%m')}", f"A month of chess, {n} games. I've written it up as "
+            "cards: your month as Wrapped.", "report/month")
+
+
+def _blindfold(add, opened, day, home, games, player):
+    """Viktor, once you're a Club player or above: whole games in your head, as he trained as a boy in Berlin."""
+    from coach import story
+    told = story._load().get("told")
+    if not games or not isinstance(told, int) or told < 1 or opened("blindfold"):
+        return
+    rank = story.RANKS[story.ORDER[min(told, len(story.ORDER) - 1)]]
+    add("blindfold", "blindfold", f"You're a {rank} now. As a boy in Berlin I played whole games in my head. Blindfold "
+        "trains it, from your own games.", "blindfold")
+
+
+def _guess(add, opened, day, home, games, player):
+    """Maya: you keep walking into what they had planned, and this week's Guess the move isn't tried yet."""
+    from coach import guess, insights, maia
+    if not games or not player or opened("guess", 6) or not maia.enabled():
+        return
+    g = guess._load()
+    if g.get("week") == guess.week(day) and g.get("tries"):
+        return
+    moves = insights._moves()
+    recent = [x for x in sorted(games, key=lambda x: x.get("end_time") or 0, reverse=True) if x.get("url") in moves][:10]
+    n = sum(1 for x in recent for r in moves[x["url"]] if r.get("pattern") in THREATS)
+    if len(recent) >= 5 and n >= GUESS_AFTER:
+        add("guess", f"guess-{guess.week(day)}", f"{n} times in your last {len(recent)} games you walked into something "
+            "they had planned. Guess the move: five minutes of thinking like them.", "guess")
 
 def _more_nerves(add, opened, games, player):
     """Endgames, the Opening tree and In your head, each linked to the mistake it trains (25 Oct). Never breaks the
@@ -411,4 +510,8 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
         if c.get("guide"):
             from coach import coaches
             c = {**c, "route_guide": coaches.guide(c["guide"])["guide"]}
+        if c["kind"] in OWN_VOICE:  # said in a coach's own words ("my notebook", "as a boy in Berlin I"): that coach says it
+            from coach import features
+            f = next((x for x in features.FEATURES if x["id"] == features.feature_of(kind=c["kind"])), None)
+            c = {**c, "voice": f["coach"] if f else None}
         return c

@@ -37,6 +37,9 @@ def test_every_suggestion_kind_belongs_to_a_feature():
     src = (ROOT / "coach/nudge.py").read_text(encoding="utf-8")
     kinds = set(re.findall(r'\badd\("(\w+)"', src)) | set(re.findall(r'"kind": "(\w+)"', src))
     kinds.discard("tour")  # the tour itself
+    for kind, where in features.SPOKEN.items():  # said in the coach's greeting: it must really be there
+        assert f'extra.get("{kind}")' in (ROOT / where).read_text(encoding="utf-8"), f"{kind} isn't in {where}"
+        kinds.add(kind)
     mapped = {m for f in F for m in f.get("moments", [])}
     assert kinds - mapped == set(), f"suggestions with no feature: {sorted(kinds - mapped)}"
     assert mapped - kinds == set(), f"features name moments that don't exist: {sorted(mapped - kinds)}"

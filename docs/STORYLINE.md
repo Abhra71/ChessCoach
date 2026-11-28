@@ -146,6 +146,11 @@ same day: In your head and the weekly report already have one, in coach/nudge.py
 
 (The feature map, coach/features.py, found these four more on 28 Nov: 8 gaps in all.)
 
+**Connected in step 3.2 (28 Nov):** every feature in the table now has its moment; features.GAPS is empty. Two
+differ from the table: Blindfold waits for Club player only (the "far side of the board" signal isn't measured yet),
+and Your plan's moment already existed (Home's "Something new for you"). Your level's "one skill away" became the
+rank-up itself (3.1).
+
 **Fixed in step 2 (28 Nov):** a feature brought up from your data used to stop for good once it was opened; now it
 rests 21 days and comes back if your games still show the need (docs/CONNECTIONS.md).
 

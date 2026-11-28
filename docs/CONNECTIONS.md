@@ -63,6 +63,15 @@ connect or data to stop collecting.
    tests/test_nudge_returns.py.
 3. Still to do in the picker: score the need (how strongly the data shows it), not only yes/no, and prefer the
    feature that helped this player before (from the use record).
-4. Moments for the four features that have none, with their story lines.
+4. ✅ **Done 28 Nov (storyline step 3.1 + 3.2): no gaps left** (`features.GAPS == []`). Your level: a new rank
+   (Viktor, with the notebook page). Practice: 3+ positions due again today and none practised yet (Maya).
+   Weekly report: Sunday, after a week with 3+ games (Viktor's letter). Game of the month: days 1–3 of a month, the
+   month's best win (Maya, names the opponent). Wrapped: days 1–3, 5+ games in the month (Viktor). Blindfold: once
+   you're a Club player (Viktor, his Berlin boyhood). Guess the move: 4+ moves in your last 10 games that walked
+   into a fork, trick or mate they had planned, and this week's challenge not tried (Maya). Your plan already had
+   one the map had missed: Home's "Something new for you" when plan.py picks a new card (`features.SPOKEN`).
+   Lines in Viktor's own first person (rank, Blindfold, letter, Wrapped) are said by Viktor even on Maya's page.
+   Checked on the owner's data: on Sunday 29 Nov practice (5 due), the letter (14 games) and Blindfold would come;
+   on 1 Dec also the film (best win against korashy77) and Wrapped (15 games). tests/test_right_time.py.
 5. Coverage in the weekly memo.
 Every new feature from then on (the Book, analysis board, master games, Centaur) is added to the map first.
