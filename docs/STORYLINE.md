@@ -92,7 +92,8 @@ the coaches' words and small touches.
 | Games | **Your match records** | Each game a "match" with its story: how it ended, the turning point |
 | Practice, Today's 5 minutes | **The training ground** | Maya runs it; sounds and small celebrations |
 | Train | **The practice hall** | Prep, blindfold, calculation, endgames: Viktor's drills |
-| Your course, later the Book | **The library** | Chapters from "How to read chess" to advanced; Viktor's history pages |
+| Your plan, later the Book | **The library** | The plan's Explore search is already a dictionary of chess (every tactic, ending, opening); the Book grows from it: each entry a chapter (explain, show, try, drill), from "How to read chess" to advanced, with Viktor's history pages (owner, 28 Nov) |
+| Your course | **The lesson path** | Stays as it is: lessons in order, passed when your games show them |
 | Your level | **Your membership rank** | The 5 ladder steps become ranks (below) |
 | Progress | **Your record** | Your story so far; Viktor's short letter at each milestone |
 | Later: master games | **The Hall of Champions** | World Championship games and famous positions, Viktor's notes |

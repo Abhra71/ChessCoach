@@ -40,7 +40,7 @@ That pain became the plan: Knightwise should teach, not only test.
 | 3 | Storyline in the app | The Knightwise Club, ranks, ~175 chess words in 3 layers (tap to explain), Viktor's regret, Maya's moments, moments for Blindfold, Guess the move, Game of the month, Wrapped | docs/STORYLINE.md |
 | 4 | Feel | Polished cartoon coaches (Rive), Viktor's new look, environment reactions, sound, music, one calm motion system; then every new feature ships with its motion | docs/TOOLS.md |
 | 5 | Analysis board | Move both sides, arrows, circles, set up, load any famous game or position by name ("Carlsen vs Gukesh", "Lucena"); no engine; the phone builds it first, the PC reuses it | |
-| 6 | The Book (the hero) | Chapter 0 "How to read chess", chapter 1 the English Opening; then batches of ~10; each chapter: explain → show → try → drill, linked to the player's own games; ~150 chapters over 6–8 months | |
+| 6 | The Book (the hero) | **Grows from Your plan** (owner, 28 Nov): the plan's Explore search is already a dictionary of chess (every tactic, ending and opening); the Book makes each entry a chapter. Chapter 0 "How to read chess", chapter 1 the English Opening; then batches of ~10; each chapter: explain → show → try → drill, linked to the player's own games; ~150 chapters over 6–8 months. Your course stays a separate lesson path | |
 | 7 | Hall of Champions | World Championship games and famous positions with the coaches' notes; search by players / tournament / year | |
 | 8 | Lichess | The player's Lichess games too | |
 | 9 | Centaur mode | Kasparov's Advanced Chess: you + the engine's top 3 candidates vs the engine; a small side feature | |
