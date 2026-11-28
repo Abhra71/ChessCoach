@@ -320,6 +320,19 @@ class Handler(BaseHTTPRequestHandler):
             from urllib.parse import unquote
             nudge.seen(unquote(parse_qs(urlsplit(self.path).query).get("route", [""])[0]))
             return self.send(200, "{}", "application/json")
+        if path == "/api/memory":  # a page opened: the coach's memory that belongs there, the first time (3.3)
+            from coach import memories
+            from urllib.parse import parse_qs, urlsplit
+            page = parse_qs(urlsplit(self.path).query).get("page", [""])[0]
+            return self.send(200, json.dumps(memories.on_page(page) or {}), "application/json")
+        if path == "/api/memory/told":  # the page showed that memory: never again
+            from coach import memories
+            from urllib.parse import parse_qs, urlsplit
+            return self.send(200, json.dumps({"ok": memories.told_on_page(parse_qs(urlsplit(self.path).query).get("id", [""])[0])}),
+                             "application/json")
+        if path == "/api/words":  # chess words: the list, and which ones the player looked up (3.4)
+            from coach import words
+            return self.send(200, json.dumps(words.page()), "application/json")
         if path == "/api/hello":  # the browser extension says it is installed and can reach the coach
             STATE["extension_seen"] = time.strftime("%Y-%m-%d %H:%M")
             from coach import nudge
@@ -722,6 +735,9 @@ class Handler(BaseHTTPRequestHandler):
             from coach import plan
             plan.progress(str(body.get("id", ""))[:200], body.get("item"), body.get("state"))
             return self.send(200, "{}", "application/json")
+        if path == "/api/words/looked":  # a chess word tapped for its meaning
+            from coach import words
+            return self.send(200, json.dumps({"ok": words.looked_up(str(body.get("word", ""))[:60])}), "application/json")
         if path == "/api/plan/mark":  # the player saw or finished a new thing
             from coach import plan
             plan.mark(str(body.get("id", ""))[:200], done=bool(body.get("done")), novelty=bool(body.get("novelty")))
@@ -1193,6 +1209,8 @@ def with_point(said, q):
     # a greeting always comes first, then the suggestion (30 Oct test: "its suggestion should not come before greeting");
     # on a second visit that's the short "Welcome back." line
     keep = lines[:1] if lines else [coaches.line("again", said.get("coach") or "maya")]
+    if p.get("kind") in nudge.TOLD:  # a memory, a story moment, on this day: it is the greeting, shown first (3.3)
+        keep = []
     acts = said.get("actions") or []
     if p.get("action"):  # it lives in the other place: one button to it, first
         acts = [p["action"]] + [a for a in acts if a.get("app") != p["action"].get("app") or not a.get("app")]
@@ -1201,7 +1219,8 @@ def with_point(said, q):
                  "clock": "Slow-down drill", "tour": "Show me", "lesson": "Open the lesson", "endgame": "Play it",
                  "opening": "Opening tree", "calc": "In your head",
                  "practice": "Practise them", "report": "Read it", "film": "Watch the film",
-                 "wrapped": "Play it", "blindfold": "Blindfold", "guess": "Guess the move"}.get(p.get("kind"), "Open it")
+                 "wrapped": "Play it", "blindfold": "Blindfold", "guess": "Guess the move",
+                 "words": "Chess words", "meet": "Meet us"}.get(p.get("kind"), "Open it")
         acts = [{"label": label, "app": p["route"].split("@")[0], "best": True}]
     return {**said, "point": p, "quiet": False, "lines": keep + [p["line"]], "actions": acts}
 

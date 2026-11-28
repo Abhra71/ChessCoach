@@ -14,11 +14,14 @@ HOME = {"games": 140, "daily": {"done_today": False, "streak": 3},
 REMATCH = {"ply": 32, "move_number": 16}
 
 
-def fresh(tmp_path, monkeypatch, tour=False):
-    """A clean memory. These tests are about the day's suggestions: no tour and no gap between picks, unless asked."""
+def fresh(tmp_path, monkeypatch, tour=False, club=False):
+    """A clean memory. These tests are about the day's suggestions: no tour, no gap between picks and none of the
+    club's story moments (the welcome would come first), unless asked."""
     from coach import plan
     monkeypatch.setattr(nudge, "FILE", tmp_path / "nudges.json")
     monkeypatch.setattr(plan, "MEMORY", tmp_path / "novelty.json")
+    if not club:
+        monkeypatch.setattr(nudge, "_club", lambda *a, **k: None)
     if not tour:
         monkeypatch.setattr(nudge, "TOUR", [])
         monkeypatch.setattr(nudge, "GAP", 0)

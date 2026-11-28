@@ -27,7 +27,7 @@ const Coach = (() => {
     box.className = `kw-coach kw-app ${open ? "open" : "folded"}`;
     const face = `<button class="kw-char" title="${esc(who.name)}">${KnightwiseFaces.figure(s.coach, s.pose || s.mood || "calm")}</button>`;
     box.innerHTML = open ? `${face}<div class="kw-box" role="status">
-        <div class="kw-head"><b>${esc(who.name)}${KnightwiseFaces.flag ? KnightwiseFaces.flag(COACHES[s.coach] ? s.coach : "maya") : ""}</b><span>${esc(who.role)}</span>
+        <div class="kw-head"><a class="kw-name" href="#/coaches" title="Meet your coaches"><b>${esc(who.name)}${KnightwiseFaces.flag ? KnightwiseFaces.flag(COACHES[s.coach] ? s.coach : "maya") : ""}</b></a><span>${esc(who.role)}</span>
           ${TALK && !s.talking ? `<button class="kw-speak" title="Talk with ${esc(who.name)}: click, speak, then click Stop">🎙 Talk</button>` : ""}
           <button class="kw-x" title="Fold away">–</button></div>
         ${(more ? s.lines : [brief(s.lines[0] || "")]).map(l => `<p>${esc(l)}</p>`).join("")}
@@ -536,6 +536,7 @@ async function planView(arg) {
       <label class="explore-box">${svg("search")}<input id="xq" type="search" autocomplete="off" spellcheck="false"
         placeholder="Explore on your own: an opening, a tactic, an ending…"></label>
       <div id="xres" hidden></div>
+      <a class="words-link small" href="#/words">${svg("book")}<span>Chess words, explained</span></a>
     </div>
     <div class="plan-cards rise">${all.map((x, i) => card(x, !!p.novelty && i === 0)).join("")}</div>${startedRow}${doneRow}`;
   [...all, ...started, ...doneCards].forEach(x => {  // the position each one starts from
@@ -604,9 +605,10 @@ function explore() {
     if (mine !== asked || !r || !r.results || !q.value.trim()) return;  // a newer search is on its way, or it was cleared
     res.hidden = false;
     res.dataset.mode = "search";
-    res.innerHTML = r.results.length ? `<div class="xlist">${r.results.map(x =>
+    const defs = typeof wordsFor === "function" ? wordsFor(words) : [];  // the library's dictionary (storyline 3.4)
+    res.innerHTML = defs.map(x => `<a class="xword" href="#/words"><b>${esc(x.word)}</b> ${esc(x.meaning)}</a>`).join("") + (r.results.length ? `<div class="xlist">${r.results.map(x =>
       row(x).replace('<span class="xname">', `<span class="xkind">${KIND[x.kind]}</span><span class="xname">`)).join("")}</div>`
-      : `<p class="muted small" style="margin:8px 2px">Nothing by that name. Try a family like Sicilian, or a tactic like fork.</p>`;
+      : defs.length ? "" : `<p class="muted small" style="margin:8px 2px">Nothing by that name. Try a family like Sicilian, or a tactic like fork.</p>`);
     wire(res);
   }
   let timer = null;

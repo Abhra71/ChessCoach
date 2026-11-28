@@ -1,7 +1,24 @@
 # Knightwise storyline: first draft for the owner (28 Nov 2026)
 
-Status: **draft to read and change.** Nothing here is built yet. Mark anything you don't like; we build only what you
-approve. History facts marked † are from memory and get a checked source before they go into the app.
+Status: **approved by the owner (28 Nov 2026); step 3 built** (see "What's built" just below). History facts are
+checked against their Wikipedia pages before they go into the app.
+
+**What's built (step 3, 28 Nov 2026):**
+- 3.1 Ranks and Viktor's notebook (coach/story.py): five ranks, each opens a notebook page.
+- 3.2 Every feature brought up at its right time from the player's data (coach/nudge.py; features.GAPS is empty).
+- 3.3 The coaches' memories (coach/memories.py): Maya's five (her queen, the clock, the losing streak, memorising,
+  the practised fork) and Viktor's two regrets (the unchecked move, told the first time In your head opens; the games
+  he never wrote down, at 30 match records). Each told once, one a week per coach at most, two sentences.
+- 3.4 Chess words, layer 1 (coach/words.py, coach/ui/club.js): 33 words; the first on a page is underlined, a tap
+  shows its meaning; the Chess words page (under Explore in Your plan); Explore answers a chess word typed there.
+  Viktor points at the list once you've looked up three.
+- 3.5 Story moments: welcome to the club, the first match record, a 7-day streak, a hundred games, a year; "on this
+  day" from Viktor, weekly at most, never twice, 23 checked events with their source (the Immortal Game and
+  Kasparov's Immortal are left out: their pages give no exact day).
+- 3.6 The club feel: each page's room name above its title (the menu stays plain), and Meet your coaches (click a
+  coach's name in the bubble; Maya brings it up after two days).
+Not built from this document yet: the coaches' rare two-line banter on Home, "First practice passed" sound and glow
+(step 4, feel), the Hall of Champions mention of a live World Championship (step 7).
 
 ---
 

@@ -18,6 +18,7 @@ data file is mapped here. coach/nudge.py reads it to know whose voice a suggesti
 FEATURES = [
     # the clubhouse
     {"id": "home", "name": "Home", "page": "home", "coach": "maya", "always": True,
+     "moments": ["memory", "story", "history"],  # the coaches' memories, the club's moments, on this day (3.3, 3.5)
      "story": "The clubhouse: the coaches greet you and show your week",
      "data": ["player.txt", "patterns.json", "games-*.json"]},
     {"id": "ask", "name": "Ask the coach (typed or out loud)", "page": "home", "coach": "maya", "always": True,
@@ -96,6 +97,14 @@ FEATURES = [
      "tour": ["prep", "punish", "spar"], "moments": ["prep"],
      "story": "Viktor's chess-school habit: study the opponent the night before",
      "data": ["preps.json"]},
+    # the club (storyline 3.4 and 3.6, 28 Nov)
+    {"id": "words", "name": "Chess words (tap to explain, and the list)", "page": "words", "coach": "viktor",
+     "tour": ["words"], "moments": ["words"],
+     "story": "The library's dictionary: the words strong players use, in plain language",
+     "data": ["words.json"]},
+    {"id": "coaches", "name": "Meet your coaches", "page": "coaches", "coach": "maya", "tour": ["coaches"],
+     "moments": ["meet"],
+     "story": "Maya from Chennai and Viktor from Berlin: who they are and why they coach"},
     # always there
     {"id": "settings", "name": "Settings", "page": "settings", "coach": "maya", "always": True,
      "story": "Your locker in the club",

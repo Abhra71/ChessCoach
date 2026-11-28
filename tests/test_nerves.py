@@ -23,6 +23,7 @@ def fresh(tmp_path, monkeypatch):
     monkeypatch.setattr(nudge, "TOUR", TOUR)
     monkeypatch.setattr(nudge, "GAP", 0)
     monkeypatch.setattr(nudge, "TOUR_GAP", 0)
+    monkeypatch.setattr(nudge, "_club", lambda *a, **k: None)  # the club's story moments: tests/test_club.py
 
 
 def test_three_a_day_in_all_with_their_own_mistake_before_the_tour(tmp_path, monkeypatch):

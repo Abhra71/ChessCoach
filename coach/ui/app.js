@@ -289,7 +289,8 @@ function offerLabel(route) {
   if (top === "prep" && arg) return `Prep ${arg}`;
   const NAMES = { practice: "Practice", daily: "Today's 5 minutes", plan: "Your plan", course: "Your course", level: "Your level",
     progress: "Progress", train: "Train", games: "Games", settings: "Settings", openings: "Opening tree", repertoire: "Repertoire",
-    blindfold: "Blindfold", guess: "Guess the move", endgames: "Endgames", calc: "In your head", prep: "Prep", home: "Home" };
+    blindfold: "Blindfold", guess: "Guess the move", endgames: "Endgames", calc: "In your head", prep: "Prep", home: "Home",
+    words: "Chess words", coaches: "Meet your coaches" };
   return `Open ${NAMES[top] || "it"}`;
 }
 function kwPoint(route) { kwUnpoint(); if (!KW_RINGS) return; kwPointing = route; kwRing(0); }
@@ -2704,6 +2705,8 @@ async function screen(name, arg) {
   if (name === "progress") return await progressView();
   if (name === "level") return await levelView();
   if (name === "train") return trainView();
+  if (name === "words") return await wordsView();
+  if (name === "coaches") return coachesView();
   toolIntro(name);
   if (name === "course" && arg) return await courseLesson(decodeURIComponent(arg));
   if (name === "course") return await courseView();
@@ -2780,6 +2783,7 @@ async function route() {
     // (23 Oct chaos test)
     if (location.hash !== asked) return route();
     if (!arg) intro(name || "home");
+    roomName(name || "home");  // the room in the club this page is (storyline 3.6)
   } catch (e) {
     console.error(e);
     if ($("#page")) $("#page").innerHTML = `<div class="empty">Couldn't load this screen: ${esc(e.message)}</div>`;
@@ -2841,8 +2845,10 @@ function trainView() {
 function toolIntro(name) {
   const t = TRAIN.flatMap(g => g[2]).find(x => x[0] === name);
   if (!t) return;
-  try { if (localStorage.getItem(`kw-tool-${name}`)) return; localStorage.setItem(`kw-tool-${name}`, "1"); } catch (e) { return; }
-  setTimeout(() => Coach.react(t[4], "explain", t[5]), 900);
+  let first = true;
+  try { first = !localStorage.getItem(`kw-tool-${name}`); localStorage.setItem(`kw-tool-${name}`, "1"); } catch (e) {}
+  if (first) setTimeout(() => Coach.react(t[4], "explain", t[5]), 900);
+  pageMemory(name, first ? 9000 : 1200);  // the coach's memory that belongs here, once (Viktor's regret in In your head)
 }
 
 // Long page intros fold into a small ? by the title, on every page (22 Oct: "keep as less text as possible, with

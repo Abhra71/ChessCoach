@@ -14,7 +14,7 @@ SHOTS = PROJECT / "logbook" / "ui-check"
 
 # Every page in the side menu and the tools behind Train and Your plan (coach/ui/app.js, NAMES).
 PAGES = ["home", "games", "practice", "daily", "plan", "course", "level", "progress", "train", "openings",
-         "repertoire", "blindfold", "guess", "endgames", "calc", "prep", "settings"]
+         "repertoire", "blindfold", "guess", "endgames", "calc", "prep", "settings", "words", "coaches"]
 SIZES = {"window": (1280, 800), "small": (1000, 680)}
 
 

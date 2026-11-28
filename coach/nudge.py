@@ -84,6 +84,11 @@ TOUR = [
      "In Progress, open Report and press Play it as Wrapped: your chess story in cards, with music."),
     ("talk", "maya", "settings", "settings", None,
      "You can talk to us out loud: press the mic and speak. Settings, at the bottom left, has the switch."),
+    # the club (storyline 3.4 and 3.6, 28 Nov)
+    ("coaches", "maya", "coaches", "coaches", None,
+     "You can meet us properly: click my name, up here in this bubble. Where we're from, and why we coach."),
+    ("words", "viktor", "words", "words", None,
+     "Chess has its own words. Tap any underlined one for its meaning; all of them are on Chess words, under Explore in Your plan.")
 ]
 
 
@@ -155,7 +160,8 @@ WHERE = {"daily": "It's the first card on Home.", "games": "It's on Home, or in 
          "calc": "In Train, open In your head.", "practice": "It's Practice, in the menu.",
          "level": "It's in Your level, in the menu.",
          "report": "In Progress, press Report.", "film": "In Progress, press Game of the month.",
-         "blindfold": "In Train, open Blindfold.", "guess": "In Train, open Guess the move."}
+         "blindfold": "In Train, open Blindfold.", "words": "It's in Your plan, under Explore: Chess words.",
+         "coaches": "Click my name, up here in this bubble.", "guess": "In Train, open Guess the move."}
 
 
 def tour_next(coach=None, today=None, now=None, extension=False):
@@ -256,6 +262,8 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
     if up:
         add("rank", f"rank-{up['id']}", f"A new rank: {up['rank']}. A page of my notebook is yours now: "
             f"{up['page']}.", "level")
+    if app:  # the coaches' memories, the club's story moments and "on this day" (storyline 3.3 and 3.5, 28 Nov)
+        _club(out, add, home, games, player, prog, day or datetime.date.today(), m)
     for b in (prog or {}).get("badges") or []:  # close to the next badge: a reason to play carefully today
         need = (b.get("next") or 0) - (b.get("current") or 0)
         if b.get("group") == "Habits" and b.get("next") and 1 <= need <= 2:
@@ -315,6 +323,27 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
 
 
 
+STORY = ("rank", "memory", "story", "history")  # the club's own moments: before the day's other things, one a day
+TOLD = ("memory", "story", "history")  # said once ever: remembered when said, not when opened
+
+
+def _club(out, add, home, games, player, prog, day, m):
+    try:
+        from coach import memories
+        said = memories.candidates(home, games, player, day, m)
+        clock = memories.clock_memory(prog, day)
+        for kind, cid, coach, line, route, _ in said + ([clock] if clock else []):
+            add(kind, cid, line, route)
+            out[-1]["voice"] = coach
+        h = memories.on_this_day(day) if home.get("games") else None
+        if h:
+            out.append({"kind": "history", "id": h[0], "line": h[1], "voice": "viktor",
+                        "action": {"label": "The source", "url": h[2]}})
+    except Exception:  # a story is never worth an error
+        import logging
+        logging.getLogger("knightwise").warning("nudge club", exc_info=True)
+
+
 # Step 3.2 (28 Nov, owner: "nothing unused"): six of the seven features only the tour used to bring up, each now
 # brought at its right time by its own coach, from the player's own data (docs/STORYLINE.md, the moments table). Each one is
 # quiet when its data isn't there, and never breaks the other suggestions. (The seventh, Your plan, already had one:
@@ -327,7 +356,7 @@ PRACTICE_DUE = 3  # positions due again today before Maya mentions them
 
 def _right_time(add, opened, day, home, games, player):
     import logging
-    for moment in (_practice_due, _week_letter, _month_film, _month_wrapped, _blindfold, _guess):
+    for moment in (_practice_due, _week_letter, _month_film, _month_wrapped, _blindfold, _guess, _words, _meet):
         try:
             moment(add, opened, day, home, games, player)
         except Exception:  # a suggestion is never worth an error
@@ -409,6 +438,23 @@ def _guess(add, opened, day, home, games, player):
         add("guess", f"guess-{guess.week(day)}", f"{n} times in your last {len(recent)} games you walked into something "
             "they had planned. Guess the move: five minutes of thinking like them.", "guess")
 
+def _words(add, opened, day, home, games, player):
+    """Viktor: you've started tapping chess words for their meaning; the whole list is on one page."""
+    from coach import words
+    n = words.count_looked()
+    if n >= words.LOOKED_UP and not opened("words"):
+        add("words", "words", f"You've looked up {n} chess words. All {len(words.WORDS)} are on one page, with what "
+            "they mean.", "words")
+
+
+def _meet(add, opened, day, home, games, player):
+    """Maya, after two days in the club: the coaches introduce themselves properly."""
+    from coach import memories
+    if home.get("games") and (day - memories.joined(day)).days >= 2 and not opened("coaches", 3650):
+        add("meet", "meet", "We haven't been introduced properly. Meet your coaches: where we're from, and why we "
+            "coach.", "coaches")
+
+
 def _more_nerves(add, opened, games, player):
     """Endgames, the Opening tree and In your head, each linked to the mistake it trains (25 Oct). Never breaks the
     suggestions: anything missing means no suggestion of that kind."""
@@ -485,8 +531,12 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
         # the day's own things first (a new game, the 5 minutes), then one from their own mistakes, then something new
         mistakes = [c for c in options if c["kind"] in MISTAKE and c["kind"] not in before]  # a new kind each day
         mistake_today = any(k in MISTAKE for k in kinds.get(today, []))
+        stories = [c for c in options if c["kind"] in STORY]
+        story_today = any(k in STORY for k in kinds.get(today, []))
         if options and options[0]["kind"] in DAILY:
             c = options[0]
+        elif stories and not story_today:
+            c = stories[0]
         elif mistakes and not mistake_today:
             c = mistakes[0]
         else:
@@ -499,6 +549,9 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
             _use(m, today, "brought", tour=c["id"][len("tour-"):])
         else:
             _use(m, today, "brought", kind=c["kind"])
+            if c["kind"] in TOLD:
+                from coach import memories
+                memories.told(c["id"], day)
             m["shown"] = {**shown, place: mine + [c["id"]]}
             days = ever.get(c["id"], [])
             m["ever"] = {**ever, c["id"]: days if today in days else (days + [today])[-MAX_DAYS - 1:]}
@@ -510,7 +563,7 @@ def pick(place, section, home=None, today=None, lesson=None, rematch=None, prog=
         if c.get("guide"):
             from coach import coaches
             c = {**c, "route_guide": coaches.guide(c["guide"])["guide"]}
-        if c["kind"] in OWN_VOICE:  # said in a coach's own words ("my notebook", "as a boy in Berlin I"): that coach says it
+        if c["kind"] in OWN_VOICE and not c.get("voice"):  # said in a coach's own words ("my notebook", "as a boy in Berlin I"): that coach says it
             from coach import features
             f = next((x for x in features.FEATURES if x["id"] == features.feature_of(kind=c["kind"])), None)
             c = {**c, "voice": f["coach"] if f else None}
