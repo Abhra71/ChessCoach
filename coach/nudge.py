@@ -152,7 +152,8 @@ WHERE = {"daily": "It's the first card on Home.", "games": "It's on Home, or in 
          "clockdrill": "In Progress, scroll down to Your clock and press Slow down.", "prep": "It's in Train, under Prep.",
          "course": "It's the card at the top of Your course, in the menu.",
          "endgame": "In Train, open Endgames.", "openings": "In Train, open Opening tree.",
-         "calc": "In Train, open In your head.", "practice": "It's Practice, in the menu."}
+         "calc": "In Train, open In your head.", "practice": "It's Practice, in the menu.",
+         "level": "It's in Your level, in the menu."}
 
 
 def tour_next(coach=None, today=None, now=None, extension=False):
@@ -245,6 +246,14 @@ def candidates(place, home, lesson=None, rematch=None, prog=None, games=None, pl
         else:
             add("rematch", f"rematch-{g['id']}", f"Against {opp} it went wrong at move {rematch['move_number']}. "
                 "Play it again from there?", f"rematch/{g['id']}/{rematch['ply']}")
+    try:  # a new club rank: Viktor brings it up, with the notebook page it opens (step 3.1, 28 Nov)
+        from coach import story
+        up = story.pending_rank()
+    except Exception:
+        up = None
+    if up:
+        add("rank", f"rank-{up['id']}", f"A new rank: {up['rank']}. A page of my notebook is yours now: "
+            f"{up['page']}.", "level")
     for b in (prog or {}).get("badges") or []:  # close to the next badge: a reason to play carefully today
         need = (b.get("next") or 0) - (b.get("current") or 0)
         if b.get("group") == "Habits" and b.get("next") and 1 <= need <= 2:

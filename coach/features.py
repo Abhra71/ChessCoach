@@ -55,7 +55,9 @@ FEATURES = [
      "story": "Viktor's thirty years of lessons, in order",
      "data": ["course.json"]},
     {"id": "level", "name": "Your level (the ranks)", "page": "level", "coach": "viktor", "tour": ["level"],
-     "story": "Your membership rank in the club; each rank opens a page of Viktor's notebook"},
+     "moments": ["rank"],  # a new rank (step 3.1, 28 Nov)
+     "story": "Your membership rank in the club; each rank opens a page of Viktor's notebook",
+     "data": ["story.json"]},
     {"id": "progress", "name": "Progress and badges", "page": "progress", "coach": "viktor", "tour": ["progress"],
      "moments": ["badge", "week"],
      "story": "Your record as a member",
@@ -106,7 +108,7 @@ SYSTEM_DATA = ["service.pid", "health.json", "fixes.json", "update-try.json", "v
 
 # Features with no right-time moment today: only the tour ever brings them up. To be connected (STORYLINE.md 3b);
 # tests/test_features.py lets this list shrink, never grow.
-GAPS = ["practice", "plan", "level", "report", "film", "wrapped", "blindfold", "guess"]
+GAPS = ["practice", "plan", "report", "film", "wrapped", "blindfold", "guess"]
 
 
 ROUTE_ALIASES = {"endgame": "endgames", "clockdrill": "clockdrill", "plan/explore": "plan", "plan/done": "plan",

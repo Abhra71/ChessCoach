@@ -528,8 +528,14 @@ class Handler(BaseHTTPRequestHandler):
             brief.add(item["drills"])
             return self.send(200, json.dumps(item), "application/json")
         if path == "/api/ladder":  # your level: every skill from beginner to 2,000+, on your last 20 games (0.6)
-            from coach import course, ladder
+            from coach import course, ladder, story
             out = ladder.page()
+            if out.get("levels"):  # the club's ranks and Viktor's notebook (step 3.1, 28 Nov)
+                for lv in out["levels"]:
+                    lv["rank"] = story.RANKS.get(lv.get("id"))
+                out["notebook"] = story.notebook(out.get("current"))
+                story.note_level(out.get("current"))
+                story.told_rank()  # the page is open: a new rank has been seen
             try:  # a skill taught by a course lesson says whether that lesson is already learnt (23 Oct test)
                 lessons = {l["id"]: l["status"] for l in course.course(current=course.LEVEL_ORDER[(out.get("current") or 0) + 1])["lessons"]}
                 for lv in out.get("levels") or []:
@@ -1407,6 +1413,11 @@ def warm_up():
     """After new games: the slow-down drill and your next lesson worked out now, with an engine of its own, so they
     open at once instead of after 10 seconds of Stockfish (19 Oct). Never in the way: errors are only logged."""
     from coach import clock, course, insights
+    try:  # the club rank after these games: a new one is brought up by Viktor (step 3.1, 28 Nov)
+        from coach import ladder, story
+        story.note_level(ladder.page().get("current"))
+    except Exception:
+        log.exception("warm-up: rank")
     try:
         eng = analyze.open_engine()
     except Exception:

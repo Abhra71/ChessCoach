@@ -900,7 +900,14 @@ async function levelView() {
   const draw = sel => {
     const lv = p.levels[sel], mine = sel === p.current, total = lv.skills.length, doneN = lv.skills.filter(x => x.met).length;
     const ladder = `<div class="ladder">${p.levels.map((l, i) => `<button class="lstepbox ${i < p.current || l.done ? "done" : i === p.current ? "now" : ""} ${i === sel ? "sel" : ""}" data-lv="${i}" title="Players here are usually rated ${esc(l.band)}. You move up by meeting the aims, not by rating.">
-      <span class="lcircle num">${l.done ? svg("check") : i + 1}</span><b>${esc(l.name)}</b><span class="faint small">${esc("rated " + l.band.replace(/^about /, "").replace("up to ", "≤ ").replace(" and above", "+"))}</span></button>`).join("")}</div>`;
+      <span class="lcircle num">${l.done ? svg("check") : i + 1}</span><b>${esc(l.rank || l.name)}</b>${l.rank ? `<span class="small muted">${esc(l.name)}</span>` : ""}<span class="faint small">${esc("rated " + l.band.replace(/^about /, "").replace("up to ", "≤ ").replace(" and above", "+"))}</span></button>`).join("")}</div>`;
+    // Viktor's notebook: a page restored for every rank reached, scorched beyond it (step 3.1, STORYLINE.md 11)
+    const notebook = (p.notebook || []).length ? `<div class="notebook"><h2>${svg("book")} Viktor's notebook</h2>
+      <div class="npages">${p.notebook.map(pg => pg.open
+        ? `<div class="box npage"><span class="small muted">${esc(pg.rank)}</span><b>${esc(pg.title)}</b><p>${esc(pg.text)}</p>
+            <a class="small" href="${esc(pg.source)}" target="_blank" rel="noopener">Source ↗</a></div>`
+        : `<div class="box npage scorched" title="Reach ${esc(pg.rank)} to restore this page"><span class="small muted">${esc(pg.rank)}</span>
+            <b>A page still to restore</b><p class="muted small">Scorched in the fire. It comes back when you reach ${esc(pg.rank)}.</p></div>`).join("")}</div></div>` : "";
     const line = mine
       ? (up ? `<b class="num">${doneN} of ${total}</b>&nbsp;done ${svg("down")} all ${total}: Level ${p.current + 2}` : "The top level. Keep it there.")
       : sel > p.current ? `Level ${sel + 1}: a look ahead. Your numbers today, against its aims.`
@@ -909,13 +916,14 @@ async function levelView() {
       <div class="page-head"><div><h1>Your level</h1></div></div>
       ${ladder}
       <p class="lgoal">${line}<span class="muted small" style="font-weight:400;margin-left:auto">your last ${p.games} games</span></p>
-      <div class="lskills rise ${mine ? "" : "ahead"}">${lv.skills.slice().sort((a, b) => (a.met === true) - (b.met === true)).map(x => skill(x, mine)).join("")}</div>`;
+      <div class="lskills rise ${mine ? "" : "ahead"}">${lv.skills.slice().sort((a, b) => (a.met === true) - (b.met === true)).map(x => skill(x, mine)).join("")}</div>
+      ${notebook}`;
     $(".lgoal svg") && ($(".lgoal svg").style.transform = "rotate(-90deg)");
     document.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => draw(Number(b.dataset.lv)));
   };
   draw(p.current);  // cards with something to do come first; done ones go to the bottom (23 Oct test)
   Coach.react("viktor", "explain", next
-    ? `You're on level ${p.current + 1} of 5, ${cur.name}. Meet every aim and you move up, whatever your rating. The one to fix first: ${next.name.toLowerCase()}.`
+    ? `You're a ${cur.rank || cur.name} of the club: level ${p.current + 1} of 5, ${cur.name.toLowerCase()}. Meet every aim and you move up, whatever your rating. The one to fix first: ${next.name.toLowerCase()}.`
     : `Every level done. Remarkable. Keep playing: the numbers keep watching.`,
     next ? [{ label: next.train.label, app: next.train.route }] : []);
 }
